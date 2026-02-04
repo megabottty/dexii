@@ -43,6 +43,12 @@ export class SecurityService {
     this.router.navigate(['/lock']);
   }
 
+  // 6. Stealth Toggle (Simulation)
+  toggleStealthMode(): void {
+    // This would swap the app icon or change the manifest in a real build
+    alert("Stealth Mode Activated. The app icon will now appear as 'Simple Notes' on your home screen.");
+  }
+
   // 5. Initial setup
   setInitialPin(newPin: string): void {
     localStorage.setItem('dexii_pin', newPin);

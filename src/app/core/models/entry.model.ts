@@ -1,4 +1,4 @@
-export type EntryType = 'Note' | 'Date' | 'RedFlag';
+export type EntryType = 'Note' | 'Date' | 'RedFlag' | 'SafetyCheck';
 
 export interface Entry {
   id: string;
@@ -6,4 +6,7 @@ export interface Entry {
   type: EntryType;
   content: string;
   timestamp: Date;
+  isBurnAfterReading?: boolean;
+  hasViewed?: boolean; // For disappearing notes
+  safetyContactId?: string; // Friend ID for safety check
 }

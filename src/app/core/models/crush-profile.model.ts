@@ -15,4 +15,7 @@ export interface CrushProfile {
   visibility: string[]; // array of friend IDs
   lastInteraction: Date;
   rating?: number; // 1-5 stars
+  redFlags: number;
+  vibeHistory: number[]; // Array of last 5 vibe scores (1-10)
+  isStealth?: boolean;
 }

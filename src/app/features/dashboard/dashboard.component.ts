@@ -1,20 +1,85 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { PrivacyService } from '../../core/services/privacy.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          style="min-height: 100vh; font-family: 'Times New Roman', serif; padding-bottom: 60px; transition: all 0.8s ease; position: relative; overflow-x: hidden;">
 
+      <!-- New Entry Modal -->
+      @if (showNewEntryModal()) {
+        <div style="position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 15px; padding: 20px;">
+          <div [style.background-color]="theme.colors().bg"
+               [style.border]="'1px solid ' + theme.colors().border"
+               style="width: 100%; max-width: 500px; padding: 40px; border-radius: 0px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+
+            <button (click)="closeModal()" [style.color]="theme.colors().textSecondary" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+
+            <h3 style="font-size: 32px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 32px; text-align: center;">New Connection</h3>
+
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div>
+                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Nickname</label>
+                <input [(ngModel)]="newCrush.nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none; font-family: 'Times New Roman', serif;">
+              </div>
+
+              <div>
+                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Full Name (Optional)</label>
+                <input [(ngModel)]="newCrush.fullName" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none;">
+              </div>
+
+              <div>
+                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Status</label>
+                <select [(ngModel)]="newCrush.status" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none; appearance: none;">
+                  <option [value]="statuses.Crush">Crush</option>
+                  <option [value]="statuses.Dating">Dating</option>
+                  <option [value]="statuses.Exclusive">Exclusive</option>
+                </select>
+              </div>
+
+              <div>
+                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Initial Vibe (1-5 Stars)</label>
+                <div style="display: flex; gap: 8px; justify-content: center; font-size: 24px;">
+                  @for (star of [1,2,3,4,5]; track star) {
+                    <span (click)="newCrush.rating = star" [style.color]="newCrush.rating >= star ? theme.colors().accent : theme.colors().border" style="cursor: pointer;">★</span>
+                  }
+                </div>
+              </div>
+
+              <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" style="color: white; border: none; padding: 16px; border-radius: 0px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; margin-top: 20px;">
+                Secure Entry
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Digital Note Passing Overlay (Simulation) -->
+      @if (isNotePassing()) {
+        <div style="position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 10px;">
+           <div (click)="closeNote()"
+                [style.background-color]="theme.colors().bgSecondary"
+                [style.border]="'2px solid ' + theme.colors().primary"
+                style="padding: 40px; max-width: 400px; transform: rotate(-2deg); shadow: 0 20px 50px rgba(0,0,0,0.5); cursor: pointer;">
+              <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; display: block; margin-bottom: 20px;">Private Note Received</span>
+              <p style="font-size: 18px; line-height: 1.6; font-style: italic;">"Wait until you hear what happened last night... tap to close."</p>
+           </div>
+        </div>
+      }
+
       <!-- Glamour Decorative Elements -->
-      <div *ngIf="theme.mode() === 'light'" style="position: absolute; top: 0; right: 0; width: 600px; height: 600px; background: radial-gradient(circle, #fce7f3 0%, transparent 70%); opacity: 0.5; pointer-events: none;"></div>
+      @if (theme.mode() === 'light') {
+        <div style="position: absolute; top: 0; right: 0; width: 600px; height: 600px; background: radial-gradient(circle, #fce7f3 0%, transparent 70%); opacity: 0.5; pointer-events: none;"></div>
+      }
 
       <!-- Navigation -->
       <nav [style.background-color]="theme.colors().bgSecondary"
@@ -49,11 +114,19 @@ import { ThemeService } from '../../core/services/theme.service';
             <h2 style="font-size: 48px; font-weight: 200; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">The Rolodex</h2>
             <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: 14px; letter-spacing: 1px; font-style: italic;">Curating {{ privacy.visibleCrushes().length }} exclusive connections.</p>
           </div>
-          <button [style.border]="'1px solid ' + theme.colors().primary"
-                  [style.color]="theme.colors().primary"
-                  style="background: transparent; padding: 14px 32px; border-radius: 0px; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s;">
-             + New Entry
-          </button>
+          <div style="display: flex; gap: 16px;">
+            <button (click)="simulateNote()"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.color]="theme.colors().text"
+                    style="background: transparent; padding: 14px 24px; border-radius: 0px; font-weight: 700; cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">
+               Spill Tea
+            </button>
+            <button (click)="openNewEntryModal()" [style.border]="'1px solid ' + theme.colors().primary"
+                    [style.color]="theme.colors().primary"
+                    style="background: transparent; padding: 14px 32px; border-radius: 0px; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s;">
+               + New Entry
+            </button>
+          </div>
         </div>
 
         <!-- Filter Chips -->
@@ -72,18 +145,24 @@ import { ThemeService } from '../../core/services/theme.service';
                  style="border-radius: 0px; overflow: hidden; cursor: pointer; transition: all 0.4s; position: relative;">
 
               <!-- Shimmer Effect on Card (Light Mode) -->
-              <div *ngIf="theme.mode() === 'light'" style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, transparent, #fbbf24, transparent); opacity: 0.3;"></div>
+              @if (theme.mode() === 'light') {
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, transparent, #fbbf24, transparent); opacity: 0.3;"></div>
+              }
 
               <!-- Image Area -->
               <div style="height: 240px; position: relative; overflow: hidden;">
                 <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
                      style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease;">
                 <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4));"></div>
-                <div style="position: absolute; top: 20px; right: 20px;">
+                <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                    <span [style.background-color]="'rgba(255,255,255,0.9)'"
                          [style.color]="theme.colors().primary"
                          style="padding: 6px 14px; border-radius: 0px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">
                      {{ crush.status }}
+                   </span>
+                   <span *ngIf="crush.redFlags > 0"
+                         style="background-color: #ef4444; color: white; padding: 4px 8px; font-size: 8px; font-weight: 900; text-transform: uppercase;">
+                     {{ crush.redFlags }} Flags
                    </span>
                 </div>
               </div>
@@ -117,4 +196,65 @@ export class DashboardComponent {
   public privacy = inject(PrivacyService);
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
+
+  isNotePassing = signal(false);
+  showNewEntryModal = signal(false);
+  statuses = CrushStatus;
+
+  newCrush = {
+    nickname: '',
+    fullName: '',
+    status: CrushStatus.Crush,
+    rating: 3,
+    bio: '',
+    visibility: [] as string[]
+  };
+
+  simulateNote() {
+    this.isNotePassing.set(true);
+  }
+
+  closeNote() {
+    this.isNotePassing.set(false);
+  }
+
+  openNewEntryModal() {
+    this.showNewEntryModal.set(true);
+  }
+
+  closeModal() {
+    this.showNewEntryModal.set(false);
+    this.resetForm();
+  }
+
+  saveCrush() {
+    if (!this.newCrush.nickname) {
+      alert("Please enter a nickname at least!");
+      return;
+    }
+
+    this.privacy.addCrush({
+      nickname: this.newCrush.nickname,
+      fullName: this.newCrush.fullName,
+      status: this.newCrush.status,
+      rating: this.newCrush.rating,
+      bio: this.newCrush.bio,
+      visibility: [],
+      avatarUrl: `https://i.pravatar.cc/150?u=${this.newCrush.nickname}` // Mock avatar
+    });
+
+    this.closeModal();
+    alert("Profile Secured in the Rolodex.");
+  }
+
+  resetForm() {
+    this.newCrush = {
+      nickname: '',
+      fullName: '',
+      status: CrushStatus.Crush,
+      rating: 3,
+      bio: '',
+      visibility: []
+    };
+  }
 }
