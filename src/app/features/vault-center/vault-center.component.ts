@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { VaultService, VaultFile } from '../../core/services/vault.service';
-import { PrivacyService } from '../../core/services/privacy.service';
+import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { Entry } from '../../core/models/entry.model';
@@ -97,7 +97,7 @@ import { Entry } from '../../core/models/entry.model';
 })
 export class VaultCenterComponent {
   public vault = inject(VaultService);
-  public privacy = inject(PrivacyService);
+  public dataService = inject(DataService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
 
@@ -105,12 +105,12 @@ export class VaultCenterComponent {
   newJournalEntry = '';
 
   journalEntries = computed(() =>
-    this.privacy.getEntriesForCrush('private_vault')() // Using a special ID for global journal
+    this.dataService.getEntriesForCrush('private_vault')() // Using a special ID for global journal
   );
 
   saveJournal() {
     if (!this.newJournalEntry.trim()) return;
-    this.privacy.addEntry({
+    this.dataService.addEntry({
       crushId: 'private_vault',
       type: 'PrivateJournal',
       content: this.newJournalEntry,

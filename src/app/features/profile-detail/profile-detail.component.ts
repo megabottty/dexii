@@ -1,7 +1,7 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { PrivacyService } from '../../core/services/privacy.service';
+import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
@@ -196,7 +196,7 @@ import { Entry } from '../../core/models/entry.model';
 })
 export class ProfileDetailComponent {
   private route = inject(ActivatedRoute);
-  private privacy = inject(PrivacyService);
+  private dataService = inject(DataService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
@@ -208,13 +208,13 @@ export class ProfileDetailComponent {
   crush = computed(() => {
     const id = this.crushId();
     if (!id) return null;
-    return this.privacy.visibleCrushes().find(c => c.id === id) || null;
+    return this.dataService.visibleCrushes().find(c => c.id === id) || null;
   });
 
   entries = computed(() => {
     const id = this.crushId();
     if (!id) return [];
-    return this.privacy.getEntriesForCrush(id)();
+    return this.dataService.getEntriesForCrush(id)();
   });
 
   constructor() {
@@ -222,8 +222,8 @@ export class ProfileDetailComponent {
   }
 
   logRedFlag(id: string) {
-    this.privacy.incrementRedFlag(id);
-    this.privacy.addEntry({
+    this.dataService.incrementRedFlag(id);
+    this.dataService.addEntry({
       crushId: id,
       type: 'RedFlag',
       content: 'A new cautionary flag was raised.',
@@ -237,8 +237,8 @@ export class ProfileDetailComponent {
     const score = prompt("Rate the current vibe (1-10):", "5");
     if (score && !isNaN(Number(score))) {
       const num = Math.max(1, Math.min(10, Number(score)));
-      this.privacy.updateVibe(id, num);
-      this.privacy.addEntry({
+      this.dataService.updateVibe(id, num);
+      this.dataService.addEntry({
         crushId: id,
         type: 'Note',
         content: `New Vibe Analysis Logged: ${num}/10`,
@@ -253,7 +253,7 @@ export class ProfileDetailComponent {
     const tea = prompt("What's the tea?");
     if (tea) {
       const isBurn = confirm("Should this note disappear after reading?");
-      this.privacy.addEntry({
+      this.dataService.addEntry({
         crushId: id,
         type: 'Note',
         content: tea,
@@ -268,7 +268,7 @@ export class ProfileDetailComponent {
     this.isSafetyActive.update(v => !v);
     const status = this.isSafetyActive() ? 'Sent' : 'Safe';
 
-    this.privacy.addEntry({
+    this.dataService.addEntry({
       crushId: id,
       type: 'SafetyCheck',
       content: this.isSafetyActive() ? 'Safety Check-In Started.' : 'Safety Check-In Resolved: I am safe.',
@@ -287,7 +287,7 @@ export class ProfileDetailComponent {
 
   toggleArchive(crush: CrushProfile) {
     const newStatus = crush.status === CrushStatus.Archived ? CrushStatus.Crush : CrushStatus.Archived;
-    this.privacy.setCrushes(this.privacy.visibleCrushes().map(c =>
+    this.dataService.setCrushes(this.dataService.visibleCrushes().map(c =>
       c.id === crush.id ? { ...c, status: newStatus } : c
     ));
     alert(newStatus === CrushStatus.Archived ? "Profile moved to Archive." : "Profile restored to active.");

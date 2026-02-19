@@ -12,19 +12,19 @@ import { ThemeService } from './core/services/theme.service';
     </div>
   `
 })
-export class App implements OnInit {
+export class AppComponent implements OnInit {
   protected security = inject(SecurityService);
   protected theme = inject(ThemeService);
   private router = inject(Router);
   protected readonly title = signal('dexii');
 
   ngOnInit() {
-    console.log('App initialized, isLocked:', this.security.isLocked());
+    console.log('AppComponent initialized, isLocked:', this.security.isLocked());
     if (this.security.isLocked()) {
-      console.log('App is locked, navigating to /lock');
+      console.log('AppComponent is locked, navigating to /lock');
       this.router.navigate(['/lock']);
     } else {
-      console.log('App is not locked');
+      console.log('AppComponent is not locked');
     }
   }
 }

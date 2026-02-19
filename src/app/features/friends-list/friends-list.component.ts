@@ -2,7 +2,7 @@ import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SlicePipe } from '@angular/common';
-import { PrivacyService } from '../../core/services/privacy.service';
+import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { User, SubscriptionTier } from '../../core/models/user.model';
@@ -140,12 +140,12 @@ import { User, SubscriptionTier } from '../../core/models/user.model';
 export class FriendsListComponent {
   public theme = inject(ThemeService);
   public subscription = inject(SubscriptionService);
-  private privacy = inject(PrivacyService);
+  private dataService = inject(DataService);
 
   goldTier = SubscriptionTier.Gold;
   selectedFriend = signal<User | null>(null);
 
-  allCrushes = this.privacy.getAllCrushes();
+  allCrushes = this.dataService.getAllCrushes();
 
   friends = signal<User[]>([
     {
@@ -217,18 +217,18 @@ export class FriendsListComponent {
   toggleCrushSharing(crushId: string) {
     const friend = this.selectedFriend();
     if (friend) {
-      this.privacy.toggleCrushVisibility(crushId, friend.id);
+      this.dataService.toggleCrushVisibility(crushId, friend.id);
     }
   }
 
   toggleEntrySharing(entryId: string) {
     const friend = this.selectedFriend();
     if (friend) {
-      this.privacy.toggleEntryVisibility(entryId, friend.id);
+      this.dataService.toggleEntryVisibility(entryId, friend.id);
     }
   }
 
   getEntries(crushId: string) {
-    return this.privacy.getEntriesForCrush(crushId)();
+    return this.dataService.getEntriesForCrush(crushId)();
   }
 }

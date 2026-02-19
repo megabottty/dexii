@@ -5,7 +5,7 @@ import { Entry } from '../models/entry.model';
 @Injectable({
   providedIn: 'root'
 })
-export class PrivacyService {
+export class DataService {
   private _allCrushes = signal<CrushProfile[]>([
     {
       id: '1',

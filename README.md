@@ -1,59 +1,64 @@
-# Dexii
+# Dexii: Private Dating CRM & Sharing App
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.2.
+Dexii is a "digital little black book" designed for high-security, high-glamour tracking of your dating life. It prioritizes privacy and selective sharing between trusted friends.
 
-## Development server
+## 🚀 Key Features
 
-To start a local development server, run:
+- **🔐 Secure Vault**: Protected by a 4-digit PIN with stealth mode themes.
+- **🗂 The Rolodex**: Manage connections with detailed profiles, attraction ratings, and status tracking.
+- **👥 Selective Sharing**: One-to-one sharing of "Tea" (Notes) and profiles with your inner circle.
+- **💬 Secure Messaging**: End-to-end encrypted style chat with self-destructing message support.
+- **💖 Safety First**: Built-in safety check-ins and red flag tracking for dates.
+- **🔞 Photo Vault**: Restricted area for intimate content with unblur-on-hover protection.
 
-```bash
-ng serve
+## 🛠 Tech Stack
+
+- **Frontend**: Angular 21 (Signals, Standalone Components, Tailwind CSS)
+- **Backend**: Node.js, Express, MongoDB, Socket.io
+- **Security**: PIN-based local locking, JWT-ready architecture.
+
+## 📁 Project Structure
+
+```text
+├── src/app/
+│   ├── core/           # Singleton services, models, and guards
+│   │   ├── services/   # DataService, SecurityService, ThemeService, etc.
+│   │   └── models/     # TypeScript interfaces for Crushes, Users, Entries
+│   └── features/       # Functional modules (Dashboard, Profile, Vault, etc.)
+├── server/             # Express.js backend API
+├── docs/               # Project documentation and history
+└── public/             # Static assets
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## 🚦 Getting Started
 
-## Code scaffolding
+### Prerequisites
+- Node.js (v18+)
+- Angular CLI
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Installation
 
-```bash
-ng generate component component-name
-```
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   cd server && npm install
+   ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Running the App
 
-```bash
-ng generate --help
-```
+1. **Start the Backend**:
+   ```bash
+   cd server
+   npm run dev
+   ```
 
-## Building
+2. **Start the Frontend**:
+   ```bash
+   npm start
+   ```
 
-To build the project run:
+3. Navigate to `http://localhost:4200`. Default PIN: `1111`.
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## 📜 License
+Private/Internal Use Only.

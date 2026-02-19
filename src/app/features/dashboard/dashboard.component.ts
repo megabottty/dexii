@@ -2,7 +2,7 @@ import { Component, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { PrivacyService } from '../../core/services/privacy.service';
+import { DataService } from '../../core/services/data.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { CrushStatus } from '../../core/models/crush-profile.model';
@@ -249,7 +249,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px; flex-wrap: wrap; gap: 32px;">
           <div style="max-width: 600px;">
             <h2 style="font-size: 48px; font-weight: 200; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">The Rolodex</h2>
-            <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: 14px; letter-spacing: 1px; font-style: italic;">Curating {{ privacy.visibleCrushes().length }} exclusive connections.</p>
+            <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: 14px; letter-spacing: 1px; font-style: italic;">Curating {{ dataService.visibleCrushes().length }} exclusive connections.</p>
           </div>
           <div style="display: flex; gap: 16px;">
             <button (click)="simulateNote()"
@@ -348,7 +348,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
   `
 })
 export class DashboardComponent implements OnInit {
-  public privacy = inject(PrivacyService);
+  public dataService = inject(DataService);
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
 
@@ -367,21 +367,21 @@ export class DashboardComponent implements OnInit {
   selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
 
   filteredCrushes = computed(() => {
-    let crushes = this.privacy.visibleCrushes();
+    let crushes = this.dataService.visibleCrushes();
 
     if (this.showArchived()) {
-      return crushes.filter(c => c.status === CrushStatus.Archived);
+      return crushes.filter((c: any) => c.status === CrushStatus.Archived);
     }
 
     // Filter by Archive first
-    crushes = crushes.filter(c => c.status !== CrushStatus.Archived);
+    crushes = crushes.filter((c: any) => c.status !== CrushStatus.Archived);
 
     // Apply category filters
     const filter = this.selectedFilter();
     if (filter === 'Dating') {
-      return crushes.filter(c => c.status === CrushStatus.Dating || c.status === CrushStatus.Exclusive);
+      return crushes.filter((c: any) => c.status === CrushStatus.Dating || c.status === CrushStatus.Exclusive);
     } else if (filter === 'Prospects') {
-      return crushes.filter(c => c.status === CrushStatus.Crush);
+      return crushes.filter((c: any) => c.status === CrushStatus.Crush);
     }
 
     return crushes;
@@ -446,7 +446,7 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    this.privacy.addCrush({
+    this.dataService.addCrush({
       nickname: this.newCrush.nickname,
       fullName: this.newCrush.fullName,
       status: this.newCrush.status,
