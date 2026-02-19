@@ -1,41 +1,42 @@
-# Dexii: Private Dating CRM & Sharing App
+## Dexii: Private Dating CRM & Sharing App
 
 Dexii is designed for high-security, high-glamour tracking of your dating life. It is a "digital little black book" built for privacy and sharing between trusted friends.
 
-## 🔐 Core Security & Lock
+## 🔐 Core Security & Vault
 - **Accessing the App**: Enter your 4-digit PIN on the **Dexii Vault** screen. (Default test PIN: `1111`).
-- **Manual Lock**: Tap the **Vault** button in the top navigation to instantly secure the app.
-- **Stealth Mode**: Toggle between **Onyx** (Dark) and **Pearl** (Glamour Mauve) themes to match your environment.
+- **Manual Lock**: Tap the **Lock** button in the top navigation to instantly secure the app and return to the PIN screen.
+- **Stealth Mode**: Toggle between **Onyx** (Dark) and **Pearl** (Glamour Mauve) themes to change the app's visual profile.
+- **18+ Photo Vault**: Secure area for intimate content in the Vault Center. Requires extra age verification. Content is blurred by default and requires interaction to reveal.
+- **Private Journal**: A strictly private section in the Vault Center for thoughts that are never shared, even with friends.
+- **PIN Recovery/Setup**: First-time users are prompted to set a 4-digit PIN stored locally.
 
 ## 🗂 The Rolodex (Dashboard)
-- **Crush Cards**: View your active prospects at a glance.
-- **New Entry**: Tap the **+ New Entry** button to open the glamorous creation modal. You can set their nickname, status, and initial attraction rating.
-- **Spill Tea**: Tap the **Spill Tea** button to simulate receiving a private digital note from a friend.
-- **Vibe Meter**: Each card shows an interaction rating (stars).
-- **Status Badges**: Quickly see who is a "Crush", who you are "Dating", and who is "Archived".
+- **Crush Cards**: View your active prospects. Includes "Nickname", "Attraction Rating" (1-5 Stars), and "Last Interaction" date.
+- **New Entry**: Create new profiles with custom avatars (selected from a mock gallery), status, and bios.
+- **Archive**: Move past crushes to the archive to keep your dashboard clean. Toggle between Active and Archived views on the main dashboard.
+- **Vibe Meter**: Visual indicator of the emotional trajectory (1-10) based on entry history.
+- **"Spill the Tea" Simulation**: Quick-action button on the dashboard that simulates receiving a private, secret note from a friend.
 
-## 💖 Profile Details & Features
-Tap any card in your Rolodex to see the full "Tea":
+## 👥 Friends & Sharing
+- **Inner Circle**: Manage your friends list. Includes categories like "Close Friends", "Casual", and "Work".
+- **One-to-One Sharing**: All sharing is strictly one-to-one. No groups or public profiles.
+- **Granular Controls**: Decide which friend can see which crush profile or specific "Tea" (Notes). (Simulated UI).
+- **In-App Messaging**: Secure, end-to-end encrypted style chat between friends.
+- **Self-Destructing Messages**: Messages containing the word "secret" are automatically flagged for self-destruction/deletion.
+- **Friend Limits**: Free tier is limited to 5 friends. Premium/Gold tiers allow unlimited friends.
 
-### 1. The Tea-Meter (Vibe History)
-View the **Vibe Analysis** in the sidebar. This tracks the emotional trajectory of your interactions (Up, Down, or Neutral).
+## 💖 Safety & Moderation
+- **Safety Check-In**: High-priority feature for dates. Notifies trusted contacts and tracks status (`Draft` -> `Sent` -> `Safe`).
+- **Red Flag Tracking**: Log cautionary flags for any crush profile. If flags exceed a threshold, the UI reflects a "Vibe Shift".
+- **AI Moderation**: In-app messaging and content fields are monitored by automated safety checks to prevent abuse.
+- **Emergency Mode**: Quick toggle in the profile detail to escalate a safety check.
 
-### 2. Red Flag Tracking
-The **Mark Cautionary Flag** button lets you log concerns. If a profile accumulates too many red flags, the UI will reflect the "Vibe Shift."
-
-### 3. Safety Check-In
-When logging a Date entry, you can enable a **Safety Check**. This simulates notifying a trusted contact of your location and status during the meeting.
-
-### 4. Burn-After-Reading Notes
-Add sensitive details that are meant to be seen once. (Simulated via the `isBurnAfterReading` flag in entries).
-
-### 5. Note Passing (Direct Sharing)
-Simulated one-to-one sharing. You control the **Visibility** of each crush profile, deciding which trusted friends can see the "Tea."
-
-## 🌸 How to Test the Glamour Themes
-- Use the **Pearl/Onyx** toggle in the top bar.
-- **Pearl Mode** uses a luxurious Mauve and Gold palette with serif typography.
-- **Onyx Mode** provides a high-security, deep navy aesthetic.
+## 💎 Monetization (Freemium)
+- **Subscription Tiers**:
+  - **Free**: 5 friends, basic features.
+  - **Premium ($5/mo)**: Unlimited friends, advanced safety features.
+  - **Gold ($15/mo)**: Enhanced vault storage, priority support, and all premium features.
+- **Feature Gating**: Limits on friends and advanced vault sections for the Free tier.
 
 ---
-*Note: All data currently resides in a secure local signal state for demonstration purposes.*
+*Note: This is a prototype. Data currently resides in a local signal state for demonstration purposes. PINs are stored in LocalStorage for testing.*

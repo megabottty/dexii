@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed } from '@angular/core';
+import { Component, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -26,7 +26,18 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
 
             <h3 style="font-size: 32px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 32px; text-align: center;">New Connection</h3>
 
-            <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div style="display: flex; flex-direction: column; gap: 24px; max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+              <div>
+                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Avatar (Optional)</label>
+                <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                   @for (avatar of mockAvatars; track avatar) {
+                     <img [src]="avatar" (click)="newCrush.avatarUrl = avatar"
+                          [style.border]="newCrush.avatarUrl === avatar ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                          style="width: 50px; height: 50px; cursor: pointer; border-radius: 50%; object-fit: cover;">
+                   }
+                </div>
+              </div>
+
               <div>
                 <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Nickname</label>
                 <input [(ngModel)]="newCrush.nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none; font-family: 'Times New Roman', serif;">
@@ -46,6 +57,122 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                 </select>
               </div>
 
+              <!-- About the Boy Sections -->
+              <div style="border-top: 1px solid {{theme.colors().border}}; padding-top: 24px;">
+                <h4 [style.color]="theme.colors().primary" style="font-size: 14px; text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 20px; font-style: italic;">About the Boy</h4>
+
+                <div style="margin-bottom: 24px;">
+                  <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; text-align: center;">Hair</label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
+                      <div (click)="toggleSelection(newCrush.hair, h)"
+                           [style.border]="newCrush.hair.includes(h) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                           [style.background-color]="newCrush.hair.includes(h) ? theme.colors().primary + '10' : 'transparent'"
+                           style="display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                        <div [style.border]="'2px solid ' + (newCrush.hair.includes(h) ? theme.colors().primary : theme.colors().textSecondary)"
+                             [style.background-color]="newCrush.hair.includes(h) ? theme.colors().primary : 'transparent'"
+                             style="width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                           @if (newCrush.hair.includes(h)) {
+                             <span style="color: white; font-size: 12px;">✓</span>
+                           }
+                        </div>
+                        <span style="font-size: 13px;">{{h}}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                  <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; text-align: center;">Eyes</label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
+                      <div (click)="toggleSelection(newCrush.eyes, e)"
+                           [style.border]="newCrush.eyes.includes(e) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                           [style.background-color]="newCrush.eyes.includes(e) ? theme.colors().primary + '10' : 'transparent'"
+                           style="display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                        <div [style.border]="'2px solid ' + (newCrush.eyes.includes(e) ? theme.colors().primary : theme.colors().textSecondary)"
+                             [style.background-color]="newCrush.eyes.includes(e) ? theme.colors().primary : 'transparent'"
+                             style="width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                           @if (newCrush.eyes.includes(e)) {
+                             <span style="color: white; font-size: 12px;">✓</span>
+                           }
+                        </div>
+                        <span style="font-size: 13px;">{{e}}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                  <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; text-align: center;">Build</label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
+                      <div (click)="toggleSelection(newCrush.build, b)"
+                           [style.border]="newCrush.build.includes(b) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                           [style.background-color]="newCrush.build.includes(b) ? theme.colors().primary + '10' : 'transparent'"
+                           style="display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                        <div [style.border]="'2px solid ' + (newCrush.build.includes(b) ? theme.colors().primary : theme.colors().textSecondary)"
+                             [style.background-color]="newCrush.build.includes(b) ? theme.colors().primary : 'transparent'"
+                             style="width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                           @if (newCrush.build.includes(b)) {
+                             <span style="color: white; font-size: 12px;">✓</span>
+                           }
+                        </div>
+                        <span style="font-size: 13px;">{{b}}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Social Handles -->
+              <div style="border-top: 1px solid {{theme.colors().border}}; padding-top: 24px;">
+                <h4 [style.color]="theme.colors().primary" style="font-size: 14px; text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 20px; font-style: italic;">Where I can find them</h4>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+                    <span style="font-size: 20px; position: absolute; left: 12px;">👻</span>
+                    <input placeholder="Snapchat Username" [(ngModel)]="newCrush.social.snapchat" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+                    <span style="font-size: 20px; position: absolute; left: 12px;">💬</span>
+                    <input placeholder="WhatsApp Number" [(ngModel)]="newCrush.social.whatsapp" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+                    <span style="font-size: 20px; position: absolute; left: 12px;">🐦</span>
+                    <input placeholder="Twitter @username" [(ngModel)]="newCrush.social.twitter" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+                    <span style="font-size: 20px; position: absolute; left: 12px;">📘</span>
+                    <input placeholder="Facebook.com/" [(ngModel)]="newCrush.social.facebook" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+                    <span style="font-size: 20px; position: absolute; left: 12px;">📸</span>
+                    <input placeholder="Instagram @username" [(ngModel)]="newCrush.social.instagram" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Relationship Status -->
+              <div style="border-top: 1px solid {{theme.colors().border}}; padding-top: 24px;">
+                <h4 [style.color]="theme.colors().primary" style="font-size: 14px; text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 20px; font-style: italic;">Relationship Status</h4>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  @for (s of ["He doesn't know I exist", "Just friends", "I think he likes me", "Getting serious", "We are a couple", "Friends With Benefits", "We are engaged", "Other"]; track s) {
+                    <div (click)="newCrush.relationshipStatus = s"
+                         [style.border]="newCrush.relationshipStatus === s ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                         [style.background-color]="newCrush.relationshipStatus === s ? theme.colors().primary + '10' : 'transparent'"
+                         style="display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                      <div [style.border]="'2px solid ' + (newCrush.relationshipStatus === s ? theme.colors().primary : theme.colors().textSecondary)"
+                           style="width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                         @if (newCrush.relationshipStatus === s) {
+                           <div [style.background-color]="theme.colors().primary" style="width: 10px; height: 10px; border-radius: 50%;"></div>
+                         }
+                      </div>
+                      <span style="font-size: 13px;">{{s}}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
               <div>
                 <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Initial Vibe (1-5 Stars)</label>
                 <div style="display: flex; gap: 8px; justify-content: center; font-size: 24px;">
@@ -54,11 +181,11 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                   }
                 </div>
               </div>
-
-              <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" style="color: white; border: none; padding: 16px; border-radius: 0px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; margin-top: 20px;">
-                Secure Entry
-              </button>
             </div>
+
+            <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" style="width: 100%; color: white; border: none; padding: 16px; border-radius: 0px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; margin-top: 20px;">
+              Save Connection
+            </button>
           </div>
         </div>
       }
@@ -70,8 +197,8 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                 [style.background-color]="theme.colors().bgSecondary"
                 [style.border]="'2px solid ' + theme.colors().primary"
                 style="padding: 40px; max-width: 400px; transform: rotate(-2deg); shadow: 0 20px 50px rgba(0,0,0,0.5); cursor: pointer;">
-              <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; display: block; margin-bottom: 20px;">Private Note Received</span>
-              <p style="font-size: 18px; line-height: 1.6; font-style: italic;">"Wait until you hear what happened last night... tap to close."</p>
+             <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; display: block; margin-bottom: 20px;">Private Note Received</span>
+             <p style="font-size: 18px; line-height: 1.6; font-style: italic;">"Wait until you hear what happened last night... tap to close."</p>
            </div>
         </div>
       }
@@ -92,6 +219,11 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
         </div>
 
         <div style="display: flex; gap: 20px;">
+          <a routerLink="/friends"
+             [style.color]="theme.colors().text"
+             style="text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; align-self: center;">
+            Friends
+          </a>
           <button (click)="theme.toggleTheme()"
                   [style.background-color]="'transparent'"
                   [style.color]="theme.colors().text"
@@ -102,8 +234,13 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
           <button (click)="security.lockApp()"
                   [style.background-color]="theme.colors().primary"
                   style="color: white; border: none; padding: 10px 24px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 4px 15px rgba(219, 39, 119, 0.3);">
-            Vault
+            Lock
           </button>
+          <a routerLink="/vault"
+             [style.background-color]="theme.colors().accent"
+             style="color: white; text-decoration: none; padding: 10px 24px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 4px 15px rgba(219, 39, 119, 0.3);">
+            Vault
+          </a>
         </div>
       </nav>
 
@@ -131,14 +268,32 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
 
         <!-- Filter Chips -->
         <div style="display: flex; gap: 20px; margin-bottom: 48px; overflow-x: auto; padding-bottom: 12px;">
-          <button [style.color]="theme.colors().primary" style="background: none; border: none; border-bottom: 2px solid; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">All</button>
-          <button [style.color]="theme.colors().textSecondary" style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6;">Dating</button>
-          <button [style.color]="theme.colors().textSecondary" style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6;">Prospects</button>
+          <button (click)="selectedFilter.set('All')"
+                  [style.color]="selectedFilter() === 'All' ? theme.colors().primary : theme.colors().textSecondary"
+                  [style.border-bottom]="selectedFilter() === 'All' ? '2px solid ' + theme.colors().primary : 'none'"
+                  style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">All</button>
+          <button (click)="selectedFilter.set('Dating')"
+                  [style.color]="selectedFilter() === 'Dating' ? theme.colors().primary : theme.colors().textSecondary"
+                  [style.border-bottom]="selectedFilter() === 'Dating' ? '2px solid ' + theme.colors().primary : 'none'"
+                  style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 1;">Dating</button>
+          <button (click)="selectedFilter.set('Prospects')"
+                  [style.color]="selectedFilter() === 'Prospects' ? theme.colors().primary : theme.colors().textSecondary"
+                  [style.border-bottom]="selectedFilter() === 'Prospects' ? '2px solid ' + theme.colors().primary : 'none'"
+                  style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 1;">Prospects</button>
         </div>
 
         <!-- Grid -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+             <h2 style="font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 6px; color: {{ theme.colors().primary }}">The Rolodex</h2>
+             <button (click)="toggleArchived()"
+                     [style.color]="theme.colors().textSecondary"
+                     style="background: none; border: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
+               {{ showArchived() ? 'View Active' : 'View Archive' }}
+             </button>
+          </div>
+
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 48px;">
-          @for (crush of privacy.visibleCrushes(); track crush.id) {
+          @for (crush of filteredCrushes(); track crush.id) {
             <div [routerLink]="['/profile', crush.id]"
                  [style.background-color]="theme.colors().cardBg"
                  [style.border]="'1px solid ' + theme.colors().border"
@@ -192,7 +347,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
     </div>
   `
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   public privacy = inject(PrivacyService);
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
@@ -201,14 +356,63 @@ export class DashboardComponent {
   showNewEntryModal = signal(false);
   statuses = CrushStatus;
 
+  mockAvatars = [
+    'https://i.pravatar.cc/150?u=1',
+    'https://i.pravatar.cc/150?u=2',
+    'https://i.pravatar.cc/150?u=3',
+    'https://i.pravatar.cc/150?u=4'
+  ];
+
+  showArchived = signal(false);
+  selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
+
+  filteredCrushes = computed(() => {
+    let crushes = this.privacy.visibleCrushes();
+
+    if (this.showArchived()) {
+      return crushes.filter(c => c.status === CrushStatus.Archived);
+    }
+
+    // Filter by Archive first
+    crushes = crushes.filter(c => c.status !== CrushStatus.Archived);
+
+    // Apply category filters
+    const filter = this.selectedFilter();
+    if (filter === 'Dating') {
+      return crushes.filter(c => c.status === CrushStatus.Dating || c.status === CrushStatus.Exclusive);
+    } else if (filter === 'Prospects') {
+      return crushes.filter(c => c.status === CrushStatus.Crush);
+    }
+
+    return crushes;
+  });
+
   newCrush = {
     nickname: '',
     fullName: '',
     status: CrushStatus.Crush,
     rating: 3,
     bio: '',
-    visibility: [] as string[]
+    visibility: [] as string[],
+    avatarUrl: '',
+    hair: [] as string[],
+    eyes: [] as string[],
+    build: [] as string[],
+    social: {
+      snapchat: '',
+      whatsapp: '',
+      twitter: '',
+      facebook: '',
+      instagram: ''
+    },
+    relationshipStatus: ''
   };
+
+  ngOnInit() {}
+
+  toggleArchived() {
+    this.showArchived.update(v => !v);
+  }
 
   simulateNote() {
     this.isNotePassing.set(true);
@@ -227,6 +431,15 @@ export class DashboardComponent {
     this.resetForm();
   }
 
+  toggleSelection(list: string[], item: string) {
+    const index = list.indexOf(item);
+    if (index > -1) {
+      list.splice(index, 1);
+    } else {
+      list.push(item);
+    }
+  }
+
   saveCrush() {
     if (!this.newCrush.nickname) {
       alert("Please enter a nickname at least!");
@@ -240,7 +453,12 @@ export class DashboardComponent {
       rating: this.newCrush.rating,
       bio: this.newCrush.bio,
       visibility: [],
-      avatarUrl: `https://i.pravatar.cc/150?u=${this.newCrush.nickname}` // Mock avatar
+      avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar
+      hair: this.newCrush.hair,
+      eyes: this.newCrush.eyes,
+      build: this.newCrush.build,
+      social: { ...this.newCrush.social },
+      relationshipStatus: this.newCrush.relationshipStatus
     });
 
     this.closeModal();
@@ -254,7 +472,19 @@ export class DashboardComponent {
       status: CrushStatus.Crush,
       rating: 3,
       bio: '',
-      visibility: []
+      visibility: [],
+      avatarUrl: '',
+      hair: [],
+      eyes: [],
+      build: [],
+      social: {
+        snapchat: '',
+        whatsapp: '',
+        twitter: '',
+        facebook: '',
+        instagram: ''
+      },
+      relationshipStatus: ''
     };
   }
 }

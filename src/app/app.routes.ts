@@ -22,6 +22,21 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile-detail/profile-detail.component').then(m => m.ProfileDetailComponent)
   },
   {
+    path: 'friends',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/friends-list/friends-list.component').then(m => m.FriendsListComponent)
+  },
+  {
+    path: 'chat',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/messaging/messaging.component').then(m => m.MessagingComponent)
+  },
+  {
+    path: 'vault',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/vault-center/vault-center.component').then(m => m.VaultCenterComponent)
+  },
+  {
     path: '**',
     redirectTo: 'dashboard'
   }

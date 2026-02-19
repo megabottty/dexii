@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { PrivacyService } from '../../core/services/privacy.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { CrushProfile } from '../../core/models/crush-profile.model';
+import { SecurityService } from '../../core/services/security.service';
+import { SubscriptionService } from '../../core/services/subscription.service';
+import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { Entry } from '../../core/models/entry.model';
 
 @Component({
   selector: 'app-profile-detail',
@@ -48,24 +51,80 @@ import { CrushProfile } from '../../core/models/crush-profile.model';
                         style="color: white; border: none; padding: 14px 40px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 10px 20px rgba(219,39,119,0.2);">
                   Add Note
                 </button>
-                <button (click)="toggleSafety()" [style.background-color]="'transparent'"
-                        [style.color]="theme.colors().text"
-                        [style.border]="'1px solid ' + theme.colors().text"
+                <button (click)="toggleSafety(c.id)" [style.background-color]="'transparent'"
+                        [style.color]="isSafetyActive() ? '#ef4444' : theme.colors().text"
+                        [style.border]="'1px solid ' + (isSafetyActive() ? '#ef4444' : theme.colors().text)"
                         style="padding: 14px 40px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">
-                  {{ isSafetyActive() ? 'Safety On' : 'Safety Check' }}
+                  {{ isSafetyActive() ? 'Emergency Mode' : 'Safety Check' }}
+                </button>
+                <button (click)="toggleArchive(c)" [style.background-color]="'transparent'"
+                        [style.color]="theme.colors().textSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        style="padding: 14px 20px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 10px;">
+                  {{ c.status === statuses.Archived ? 'Unarchive' : 'Archive' }}
                 </button>
               </div>
             </div>
           </header>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 80px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 80px;">
             <!-- Left -->
             <div>
               <section style="margin-bottom: 60px;">
                 <h3 [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 24px; border-bottom: 1px solid; padding-bottom: 8px;">The Narrative</h3>
-                <p [style.color]="theme.colors().text" style="font-size: 20px; line-height: 1.8; margin: 0; font-style: italic; font-weight: 200;">
+                <p [style.color]="theme.colors().text" style="font-size: 20px; line-height: 1.8; margin: 0 0 32px 0; font-style: italic; font-weight: 200;">
                   "{{ c.bio || 'A mysterious entry in the personal rolodex, awaiting further interaction and documentation.' }}"
                 </p>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 32px; border-top: 1px solid {{theme.colors().border}}; padding-top: 32px;">
+                  @if (c.hair && c.hair.length > 0) {
+                    <div>
+                      <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">Hair</span>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        @for (h of c.hair; track h) {
+                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 4px 12px; font-size: 12px; border-radius: 4px;">{{h}}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (c.eyes && c.eyes.length > 0) {
+                    <div>
+                      <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">Eyes</span>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        @for (e of c.eyes; track e) {
+                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 4px 12px; font-size: 12px; border-radius: 4px;">{{e}}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (c.build && c.build.length > 0) {
+                    <div>
+                      <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">Build</span>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        @for (b of c.build; track b) {
+                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 4px 12px; font-size: 12px; border-radius: 4px;">{{b}}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                @if (c.social && (c.social.snapchat || c.social.whatsapp || c.social.twitter || c.social.facebook || c.social.instagram)) {
+                  <div style="margin-top: 32px; display: flex; gap: 20px; flex-wrap: wrap;">
+                    @if (c.social.snapchat) { <div [style.color]="theme.colors().text" style="font-size: 13px;">👻 {{c.social.snapchat}}</div> }
+                    @if (c.social.whatsapp) { <div [style.color]="theme.colors().text" style="font-size: 13px;">💬 {{c.social.whatsapp}}</div> }
+                    @if (c.social.twitter) { <div [style.color]="theme.colors().text" style="font-size: 13px;">🐦 {{c.social.twitter}}</div> }
+                    @if (c.social.facebook) { <div [style.color]="theme.colors().text" style="font-size: 13px;">📘 {{c.social.facebook}}</div> }
+                    @if (c.social.instagram) { <div [style.color]="theme.colors().text" style="font-size: 13px;">📸 {{c.social.instagram}}</div> }
+                  </div>
+                }
+
+                @if (c.relationshipStatus) {
+                  <div style="margin-top: 32px; padding: 16px; border: 1px dashed {{theme.colors().primary}}; display: inline-block;">
+                    <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Status with me</span>
+                    <span style="font-size: 15px; font-weight: 400;">{{c.relationshipStatus}}</span>
+                  </div>
+                }
               </section>
 
               <section>
@@ -91,13 +150,19 @@ import { CrushProfile } from '../../core/models/crush-profile.model';
                  <h4 [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 32px; text-align: center;">Vibe Analysis</h4>
 
                  <!-- Tea-Meter Visual -->
-                 <div style="display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 60px; margin-bottom: 32px;">
+                 <div style="display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 60px; margin-bottom: 24px;">
                     @for (vibe of c.vibeHistory; track $index) {
                       <div [style.height]="(vibe * 10) + '%'"
                            [style.background-color]="theme.colors().primary"
-                           [style.opacity]="0.3 + ($index * 0.15)"
+                           [style.opacity]="0.3 + ($index * (0.7 / c.vibeHistory.length))"
                            style="width: 12px; border-radius: 2px; transition: all 1s ease;"></div>
                     }
+                 </div>
+
+                 <div style="text-align: center; margin-bottom: 32px;">
+                   <button (click)="logVibe(c.id)" style="background: none; border: none; color: {{theme.colors().primary}}; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: underline;">
+                     Log New Vibe
+                   </button>
                  </div>
 
                  <div style="text-align: center; margin-bottom: 40px;">
@@ -133,9 +198,12 @@ export class ProfileDetailComponent {
   private route = inject(ActivatedRoute);
   private privacy = inject(PrivacyService);
   public theme = inject(ThemeService);
+  public security = inject(SecurityService);
+  public subscription = inject(SubscriptionService);
 
   crushId = signal<string | null>(null);
   isSafetyActive = signal(false);
+  statuses = CrushStatus;
 
   crush = computed(() => {
     const id = this.crushId();
@@ -159,8 +227,26 @@ export class ProfileDetailComponent {
       crushId: id,
       type: 'RedFlag',
       content: 'A new cautionary flag was raised.',
-      isBurnAfterReading: false
+      isBurnAfterReading: false,
+      visibility: [],
+      isSensitive: false
     });
+  }
+
+  logVibe(id: string) {
+    const score = prompt("Rate the current vibe (1-10):", "5");
+    if (score && !isNaN(Number(score))) {
+      const num = Math.max(1, Math.min(10, Number(score)));
+      this.privacy.updateVibe(id, num);
+      this.privacy.addEntry({
+        crushId: id,
+        type: 'Note',
+        content: `New Vibe Analysis Logged: ${num}/10`,
+        isBurnAfterReading: false,
+        visibility: [],
+        isSensitive: false
+      });
+    }
   }
 
   addNote(id: string) {
@@ -171,15 +257,39 @@ export class ProfileDetailComponent {
         crushId: id,
         type: 'Note',
         content: tea,
-        isBurnAfterReading: isBurn
+        isBurnAfterReading: isBurn,
+        visibility: [],
+        isSensitive: false
       });
     }
   }
 
-  toggleSafety() {
+  toggleSafety(id: string) {
     this.isSafetyActive.update(v => !v);
+    const status = this.isSafetyActive() ? 'Sent' : 'Safe';
+
+    this.privacy.addEntry({
+      crushId: id,
+      type: 'SafetyCheck',
+      content: this.isSafetyActive() ? 'Safety Check-In Started.' : 'Safety Check-In Resolved: I am safe.',
+      visibility: [],
+      isSensitive: true,
+      safetyStatus: status,
+      safetyContactId: 'friend_99' // Mock contact
+    });
+
     if (this.isSafetyActive()) {
       alert("Safety Check Enabled. Your trusted contacts have been notified of your 'Date' status.");
+    } else {
+      alert("Safety Check Resolved. Status updated to Safe.");
     }
+  }
+
+  toggleArchive(crush: CrushProfile) {
+    const newStatus = crush.status === CrushStatus.Archived ? CrushStatus.Crush : CrushStatus.Archived;
+    this.privacy.setCrushes(this.privacy.visibleCrushes().map(c =>
+      c.id === crush.id ? { ...c, status: newStatus } : c
+    ));
+    alert(newStatus === CrushStatus.Archived ? "Profile moved to Archive." : "Profile restored to active.");
   }
 }
