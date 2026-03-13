@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
+const path = require('path');
 
 dotenv.config();
 
@@ -16,10 +17,17 @@ const io = new Server(server, {
   }
 });
 
-// Connect to Database
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected...'))
-  .catch(err => console.error('Could not connect to MongoDB:', err));
+// Connect to Database (optional in demo mode)
+const enableMongo = process.env.ENABLE_MONGO !== 'false';
+if (enableMongo) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB Connected...'))
+    .catch(() => {
+      console.warn('MongoDB unavailable. Running in demo storage mode.');
+    });
+} else {
+  console.log('MongoDB disabled via ENABLE_MONGO=false. Running in demo storage mode.');
+}
 
 // Middleware
 app.use(cors());
@@ -28,13 +36,26 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/crushes', require('./routes/crushes'));
+app.use('/api/demo/crushes', require('./routes/demoCrushes'));
+app.use('/api/demo/friends', require('./routes/demoFriends'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/friends', require('./routes/friends'));
 app.use('/api/vault', require('./routes/vault'));
 
+// Serve Angular app when built (single-service hosting option).
+const distPath = path.resolve(__dirname, '..', '..', 'dist', 'dexii', 'browser');
+app.use(express.static(distPath));
+
 // Basic Route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Dexii Private API - High Glamour, High Security.' });
+});
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  return res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // Start Server

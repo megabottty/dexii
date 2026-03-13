@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { DataService } from '../../core/services/data.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { MessagingService } from '../../core/services/messaging.service';
 import { CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
@@ -29,6 +30,32 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
             <div style="display: flex; flex-direction: column; gap: 24px; max-height: 70vh; overflow-y: auto; padding-right: 10px;">
               <div>
                 <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Avatar (Optional)</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                  <button (click)="avatarUpload.click()" [style.border]="'1px solid ' + theme.colors().primary"
+                          [style.color]="theme.colors().primary"
+                          style="background: transparent; padding: 8px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
+                    Upload Photo
+                  </button>
+                  <input #avatarUpload type="file" accept="image/*" (change)="onAvatarFileSelected($event)" style="display: none;">
+                  @if (uploadedAvatarName()) {
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: 10px;">{{ uploadedAvatarName() }}</span>
+                  }
+                </div>
+
+                @if (newCrush.avatarUrl) {
+                  <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+                    <img [src]="newCrush.avatarUrl" [style.border]="'1px solid ' + theme.colors().border"
+                         style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
+                    @if (cropSourceImage()) {
+                      <button (click)="showCropModal.set(true)" [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().text"
+                              style="background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                        Re-Crop
+                      </button>
+                    }
+                  </div>
+                }
+
                 <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
                    @for (avatar of mockAvatars; track avatar) {
                      <img [src]="avatar" (click)="newCrush.avatarUrl = avatar"
@@ -190,6 +217,46 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
         </div>
       }
 
+      @if (showCropModal() && cropSourceImage()) {
+        <div style="position: fixed; inset: 0; z-index: 260; background: rgba(0,0,0,0.88); display: flex; align-items: center; justify-content: center; padding: 20px;">
+          <div [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border"
+               style="width: 100%; max-width: 520px; padding: 24px;">
+            <h3 style="font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0;">Crop Avatar</h3>
+            <div [style.background-color]="theme.colors().bgSecondary" style="padding: 16px; margin-bottom: 16px;">
+              <div style="width: 280px; height: 280px; margin: 0 auto; overflow: hidden; border-radius: 50%; position: relative; border: 2px solid rgba(255,255,255,0.25); background: #111;">
+                <img [src]="cropSourceImage()!"
+                     [style.transform]="cropTransform()"
+                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px;">
+              <label style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                Zoom
+                <input type="range" min="1" max="3" step="0.05" [value]="cropZoom()" (input)="cropZoom.set(toNumber($event, 1.5))" style="width: 100%;">
+              </label>
+              <label style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                Horizontal
+                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetX()" (input)="cropOffsetX.set(toNumber($event, 0))" style="width: 100%;">
+              </label>
+              <label style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                Vertical
+                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetY()" (input)="cropOffsetY.set(toNumber($event, 0))" style="width: 100%;">
+              </label>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button (click)="cancelCrop()" [style.border]="'1px solid ' + theme.colors().border"
+                      style="background: transparent; color: inherit; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                Cancel
+              </button>
+              <button (click)="applyCrop()" [style.background-color]="theme.colors().primary"
+                      style="border: none; color: white; padding: 10px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                Apply Crop
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Digital Note Passing Overlay (Simulation) -->
       @if (isNotePassing()) {
         <div style="position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 10px;">
@@ -198,7 +265,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                 [style.border]="'2px solid ' + theme.colors().primary"
                 style="padding: 40px; max-width: 400px; transform: rotate(-2deg); shadow: 0 20px 50px rgba(0,0,0,0.5); cursor: pointer;">
              <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; display: block; margin-bottom: 20px;">Private Note Received</span>
-             <p style="font-size: 18px; line-height: 1.6; font-style: italic;">"Wait until you hear what happened last night... tap to close."</p>
+             <p style="font-size: 18px; line-height: 1.6; font-style: italic;">"{{ currentTeaPreview() || 'No new tea right now.' }}"</p>
            </div>
         </div>
       }
@@ -256,7 +323,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
                     style="background: transparent; padding: 14px 24px; border-radius: 0px; font-weight: 700; cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">
-               Spill Tea
+               Spill Tea {{ unreadTeaCount() > 0 ? '(' + unreadTeaCount() + ')' : '' }}
             </button>
             <button (click)="openNewEntryModal()" [style.border]="'1px solid ' + theme.colors().primary"
                     [style.color]="theme.colors().primary"
@@ -351,10 +418,18 @@ export class DashboardComponent implements OnInit {
   public dataService = inject(DataService);
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
+  public messaging = inject(MessagingService);
 
   isNotePassing = signal(false);
+  currentTeaPreview = signal('');
   showNewEntryModal = signal(false);
+  showCropModal = signal(false);
   statuses = CrushStatus;
+  uploadedAvatarName = signal('');
+  cropSourceImage = signal<string | null>(null);
+  cropZoom = signal(1);
+  cropOffsetX = signal(0);
+  cropOffsetY = signal(0);
 
   mockAvatars = [
     'https://i.pravatar.cc/150?u=1',
@@ -387,6 +462,8 @@ export class DashboardComponent implements OnInit {
     return crushes;
   });
 
+  unreadTeaCount = computed(() => this.messaging.getUnreadForUser('me').length);
+
   newCrush = {
     nickname: '',
     fullName: '',
@@ -415,11 +492,19 @@ export class DashboardComponent implements OnInit {
   }
 
   simulateNote() {
+    const latestUnread = this.messaging.getLatestUnreadForUser('me');
+    if (latestUnread) {
+      this.currentTeaPreview.set(latestUnread.content);
+      this.messaging.markUnreadForUserAsRead('me');
+    } else {
+      this.currentTeaPreview.set('No unread private tea at the moment.');
+    }
     this.isNotePassing.set(true);
   }
 
   closeNote() {
     this.isNotePassing.set(false);
+    this.currentTeaPreview.set('');
   }
 
   openNewEntryModal() {
@@ -428,6 +513,7 @@ export class DashboardComponent implements OnInit {
 
   closeModal() {
     this.showNewEntryModal.set(false);
+    this.cancelCrop();
     this.resetForm();
   }
 
@@ -443,6 +529,12 @@ export class DashboardComponent implements OnInit {
   saveCrush() {
     if (!this.newCrush.nickname) {
       alert("Please enter a nickname at least!");
+      return;
+    }
+    if (!this.security.moderateContent(this.newCrush.nickname) ||
+        !this.security.moderateContent(this.newCrush.fullName) ||
+        !this.security.moderateContent(this.newCrush.bio)) {
+      alert('Profile text flagged by AI moderation.');
       return;
     }
 
@@ -463,6 +555,73 @@ export class DashboardComponent implements OnInit {
 
     this.closeModal();
     alert("Profile Secured in the Rolodex.");
+  }
+
+  onAvatarFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+
+    this.uploadedAvatarName.set(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') return;
+      this.cropSourceImage.set(result);
+      this.cropZoom.set(1);
+      this.cropOffsetX.set(0);
+      this.cropOffsetY.set(0);
+      this.showCropModal.set(true);
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  cropTransform(): string {
+    return `translate(${this.cropOffsetX()}px, ${this.cropOffsetY()}px) scale(${this.cropZoom()})`;
+  }
+
+  toNumber(event: Event, fallback: number): number {
+    const target = event.target as HTMLInputElement | null;
+    if (!target) return fallback;
+    const parsed = Number(target.value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  cancelCrop() {
+    this.showCropModal.set(false);
+  }
+
+  applyCrop() {
+    const source = this.cropSourceImage();
+    if (!source) return;
+
+    const image = new Image();
+    image.onload = () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const coverScale = Math.max(size / image.width, size / image.height);
+      const scale = coverScale * this.cropZoom();
+      const drawWidth = image.width * scale;
+      const drawHeight = image.height * scale;
+      const dx = (size - drawWidth) / 2 + this.cropOffsetX();
+      const dy = (size - drawHeight) / 2 + this.cropOffsetY();
+
+      ctx.drawImage(image, dx, dy, drawWidth, drawHeight);
+
+      this.newCrush.avatarUrl = canvas.toDataURL('image/jpeg', 0.92);
+      this.showCropModal.set(false);
+    };
+    image.src = source;
   }
 
   resetForm() {
@@ -486,5 +645,10 @@ export class DashboardComponent implements OnInit {
       },
       relationshipStatus: ''
     };
+    this.uploadedAvatarName.set('');
+    this.cropSourceImage.set(null);
+    this.cropZoom.set(1);
+    this.cropOffsetX.set(0);
+    this.cropOffsetY.set(0);
   }
 }

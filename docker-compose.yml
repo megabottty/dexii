@@ -1,0 +1,14 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: dexii-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: dexii
+    volumes:
+      - dexii-mongo-data:/data/db
+
+volumes:
+  dexii-mongo-data:

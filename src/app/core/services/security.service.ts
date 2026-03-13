@@ -9,6 +9,8 @@ export class SecurityService {
 
   private _isVerified18 = signal<boolean>(false);
   public isVerified18 = this._isVerified18.asReadonly();
+  private _needsPinSetup = signal<boolean>(false);
+  public needsPinSetup = this._needsPinSetup.asReadonly();
 
   // 1. The core state of the app's privacy
   private _isLocked = signal<boolean>(true);
@@ -18,15 +20,15 @@ export class SecurityService {
   public isLocked = this._isLocked.asReadonly();
 
   constructor() {
-    // Check local storage on init to see if a PIN was previously set
     const savedPin = localStorage.getItem('dexii_pin');
-    console.log('SecurityService init, savedPin:', savedPin);
-    if (savedPin) {
+    if (savedPin && /^\d{4}$/.test(savedPin)) {
       this._userPin.set(savedPin);
       this._isLocked.set(true);
     } else {
-      // If no PIN exists, it's a first-time user
-      this._isLocked.set(false);
+      this._isLocked.set(true);
+      this._needsPinSetup.set(true);
+      this._userPin.set(null);
+      localStorage.removeItem('dexii_pin');
     }
   }
 
@@ -70,8 +72,25 @@ export class SecurityService {
 
   // 5. Initial setup
   setInitialPin(newPin: string): void {
+    if (!/^\d{4}$/.test(newPin)) {
+      return;
+    }
     localStorage.setItem('dexii_pin', newPin);
     this._userPin.set(newPin);
+    this._needsPinSetup.set(false);
     this._isLocked.set(false);
+    this.router.navigate(['/dashboard']);
+  }
+
+  recoverPinToDefault(): void {
+    this.setInitialPin('1111');
+  }
+
+  resetPinSetup(): void {
+    localStorage.removeItem('dexii_pin');
+    this._userPin.set(null);
+    this._isLocked.set(true);
+    this._needsPinSetup.set(true);
+    this.router.navigate(['/lock']);
   }
 }

@@ -22,6 +22,9 @@ const CrushProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  sharedEntries: [{
+    type: String
+  }],
   lastInteraction: {
     type: Date,
     default: Date.now
@@ -40,7 +43,18 @@ const CrushProfileSchema = new mongoose.Schema({
     type: [Number],
     default: [5]
   },
-  category: String
+  category: String,
+  hair: [String],
+  eyes: [String],
+  build: [String],
+  social: {
+    snapchat: String,
+    whatsapp: String,
+    twitter: String,
+    facebook: String,
+    instagram: String
+  },
+  relationshipStatus: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('CrushProfile', CrushProfileSchema);

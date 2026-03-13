@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, signal, inject, computed, ElementRef, ViewChild, AfterViewChecked, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -63,7 +63,7 @@ import { SecurityService } from '../../core/services/security.service';
     </div>
   `
 })
-export class MessagingComponent implements AfterViewChecked {
+export class MessagingComponent implements OnInit, AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
   public messaging = inject(MessagingService);
@@ -77,7 +77,12 @@ export class MessagingComponent implements AfterViewChecked {
     this.messaging.getConversation('me', this.currentChatPartner().id)
   );
 
+  ngOnInit() {
+    this.messaging.markConversationAsRead('me', this.currentChatPartner().id);
+  }
+
   ngAfterViewChecked() {
+    this.messaging.markConversationAsRead('me', this.currentChatPartner().id);
     this.scrollToBottom();
   }
 

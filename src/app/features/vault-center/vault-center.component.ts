@@ -2,11 +2,12 @@ import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { VaultService, VaultFile } from '../../core/services/vault.service';
+import { VaultService } from '../../core/services/vault.service';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
-import { Entry } from '../../core/models/entry.model';
+import { SubscriptionService } from '../../core/services/subscription.service';
+import { SubscriptionTier } from '../../core/models/user.model';
 
 @Component({
   selector: 'app-vault-center',
@@ -17,6 +18,32 @@ import { Entry } from '../../core/models/entry.model';
          style="min-height: 100vh; font-family: 'Times New Roman', serif; padding: 60px 40px;">
 
       <div style="max-width: 1000px; margin: 0 auto;">
+        <nav [style.background-color]="theme.colors().bgSecondary"
+             [style.border]="'1px solid ' + theme.colors().border"
+             style="margin-bottom: 28px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
+                 style="width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">D</div>
+            <span style="font-size: 16px; letter-spacing: 2px; text-transform: uppercase;">Dexii</span>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a routerLink="/dashboard" [style.color]="theme.colors().text"
+               style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
+            <a routerLink="/friends" [style.color]="theme.colors().text"
+               style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Friends</a>
+            <a routerLink="/chat" [style.color]="theme.colors().text"
+               style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Chat</a>
+            <button (click)="theme.toggleTheme()" [style.color]="theme.colors().text"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    style="background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+              {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
+            </button>
+            <button (click)="security.lockApp()" [style.background-color]="theme.colors().primary"
+                    style="color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+              Lock
+            </button>
+          </div>
+        </nav>
 
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px; border-bottom: 1px solid {{ theme.colors().border }}; padding-bottom: 30px;">
@@ -60,7 +87,14 @@ import { Entry } from '../../core/models/entry.model';
 
         <!-- Photo Vault Tab -->
         @if (activeTab() === 'photos') {
-          @if (!security.isVerified18()) {
+          @if (!subscription.isPremium()) {
+            <div style="text-align: center; padding: 80px 40px; border: 1px dashed {{ theme.colors().border }};">
+              <h3 style="font-size: 24px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 20px;">Premium Vault Feature</h3>
+              <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 40px; font-size: 14px;">18+ Photo Vault is available on Premium and Gold tiers.</p>
+              <button (click)="subscription.upgrade(premiumTier)" [style.background-color]="theme.colors().primary"
+                      style="color: white; border: none; padding: 16px 40px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Upgrade to Premium</button>
+            </div>
+          } @else if (!security.isVerified18()) {
             <div style="text-align: center; padding: 80px 40px; border: 1px dashed {{ theme.colors().border }};">
                <h3 style="font-size: 24px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 20px;">18+ Restricted Area</h3>
                <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 40px; font-size: 14px;">Intimate content requires age verification and additional security clearance.</p>
@@ -100,6 +134,8 @@ export class VaultCenterComponent {
   public dataService = inject(DataService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
+  public subscription = inject(SubscriptionService);
+  premiumTier = SubscriptionTier.Premium;
 
   activeTab = signal<'journal' | 'photos'>('journal');
   newJournalEntry = '';
@@ -110,6 +146,10 @@ export class VaultCenterComponent {
 
   saveJournal() {
     if (!this.newJournalEntry.trim()) return;
+    if (!this.security.moderateContent(this.newJournalEntry)) {
+      alert('Journal entry flagged by AI moderation.');
+      return;
+    }
     this.dataService.addEntry({
       crushId: 'private_vault',
       type: 'PrivateJournal',

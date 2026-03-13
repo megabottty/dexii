@@ -6,7 +6,6 @@ import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
-import { Entry } from '../../core/models/entry.model';
 
 @Component({
   selector: 'app-profile-detail',
@@ -46,16 +45,28 @@ import { Entry } from '../../core/models/entry.model';
 
               <p [style.color]="theme.colors().textSecondary" style="font-size: 22px; margin: 0 0 40px 0; font-style: italic; font-weight: 200;">{{ c.fullName }}</p>
 
-              <div style="display: flex; gap: 20px;">
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                 <button (click)="addNote(c.id)" [style.background-color]="theme.colors().primary"
-                        style="color: white; border: none; padding: 14px 40px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 10px 20px rgba(219,39,119,0.2);">
+                        style="color: white; border: none; padding: 14px 30px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 10px 20px rgba(219,39,119,0.2);">
                   Add Note
                 </button>
-                <button (click)="toggleSafety(c.id)" [style.background-color]="'transparent'"
-                        [style.color]="isSafetyActive() ? '#ef4444' : theme.colors().text"
-                        [style.border]="'1px solid ' + (isSafetyActive() ? '#ef4444' : theme.colors().text)"
-                        style="padding: 14px 40px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">
-                  {{ isSafetyActive() ? 'Emergency Mode' : 'Safety Check' }}
+                <button (click)="startSafetyCheck(c.id)" [style.background-color]="'transparent'"
+                        [style.color]="safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text"
+                        [style.border]="'1px solid ' + (safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text)"
+                        style="padding: 14px 18px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 11px;">
+                  Send Check-In
+                </button>
+                <button (click)="markSafe(c.id)" [style.background-color]="'transparent'"
+                        [style.color]="safetyState() === 'Safe' ? '#16a34a' : theme.colors().text"
+                        [style.border]="'1px solid ' + (safetyState() === 'Safe' ? '#16a34a' : theme.colors().text)"
+                        style="padding: 14px 18px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 11px;">
+                  Mark Safe
+                </button>
+                <button (click)="triggerEmergency(c.id)" [style.background-color]="'transparent'"
+                        [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text"
+                        [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text)"
+                        style="padding: 14px 18px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 11px;">
+                  Emergency Mode
                 </button>
                 <button (click)="toggleArchive(c)" [style.background-color]="'transparent'"
                         [style.color]="theme.colors().textSecondary"
@@ -64,6 +75,10 @@ import { Entry } from '../../core/models/entry.model';
                   {{ c.status === statuses.Archived ? 'Unarchive' : 'Archive' }}
                 </button>
               </div>
+              <p [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().textSecondary"
+                 style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-top: 16px;">
+                Safety Status: {{ safetyState() }}
+              </p>
             </div>
           </header>
 
@@ -177,6 +192,9 @@ import { Entry } from '../../core/models/entry.model';
                  <div style="text-align: center; margin-bottom: 40px;">
                    <p [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Cautionary Flags</p>
                    <p [style.color]="c.redFlags > 2 ? '#ef4444' : theme.colors().text" style="font-size: 24px; font-weight: 900; margin: 0;">{{ c.redFlags }}</p>
+                   @if (c.redFlags >= 3) {
+                     <p style="color: #ef4444; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-top: 10px;">Vibe Shift Detected</p>
+                   }
                  </div>
 
                  <button (click)="logRedFlag(c.id)" style="width: 100%; background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 0px; font-size: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 3px; transition: all 0.3s;">
@@ -202,7 +220,7 @@ export class ProfileDetailComponent {
   public subscription = inject(SubscriptionService);
 
   crushId = signal<string | null>(null);
-  isSafetyActive = signal(false);
+  safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
   statuses = CrushStatus;
 
   crush = computed(() => {
@@ -252,6 +270,10 @@ export class ProfileDetailComponent {
   addNote(id: string) {
     const tea = prompt("What's the tea?");
     if (tea) {
+      if (!this.security.moderateContent(tea)) {
+        alert('Note flagged by AI moderation for safety.');
+        return;
+      }
       const isBurn = confirm("Should this note disappear after reading?");
       this.dataService.addEntry({
         crushId: id,
@@ -264,25 +286,46 @@ export class ProfileDetailComponent {
     }
   }
 
-  toggleSafety(id: string) {
-    this.isSafetyActive.update(v => !v);
-    const status = this.isSafetyActive() ? 'Sent' : 'Safe';
-
+  startSafetyCheck(id: string) {
+    this.safetyState.set('Sent');
     this.dataService.addEntry({
       crushId: id,
       type: 'SafetyCheck',
-      content: this.isSafetyActive() ? 'Safety Check-In Started.' : 'Safety Check-In Resolved: I am safe.',
+      content: 'Safety Check-In Started.',
       visibility: [],
       isSensitive: true,
-      safetyStatus: status,
+      safetyStatus: 'Sent',
       safetyContactId: 'friend_99' // Mock contact
     });
+    alert("Safety Check Enabled. Your trusted contacts have been notified.");
+  }
 
-    if (this.isSafetyActive()) {
-      alert("Safety Check Enabled. Your trusted contacts have been notified of your 'Date' status.");
-    } else {
-      alert("Safety Check Resolved. Status updated to Safe.");
-    }
+  markSafe(id: string) {
+    this.safetyState.set('Safe');
+    this.dataService.addEntry({
+      crushId: id,
+      type: 'SafetyCheck',
+      content: 'Safety Check-In Resolved: I am safe.',
+      visibility: [],
+      isSensitive: true,
+      safetyStatus: 'Safe',
+      safetyContactId: 'friend_99'
+    });
+    alert('Safety Check resolved and marked Safe.');
+  }
+
+  triggerEmergency(id: string) {
+    this.safetyState.set('Urgent');
+    this.dataService.addEntry({
+      crushId: id,
+      type: 'SafetyCheck',
+      content: 'Emergency Mode escalated. Immediate assistance requested.',
+      visibility: [],
+      isSensitive: true,
+      safetyStatus: 'Urgent',
+      safetyContactId: 'friend_99'
+    });
+    alert('Emergency Mode enabled. Trusted contacts alerted urgently.');
   }
 
   toggleArchive(crush: CrushProfile) {

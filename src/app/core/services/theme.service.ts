@@ -18,7 +18,7 @@ export interface ThemePalette {
   providedIn: 'root'
 })
 export class ThemeService {
-  private _mode = signal<ThemeMode>('dark');
+  private _mode = signal<ThemeMode>('light');
   public mode = this._mode.asReadonly();
 
   public colors = computed<ThemePalette>(() => {

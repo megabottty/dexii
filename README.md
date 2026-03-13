@@ -60,5 +60,11 @@ Dexii is a "digital little black book" designed for high-security, high-glamour 
 
 3. Navigate to `http://localhost:4200`. Default PIN: `1111`.
 
+## 🗄️ Local Mongo + Deployment
+
+- Local Mongo + hosting steps: `docs/local-mongo-and-hosting.md`
+- Docker Mongo helper: `docker-compose.yml`
+- Render config: `render.yaml`
+
 ## 📜 License
 Private/Internal Use Only.

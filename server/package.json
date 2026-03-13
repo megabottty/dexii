@@ -5,6 +5,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "mongo:up": "docker compose -f ../docker-compose.yml up -d mongo",
+    "mongo:down": "docker compose -f ../docker-compose.yml down",
+    "mongo:logs": "docker compose -f ../docker-compose.yml logs -f mongo",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

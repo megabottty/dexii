@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: dexii
+    env: node
+    plan: free
+    buildCommand: npm ci && npm --prefix server ci && npm run build
+    startCommand: npm --prefix server start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_MONGO
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
