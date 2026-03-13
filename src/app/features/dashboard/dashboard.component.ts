@@ -6,6 +6,7 @@ import { DataService } from '../../core/services/data.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
+import { ModalService } from '../../core/services/modal.service';
 import { CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
@@ -419,6 +420,7 @@ export class DashboardComponent implements OnInit {
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
   public messaging = inject(MessagingService);
+  public modal = inject(ModalService);
 
   isNotePassing = signal(false);
   currentTeaPreview = signal('');
@@ -528,13 +530,13 @@ export class DashboardComponent implements OnInit {
 
   saveCrush() {
     if (!this.newCrush.nickname) {
-      alert("Please enter a nickname at least!");
+      this.modal.show('Please enter a nickname at least!');
       return;
     }
     if (!this.security.moderateContent(this.newCrush.nickname) ||
         !this.security.moderateContent(this.newCrush.fullName) ||
         !this.security.moderateContent(this.newCrush.bio)) {
-      alert('Profile text flagged by AI moderation.');
+      this.modal.show('Profile text flagged by AI moderation.');
       return;
     }
 
@@ -554,7 +556,7 @@ export class DashboardComponent implements OnInit {
     });
 
     this.closeModal();
-    alert("Profile Secured in the Rolodex.");
+    this.modal.show('Profile Secured in the Rolodex.');
   }
 
   onAvatarFileSelected(event: Event) {
@@ -562,7 +564,7 @@ export class DashboardComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file.');
+      this.modal.show('Please upload an image file.');
       return;
     }
 

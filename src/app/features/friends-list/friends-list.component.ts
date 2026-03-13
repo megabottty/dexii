@@ -6,6 +6,7 @@ import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { SecurityService } from '../../core/services/security.service';
+import { ModalService } from '../../core/services/modal.service';
 import { User, SubscriptionTier } from '../../core/models/user.model';
 import { getApiBaseUrl } from '../../core/config/api-config';
 
@@ -195,10 +196,17 @@ interface FriendRequestItem {
           }
         </div>
 
-        @if (incomingRequests().length > 0) {
-          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" style="padding: 20px; margin-bottom: 28px;">
-            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-top: 0;">Friend Requests</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" style="padding: 20px; margin-bottom: 28px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Friend Requests</p>
+            <button (click)="simulateIncomingRequest()" [style.color]="theme.colors().accent"
+                    style="background: none; border: 1px solid {{ theme.colors().accent }}; padding: 6px 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
+              Simulate Request
+            </button>
+          </div>
+
+          @if (incomingRequests().length > 0) {
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
               @for (req of incomingRequests(); track req.id) {
                 <div [style.border]="'1px solid ' + theme.colors().border" style="padding: 12px; display: flex; align-items: center; justify-content: space-between;">
                   <span>{{ req.from }} wants to connect</span>
@@ -209,8 +217,10 @@ interface FriendRequestItem {
                 </div>
               }
             </div>
-          </div>
-        }
+          } @else {
+            <p [style.color]="theme.colors().textSecondary" style="margin: 14px 0 0 0; font-size: 12px; font-style: italic;">No incoming requests yet. Tap “Simulate Request” to see the flow.</p>
+          }
+        </div>
 
         @if (!subscription.isPremium()) {
           <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent"
@@ -257,6 +267,7 @@ export class FriendsListComponent implements OnInit {
   public theme = inject(ThemeService);
   public subscription = inject(SubscriptionService);
   public security = inject(SecurityService);
+  public modal = inject(ModalService);
   private dataService = inject(DataService);
 
   private apiBase = `${getApiBaseUrl()}/demo/friends`;
@@ -336,7 +347,7 @@ export class FriendsListComponent implements OnInit {
 
   async sendFriendRequest(candidate: FriendSearchResult) {
     if (!this.subscription.checkLimit(this.friends().length, 5)) {
-      alert('Upgrade to Premium to add more than 5 friends.');
+      this.modal.show('Upgrade to Premium to add more than 5 friends.');
       return;
     }
 
@@ -350,7 +361,7 @@ export class FriendsListComponent implements OnInit {
     });
 
     if (!result) {
-      alert('Unable to send request right now.');
+      this.modal.show('Unable to send request right now.');
       return;
     }
 
@@ -359,7 +370,7 @@ export class FriendsListComponent implements OnInit {
         u.username === candidate.username ? { ...u, hasPendingRequest: true } : u
       )
     );
-    alert(result.status === 'already_friends' ? 'Already friends.' : 'Request sent.');
+    this.modal.show(result.status === 'already_friends' ? 'Already friends.' : 'Request sent.');
   }
 
   async inviteTypedUsername() {
@@ -376,7 +387,7 @@ export class FriendsListComponent implements OnInit {
     });
 
     if (!updated) {
-      alert('Unable to update request.');
+      this.modal.show('Unable to update request.');
       return;
     }
 
@@ -404,6 +415,28 @@ export class FriendsListComponent implements OnInit {
 
   closeSharing() {
     this.selectedFriend.set(null);
+  }
+
+  async simulateIncomingRequest() {
+    const candidates = ['Tea_Spiller_Mark', 'Work_Bri', 'Club_Ari'];
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    const result = await this.demoFetch('/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: pick, to: this.currentUsername })
+    });
+
+    if (!result) {
+      this.modal.show('Unable to simulate a request right now.');
+      return;
+    }
+
+    await this.loadIncomingRequests();
+    if (result.status === 'already_pending') {
+      this.modal.show('A request is already pending from that friend.');
+    } else {
+      this.modal.show(`Incoming request from ${pick}.`);
+    }
   }
 
   isCrushShared(crush: any): boolean {

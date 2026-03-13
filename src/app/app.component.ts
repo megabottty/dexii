@@ -2,13 +2,15 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { SecurityService } from './core/services/security.service';
 import { ThemeService } from './core/services/theme.service';
+import { AlertModalComponent } from './core/components/alert-modal.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, AlertModalComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" style="min-height: 100vh; margin: 0; padding: 0; transition: background-color 0.5s ease;">
       <router-outlet></router-outlet>
+      <app-alert-modal></app-alert-modal>
     </div>
   `
 })

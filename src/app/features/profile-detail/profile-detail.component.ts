@@ -5,6 +5,7 @@ import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
+import { ModalService } from '../../core/services/modal.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
@@ -218,6 +219,7 @@ export class ProfileDetailComponent {
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
+  public modal = inject(ModalService);
 
   crushId = signal<string | null>(null);
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
@@ -271,7 +273,7 @@ export class ProfileDetailComponent {
     const tea = prompt("What's the tea?");
     if (tea) {
       if (!this.security.moderateContent(tea)) {
-        alert('Note flagged by AI moderation for safety.');
+        this.modal.show('Note flagged by AI moderation for safety.');
         return;
       }
       const isBurn = confirm("Should this note disappear after reading?");
@@ -297,7 +299,7 @@ export class ProfileDetailComponent {
       safetyStatus: 'Sent',
       safetyContactId: 'friend_99' // Mock contact
     });
-    alert("Safety Check Enabled. Your trusted contacts have been notified.");
+    this.modal.show('Safety Check Enabled. Your trusted contacts have been notified.');
   }
 
   markSafe(id: string) {
@@ -311,7 +313,7 @@ export class ProfileDetailComponent {
       safetyStatus: 'Safe',
       safetyContactId: 'friend_99'
     });
-    alert('Safety Check resolved and marked Safe.');
+    this.modal.show('Safety Check resolved and marked Safe.');
   }
 
   triggerEmergency(id: string) {
@@ -325,7 +327,7 @@ export class ProfileDetailComponent {
       safetyStatus: 'Urgent',
       safetyContactId: 'friend_99'
     });
-    alert('Emergency Mode enabled. Trusted contacts alerted urgently.');
+    this.modal.show('Emergency Mode enabled. Trusted contacts alerted urgently.');
   }
 
   toggleArchive(crush: CrushProfile) {
@@ -333,6 +335,6 @@ export class ProfileDetailComponent {
     this.dataService.setCrushes(this.dataService.visibleCrushes().map(c =>
       c.id === crush.id ? { ...c, status: newStatus } : c
     ));
-    alert(newStatus === CrushStatus.Archived ? "Profile moved to Archive." : "Profile restored to active.");
+    this.modal.show(newStatus === CrushStatus.Archived ? 'Profile moved to Archive.' : 'Profile restored to active.');
   }
 }

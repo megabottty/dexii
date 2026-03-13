@@ -51,8 +51,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the Dexii Private API - High Glamour, High Security.' });
 });
 
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api/')) {
+app.use((req, res, next) => {
+  if (req.method !== 'GET' || req.path.startsWith('/api/')) {
     return next();
   }
   return res.sendFile(path.join(distPath, 'index.html'));

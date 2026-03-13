@@ -8,6 +8,7 @@
     "mongo:up": "docker compose -f ../docker-compose.yml up -d mongo",
     "mongo:down": "docker compose -f ../docker-compose.yml down",
     "mongo:logs": "docker compose -f ../docker-compose.yml logs -f mongo",
+    "migrate:demo-to-mongo": "node src/scripts/migrateDemoToMongo.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

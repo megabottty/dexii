@@ -7,6 +7,7 @@ import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
+import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier } from '../../core/models/user.model';
 
 @Component({
@@ -135,6 +136,7 @@ export class VaultCenterComponent {
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
+  public modal = inject(ModalService);
   premiumTier = SubscriptionTier.Premium;
 
   activeTab = signal<'journal' | 'photos'>('journal');
@@ -147,7 +149,7 @@ export class VaultCenterComponent {
   saveJournal() {
     if (!this.newJournalEntry.trim()) return;
     if (!this.security.moderateContent(this.newJournalEntry)) {
-      alert('Journal entry flagged by AI moderation.');
+      this.modal.show('Journal entry flagged by AI moderation.');
       return;
     }
     this.dataService.addEntry({
@@ -158,14 +160,14 @@ export class VaultCenterComponent {
       isSensitive: true
     });
     this.newJournalEntry = '';
-    alert("Journal entry secured. Permanently separate from all sharing.");
+    this.modal.show('Journal entry secured. Permanently separate from all sharing.');
   }
 
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
     if (file) {
       this.vault.uploadImage(file);
-      alert("Sensitive image uploaded and blurred in your vault.");
+      this.modal.show('Sensitive image uploaded and blurred in your vault.');
     }
   }
 }

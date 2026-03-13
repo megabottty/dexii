@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { MessagingService } from '../../core/services/messaging.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
+import { ModalService } from '../../core/services/modal.service';
 
 @Component({
   selector: 'app-messaging',
@@ -69,6 +70,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   public messaging = inject(MessagingService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
+  public modal = inject(ModalService);
 
   currentChatPartner = signal({ id: 'friend_1', username: 'Bestie_Sarah' });
   newMessage = '';
@@ -96,7 +98,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     if (!this.newMessage.trim()) return;
 
     if (!this.security.moderateContent(this.newMessage)) {
-      alert("Message flagged by AI moderation for safety.");
+      this.modal.show('Message flagged by AI moderation for safety.');
       return;
     }
 

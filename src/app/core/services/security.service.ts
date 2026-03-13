@@ -1,11 +1,13 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { ModalService } from './modal.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SecurityService {
   private router = inject(Router);
+  private modal = inject(ModalService);
 
   private _isVerified18 = signal<boolean>(false);
   public isVerified18 = this._isVerified18.asReadonly();
@@ -51,7 +53,7 @@ export class SecurityService {
   // 6. Stealth Toggle (Simulation)
   toggleStealthMode(): void {
     // This would swap the app icon or change the manifest in a real build
-    alert("Stealth Mode Activated. The app icon will now appear as 'Simple Notes' on your home screen.");
+    this.modal.show("Stealth Mode Activated. The app icon will now appear as 'Simple Notes' on your home screen.");
   }
 
   // 7. 18+ Verification
