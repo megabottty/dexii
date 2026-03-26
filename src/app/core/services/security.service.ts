@@ -31,6 +31,7 @@ export class SecurityService {
       this._needsPinSetup.set(true);
       this._userPin.set(null);
       localStorage.removeItem('dexii_pin');
+      this.router.navigate(['/signup-profile']);
     }
   }
 
@@ -59,10 +60,12 @@ export class SecurityService {
   // 7. 18+ Verification
   verifyAge(): void {
     // Mocking an external ID verification flow or AI face analysis
-    const confirmed = confirm("Please confirm you are 18+ to access intimate content. This requires ID verification.");
-    if (confirmed) {
-      this._isVerified18.set(true);
-    }
+    this.modal.confirm(
+      "Please confirm you are 18+ to access intimate content. This requires ID verification.",
+      () => {
+        this._isVerified18.set(true);
+      }
+    );
   }
 
   // 8. Content Moderation (Mock)
@@ -77,8 +80,14 @@ export class SecurityService {
     if (!/^\d{4}$/.test(newPin)) {
       return;
     }
-    localStorage.setItem('dexii_pin', newPin);
-    this._userPin.set(newPin);
+    // We now have a confirmation step, so we store it as pending
+    localStorage.setItem('dexii_pending_pin', newPin);
+    this.router.navigate(['/signup-email-confirmation']);
+  }
+
+  finalizeSetup(finalPin: string): void {
+    localStorage.setItem('dexii_pin', finalPin);
+    this._userPin.set(finalPin);
     this._needsPinSetup.set(false);
     this._isLocked.set(false);
     this.router.navigate(['/dashboard']);
@@ -93,6 +102,6 @@ export class SecurityService {
     this._userPin.set(null);
     this._isLocked.set(true);
     this._needsPinSetup.set(true);
-    this.router.navigate(['/lock']);
+    this.router.navigate(['/signup-profile']);
   }
 }

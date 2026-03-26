@@ -1,26 +1,60 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ModalService } from '../services/modal.service';
 import { ThemeService } from '../services/theme.service';
 
 @Component({
   selector: 'app-alert-modal',
   standalone: true,
-  imports: [CommonModule],
+  styleUrl: './alert-modal.component.css',
+  imports: [CommonModule, FormsModule],
   template: `
     @if (modal.message()) {
-      <div (click)="close()" style="position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px);">
+      <div (click)="close()" class="alert-modal-component__s1">
         <div (click)="$event.stopPropagation()"
+             (keydown.escape)="close()"
+             tabindex="-1"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="alert-modal-title"
+             aria-describedby="alert-modal-message"
              [style.background-color]="theme.colors().bg"
              [style.border]="'1px solid ' + theme.colors().border"
-             style="width: 100%; max-width: 420px; padding: 28px; border-radius: 0px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; text-align: center;">
-          <button (click)="close()" [style.color]="theme.colors().textSecondary" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer;">✕</button>
-          <h3 style="font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 0 0 12px;">Notice</h3>
-          <p [style.color]="theme.colors().textSecondary" style="font-size: 13px; line-height: 1.6; margin: 0 0 20px;">{{ modal.message() }}</p>
-          <button (click)="close()" [style.background-color]="theme.colors().primary"
-                  style="color: white; border: none; padding: 10px 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
-            Close
-          </button>
+             class="alert-modal-component__s2">
+          <button (click)="close()" [style.color]="theme.colors().textSecondary" aria-label="Close notice" class="alert-modal-component__s3">✕</button>
+          <h3 id="alert-modal-title" class="alert-modal-component__s4">Notice</h3>
+          <p id="alert-modal-message" [style.color]="theme.colors().textSecondary" class="alert-modal-component__s5">{{ modal.message() }}</p>
+
+          @if (modal.type() === 'prompt') {
+            <input
+              [ngModel]="modal.promptValue()"
+              (ngModelChange)="modal.promptValue.set($event)"
+              (keydown.enter)="modal.handleConfirm()"
+              [style.background-color]="theme.colors().bgSecondary"
+              [style.border]="'1px solid ' + theme.colors().border"
+              [style.color]="theme.colors().text"
+              class="alert-modal-prompt-input"
+              autofocus
+            />
+          }
+
+          <div class="alert-modal-actions">
+            @if (modal.type() === 'confirm' || modal.type() === 'prompt') {
+              <button (click)="modal.handleCancel()"
+                      [style.background-color]="'transparent'"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.color]="theme.colors().textSecondary"
+                      class="alert-modal-component__s6">
+                Cancel
+              </button>
+            }
+            <button (click)="modal.handleConfirm()"
+                    [style.background-color]="theme.colors().primary"
+                    class="alert-modal-component__s6">
+              {{ modal.type() === 'alert' ? 'Close' : 'Confirm' }}
+            </button>
+          </div>
         </div>
       </div>
     }

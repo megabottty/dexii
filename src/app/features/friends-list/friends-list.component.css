@@ -1,0 +1,295 @@
+.friends-list-component__s1 {
+  min-height: 100vh; font-family: 'Times New Roman', serif; padding: 60px 40px; position: relative;
+}
+
+.friends-list-component__s2 {
+  max-width: 900px; margin: 0 auto 28px auto; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+
+.friends-list-component__s3 {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.friends-list-component__s4 {
+  width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;
+}
+
+.friends-list-component__s5 {
+  font-size: 16px; letter-spacing: 2px; text-transform: uppercase;
+}
+
+.friends-list-component__s6 {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+
+.friends-list-component__s7 {
+  background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+}
+
+.friends-list-component__s8 {
+  color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+}
+
+.friends-list-component__s9 {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 15px; padding: 20px;
+}
+
+.friends-list-component__s10 {
+  width: 100%; max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 40px; border-radius: 0px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+}
+
+.friends-list-component__s11 {
+  position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 20px; cursor: pointer;
+}
+
+.friends-list-component__s12 {
+  font-size: 28px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 12px; text-align: center;
+}
+
+.friends-list-component__s13 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 40px;
+}
+
+.friends-list-component__s14 {
+  display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 28px;
+}
+
+.friends-list-component__s15 {
+  width: 42px; height: 42px; border-radius: 50%; object-fit: cover;
+}
+
+.friends-list-component__s16 {
+  margin: 0; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+}
+
+.friends-list-component__s17 {
+  margin: 2px 0 0 0; font-size: 16px;
+}
+
+.friends-list-component__s18 {
+  display: flex; flex-direction: column; gap: 32px;
+}
+
+.friends-list-component__s19 {
+  padding-bottom: 24px;
+}
+
+.friends-list-component__s20 {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+}
+
+.friends-list-component__s21 {
+  display: flex; align-items: center; gap: 16px;
+}
+
+.friends-list-component__s22 {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+}
+
+.friends-list-component__s23 {
+  font-size: 16px; font-weight: 400; margin: 0;
+}
+
+.friends-list-component__s24 {
+  font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+}
+
+.friends-list-component__s25 {
+  padding: 6px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.3s;
+}
+
+.friends-list-component__s26 {
+  padding-left: 56px; display: flex; flex-direction: column; gap: 12px;
+}
+
+.friends-list-component__s27 {
+  font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;
+}
+
+.friends-list-component__s28 {
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.friends-list-component__s29 {
+  font-size: 13px; font-style: italic; opacity: 0.8;
+}
+
+.friends-list-component__s30 {
+  background: none; border: none; font-size: 18px; cursor: pointer; padding: 0 8px;
+}
+
+.friends-list-component__s31 {
+  font-size: 11px; font-style: italic;
+}
+
+.friends-list-component__s32 {
+  max-width: 900px; margin: 0 auto;
+}
+
+.friends-list-component__s33 {
+  padding: 20px; margin-bottom: 20px;
+}
+
+.friends-list-component__s34 {
+  font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0;
+}
+
+.friends-list-component__s35 {
+  padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+}
+
+.friends-list-component__s36 {
+  padding: 20px; margin-bottom: 28px;
+}
+
+.friends-list-component__s37 {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-top: 0;
+}
+
+.friends-list-component__s38 {
+  display: flex; gap: 10px; margin-bottom: 16px;
+}
+
+.friends-list-component__s39 {
+  flex: 1; padding: 10px 12px; outline: none; font-family: 'Times New Roman', serif;
+}
+
+.friends-list-component__s40 {
+  color: white; border: none; padding: 10px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+}
+
+.friends-list-component__s41 {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.friends-list-component__s42 {
+  padding: 12px; display: flex; align-items: center; justify-content: space-between;
+}
+
+.friends-list-component__s43 {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+}
+
+.friends-list-component__s44 {
+  font-size: 14px;
+}
+
+.friends-list-component__s45 {
+  margin: 0 0 10px 0; font-size: 12px; font-style: italic;
+}
+
+.friends-list-component__s46 {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+
+.friends-list-component__s47 {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;
+}
+
+.friends-list-component__s48 {
+  display: flex; flex-direction: column; gap: 10px; margin-top: 16px;
+}
+
+.friends-list-component__s49 {
+  display: flex; gap: 8px;
+}
+
+.friends-list-component__s50 {
+  color: white; border: none; padding: 6px 10px; font-size: 10px; cursor: pointer;
+}
+
+.friends-list-component__s51 {
+  margin: 14px 0 0 0; font-size: 12px; font-style: italic;
+}
+
+.friends-list-component__s52 {
+  padding: 20px; margin-bottom: 40px; text-align: center;
+}
+
+.friends-list-component__s53 {
+  display: flex; flex-direction: column; gap: 24px;
+}
+
+.friends-list-component__s54 {
+  padding: 24px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;
+}
+
+.friends-list-component__s55 {
+  display: flex; align-items: center; gap: 20px;
+}
+
+.friends-list-component__s56 {
+  width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+}
+
+.friends-list-component__s57 {
+  font-size: 18px; font-weight: 400; margin: 0;
+}
+
+.friends-list-component__s58 {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+}
+
+.friends-list-component__s59 {
+  display: flex; gap: 12px;
+}
+
+.friends-list-component__s60 {
+  background: none; border: 1px solid #ef4444; padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+}
+
+.friends-list-component__s61 {
+  font-style: italic;
+}
+
+.friends-list-nav-link {
+  text-decoration: none;
+  padding: 8px 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.friends-list-title {
+  font-size: 32px;
+  font-weight: 200;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+}
+
+.friends-list-simulate-btn {
+  background: none;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.friends-list-action-link {
+  text-decoration: none;
+  padding: 8px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.friends-list-action-btn {
+  background: none;
+  padding: 8px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.friends-list-empty {
+  text-align: center;
+  padding: 60px;
+}

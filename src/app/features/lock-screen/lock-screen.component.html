@@ -1,84 +1,80 @@
-<div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Times New Roman', serif; padding: 20px; position: relative; overflow: hidden; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);">
+<div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="lock-screen-component__s1">
 
   @if (theme.mode() === 'light') {
-    <div style="position: absolute; top: -10%; right: -10%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 70%); filter: blur(60px); pointer-events: none;"></div>
-    <div style="position: absolute; bottom: -10%; left: -10%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(219, 39, 119, 0.1) 0%, transparent 70%); filter: blur(50px); pointer-events: none;"></div>
+    <div class="lock-screen-component__s2"></div>
+    <div class="lock-screen-component__s3"></div>
   }
 
-  <div style="text-align: center; max-width: 420px; width: 100%; position: relative; z-index: 10;">
+  <div class="lock-screen-component__s4">
+    <app-page-hint
+      hintKey="lock_inline"
+      title="Lock Screen Hint"
+      message="Use your 4-digit PIN to unlock. If needed, use Forgot PIN or test PIN 1111 for local demo mode.">
+    </app-page-hint>
+
     <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
          [style.box-shadow]="theme.mode() === 'light' ? '0 15px 30px rgba(219, 39, 119, 0.2)' : '0 10px 15px rgba(0,0,0,0.5)'"
-         style="width: 90px; height: 90px; border-radius: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px auto; transform: rotate(-3deg); transition: transform 0.5s ease;">
+         class="lock-screen-component__s5">
       <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="none" viewBox="0 0 24 24" stroke="white">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
       </svg>
     </div>
 
     <h2 [style.letter-spacing]="theme.mode() === 'light' ? '4px' : '1px'"
-        style="font-size: 38px; font-weight: 200; margin-bottom: 12px; text-transform: uppercase;">Dexii</h2>
-    <p [style.color]="theme.colors().textSecondary" [style.letter-spacing]="'4px'" style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 18px;">
-      {{ setupMode ? 'Create Your 4-Digit Vault PIN' : 'The Private Vault' }}
+        class="lock-screen-component__s6">Dexii</h2>
+    <p [style.color]="theme.colors().textSecondary" [style.letter-spacing]="'4px'" class="lock-screen-component__s7">
+      The Private Vault
     </p>
-    <p [style.color]="theme.colors().textSecondary" style="font-size: 11px; margin-bottom: 42px; min-height: 18px;">
-      @if (setupMode) {
-        {{ setupPinFirst() ? 'Confirm your new PIN' : 'Enter a new PIN to set up access' }}
-      } @else {
-        Enter your 4-digit PIN
-      }
+    <p [style.color]="theme.colors().textSecondary" class="lock-screen-component__s8">
+      Enter your 4-digit PIN
     </p>
 
     @if (errorMessage()) {
-      <p style="color: #ef4444; font-size: 11px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;">{{ errorMessage() }}</p>
+      <p class="lock-screen-component__s9">{{ errorMessage() }}</p>
     }
 
-    <div style="display: flex; gap: 24px; justify-content: center; margin-bottom: 46px;">
+    <div class="lock-screen-component__s15">
       @for (dot of [1,2,3,4]; track $index) {
         <div [style.background-color]="enteredPin().length > $index ? theme.colors().primary : 'transparent'"
              [style.border]="'1px solid ' + (enteredPin().length > $index ? theme.colors().primary : theme.colors().textSecondary)"
              [style.box-shadow]="enteredPin().length > $index ? '0 0 15px ' + theme.colors().primary : 'none'"
-             style="width: 12px; height: 12px; border-radius: 50%; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
+             class="lock-screen-pin-dot"></div>
       }
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; width: 100%;">
+    <div class="lock-screen-component__s16">
       @for (num of [1,2,3,4,5,6,7,8,9]; track num) {
         <button (click)="handleInput(num.toString())"
                 [style.background]="'transparent'"
                 [style.border]="'1px solid ' + theme.colors().border"
                 [style.color]="theme.colors().text"
-                style="height: 74px; border-radius: 40px; font-size: 28px; font-weight: 200; cursor: pointer; transition: all 0.3s; font-family: 'Times New Roman', serif;">
+                class="lock-screen-component__s17">
           {{ num }}
         </button>
       }
 
-      <button (click)="theme.toggleTheme()" [style.color]="theme.colors().textSecondary" style="background: none; border: none; font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">
+      <button (click)="theme.toggleTheme()" [style.color]="theme.colors().textSecondary" class="lock-screen-component__s18">
         {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
       </button>
       <button (click)="handleInput('0')"
               [style.background]="'transparent'"
               [style.border]="'1px solid ' + theme.colors().border"
               [style.color]="theme.colors().text"
-              style="height: 74px; border-radius: 40px; font-size: 28px; font-weight: 200; cursor: pointer; font-family: 'Times New Roman', serif;">0</button>
-      <button (click)="clear()" [style.color]="theme.colors().primary" style="background: none; border: none; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">Clear</button>
+              class="lock-screen-component__s19">0</button>
+      <button (click)="clear()" [style.color]="theme.colors().primary" class="lock-screen-component__s20">Clear</button>
     </div>
 
-    <div style="margin-top: 28px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
-      @if (setupMode) {
-        <button (click)="startOverSetup()" [style.color]="theme.colors().textSecondary" style="background: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
-          Start Over
-        </button>
-        <button (click)="useDefaultPin()" [style.color]="theme.colors().primary" style="background: none; border: 1px solid {{ theme.colors().primary }}; padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
-          Use Test PIN 1111
-        </button>
-      } @else {
-        <button (click)="recoverPin()" [style.color]="theme.colors().primary" style="background: none; border: 1px solid {{ theme.colors().primary }}; padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
-          Forgot PIN
-        </button>
-      }
+    <div class="lock-screen-component__s21">
+      <button (click)="recoverPin()" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="lock-screen-aux-btn">
+        Forgot PIN
+      </button>
+      <button (click)="createNewAccount()" [style.color]="theme.colors().textSecondary" [style.border]="'1px solid ' + theme.colors().border" class="lock-screen-aux-btn">
+        Create New Account
+      </button>
     </div>
 
-    <div style="margin-top: 56px; opacity: 0.5;">
-      <span [style.color]="theme.colors().textSecondary" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 4px;">Exclusive Identity CRM</span>
+    <div class="lock-screen-component__s22">
+      <span [style.color]="theme.colors().textSecondary" class="lock-screen-component__s23">Exclusive Identity CRM</span>
     </div>
   </div>
 </div>

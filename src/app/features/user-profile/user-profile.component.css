@@ -1,0 +1,91 @@
+.user-profile-component__s1 {
+  min-height: 100vh; font-family: 'Times New Roman', serif;
+}
+
+.user-profile-component__s2 {
+  height: 220px; position: relative;
+}
+
+.user-profile-component__s3 {
+  position: absolute; top: 16px; left: 16px; text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+}
+
+.user-profile-component__s4 {
+  max-width: 900px; margin: -72px auto 0 auto; padding: 0 20px 40px 20px; position: relative;
+}
+
+.user-profile-component__s5 {
+  padding: 20px; margin-bottom: 20px;
+}
+
+.user-profile-component__s6 {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+}
+
+.user-profile-component__s7 {
+  width: 86px; height: 86px; border-radius: 50%; object-fit: cover;
+}
+
+.user-profile-component__s8 {
+  margin: 0; font-size: 42px; font-weight: 200; line-height: 1;
+}
+
+.user-profile-component__s9 {
+  margin: 8px 0 0 0; font-size: 18px; font-style: italic; letter-spacing: 1px;
+}
+
+.user-profile-component__s10 {
+  margin: 8px 0 0 0; max-width: 620px; font-size: 14px; line-height: 1.4;
+}
+
+.user-profile-component__s11 {
+  padding: 20px;
+}
+
+.user-profile-component__s12 {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+
+.user-profile-component__s13 {
+  margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+}
+
+.user-profile-component__s14 {
+  text-decoration: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+}
+
+.user-profile-component__s15 {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.user-profile-component__s16 {
+  text-decoration: none; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+
+.user-profile-component__s17 {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.user-profile-component__s18 {
+  width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+}
+
+.user-profile-component__s19 {
+  margin: 0; font-size: 26px; font-weight: 200;
+}
+
+.user-profile-component__s20 {
+  margin: 0; font-size: 11px;
+}
+
+.user-profile-component__s21 {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+}
+
+.user-profile-component__s22 {
+  padding: 26px; text-align: center;
+}
+
+.user-profile-component__s23 {
+  margin: 0; font-style: italic;
+}

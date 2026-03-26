@@ -6,7 +6,7 @@ const User = require('../models/User');
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { username, pin, email } = req.body;
+    const { username, pin, email, bio } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ username });
@@ -21,7 +21,8 @@ exports.register = async (req, res) => {
     user = new User({
       username,
       pin: hashedPin,
-      email
+      email,
+      bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : ''
     });
 
     await user.save();
@@ -36,6 +37,7 @@ exports.register = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        bio: user.bio,
         subscriptionTier: user.subscriptionTier
       }
     });
@@ -69,6 +71,7 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        bio: user.bio,
         subscriptionTier: user.subscriptionTier
       }
     });

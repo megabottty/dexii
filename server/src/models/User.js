@@ -16,6 +16,10 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
+  bio: {
+    type: String,
+    default: ''
+  },
   friends: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

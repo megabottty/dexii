@@ -148,13 +148,16 @@ export class DataService {
   private getDemoCredentials() {
     const username = localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';
     const pin = localStorage.getItem('dexii_pin') || '1111';
+    const email = localStorage.getItem('dexii_profile_email') || `${username}@dexii.local`;
+    const bio = localStorage.getItem('dexii_profile_bio') || '';
 
     localStorage.setItem(this.usernameStorageKey, username);
 
     return {
       username,
       pin,
-      email: `${username}@dexii.local`
+      email,
+      bio
     };
   }
 
@@ -346,7 +349,7 @@ export class DataService {
     }));
   }
 
-  public addCrush(crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'>) {
+  public addCrush(crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'>): CrushProfile {
     const localId = Math.random().toString(36).substring(7);
     const newCrush: CrushProfile = {
       ...crush,
@@ -360,6 +363,7 @@ export class DataService {
 
     this._allCrushes.update(prev => [newCrush, ...prev]);
     void this.persistNewCrush(localId, newCrush);
+    return newCrush;
   }
 
   private _currentViewerFriendId = signal<string | null>(null);
@@ -403,6 +407,9 @@ export class DataService {
   public toggleEntryVisibility(entryId: string, friendId: string): void {
     this._entries.update(entries => entries.map(e => {
       if (e.id === entryId) {
+        if (e.visibility.includes('public')) {
+          return { ...e, visibility: [] };
+        }
         const hasFriend = e.visibility.includes(friendId);
         const newVisibility = hasFriend
           ? e.visibility.filter(id => id !== friendId)

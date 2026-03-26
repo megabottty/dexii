@@ -9,77 +9,85 @@ import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier } from '../../core/models/user.model';
+import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
   selector: 'app-vault-center',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  styleUrl: './vault-center.component.css',
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
-         style="min-height: 100vh; font-family: 'Times New Roman', serif; padding: 60px 40px;">
+         class="vault-center-component__s1">
 
-      <div style="max-width: 1000px; margin: 0 auto;">
-        <nav [style.background-color]="theme.colors().bgSecondary"
+      <div class="vault-center-component__s2">
+        <app-page-hint
+          hintKey="vault_inline"
+          title="Vault Hint"
+          message="Journal entries are private and never shared. Photo Vault unlocks on Premium/Gold with age verification.">
+        </app-page-hint>
+
+        <nav aria-label="Primary navigation" [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
-             style="margin-bottom: 28px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; gap: 10px;">
+             class="vault-center-component__s3">
+          <div class="vault-center-component__s4">
             <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
-                 style="width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">D</div>
-            <span style="font-size: 16px; letter-spacing: 2px; text-transform: uppercase;">Dexii</span>
+                 class="vault-center-component__s5">D</div>
+            <span class="vault-center-component__s6">Dexii</span>
           </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a routerLink="/dashboard" [style.color]="theme.colors().text"
-               style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
-            <a routerLink="/friends" [style.color]="theme.colors().text"
-               style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Friends</a>
-            <a routerLink="/chat" [style.color]="theme.colors().text"
-               style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Chat</a>
+          <div class="vault-center-component__s7">
+            <a routerLink="/dashboard" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+               class="vault-nav-link">Dashboard</a>
+            <a routerLink="/friends" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+               class="vault-nav-link">Friends</a>
+            <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+               class="vault-nav-link">Chat</a>
             <button (click)="theme.toggleTheme()" [style.color]="theme.colors().text"
                     [style.border]="'1px solid ' + theme.colors().border"
-                    style="background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                    class="vault-center-component__s8">
               {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
             </button>
             <button (click)="security.lockApp()" [style.background-color]="theme.colors().primary"
-                    style="color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                    class="vault-center-component__s9">
               Lock
             </button>
           </div>
         </nav>
 
         <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px; border-bottom: 1px solid {{ theme.colors().border }}; padding-bottom: 30px;">
+        <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="vault-header">
           <div>
-            <h2 style="font-size: 32px; font-weight: 200; text-transform: uppercase; letter-spacing: 6px; margin: 0;">Dexii Vault</h2>
-            <p [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px;">Private Journal & Intimate Content</p>
+            <h2 class="vault-center-component__s10">Dexii Vault</h2>
+            <p [style.color]="theme.colors().primary" class="vault-center-component__s11">Private Journal & Intimate Content</p>
           </div>
-          <div style="display: flex; gap: 20px;">
+          <div class="vault-center-component__s12">
              <button (click)="activeTab.set('journal')" [style.color]="activeTab() === 'journal' ? theme.colors().primary : theme.colors().textSecondary"
-                     style="background: none; border: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Journal</button>
+                     class="vault-center-component__s13">Journal</button>
              <button (click)="activeTab.set('photos')" [style.color]="activeTab() === 'photos' ? theme.colors().primary : theme.colors().textSecondary"
-                     style="background: none; border: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Photo Vault</button>
+                     class="vault-center-component__s13">Photo Vault</button>
           </div>
         </div>
 
         <!-- Private Journal Tab -->
         @if (activeTab() === 'journal') {
-          <div style="display: flex; flex-direction: column; gap: 40px;">
-            <div [style.background-color]="theme.colors().bgSecondary" style="padding: 30px; border: 1px solid {{ theme.colors().border }};">
-               <h3 style="font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">New Journal Entry</h3>
+          <div class="vault-center-component__s14">
+            <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="vault-journal-box">
+               <h3 class="vault-center-component__s15">New Journal Entry</h3>
                <textarea [(ngModel)]="newJournalEntry" placeholder="Write your private thoughts here... (Never shared)"
                          [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                         style="width: 100%; height: 120px; padding: 15px; border-radius: 0px; outline: none; font-family: 'Times New Roman', serif; margin-bottom: 20px; resize: none;"></textarea>
+                         class="vault-center-component__s16"></textarea>
                <button (click)="saveJournal()" [style.background-color]="theme.colors().primary"
-                       style="color: white; border: none; padding: 12px 30px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Secure Entry</button>
+                       class="vault-center-component__s17">Secure Entry</button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div class="vault-center-component__s18">
               @for (entry of journalEntries(); track entry.id) {
                 <div [style.border-left]="'3px solid ' + theme.colors().primary" [style.background-color]="theme.colors().bgSecondary"
-                     style="padding: 24px; position: relative;">
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 12px;">
+                     class="vault-center-component__s19">
+                  <span [style.color]="theme.colors().textSecondary" class="vault-center-component__s20">
                     {{ entry.timestamp | date:'MMMM d, y h:mm a' }}
                   </span>
-                  <p style="font-size: 16px; line-height: 1.6; font-style: italic; margin: 0;">"{{ entry.content }}"</p>
+                  <p class="vault-center-component__s21">"{{ entry.content }}"</p>
                 </div>
               }
             </div>
@@ -89,35 +97,41 @@ import { SubscriptionTier } from '../../core/models/user.model';
         <!-- Photo Vault Tab -->
         @if (activeTab() === 'photos') {
           @if (!subscription.isPremium()) {
-            <div style="text-align: center; padding: 80px 40px; border: 1px dashed {{ theme.colors().border }};">
-              <h3 style="font-size: 24px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 20px;">Premium Vault Feature</h3>
-              <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 40px; font-size: 14px;">18+ Photo Vault is available on Premium and Gold tiers.</p>
+            <div [style.border]="'1px dashed ' + theme.colors().border" class="vault-upgrade-box">
+              <h3 class="vault-center-component__s22">Premium Vault Feature</h3>
+              <p [style.color]="theme.colors().textSecondary" class="vault-center-component__s23">18+ Photo Vault is available on Premium and Gold tiers.</p>
               <button (click)="subscription.upgrade(premiumTier)" [style.background-color]="theme.colors().primary"
-                      style="color: white; border: none; padding: 16px 40px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Upgrade to Premium</button>
+                      class="vault-center-component__s24">Upgrade to Premium</button>
             </div>
           } @else if (!security.isVerified18()) {
-            <div style="text-align: center; padding: 80px 40px; border: 1px dashed {{ theme.colors().border }};">
-               <h3 style="font-size: 24px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 20px;">18+ Restricted Area</h3>
-               <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 40px; font-size: 14px;">Intimate content requires age verification and additional security clearance.</p>
+            <div [style.border]="'1px dashed ' + theme.colors().border" class="vault-upgrade-box">
+               <h3 class="vault-center-component__s22">18+ Restricted Area</h3>
+               <p [style.color]="theme.colors().textSecondary" class="vault-center-component__s23">Intimate content requires age verification and additional security clearance.</p>
                <button (click)="security.verifyAge()" [style.background-color]="theme.colors().primary"
-                       style="color: white; border: none; padding: 16px 40px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Start Verification</button>
+                       class="vault-center-component__s24">Start Verification</button>
             </div>
           } @else {
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
-              <div (click)="fileInput.click()" [style.border]="'2px dashed ' + theme.colors().border"
-                   style="height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; opacity: 0.6; transition: opacity 0.3s;">
-                <span style="font-size: 32px;">+</span>
-                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">Add Sensitive Photo</span>
-                <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none;">
+            <div class="vault-center-component__s25">
+              <div (click)="fileInput.click()"
+                   (keydown.enter)="fileInput.click()"
+                   (keydown.space)="fileInput.click(); $event.preventDefault()"
+                   role="button"
+                   tabindex="0"
+                   [style.border]="'2px dashed ' + theme.colors().border"
+                   class="vault-center-component__s26">
+                <span class="vault-center-component__s27">+</span>
+                <span class="vault-center-component__s28">Add Sensitive Photo</span>
+                <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" class="vault-center-component__s29">
               </div>
 
               @for (file of vault.files(); track file.id) {
-                <div style="height: 200px; position: relative; border: 1px solid {{ theme.colors().border }}; group">
-                   <img [src]="file.url" style="width: 100%; height: 100%; object-fit: cover; filter: blur(20px); transition: filter 0.5s;"
+                <div [style.border]="'1px solid ' + theme.colors().border" class="vault-photo-card">
+                   <img [src]="file.url"
+                        alt="Sensitive vault image"
                         (mouseenter)="$any($event.target).style.filter = 'none'"
-                        (mouseleave)="$any($event.target).style.filter = 'blur(20px)'">
-                   <button (click)="vault.deleteFile(file.id)" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 5px 8px; font-size: 10px; cursor: pointer;">✕</button>
-                   <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: rgba(0,0,0,0.4); color: white; font-size: 8px; text-transform: uppercase; letter-spacing: 1px;">
+                        (mouseleave)="$any($event.target).style.filter = 'blur(20px)'" class="vault-center-component__s30">
+                   <button (click)="vault.deleteFile(file.id)" aria-label="Delete sensitive photo" class="vault-center-component__s31">✕</button>
+                   <div class="vault-center-component__s32">
                      {{ file.uploadedAt | date:'MMM d' }} • TAP TO UNBLUR
                    </div>
                 </div>

@@ -9,6 +9,7 @@ import { SecurityService } from '../../core/services/security.service';
 import { ModalService } from '../../core/services/modal.service';
 import { User, SubscriptionTier } from '../../core/models/user.model';
 import { getApiBaseUrl } from '../../core/config/api-config';
+import { PageHintComponent } from '../../core/components/page-hint.component';
 
 interface FriendSearchResult {
   username: string;
@@ -30,84 +31,98 @@ interface FriendRequestItem {
 @Component({
   selector: 'app-friends-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, SlicePipe],
+  styleUrl: './friends-list.component.css',
+  imports: [CommonModule, RouterModule, SlicePipe, PageHintComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
-         style="min-height: 100vh; font-family: 'Times New Roman', serif; padding: 60px 40px; position: relative;">
-      <nav [style.background-color]="theme.colors().bgSecondary"
+         class="friends-list-component__s1">
+      <nav aria-label="Primary navigation" [style.background-color]="theme.colors().bgSecondary"
            [style.border]="'1px solid ' + theme.colors().border"
-           style="max-width: 900px; margin: 0 auto 28px auto; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 10px;">
+           class="friends-list-component__s2">
+        <div class="friends-list-component__s3">
           <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
-               style="width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">D</div>
-          <span style="font-size: 16px; letter-spacing: 2px; text-transform: uppercase;">Dexii</span>
+               class="friends-list-component__s4">D</div>
+          <span class="friends-list-component__s5">Dexii</span>
         </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <a routerLink="/dashboard" [style.color]="theme.colors().text"
-             style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
-          <a routerLink="/vault" [style.color]="theme.colors().text"
-             style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Vault</a>
-          <a routerLink="/chat" [style.color]="theme.colors().text"
-             style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Chat</a>
+        <div class="friends-list-component__s6">
+          <a routerLink="/dashboard" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+             class="friends-list-nav-link">Dashboard</a>
+          <a routerLink="/vault" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+             class="friends-list-nav-link">Vault</a>
+          <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+             class="friends-list-nav-link">Chat</a>
           <button (click)="theme.toggleTheme()" [style.color]="theme.colors().text"
                   [style.border]="'1px solid ' + theme.colors().border"
-                  style="background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                  class="friends-list-component__s7">
             {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
           </button>
           <button (click)="lockApp()" [style.background-color]="theme.colors().primary"
-                  style="color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                  class="friends-list-component__s8">
             Lock
           </button>
         </div>
       </nav>
 
       @if (selectedFriend()) {
-        <div style="position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 15px; padding: 20px;">
+        <div class="friends-list-component__s9">
           <div [style.background-color]="theme.colors().bg"
                [style.border]="'1px solid ' + theme.colors().border"
-               style="width: 100%; max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 40px; border-radius: 0px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+               class="friends-list-component__s10">
 
-            <button (click)="closeSharing()" [style.color]="theme.colors().textSecondary" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+            <button (click)="closeSharing()" [style.color]="theme.colors().textSecondary" aria-label="Close sharing controls" class="friends-list-component__s11">✕</button>
 
-            <h3 style="font-size: 28px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 12px; text-align: center;">Sharing Controls</h3>
-            <p [style.color]="theme.colors().textSecondary" style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 40px;">
+            <h3 class="friends-list-component__s12">Sharing Controls</h3>
+            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s13">
               Managing access for {{ selectedFriend()?.username }}
             </p>
+            <div [style.border]="'1px solid ' + theme.colors().border"
+                 class="friends-list-component__s14">
+              <img [src]="selectedFriend()?.avatarUrl || 'https://i.pravatar.cc/150?u=' + (selectedFriend()?.id || 'friend')"
+                   [alt]="selectedFriend()?.username || 'Selected friend'"
+                   class="friends-list-component__s15">
+              <div>
+                <p [style.color]="theme.colors().textSecondary"
+                   class="friends-list-component__s16">
+                  Sharing with
+                </p>
+                <p class="friends-list-component__s17">{{ selectedFriend()?.username }}</p>
+              </div>
+            </div>
 
-            <div style="display: flex; flex-direction: column; gap: 32px;">
+            <div class="friends-list-component__s18">
               @for (crush of allCrushes(); track crush.id) {
-                <div [style.border-bottom]="'1px solid ' + theme.colors().border" style="padding-bottom: 24px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                      <img [src]="crush.avatarUrl" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-component__s19">
+                  <div class="friends-list-component__s20">
+                    <div class="friends-list-component__s21">
+                      <img [src]="crush.avatarUrl" [alt]="crush.nickname + ' avatar'" class="friends-list-component__s22">
                       <div>
-                        <h4 style="font-size: 16px; font-weight: 400; margin: 0;">{{ crush.nickname }}</h4>
-                        <span [style.color]="theme.colors().primary" style="font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">{{ crush.status }}</span>
+                        <h4 class="friends-list-component__s23">{{ crush.nickname }}</h4>
+                        <span [style.color]="theme.colors().primary" class="friends-list-component__s24">{{ crush.status }}</span>
                       </div>
                     </div>
                     <button (click)="toggleCrushSharing(crush.id)"
                             [style.background-color]="isCrushShared(crush) ? theme.colors().primary : 'transparent'"
                             [style.color]="isCrushShared(crush) ? 'white' : theme.colors().text"
                             [style.border]="'1px solid ' + (isCrushShared(crush) ? theme.colors().primary : theme.colors().border)"
-                            style="padding: 6px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.3s;">
+                            class="friends-list-component__s25">
                       {{ isCrushShared(crush) ? 'Shared' : 'Private' }}
                     </button>
                   </div>
 
                   @if (isCrushShared(crush)) {
-                    <div style="padding-left: 56px; display: flex; flex-direction: column; gap: 12px;">
-                      <p [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Specific Entries</p>
+                    <div class="friends-list-component__s26">
+                      <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s27">Specific Entries</p>
                       @for (entry of getEntries(crush.id); track entry.id) {
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                          <span style="font-size: 13px; font-style: italic; opacity: 0.8;">"{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
+                        <div class="friends-list-component__s28">
+                          <span class="friends-list-component__s29">"{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
                           <button (click)="toggleEntrySharing(entry.id)"
                                   [style.color]="isEntryShared(entry) ? theme.colors().accent : theme.colors().textSecondary"
-                                  style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 0 8px;">
+                                  class="friends-list-component__s30">
                             {{ isEntryShared(entry) ? '👁️' : '🔒' }}
                           </button>
                         </div>
                       } @empty {
-                        <p [style.color]="theme.colors().textSecondary" style="font-size: 11px; font-style: italic;">No specific entries to share.</p>
+                        <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s31">No specific entries to share.</p>
                       }
                     </div>
                   }
@@ -118,37 +133,43 @@ interface FriendRequestItem {
         </div>
       }
 
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 style="font-size: 32px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 40px; border-bottom: 1px solid {{ theme.colors().border }}; padding-bottom: 20px;">
+      <div class="friends-list-component__s32">
+        <app-page-hint
+          hintKey="friends_inline"
+          title="Friends Hint"
+          message="Add friends, open Bio for friend notes, and use Sharing Controls to manage crush and entry visibility by person.">
+        </app-page-hint>
+
+        <h2 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
           The Inner Circle
         </h2>
 
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 20px; margin-bottom: 20px;">
-          <p [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0;">
+        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s33">
+          <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s34">
             Subscription Tier: {{ subscription.tier() }}
           </p>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <div class="friends-list-component__s6">
             <button (click)="subscription.upgrade(freeTier)"
                     [style.background-color]="subscription.tier() === freeTier ? theme.colors().primary : 'transparent'"
                     [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
                     [style.border]="'1px solid ' + theme.colors().border"
-                    style="padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">Free</button>
+                    class="friends-list-component__s35">Free</button>
             <button (click)="subscription.upgrade(premiumTier)"
                     [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
                     [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
                     [style.border]="'1px solid ' + theme.colors().border"
-                    style="padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">Premium ($5/mo)</button>
+                    class="friends-list-component__s35">Premium ($5/mo)</button>
             <button (click)="subscription.upgrade(goldTier)"
                     [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
                     [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
                     [style.border]="'1px solid ' + theme.colors().border"
-                    style="padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">Gold ($15/mo)</button>
+                    class="friends-list-component__s35">Gold ($15/mo)</button>
           </div>
         </div>
 
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 20px; margin-bottom: 28px;">
-          <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-top: 0;">Find Friends</p>
-          <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s36">
+          <p class="friends-list-component__s37">Find Friends</p>
+          <div class="friends-list-component__s38">
             <input
               [value]="searchQuery()"
               (input)="searchQuery.set(asInputValue($event))"
@@ -157,26 +178,26 @@ interface FriendRequestItem {
               [style.background-color]="theme.colors().bg"
               [style.border]="'1px solid ' + theme.colors().border"
               [style.color]="theme.colors().text"
-              style="flex: 1; padding: 10px 12px; outline: none; font-family: 'Times New Roman', serif;"
-            >
-            <button (click)="searchUsers()" [style.background-color]="theme.colors().primary" style="color: white; border: none; padding: 10px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Search</button>
+
+             class="friends-list-component__s39">
+            <button (click)="searchUsers()" [style.background-color]="theme.colors().primary" class="friends-list-component__s40">Search</button>
           </div>
 
           @if (searchResults().length > 0) {
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="friends-list-component__s41">
               @for (candidate of searchResults(); track candidate.username) {
-                <div [style.border]="'1px solid ' + theme.colors().border" style="padding: 12px; display: flex; align-items: center; justify-content: space-between;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <img [src]="candidate.avatarUrl || 'https://i.pravatar.cc/150?u=' + candidate.username" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
-                    <span style="font-size: 14px;">{{ candidate.username }}</span>
+                <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
+                  <div class="friends-list-component__s3">
+                    <img [src]="candidate.avatarUrl || 'https://i.pravatar.cc/150?u=' + candidate.username" [alt]="candidate.username + ' avatar'" class="friends-list-component__s43">
+                    <span class="friends-list-component__s44">{{ candidate.username }}</span>
                   </div>
                   <button
                     (click)="sendFriendRequest(candidate)"
                     [disabled]="candidate.isFriend || candidate.hasPendingRequest"
                     [style.opacity]="candidate.isFriend || candidate.hasPendingRequest ? '0.5' : '1'"
                     [style.background-color]="theme.colors().primary"
-                    style="color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;"
-                  >
+
+                   class="friends-list-component__s8">
                     {{ candidate.isFriend ? 'Friend' : (candidate.hasPendingRequest ? 'Pending' : 'Request') }}
                   </button>
                 </div>
@@ -184,11 +205,11 @@ interface FriendRequestItem {
             </div>
           } @else if (didSearch()) {
             <div>
-              <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 10px 0; font-size: 12px; font-style: italic;">No users found.</p>
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s45">No users found.</p>
               @if (searchQuery().trim()) {
                 <button (click)="inviteTypedUsername()"
                         [style.background-color]="theme.colors().primary"
-                        style="color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                        class="friends-list-component__s8">
                   Invite {{ searchQuery().trim() }}
                 </button>
               }
@@ -196,66 +217,68 @@ interface FriendRequestItem {
           }
         </div>
 
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" style="padding: 20px; margin-bottom: 28px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Friend Requests</p>
-            <button (click)="simulateIncomingRequest()" [style.color]="theme.colors().accent"
-                    style="background: none; border: 1px solid {{ theme.colors().accent }}; padding: 6px 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
+        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" class="friends-list-component__s36">
+          <div class="friends-list-component__s46">
+            <p class="friends-list-component__s47">Friend Requests</p>
+            <button (click)="simulateIncomingRequest()" [style.color]="theme.colors().accent" [style.border]="'1px solid ' + theme.colors().accent"
+                    class="friends-list-simulate-btn">
               Simulate Request
             </button>
           </div>
 
           @if (incomingRequests().length > 0) {
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+            <div class="friends-list-component__s48">
               @for (req of incomingRequests(); track req.id) {
-                <div [style.border]="'1px solid ' + theme.colors().border" style="padding: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
                   <span>{{ req.from }} wants to connect</span>
-                  <div style="display: flex; gap: 8px;">
-                    <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#16a34a'" style="color: white; border: none; padding: 6px 10px; font-size: 10px; cursor: pointer;">Accept</button>
-                    <button (click)="respondToRequest(req, 'decline')" [style.background-color]="'#ef4444'" style="color: white; border: none; padding: 6px 10px; font-size: 10px; cursor: pointer;">Decline</button>
+                  <div class="friends-list-component__s49">
+                    <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#16a34a'" class="friends-list-component__s50">Accept</button>
+                    <button (click)="respondToRequest(req, 'decline')" [style.background-color]="'#ef4444'" class="friends-list-component__s50">Decline</button>
                   </div>
                 </div>
               }
             </div>
           } @else {
-            <p [style.color]="theme.colors().textSecondary" style="margin: 14px 0 0 0; font-size: 12px; font-style: italic;">No incoming requests yet. Tap “Simulate Request” to see the flow.</p>
+            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">No incoming requests yet. Tap “Simulate Request” to see the flow.</p>
           }
         </div>
 
-        @if (!subscription.isPremium()) {
-          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent"
-               style="padding: 20px; margin-bottom: 40px; text-align: center;">
-            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Free Account: 5 Friends Limit</p>
-            <button (click)="subscription.upgrade(goldTier)" [style.color]="theme.colors().accent"
-                    style="background: none; border: none; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: underline;">Upgrade for Unlimited Sharing</button>
-          </div>
-        }
+        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent"
+             class="friends-list-component__s52">
+          <p class="friends-list-component__s47">
+            Friends are unlimited on all tiers.
+          </p>
+        </div>
 
-        <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="friends-list-component__s53">
           @for (friend of friends(); track friend.id) {
             <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
-                 style="padding: 24px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
+                 class="friends-list-component__s54">
 
-              <div style="display: flex; align-items: center; gap: 20px;">
-                <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+              <div class="friends-list-component__s55">
+                <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
                 <div>
-                  <h4 style="font-size: 18px; font-weight: 400; margin: 0;">{{ friend.username }}</h4>
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
+                  <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
+                  <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
                 </div>
               </div>
 
-              <div style="display: flex; gap: 12px;">
-                <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary"
-                        style="background: none; border: 1px solid {{ theme.colors().primary }}; padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Sharing Controls</button>
-                <a routerLink="/chat" [style.color]="theme.colors().text"
-                   style="text-decoration: none; border: 1px solid {{ theme.colors().border }}; padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Chat</a>
+              <div class="friends-list-component__s59">
+                <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                   class="friends-list-action-link">Profile</a>
+                <a [routerLink]="['/friends', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                   class="friends-list-action-link">Bio</a>
+                <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
+                        class="friends-list-action-btn">Sharing Controls</button>
+                <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                   class="friends-list-action-link">Chat</a>
                 <button (click)="removeFriend(friend.id)" [style.color]="'#ef4444'"
-                        style="background: none; border: 1px solid #ef4444; padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Remove</button>
+                        class="friends-list-component__s60">Remove</button>
               </div>
             </div>
           } @empty {
-            <div style="text-align: center; padding: 60px; border: 1px dashed {{ theme.colors().border }};">
-               <p [style.color]="theme.colors().textSecondary" style="font-style: italic;">Your inner circle is currently empty.</p>
+            <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
+               <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">Your inner circle is currently empty.</p>
             </div>
           }
         </div>
@@ -346,11 +369,6 @@ export class FriendsListComponent implements OnInit {
   }
 
   async sendFriendRequest(candidate: FriendSearchResult) {
-    if (!this.subscription.checkLimit(this.friends().length, 5)) {
-      this.modal.show('Upgrade to Premium to add more than 5 friends.');
-      return;
-    }
-
     const result = await this.demoFetch('/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -398,15 +416,13 @@ export class FriendsListComponent implements OnInit {
   }
 
   async removeFriend(id: string) {
-    if (!confirm('Are you sure you want to remove this friend from your inner circle? All shared tea will be revoked.')) {
-      return;
-    }
+    this.modal.confirm('Are you sure you want to remove this friend from your inner circle? All shared tea will be revoked.', async () => {
+      await this.demoFetch(`/list/${encodeURIComponent(id)}?username=${encodeURIComponent(this.currentUsername)}`, {
+        method: 'DELETE'
+      });
 
-    await this.demoFetch(`/list/${encodeURIComponent(id)}?username=${encodeURIComponent(this.currentUsername)}`, {
-      method: 'DELETE'
+      await this.loadFriends();
     });
-
-    await this.loadFriends();
   }
 
   manageSharing(friend: User) {
@@ -446,7 +462,7 @@ export class FriendsListComponent implements OnInit {
 
   isEntryShared(entry: any): boolean {
     const friend = this.selectedFriend();
-    return friend ? entry.visibility.includes(friend.id) : false;
+    return friend ? entry.visibility.includes(friend.id) || entry.visibility.includes('public') : false;
   }
 
   toggleCrushSharing(crushId: string) {

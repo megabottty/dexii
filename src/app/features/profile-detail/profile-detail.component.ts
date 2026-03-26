@@ -7,118 +7,134 @@ import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
   selector: 'app-profile-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  styleUrl: './profile-detail.component.css',
+  imports: [CommonModule, RouterModule, PageHintComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
-         style="min-height: 100vh; font-family: 'Times New Roman', serif; padding: 60px 40px; transition: all 0.8s ease; position: relative; overflow-x: hidden;">
+         class="profile-detail-component__s1">
 
-      <div style="max-width: 1000px; margin: 0 auto; position: relative; z-index: 10;">
+      <div class="profile-detail-component__s2">
+        <app-page-hint
+          hintKey="profile_inline"
+          title="Profile Hint"
+          message="Use Add Note for updates, log vibe and red flags over time, and use Safety actions when needed.">
+        </app-page-hint>
 
         <!-- Back Button -->
         <a routerLink="/dashboard" [style.color]="theme.colors().textSecondary"
-           style="display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 60px;">
+           class="profile-detail-component__s3">
           ← Return to Collection
         </a>
 
         @if (crush(); as c) {
           <!-- Glamour Header -->
-          <header style="display: flex; gap: 60px; align-items: center; margin-bottom: 80px; flex-wrap: wrap;">
+          <header class="profile-detail-component__s4">
             <div [style.border]="'1px solid ' + theme.colors().border"
-                 style="width: 280px; height: 380px; border-radius: 0px; overflow: hidden; shadow: 0 30px 60px -12px rgba(0,0,0,0.2); position: relative;">
+                 class="profile-detail-component__s5">
               <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
-                   style="width: 100%; height: 100%; object-fit: cover;">
+                   [alt]="c.nickname + ' profile photo'"
+                   class="profile-detail-component__s6">
               @if (theme.mode() === 'light') {
-                <div style="position: absolute; inset: 0; border: 15px solid rgba(255,255,255,0.1); pointer-events: none;"></div>
+                <div class="profile-detail-component__s7"></div>
               }
             </div>
 
-            <div style="flex: 1; min-width: 340px;">
-              <div style="margin-bottom: 32px;">
-                <span [style.color]="theme.colors().primary" style="font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 5px; display: block; margin-bottom: 16px;">
+            <div class="profile-detail-component__s8">
+              <div class="profile-detail-component__s9">
+                <span [style.color]="theme.colors().primary" class="profile-detail-component__s10">
                   Exclusive {{ c.status }}
                 </span>
-                <h1 style="font-size: 72px; font-weight: 200; margin: 0; line-height: 0.9; text-transform: uppercase; letter-spacing: -2px;">{{ c.nickname }}</h1>
+                <h1 class="profile-detail-component__s11">{{ c.nickname }}</h1>
               </div>
 
-              <p [style.color]="theme.colors().textSecondary" style="font-size: 22px; margin: 0 0 40px 0; font-style: italic; font-weight: 200;">{{ c.fullName }}</p>
+              <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s12">{{ c.fullName }}</p>
 
-              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <div class="profile-detail-component__s13">
                 <button (click)="addNote(c.id)" [style.background-color]="theme.colors().primary"
-                        style="color: white; border: none; padding: 14px 30px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 10px 20px rgba(219,39,119,0.2);">
+                        class="profile-detail-component__s14">
                   Add Note
                 </button>
-                <button (click)="startSafetyCheck(c.id)" [style.background-color]="'transparent'"
-                        [style.color]="safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text"
-                        [style.border]="'1px solid ' + (safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text)"
-                        style="padding: 14px 18px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 11px;">
-                  Send Check-In
+                <button (click)="onDateMode.set(!onDateMode())" [style.background-color]="'transparent'"
+                        [style.color]="onDateMode() ? theme.colors().primary : theme.colors().text"
+                        [style.border]="'1px solid ' + (onDateMode() ? theme.colors().primary : theme.colors().text)"
+                        class="profile-detail-component__s15">
+                  Going on a Date
                 </button>
-                <button (click)="markSafe(c.id)" [style.background-color]="'transparent'"
-                        [style.color]="safetyState() === 'Safe' ? '#16a34a' : theme.colors().text"
-                        [style.border]="'1px solid ' + (safetyState() === 'Safe' ? '#16a34a' : theme.colors().text)"
-                        style="padding: 14px 18px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 11px;">
-                  Mark Safe
-                </button>
-                <button (click)="triggerEmergency(c.id)" [style.background-color]="'transparent'"
-                        [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text"
-                        [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text)"
-                        style="padding: 14px 18px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 11px;">
-                  Emergency Mode
-                </button>
+                @if (onDateMode()) {
+                  <button (click)="startSafetyCheck(c.id)" [style.background-color]="'transparent'"
+                          [style.color]="safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text"
+                          [style.border]="'1px solid ' + (safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text)"
+                          class="profile-detail-component__s15">
+                    Send Check-In
+                  </button>
+                  <button (click)="markSafe(c.id)" [style.background-color]="'transparent'"
+                          [style.color]="safetyState() === 'Safe' ? '#16a34a' : theme.colors().text"
+                          [style.border]="'1px solid ' + (safetyState() === 'Safe' ? '#16a34a' : theme.colors().text)"
+                          class="profile-detail-component__s15">
+                    Mark Safe
+                  </button>
+                  <button (click)="triggerEmergency(c.id)" [style.background-color]="'transparent'"
+                          [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text"
+                          [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text)"
+                          class="profile-detail-component__s15">
+                    Emergency Mode
+                  </button>
+                }
                 <button (click)="toggleArchive(c)" [style.background-color]="'transparent'"
                         [style.color]="theme.colors().textSecondary"
                         [style.border]="'1px solid ' + theme.colors().border"
-                        style="padding: 14px 20px; border-radius: 0px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-size: 10px;">
+                        class="profile-detail-component__s16">
                   {{ c.status === statuses.Archived ? 'Unarchive' : 'Archive' }}
                 </button>
               </div>
               <p [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().textSecondary"
-                 style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-top: 16px;">
+                 class="profile-detail-component__s17">
                 Safety Status: {{ safetyState() }}
               </p>
             </div>
           </header>
 
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 80px;">
+              <div class="profile-detail-component__s18">
             <!-- Left -->
             <div>
-              <section style="margin-bottom: 60px;">
-                <h3 [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 24px; border-bottom: 1px solid; padding-bottom: 8px;">The Narrative</h3>
-                <p [style.color]="theme.colors().text" style="font-size: 20px; line-height: 1.8; margin: 0 0 32px 0; font-style: italic; font-weight: 200;">
+              <section class="profile-detail-component__s19">
+                <h3 [style.color]="theme.colors().textSecondary" class="profile-detail-component__s20">The Narrative</h3>
+                <p [style.color]="theme.colors().text" class="profile-detail-component__s21">
                   "{{ c.bio || 'A mysterious entry in the personal rolodex, awaiting further interaction and documentation.' }}"
                 </p>
 
-                <div style="display: flex; flex-wrap: wrap; gap: 32px; border-top: 1px solid {{theme.colors().border}}; padding-top: 32px;">
+                <div [style.border-top]="'1px solid ' + theme.colors().border" class="profile-detail-traits">
                   @if (c.hair && c.hair.length > 0) {
                     <div>
-                      <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">Hair</span>
-                      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                      <span [style.color]="theme.colors().textSecondary" class="profile-detail-component__s22">Hair</span>
+                      <div class="profile-detail-component__s23">
                         @for (h of c.hair; track h) {
-                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 4px 12px; font-size: 12px; border-radius: 4px;">{{h}}</span>
+                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s24">{{h}}</span>
                         }
                       </div>
                     </div>
                   }
                   @if (c.eyes && c.eyes.length > 0) {
                     <div>
-                      <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">Eyes</span>
-                      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                      <span [style.color]="theme.colors().textSecondary" class="profile-detail-component__s22">Eyes</span>
+                      <div class="profile-detail-component__s23">
                         @for (e of c.eyes; track e) {
-                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 4px 12px; font-size: 12px; border-radius: 4px;">{{e}}</span>
+                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s24">{{e}}</span>
                         }
                       </div>
                     </div>
                   }
                   @if (c.build && c.build.length > 0) {
                     <div>
-                      <span [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">Build</span>
-                      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                      <span [style.color]="theme.colors().textSecondary" class="profile-detail-component__s22">Build</span>
+                      <div class="profile-detail-component__s23">
                         @for (b of c.build; track b) {
-                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 4px 12px; font-size: 12px; border-radius: 4px;">{{b}}</span>
+                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s24">{{b}}</span>
                         }
                       </div>
                     </div>
@@ -126,34 +142,34 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                 </div>
 
                 @if (c.social && (c.social.snapchat || c.social.whatsapp || c.social.twitter || c.social.facebook || c.social.instagram)) {
-                  <div style="margin-top: 32px; display: flex; gap: 20px; flex-wrap: wrap;">
-                    @if (c.social.snapchat) { <div [style.color]="theme.colors().text" style="font-size: 13px;">👻 {{c.social.snapchat}}</div> }
-                    @if (c.social.whatsapp) { <div [style.color]="theme.colors().text" style="font-size: 13px;">💬 {{c.social.whatsapp}}</div> }
-                    @if (c.social.twitter) { <div [style.color]="theme.colors().text" style="font-size: 13px;">🐦 {{c.social.twitter}}</div> }
-                    @if (c.social.facebook) { <div [style.color]="theme.colors().text" style="font-size: 13px;">📘 {{c.social.facebook}}</div> }
-                    @if (c.social.instagram) { <div [style.color]="theme.colors().text" style="font-size: 13px;">📸 {{c.social.instagram}}</div> }
+                  <div class="profile-detail-component__s25">
+                    @if (c.social.snapchat) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">👻 {{c.social.snapchat}}</div> }
+                    @if (c.social.whatsapp) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">💬 {{c.social.whatsapp}}</div> }
+                    @if (c.social.twitter) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">🐦 {{c.social.twitter}}</div> }
+                    @if (c.social.facebook) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">📘 {{c.social.facebook}}</div> }
+                    @if (c.social.instagram) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">📸 {{c.social.instagram}}</div> }
                   </div>
                 }
 
                 @if (c.relationshipStatus) {
-                  <div style="margin-top: 32px; padding: 16px; border: 1px dashed {{theme.colors().primary}}; display: inline-block;">
-                    <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Status with me</span>
-                    <span style="font-size: 15px; font-weight: 400;">{{c.relationshipStatus}}</span>
+                  <div [style.border]="'1px dashed ' + theme.colors().primary" class="profile-detail-relationship">
+                    <span [style.color]="theme.colors().primary" class="profile-detail-component__s27">Status with me</span>
+                    <span class="profile-detail-component__s28">{{c.relationshipStatus}}</span>
                   </div>
                 }
               </section>
 
               <section>
-                <h3 [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 24px; border-bottom: 1px solid; padding-bottom: 8px;">History</h3>
-                <div [style.border-left]="'1px solid ' + theme.colors().border" style="padding-left: 32px; margin-left: 4px;">
+                <h3 [style.color]="theme.colors().textSecondary" class="profile-detail-component__s20">History</h3>
+                <div [style.border-left]="'1px solid ' + theme.colors().border" class="profile-detail-component__s29">
                    @for (entry of entries(); track entry.id) {
-                     <div style="margin-bottom: 32px; position: relative;">
-                       <div [style.background-color]="theme.colors().primary" style="position: absolute; left: -37px; top: 4px; width: 9px; height: 9px; border-radius: 50%;"></div>
-                       <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 8px;">
+                     <div class="profile-detail-component__s30">
+                       <div [style.background-color]="theme.colors().primary" class="profile-detail-component__s31"></div>
+                       <span [style.color]="theme.colors().primary" class="profile-detail-component__s22">
                          {{ entry.type }} • {{ entry.timestamp | date:'MMM d' }}
-                         <span *ngIf="entry.isBurnAfterReading" style="color: #ef4444; margin-left: 8px;">🔥 Disappearing</span>
+                         <span *ngIf="entry.isBurnAfterReading" class="profile-detail-component__s32">🔥 Disappearing</span>
                        </span>
-                       <p [style.color]="theme.colors().textSecondary" style="font-size: 14px; line-height: 1.6; margin: 0;">{{ entry.content }}</p>
+                       <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s33">{{ entry.content }}</p>
                      </div>
                    }
                 </div>
@@ -161,50 +177,50 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
             </div>
 
             <!-- Right -->
-            <div style="display: flex; flex-direction: column; gap: 40px;">
-              <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" style="padding: 40px; border-radius: 0px;">
-                 <h4 [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 32px; text-align: center;">Vibe Analysis</h4>
+            <div class="profile-detail-component__s34">
+              <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s35">
+                 <h4 [style.color]="theme.colors().textSecondary" class="profile-detail-component__s36">Vibe Analysis</h4>
 
                  <!-- Tea-Meter Visual -->
-                 <div style="display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 60px; margin-bottom: 24px;">
+                 <div class="profile-detail-component__s37">
                     @for (vibe of c.vibeHistory; track $index) {
                       <div [style.height]="(vibe * 10) + '%'"
                            [style.background-color]="theme.colors().primary"
                            [style.opacity]="0.3 + ($index * (0.7 / c.vibeHistory.length))"
-                           style="width: 12px; border-radius: 2px; transition: all 1s ease;"></div>
+                           class="profile-detail-component__s38"></div>
                     }
                  </div>
 
-                 <div style="text-align: center; margin-bottom: 32px;">
-                   <button (click)="logVibe(c.id)" style="background: none; border: none; color: {{theme.colors().primary}}; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: underline;">
+                 <div class="profile-detail-component__s39">
+                   <button (click)="logVibe(c.id)" [style.color]="theme.colors().primary" class="profile-detail-vibe-btn">
                      Log New Vibe
                    </button>
                  </div>
 
-                 <div style="text-align: center; margin-bottom: 40px;">
-                   <p [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Attraction Level</p>
-                   <div [style.color]="theme.colors().accent" style="font-size: 24px; letter-spacing: 8px;">
+                 <div class="profile-detail-component__s40">
+                   <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s41">Attraction Level</p>
+                   <div [style.color]="theme.colors().accent" class="profile-detail-component__s42">
                      @for (star of [1,2,3,4,5]; track star) {
                        {{ (c.rating || 0) >= star ? '★' : '☆' }}
                      }
                    </div>
                  </div>
 
-                 <div style="text-align: center; margin-bottom: 40px;">
-                   <p [style.color]="theme.colors().textSecondary" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Cautionary Flags</p>
-                   <p [style.color]="c.redFlags > 2 ? '#ef4444' : theme.colors().text" style="font-size: 24px; font-weight: 900; margin: 0;">{{ c.redFlags }}</p>
+                 <div class="profile-detail-component__s40">
+                   <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s43">Cautionary Flags</p>
+                   <p [style.color]="c.redFlags > 2 ? '#ef4444' : theme.colors().text" class="profile-detail-red-flag-count">{{ c.redFlags }}</p>
                    @if (c.redFlags >= 3) {
-                     <p style="color: #ef4444; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-top: 10px;">Vibe Shift Detected</p>
+                     <p class="profile-detail-component__s44">Vibe Shift Detected</p>
                    }
                  </div>
 
-                 <button (click)="logRedFlag(c.id)" style="width: 100%; background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 0px; font-size: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 3px; transition: all 0.3s;">
+                 <button (click)="logRedFlag(c.id)" class="profile-detail-component__s45">
                    Mark Red Flag
                  </button>
               </div>
 
-              <div [style.border]="'1px solid ' + theme.colors().border" style="padding: 32px; text-align: center; font-style: italic;">
-                 <p [style.color]="theme.colors().textSecondary" style="font-size: 12px; line-height: 1.6; margin: 0;">"The tea is always sweeter when it's kept in the vault."</p>
+              <div [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s46">
+                 <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s47">"The tea is always sweeter when it's kept in the vault."</p>
               </div>
             </div>
           </div>
@@ -223,6 +239,7 @@ export class ProfileDetailComponent {
 
   crushId = signal<string | null>(null);
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
+  onDateMode = signal(false);
   statuses = CrushStatus;
 
   crush = computed(() => {
@@ -254,38 +271,50 @@ export class ProfileDetailComponent {
   }
 
   logVibe(id: string) {
-    const score = prompt("Rate the current vibe (1-10):", "5");
-    if (score && !isNaN(Number(score))) {
-      const num = Math.max(1, Math.min(10, Number(score)));
-      this.dataService.updateVibe(id, num);
-      this.dataService.addEntry({
-        crushId: id,
-        type: 'Note',
-        content: `New Vibe Analysis Logged: ${num}/10`,
-        isBurnAfterReading: false,
-        visibility: [],
-        isSensitive: false
-      });
-    }
+    this.modal.prompt("Rate the current vibe (1-10):", "5", (score) => {
+      if (score && !isNaN(Number(score))) {
+        const num = Math.max(1, Math.min(10, Number(score)));
+        this.dataService.updateVibe(id, num);
+        this.dataService.addEntry({
+          crushId: id,
+          type: 'Note',
+          content: `New Vibe Analysis Logged: ${num}/10`,
+          isBurnAfterReading: false,
+          visibility: [],
+          isSensitive: false
+        });
+      }
+    });
   }
 
   addNote(id: string) {
-    const tea = prompt("What's the tea?");
-    if (tea) {
-      if (!this.security.moderateContent(tea)) {
-        this.modal.show('Note flagged by AI moderation for safety.');
-        return;
+    this.modal.prompt("What's the tea?", "", (tea) => {
+      if (tea) {
+        if (!this.security.moderateContent(tea)) {
+          this.modal.show('Note flagged by AI moderation for safety.');
+          return;
+        }
+        this.modal.confirm("Should this note disappear after reading?", () => {
+          this.dataService.addEntry({
+            crushId: id,
+            type: 'Note',
+            content: tea,
+            isBurnAfterReading: true,
+            visibility: [],
+            isSensitive: false
+          });
+        }, () => {
+          this.dataService.addEntry({
+            crushId: id,
+            type: 'Note',
+            content: tea,
+            isBurnAfterReading: false,
+            visibility: [],
+            isSensitive: false
+          });
+        });
       }
-      const isBurn = confirm("Should this note disappear after reading?");
-      this.dataService.addEntry({
-        crushId: id,
-        type: 'Note',
-        content: tea,
-        isBurnAfterReading: isBurn,
-        visibility: [],
-        isSensitive: false
-      });
-    }
+    });
   }
 
   startSafetyCheck(id: string) {

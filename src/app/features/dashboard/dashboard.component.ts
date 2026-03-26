@@ -7,146 +7,201 @@ import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import { ModalService } from '../../core/services/modal.service';
+import { SubscriptionService } from '../../core/services/subscription.service';
+import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  styleUrl: './dashboard.component.css',
+  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
-         style="min-height: 100vh; font-family: 'Times New Roman', serif; padding-bottom: 60px; transition: all 0.8s ease; position: relative; overflow-x: hidden;">
+         class="dashboard-component__s1">
 
       <!-- New Entry Modal -->
       @if (showNewEntryModal()) {
-        <div style="position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 15px; padding: 20px;">
+        <div class="dashboard-component__s2">
           <div [style.background-color]="theme.colors().bg"
                [style.border]="'1px solid ' + theme.colors().border"
-               style="width: 100%; max-width: 500px; padding: 40px; border-radius: 0px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+               class="dashboard-component__s3">
 
-            <button (click)="closeModal()" [style.color]="theme.colors().textSecondary" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+            <button (click)="closeModal()" [style.color]="theme.colors().textSecondary" aria-label="Close new connection modal" class="dashboard-component__s4">✕</button>
 
-            <h3 style="font-size: 32px; font-weight: 200; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 32px; text-align: center;">New Connection</h3>
+            <h3 class="dashboard-component__s5">New Connection</h3>
 
-            <div style="display: flex; flex-direction: column; gap: 24px; max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+            <div class="dashboard-component__s6">
               <div>
-                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Avatar (Optional)</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Avatar (Optional)</label>
+                <div class="dashboard-component__s8">
                   <button (click)="avatarUpload.click()" [style.border]="'1px solid ' + theme.colors().primary"
                           [style.color]="theme.colors().primary"
-                          style="background: transparent; padding: 8px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
+                          class="dashboard-component__s9">
                     Upload Photo
                   </button>
-                  <input #avatarUpload type="file" accept="image/*" (change)="onAvatarFileSelected($event)" style="display: none;">
+                  <input #avatarUpload type="file" accept="image/*" (change)="onAvatarFileSelected($event)" class="dashboard-component__s10">
                   @if (uploadedAvatarName()) {
-                    <span [style.color]="theme.colors().textSecondary" style="font-size: 10px;">{{ uploadedAvatarName() }}</span>
+                    <span [style.color]="theme.colors().textSecondary" class="dashboard-component__s11">{{ uploadedAvatarName() }}</span>
                   }
                 </div>
 
                 @if (newCrush.avatarUrl) {
-                  <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
-                    <img [src]="newCrush.avatarUrl" [style.border]="'1px solid ' + theme.colors().border"
-                         style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
+                  <div class="dashboard-component__s12">
+                    <img [src]="newCrush.avatarUrl" alt="Selected avatar preview" [style.border]="'1px solid ' + theme.colors().border"
+                         class="dashboard-component__s13">
                     @if (cropSourceImage()) {
                       <button (click)="showCropModal.set(true)" [style.border]="'1px solid ' + theme.colors().border"
                               [style.color]="theme.colors().text"
-                              style="background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                              class="dashboard-component__s14">
                         Re-Crop
                       </button>
                     }
                   </div>
                 }
 
-                <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                <div class="dashboard-component__s15">
                    @for (avatar of mockAvatars; track avatar) {
-                     <img [src]="avatar" (click)="newCrush.avatarUrl = avatar"
+                     <img [src]="avatar" [alt]="'Avatar option ' + ($index + 1)" (click)="newCrush.avatarUrl = avatar"
+                          role="button"
+                          tabindex="0"
+                          (keydown.enter)="newCrush.avatarUrl = avatar"
+                          (keydown.space)="newCrush.avatarUrl = avatar; $event.preventDefault()"
                           [style.border]="newCrush.avatarUrl === avatar ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                          style="width: 50px; height: 50px; cursor: pointer; border-radius: 50%; object-fit: cover;">
+                          class="dashboard-component__s16">
                    }
                 </div>
               </div>
 
               <div>
-                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Nickname</label>
-                <input [(ngModel)]="newCrush.nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none; font-family: 'Times New Roman', serif;">
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Nickname</label>
+                <input [(ngModel)]="newCrush.nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
               </div>
 
               <div>
-                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Full Name (Optional)</label>
-                <input [(ngModel)]="newCrush.fullName" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none;">
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">First Name (Optional)</label>
+                <input [(ngModel)]="newCrush.firstName" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s18">
               </div>
 
               <div>
-                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Status</label>
-                <select [(ngModel)]="newCrush.status" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px; border-radius: 0px; outline: none; appearance: none;">
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Status</label>
+                <select [(ngModel)]="newCrush.status" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s19">
                   <option [value]="statuses.Crush">Crush</option>
                   <option [value]="statuses.Dating">Dating</option>
                   <option [value]="statuses.Exclusive">Exclusive</option>
                 </select>
               </div>
 
-              <!-- About the Boy Sections -->
-              <div style="border-top: 1px solid {{theme.colors().border}}; padding-top: 24px;">
-                <h4 [style.color]="theme.colors().primary" style="font-size: 14px; text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 20px; font-style: italic;">About the Boy</h4>
+              <div>
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Connection Note (Optional)</label>
+                <textarea [(ngModel)]="newCrush.note"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          rows="4"
+                         
+                          placeholder="Add your first note about this connection..." class="dashboard-component__s20"></textarea>
 
-                <div style="margin-bottom: 24px;">
-                  <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; text-align: center;">Hair</label>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="dashboard-component__s21">
+                  <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s22">
+                    Note Visibility
+                  </p>
+                  <div class="dashboard-component__s23">
+                    <button (click)="newCrush.noteVisibility = 'private'"
+                            [style.background-color]="newCrush.noteVisibility === 'private' ? theme.colors().primary : 'transparent'"
+                            [style.color]="newCrush.noteVisibility === 'private' ? 'white' : theme.colors().text"
+                            [style.border]="'1px solid ' + (newCrush.noteVisibility === 'private' ? theme.colors().primary : theme.colors().border)"
+                            class="dashboard-component__s24">
+                      Private
+                    </button>
+                    <button (click)="newCrush.noteVisibility = 'public'"
+                            [style.background-color]="newCrush.noteVisibility === 'public' ? theme.colors().primary : 'transparent'"
+                            [style.color]="newCrush.noteVisibility === 'public' ? 'white' : theme.colors().text"
+                            [style.border]="'1px solid ' + (newCrush.noteVisibility === 'public' ? theme.colors().primary : theme.colors().border)"
+                            class="dashboard-component__s24">
+                      Public
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- About the Boy Sections -->
+              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
+                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">About the Boy</h4>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Hair</label>
+                  <div class="dashboard-component__s28">
                     @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
                       <div (click)="toggleSelection(newCrush.hair, h)"
+                           role="button"
+                           tabindex="0"
+                           (keydown.enter)="toggleSelection(newCrush.hair, h)"
+                           (keydown.space)="toggleSelection(newCrush.hair, h); $event.preventDefault()"
+                           [attr.aria-pressed]="newCrush.hair.includes(h)"
                            [style.border]="newCrush.hair.includes(h) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                            [style.background-color]="newCrush.hair.includes(h) ? theme.colors().primary + '10' : 'transparent'"
-                           style="display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                           class="dashboard-component__s29">
                         <div [style.border]="'2px solid ' + (newCrush.hair.includes(h) ? theme.colors().primary : theme.colors().textSecondary)"
                              [style.background-color]="newCrush.hair.includes(h) ? theme.colors().primary : 'transparent'"
-                             style="width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                             class="dashboard-component__s30">
                            @if (newCrush.hair.includes(h)) {
-                             <span style="color: white; font-size: 12px;">✓</span>
+                             <span class="dashboard-component__s31">✓</span>
                            }
                         </div>
-                        <span style="font-size: 13px;">{{h}}</span>
+                        <span class="dashboard-component__s32">{{h}}</span>
                       </div>
                     }
                   </div>
                 </div>
 
-                <div style="margin-bottom: 24px;">
-                  <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; text-align: center;">Eyes</label>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Eyes</label>
+                  <div class="dashboard-component__s28">
                     @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
                       <div (click)="toggleSelection(newCrush.eyes, e)"
+                           role="button"
+                           tabindex="0"
+                           (keydown.enter)="toggleSelection(newCrush.eyes, e)"
+                           (keydown.space)="toggleSelection(newCrush.eyes, e); $event.preventDefault()"
+                           [attr.aria-pressed]="newCrush.eyes.includes(e)"
                            [style.border]="newCrush.eyes.includes(e) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                            [style.background-color]="newCrush.eyes.includes(e) ? theme.colors().primary + '10' : 'transparent'"
-                           style="display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                           class="dashboard-component__s29">
                         <div [style.border]="'2px solid ' + (newCrush.eyes.includes(e) ? theme.colors().primary : theme.colors().textSecondary)"
                              [style.background-color]="newCrush.eyes.includes(e) ? theme.colors().primary : 'transparent'"
-                             style="width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                             class="dashboard-component__s30">
                            @if (newCrush.eyes.includes(e)) {
-                             <span style="color: white; font-size: 12px;">✓</span>
+                             <span class="dashboard-component__s31">✓</span>
                            }
                         </div>
-                        <span style="font-size: 13px;">{{e}}</span>
+                        <span class="dashboard-component__s32">{{e}}</span>
                       </div>
                     }
                   </div>
                 </div>
 
-                <div style="margin-bottom: 24px;">
-                  <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; text-align: center;">Build</label>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Build</label>
+                  <div class="dashboard-component__s28">
                     @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
                       <div (click)="toggleSelection(newCrush.build, b)"
+                           role="button"
+                           tabindex="0"
+                           (keydown.enter)="toggleSelection(newCrush.build, b)"
+                           (keydown.space)="toggleSelection(newCrush.build, b); $event.preventDefault()"
+                           [attr.aria-pressed]="newCrush.build.includes(b)"
                            [style.border]="newCrush.build.includes(b) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                            [style.background-color]="newCrush.build.includes(b) ? theme.colors().primary + '10' : 'transparent'"
-                           style="display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                           class="dashboard-component__s29">
                         <div [style.border]="'2px solid ' + (newCrush.build.includes(b) ? theme.colors().primary : theme.colors().textSecondary)"
                              [style.background-color]="newCrush.build.includes(b) ? theme.colors().primary : 'transparent'"
-                             style="width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                             class="dashboard-component__s30">
                            @if (newCrush.build.includes(b)) {
-                             <span style="color: white; font-size: 12px;">✓</span>
+                             <span class="dashboard-component__s31">✓</span>
                            }
                         </div>
-                        <span style="font-size: 13px;">{{b}}</span>
+                        <span class="dashboard-component__s32">{{b}}</span>
                       </div>
                     }
                   </div>
@@ -154,64 +209,70 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
               </div>
 
               <!-- Social Handles -->
-              <div style="border-top: 1px solid {{theme.colors().border}}; padding-top: 24px;">
-                <h4 [style.color]="theme.colors().primary" style="font-size: 14px; text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 20px; font-style: italic;">Where I can find them</h4>
-                <div style="display: flex; flex-direction: column; gap: 16px;">
-                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-                    <span style="font-size: 20px; position: absolute; left: 12px;">👻</span>
-                    <input placeholder="Snapchat Username" [(ngModel)]="newCrush.social.snapchat" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
+                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">Where I can find them</h4>
+                <div class="dashboard-component__s33">
+                  <div class="dashboard-component__s34">
+                    <span class="dashboard-component__s35">👻</span>
+                    <input placeholder="Snapchat Username" [(ngModel)]="newCrush.social.snapchat" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
                   </div>
-                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-                    <span style="font-size: 20px; position: absolute; left: 12px;">💬</span>
-                    <input placeholder="WhatsApp Number" [(ngModel)]="newCrush.social.whatsapp" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  <div class="dashboard-component__s34">
+                    <span class="dashboard-component__s35">💬</span>
+                    <input placeholder="WhatsApp Number" [(ngModel)]="newCrush.social.whatsapp" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
                   </div>
-                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-                    <span style="font-size: 20px; position: absolute; left: 12px;">🐦</span>
-                    <input placeholder="Twitter @username" [(ngModel)]="newCrush.social.twitter" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  <div class="dashboard-component__s34">
+                    <span class="dashboard-component__s35">🐦</span>
+                    <input placeholder="Twitter @username" [(ngModel)]="newCrush.social.twitter" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
                   </div>
-                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-                    <span style="font-size: 20px; position: absolute; left: 12px;">📘</span>
-                    <input placeholder="Facebook.com/" [(ngModel)]="newCrush.social.facebook" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  <div class="dashboard-component__s34">
+                    <span class="dashboard-component__s35">📘</span>
+                    <input placeholder="Facebook.com/" [(ngModel)]="newCrush.social.facebook" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
                   </div>
-                  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-                    <span style="font-size: 20px; position: absolute; left: 12px;">📸</span>
-                    <input placeholder="Instagram @username" [(ngModel)]="newCrush.social.instagram" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" style="width: 100%; padding: 12px 12px 12px 44px; outline: none; font-size: 13px; border-radius: 4px;">
+                  <div class="dashboard-component__s34">
+                    <span class="dashboard-component__s35">📸</span>
+                    <input placeholder="Instagram @username" [(ngModel)]="newCrush.social.instagram" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
                   </div>
                 </div>
               </div>
 
               <!-- Relationship Status -->
-              <div style="border-top: 1px solid {{theme.colors().border}}; padding-top: 24px;">
-                <h4 [style.color]="theme.colors().primary" style="font-size: 14px; text-transform: uppercase; letter-spacing: 3px; text-align: center; margin-bottom: 20px; font-style: italic;">Relationship Status</h4>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
+                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">Relationship Status</h4>
+                <div class="dashboard-component__s37">
                   @for (s of ["He doesn't know I exist", "Just friends", "I think he likes me", "Getting serious", "We are a couple", "Friends With Benefits", "We are engaged", "Other"]; track s) {
                     <div (click)="newCrush.relationshipStatus = s"
+                         role="button"
+                         tabindex="0"
+                         (keydown.enter)="newCrush.relationshipStatus = s"
+                         (keydown.space)="newCrush.relationshipStatus = s; $event.preventDefault()"
+                         [attr.aria-pressed]="newCrush.relationshipStatus === s"
                          [style.border]="newCrush.relationshipStatus === s ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                          [style.background-color]="newCrush.relationshipStatus === s ? theme.colors().primary + '10' : 'transparent'"
-                         style="display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; transition: all 0.2s; border-radius: 4px;">
+                         class="dashboard-component__s38">
                       <div [style.border]="'2px solid ' + (newCrush.relationshipStatus === s ? theme.colors().primary : theme.colors().textSecondary)"
-                           style="width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                           class="dashboard-component__s39">
                          @if (newCrush.relationshipStatus === s) {
-                           <div [style.background-color]="theme.colors().primary" style="width: 10px; height: 10px; border-radius: 50%;"></div>
+                           <div [style.background-color]="theme.colors().primary" class="dashboard-component__s40"></div>
                          }
                       </div>
-                      <span style="font-size: 13px;">{{s}}</span>
+                      <span class="dashboard-component__s32">{{s}}</span>
                     </div>
                   }
                 </div>
               </div>
 
               <div>
-                <label [style.color]="theme.colors().textSecondary" style="display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Initial Vibe (1-5 Stars)</label>
-                <div style="display: flex; gap: 8px; justify-content: center; font-size: 24px;">
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41">Initial Vibe (1-5 Stars)</label>
+                <div class="dashboard-component__s42">
                   @for (star of [1,2,3,4,5]; track star) {
-                    <span (click)="newCrush.rating = star" [style.color]="newCrush.rating >= star ? theme.colors().accent : theme.colors().border" style="cursor: pointer;">★</span>
+                    <button type="button" (click)="newCrush.rating = star" [attr.aria-label]="'Set rating to ' + star + ' stars'"
+                            [style.color]="newCrush.rating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
                   }
                 </div>
               </div>
             </div>
 
-            <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" style="width: 100%; color: white; border: none; padding: 16px; border-radius: 0px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; margin-top: 20px;">
+            <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
               Save Connection
             </button>
           </div>
@@ -219,38 +280,38 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
       }
 
       @if (showCropModal() && cropSourceImage()) {
-        <div style="position: fixed; inset: 0; z-index: 260; background: rgba(0,0,0,0.88); display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div class="dashboard-component__s44">
           <div [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border"
-               style="width: 100%; max-width: 520px; padding: 24px;">
-            <h3 style="font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0;">Crop Avatar</h3>
-            <div [style.background-color]="theme.colors().bgSecondary" style="padding: 16px; margin-bottom: 16px;">
-              <div style="width: 280px; height: 280px; margin: 0 auto; overflow: hidden; border-radius: 50%; position: relative; border: 2px solid rgba(255,255,255,0.25); background: #111;">
-                <img [src]="cropSourceImage()!"
+               class="dashboard-component__s45">
+            <h3 class="dashboard-component__s46">Crop Avatar</h3>
+            <div [style.background-color]="theme.colors().bgSecondary" class="dashboard-component__s47">
+              <div class="dashboard-component__s48">
+                <img [src]="cropSourceImage()!" alt="Avatar crop preview"
                      [style.transform]="cropTransform()"
-                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center;">
+                     class="dashboard-component__s49">
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px;">
-              <label style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+            <div class="dashboard-component__s50">
+              <label class="dashboard-component__s51">
                 Zoom
-                <input type="range" min="1" max="3" step="0.05" [value]="cropZoom()" (input)="cropZoom.set(toNumber($event, 1.5))" style="width: 100%;">
+                <input type="range" min="1" max="3" step="0.05" [value]="cropZoom()" (input)="cropZoom.set(toNumber($event, 1.5))" class="dashboard-component__s52">
               </label>
-              <label style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+              <label class="dashboard-component__s51">
                 Horizontal
-                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetX()" (input)="cropOffsetX.set(toNumber($event, 0))" style="width: 100%;">
+                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetX()" (input)="cropOffsetX.set(toNumber($event, 0))" class="dashboard-component__s52">
               </label>
-              <label style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+              <label class="dashboard-component__s51">
                 Vertical
-                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetY()" (input)="cropOffsetY.set(toNumber($event, 0))" style="width: 100%;">
+                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetY()" (input)="cropOffsetY.set(toNumber($event, 0))" class="dashboard-component__s52">
               </label>
             </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <div class="dashboard-component__s53">
               <button (click)="cancelCrop()" [style.border]="'1px solid ' + theme.colors().border"
-                      style="background: transparent; color: inherit; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                      class="dashboard-component__s54">
                 Cancel
               </button>
               <button (click)="applyCrop()" [style.background-color]="theme.colors().primary"
-                      style="border: none; color: white; padding: 10px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+                      class="dashboard-component__s55">
                 Apply Crop
               </button>
             </div>
@@ -260,152 +321,172 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
 
       <!-- Digital Note Passing Overlay (Simulation) -->
       @if (isNotePassing()) {
-        <div style="position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; backdrop-blur: 10px;">
-           <div (click)="closeNote()"
+        <div class="dashboard-component__s56">
+          <div (click)="closeNote()"
+               role="button"
+               tabindex="0"
+               (keydown.enter)="closeNote()"
+               (keydown.space)="closeNote(); $event.preventDefault()"
                 [style.background-color]="theme.colors().bgSecondary"
                 [style.border]="'2px solid ' + theme.colors().primary"
-                style="padding: 40px; max-width: 400px; transform: rotate(-2deg); shadow: 0 20px 50px rgba(0,0,0,0.5); cursor: pointer;">
-             <span [style.color]="theme.colors().primary" style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; display: block; margin-bottom: 20px;">Private Note Received</span>
-             <p style="font-size: 18px; line-height: 1.6; font-style: italic;">"{{ currentTeaPreview() || 'No new tea right now.' }}"</p>
+                class="dashboard-component__s57">
+             <span [style.color]="theme.colors().primary" class="dashboard-component__s58">Private Note Received</span>
+             <p class="dashboard-component__s59">"{{ currentTeaPreview() || 'No new tea right now.' }}"</p>
            </div>
         </div>
       }
 
       <!-- Glamour Decorative Elements -->
       @if (theme.mode() === 'light') {
-        <div style="position: absolute; top: 0; right: 0; width: 600px; height: 600px; background: radial-gradient(circle, #fce7f3 0%, transparent 70%); opacity: 0.5; pointer-events: none;"></div>
+        <div class="dashboard-component__s60"></div>
       }
 
       <!-- Navigation -->
-      <nav [style.background-color]="theme.colors().bgSecondary"
+      <nav aria-label="Primary navigation" [style.background-color]="theme.colors().bgSecondary"
            [style.border-bottom]="'1px solid ' + theme.colors().border"
-           style="padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; backdrop-blur: 10px;">
-        <div style="display: flex; align-items: center; gap: 16px;">
+           class="dashboard-component__s61">
+        <div class="dashboard-component__s62">
           <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
-               style="width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 200; font-size: 24px; color: white; shadow: 0 4px 10px rgba(0,0,0,0.1);">D</div>
-          <span style="font-size: 28px; font-weight: 200; letter-spacing: 4px; text-transform: uppercase;">Dexii</span>
+               class="dashboard-component__s63">D</div>
+          <span class="dashboard-component__s64">Dexii</span>
         </div>
 
-        <div style="display: flex; gap: 20px;">
+        <div class="dashboard-component__s65">
           <a routerLink="/friends"
              [style.color]="theme.colors().text"
-             style="text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; align-self: center;">
+             class="dashboard-component__s66">
             Friends
+          </a>
+          <a routerLink="/user/me"
+             [style.color]="theme.colors().text"
+             class="dashboard-component__s66">
+            Profile
           </a>
           <button (click)="theme.toggleTheme()"
                   [style.background-color]="'transparent'"
                   [style.color]="theme.colors().text"
                   [style.border]="'1px solid ' + theme.colors().border"
-                  style="padding: 10px 20px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">
+                  class="dashboard-component__s67">
             {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
           </button>
           <button (click)="security.lockApp()"
                   [style.background-color]="theme.colors().primary"
-                  style="color: white; border: none; padding: 10px 24px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 4px 15px rgba(219, 39, 119, 0.3);">
+                  class="dashboard-component__s68">
             Lock
           </button>
           <a routerLink="/vault"
              [style.background-color]="theme.colors().accent"
-             style="color: white; text-decoration: none; padding: 10px 24px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 4px 15px rgba(219, 39, 119, 0.3);">
+             class="dashboard-component__s69">
             Vault
           </a>
         </div>
       </nav>
 
-      <main style="max-width: 1200px; margin: 0 auto; padding: 60px 40px;">
+      <main class="dashboard-component__s70">
+        <app-page-hint
+          hintKey="dashboard_inline"
+          title="Dashboard Hint"
+          message="Use New Entry to add a crush. Keep notes private/public, then control who sees what from Friends > Sharing Controls.">
+        </app-page-hint>
+
         <!-- Hero Section -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px; flex-wrap: wrap; gap: 32px;">
-          <div style="max-width: 600px;">
-            <h2 style="font-size: 48px; font-weight: 200; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">The Rolodex</h2>
-            <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: 14px; letter-spacing: 1px; font-style: italic;">Curating {{ dataService.visibleCrushes().length }} exclusive connections.</p>
+        <div class="dashboard-component__s71">
+          <div class="dashboard-component__s72">
+            <h2 class="dashboard-component__s73">The Rolodex</h2>
+            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">Curating {{ dataService.visibleCrushes().length }} exclusive connections.</p>
+            @if (!subscription.isPremium()) {
+              <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
+                Free tier: up to {{ freeCrushLimit }} crushes.
+              </p>
+            }
           </div>
-          <div style="display: flex; gap: 16px;">
+          <div class="dashboard-component__s76">
             <button (click)="simulateNote()"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
-                    style="background: transparent; padding: 14px 24px; border-radius: 0px; font-weight: 700; cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">
-               Spill Tea {{ unreadTeaCount() > 0 ? '(' + unreadTeaCount() + ')' : '' }}
+                    class="dashboard-component__s77">
+               Waiting for the Tea? {{ unreadTeaCount() > 0 ? '(' + unreadTeaCount() + ')' : '' }}
             </button>
             <button (click)="openNewEntryModal()" [style.border]="'1px solid ' + theme.colors().primary"
                     [style.color]="theme.colors().primary"
-                    style="background: transparent; padding: 14px 32px; border-radius: 0px; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s;">
+                    class="dashboard-component__s78">
                + New Entry
             </button>
           </div>
         </div>
 
         <!-- Filter Chips -->
-        <div style="display: flex; gap: 20px; margin-bottom: 48px; overflow-x: auto; padding-bottom: 12px;">
+        <div class="dashboard-component__s79">
           <button (click)="selectedFilter.set('All')"
                   [style.color]="selectedFilter() === 'All' ? theme.colors().primary : theme.colors().textSecondary"
                   [style.border-bottom]="selectedFilter() === 'All' ? '2px solid ' + theme.colors().primary : 'none'"
-                  style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">All</button>
+                  class="dashboard-component__s80">All</button>
           <button (click)="selectedFilter.set('Dating')"
                   [style.color]="selectedFilter() === 'Dating' ? theme.colors().primary : theme.colors().textSecondary"
                   [style.border-bottom]="selectedFilter() === 'Dating' ? '2px solid ' + theme.colors().primary : 'none'"
-                  style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 1;">Dating</button>
+                  class="dashboard-component__s81">Dating</button>
           <button (click)="selectedFilter.set('Prospects')"
                   [style.color]="selectedFilter() === 'Prospects' ? theme.colors().primary : theme.colors().textSecondary"
                   [style.border-bottom]="selectedFilter() === 'Prospects' ? '2px solid ' + theme.colors().primary : 'none'"
-                  style="background: none; border: none; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 1;">Prospects</button>
+                  class="dashboard-component__s81">Prospects</button>
         </div>
 
         <!-- Grid -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-             <h2 style="font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 6px; color: {{ theme.colors().primary }}">The Rolodex</h2>
+          <div class="dashboard-component__s82">
+             <h2 [style.color]="theme.colors().primary" class="dashboard-rolodex-mini-title">The Rolodex</h2>
              <button (click)="toggleArchived()"
                      [style.color]="theme.colors().textSecondary"
-                     style="background: none; border: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">
+                     class="dashboard-component__s83">
                {{ showArchived() ? 'View Active' : 'View Archive' }}
              </button>
           </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 48px;">
+        <div class="dashboard-component__s84">
           @for (crush of filteredCrushes(); track crush.id) {
             <div [routerLink]="['/profile', crush.id]"
                  [style.background-color]="theme.colors().cardBg"
                  [style.border]="'1px solid ' + theme.colors().border"
-                 style="border-radius: 0px; overflow: hidden; cursor: pointer; transition: all 0.4s; position: relative;">
+                 class="dashboard-component__s85">
 
               <!-- Shimmer Effect on Card (Light Mode) -->
               @if (theme.mode() === 'light') {
-                <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, transparent, #fbbf24, transparent); opacity: 0.3;"></div>
+                <div class="dashboard-component__s86"></div>
               }
 
               <!-- Image Area -->
-              <div style="height: 240px; position: relative; overflow: hidden;">
+              <div class="dashboard-component__s87">
                 <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
-                     style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease;">
-                <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4));"></div>
-                <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                     [alt]="crush.nickname + ' profile photo'"
+                     class="dashboard-component__s88">
+                <div class="dashboard-component__s89"></div>
+                <div class="dashboard-component__s90">
                    <span [style.background-color]="'rgba(255,255,255,0.9)'"
                          [style.color]="theme.colors().primary"
-                         style="padding: 6px 14px; border-radius: 0px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">
+                         class="dashboard-component__s91">
                      {{ crush.status }}
                    </span>
-                   <span *ngIf="crush.redFlags > 0"
-                         style="background-color: #ef4444; color: white; padding: 4px 8px; font-size: 8px; font-weight: 900; text-transform: uppercase;">
+                   <span *ngIf="crush.redFlags > 0" class="dashboard-red-flag-chip">
                      {{ crush.redFlags }} Flags
                    </span>
                 </div>
               </div>
 
               <!-- Content -->
-              <div style="padding: 32px; text-align: center;">
-                <h3 style="font-size: 26px; font-weight: 200; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">{{ crush.nickname }}</h3>
+              <div class="dashboard-component__s92">
+                <h3 class="dashboard-component__s93">{{ crush.nickname }}</h3>
 
-                <div [style.color]="theme.colors().accent" style="font-size: 14px; margin-bottom: 20px; letter-spacing: 4px;">
+                <div [style.color]="theme.colors().accent" class="dashboard-component__s94">
                   @for (star of [1,2,3,4,5]; track star) {
                      {{ (crush.rating || 0) >= star ? '★' : '☆' }}
                   }
                 </div>
 
-                <p [style.color]="theme.colors().textSecondary" style="font-size: 13px; line-height: 1.8; margin: 0 0 28px 0; height: 48px; overflow: hidden; font-style: italic;">
+                <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s95">
                   "{{ crush.bio || 'A connection waiting to be defined.' }}"
                 </p>
 
-                <div [style.border-top]="'1px solid ' + theme.colors().border" style="display: flex; justify-content: center; align-items: center; padding-top: 20px;">
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px;">Profile Active • {{ crush.lastInteraction | date:'MMM d' }}</span>
+                <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-component__s96">
+                  <span [style.color]="theme.colors().textSecondary" class="dashboard-component__s97">Profile Active • {{ crush.lastInteraction | date:'MMM d' }}</span>
                 </div>
               </div>
             </div>
@@ -421,6 +502,7 @@ export class DashboardComponent implements OnInit {
   public theme = inject(ThemeService);
   public messaging = inject(MessagingService);
   public modal = inject(ModalService);
+  public subscription = inject(SubscriptionService);
 
   isNotePassing = signal(false);
   currentTeaPreview = signal('');
@@ -442,6 +524,7 @@ export class DashboardComponent implements OnInit {
 
   showArchived = signal(false);
   selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
+  freeCrushLimit = 5;
 
   filteredCrushes = computed(() => {
     let crushes = this.dataService.visibleCrushes();
@@ -468,10 +551,11 @@ export class DashboardComponent implements OnInit {
 
   newCrush = {
     nickname: '',
-    fullName: '',
+    firstName: '',
     status: CrushStatus.Crush,
     rating: 3,
-    bio: '',
+    note: '',
+    noteVisibility: 'private' as 'private' | 'public',
     visibility: [] as string[],
     avatarUrl: '',
     hair: [] as string[],
@@ -510,6 +594,10 @@ export class DashboardComponent implements OnInit {
   }
 
   openNewEntryModal() {
+    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length, this.freeCrushLimit)) {
+      this.modal.show(`Free tier allows up to ${this.freeCrushLimit} crushes. Upgrade to add more.`);
+      return;
+    }
     this.showNewEntryModal.set(true);
   }
 
@@ -529,23 +617,28 @@ export class DashboardComponent implements OnInit {
   }
 
   saveCrush() {
+    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length, this.freeCrushLimit)) {
+      this.modal.show(`Free tier allows up to ${this.freeCrushLimit} crushes. Upgrade to add more.`);
+      return;
+    }
+
     if (!this.newCrush.nickname) {
       this.modal.show('Please enter a nickname at least!');
       return;
     }
     if (!this.security.moderateContent(this.newCrush.nickname) ||
-        !this.security.moderateContent(this.newCrush.fullName) ||
-        !this.security.moderateContent(this.newCrush.bio)) {
+        !this.security.moderateContent(this.newCrush.firstName) ||
+        !this.security.moderateContent(this.newCrush.note)) {
       this.modal.show('Profile text flagged by AI moderation.');
       return;
     }
 
-    this.dataService.addCrush({
+    const createdCrush = this.dataService.addCrush({
       nickname: this.newCrush.nickname,
-      fullName: this.newCrush.fullName,
+      fullName: this.newCrush.firstName,
       status: this.newCrush.status,
       rating: this.newCrush.rating,
-      bio: this.newCrush.bio,
+      bio: '',
       visibility: [],
       avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar
       hair: this.newCrush.hair,
@@ -554,6 +647,18 @@ export class DashboardComponent implements OnInit {
       social: { ...this.newCrush.social },
       relationshipStatus: this.newCrush.relationshipStatus
     });
+
+    const note = this.newCrush.note.trim();
+    if (note) {
+      this.dataService.addEntry({
+        crushId: createdCrush.id,
+        type: 'Note',
+        content: note,
+        isBurnAfterReading: false,
+        visibility: this.newCrush.noteVisibility === 'public' ? ['public'] : [],
+        isSensitive: false
+      });
+    }
 
     this.closeModal();
     this.modal.show('Profile Secured in the Rolodex.');
@@ -629,10 +734,11 @@ export class DashboardComponent implements OnInit {
   resetForm() {
     this.newCrush = {
       nickname: '',
-      fullName: '',
+      firstName: '',
       status: CrushStatus.Crush,
       rating: 3,
-      bio: '',
+      note: '',
+      noteVisibility: 'private',
       visibility: [],
       avatarUrl: '',
       hair: [],

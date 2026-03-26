@@ -1,0 +1,31 @@
+.alert-modal-component__s1 {
+  position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px);
+}
+
+.alert-modal-component__s2 {
+  width: 100%; max-width: 420px; padding: 28px; border-radius: 0px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; text-align: center;
+}
+
+.alert-modal-component__s3 {
+  position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer;
+}
+
+.alert-modal-component__s4 {
+  font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 0 0 12px;
+}
+
+.alert-modal-component__s5 {
+  font-size: 13px; line-height: 1.6; margin: 0 0 20px;
+}
+
+.alert-modal-component__s6 {
+  color: white; border: none; padding: 10px 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin: 4px;
+}
+
+.alert-modal-prompt-input {
+  width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 0; outline: none; font-family: inherit;
+}
+
+.alert-modal-actions {
+  display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+}

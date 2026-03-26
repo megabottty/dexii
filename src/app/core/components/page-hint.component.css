@@ -1,0 +1,38 @@
+.page-hint-component__s1 {
+  border: 1px solid rgba(0,0,0,0.18); background: rgba(255,255,255,0.66); padding: 10px 12px; margin-bottom: 16px;
+}
+
+.page-hint-component__s2 {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+}
+
+.page-hint-component__s3 {
+  margin: 0 0 4px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900;
+}
+
+.page-hint-component__s4 {
+  margin: 0; font-size: 12px; line-height: 1.4;
+}
+
+.page-hint-component__s5 {
+  background: transparent; border: none; font-size: 14px; cursor: pointer; opacity: 0.8; padding: 0;
+}
+
+.page-hint-toggle {
+  background: rgba(255,255,255,0.66);
+  border: 1px solid rgba(0,0,0,0.18);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 12px;
+  transition: transform 0.2s ease;
+}
+
+.page-hint-toggle:hover {
+  transform: scale(1.1);
+}

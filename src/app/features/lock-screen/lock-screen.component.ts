@@ -1,23 +1,26 @@
 import { Component, signal, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { ModalService } from '../../core/services/modal.service';
+import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
   selector: 'app-lock-screen',
   standalone: true,
+  styleUrl: './lock-screen.component.css',
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent],
   templateUrl: './lock-screen.component.html'
 })
 export class LockScreenComponent {
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
+  private modal = inject(ModalService);
 
   enteredPin = signal<string>('');
-  setupPinFirst = signal<string>('');
   errorMessage = signal<string>('');
-
-  get setupMode(): boolean {
-    return this.security.needsPinSetup();
-  }
 
   handleInput(val: string) {
     if (this.enteredPin().length >= 4) {
@@ -31,25 +34,6 @@ export class LockScreenComponent {
       return;
     }
 
-    if (this.setupMode) {
-      if (!this.setupPinFirst()) {
-        this.setupPinFirst.set(nextPin);
-        this.clear();
-        return;
-      }
-
-      if (this.setupPinFirst() === nextPin) {
-        this.errorMessage.set('');
-        this.security.setInitialPin(nextPin);
-        return;
-      }
-
-      this.errorMessage.set('PINs did not match. Try again.');
-      this.setupPinFirst.set('');
-      this.clear();
-      return;
-    }
-
     const success = this.security.verifyPin(nextPin);
     if (!success) {
       this.errorMessage.set('Incorrect PIN.');
@@ -57,23 +41,22 @@ export class LockScreenComponent {
     }
   }
 
-  useDefaultPin() {
-    this.errorMessage.set('');
-    this.security.setInitialPin('1111');
-  }
-
   recoverPin() {
-    const confirmed = confirm('Reset your PIN to the test PIN 1111?');
-    if (confirmed) {
+    this.modal.confirm('Reset your PIN to the test PIN 1111?', () => {
       this.errorMessage.set('');
       this.security.recoverPinToDefault();
-    }
+    });
   }
 
-  startOverSetup() {
-    this.setupPinFirst.set('');
-    this.clear();
-    this.errorMessage.set('');
+  createNewAccount() {
+    this.modal.confirm('Create a new account on this device? This will clear local PIN/profile data.', () => {
+      localStorage.removeItem('dexii_api_username');
+      localStorage.removeItem('dexii_profile_email');
+      localStorage.removeItem('dexii_profile_bio');
+      localStorage.removeItem('dexii_api_token');
+      localStorage.removeItem('dexii_walkthrough_seen');
+      this.security.resetPinSetup();
+    });
   }
 
   clear() {

@@ -23,7 +23,7 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Granular Controls**: Decide which friend can see which crush profile or specific "Tea" (Notes). (Simulated UI).
 - **In-App Messaging**: Secure, end-to-end encrypted style chat between friends.
 - **Self-Destructing Messages**: Messages containing the word "secret" are automatically flagged for self-destruction/deletion.
-- **Friend Limits**: Free tier is limited to 5 friends. Premium/Gold tiers allow unlimited friends.
+- **Crush Tier Limits**: Free tier is limited to 5 friends. Premium/Gold tiers allow unlimited crushes.
 
 ## 💖 Safety & Moderation
 - **Safety Check-In**: High-priority feature for dates. Notifies trusted contacts and tracks status (`Draft` -> `Sent` -> `Safe`).
