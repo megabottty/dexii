@@ -20,10 +20,14 @@ const io = new Server(server, {
 // Connect to Database (optional in demo mode)
 const enableMongo = process.env.ENABLE_MONGO !== 'false';
 if (enableMongo) {
-  mongoose.connect(process.env.MONGO_URI)
+  mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+  })
     .then(() => console.log('MongoDB Connected...'))
-    .catch(() => {
-      console.warn('MongoDB unavailable. Running in demo storage mode.');
+    .catch((err) => {
+      console.warn('MongoDB connection error:', err.message);
+      console.warn('Running in demo storage mode.');
     });
 } else {
   console.log('MongoDB disabled via ENABLE_MONGO=false. Running in demo storage mode.');

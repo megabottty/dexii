@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 
@@ -11,6 +12,14 @@ const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString(
 exports.register = async (req, res) => {
   try {
     const { username, pin, email, bio } = req.body;
+
+    // Fast fail if database is not connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Server error: Database not ready',
+        error: 'The database connection is currently unavailable. Please check your MongoDB connection or try again later.'
+      });
+    }
 
     // Check if user exists
     let user = await User.findOne({ $or: [{ username }, { email }] });
