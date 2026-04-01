@@ -22,7 +22,7 @@ export class LockScreenComponent {
   enteredPin = signal<string>('');
   errorMessage = signal<string>('');
 
-  handleInput(val: string) {
+  async handleInput(val: string) {
     if (this.enteredPin().length >= 4) {
       return;
     }
@@ -34,7 +34,7 @@ export class LockScreenComponent {
       return;
     }
 
-    const success = this.security.verifyPin(nextPin);
+    const success = await this.security.verifyPin(nextPin);
     if (!success) {
       this.errorMessage.set('Incorrect PIN.');
       this.clear();

@@ -41,6 +41,12 @@ const UserSchema = new mongoose.Schema({
   friendCategories: {
     type: [String],
     default: ["Close Friends", "Casual", "Work"]
+  },
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  isEmailVerified: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

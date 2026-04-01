@@ -1,6 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ModalService } from './modal.service';
+import { getApiBaseUrl } from '../config/api-config';
 
 @Injectable({
   providedIn: 'root'
@@ -8,6 +9,7 @@ import { ModalService } from './modal.service';
 export class SecurityService {
   private router = inject(Router);
   private modal = inject(ModalService);
+  private apiBase = getApiBaseUrl();
 
   private _isVerified18 = signal<boolean>(false);
   public isVerified18 = this._isVerified18.asReadonly();
@@ -23,9 +25,15 @@ export class SecurityService {
 
   constructor() {
     const savedPin = localStorage.getItem('dexii_pin');
+    const savedToken = localStorage.getItem('dexii_api_token');
+
     if (savedPin && /^\d{4}$/.test(savedPin)) {
       this._userPin.set(savedPin);
       this._isLocked.set(true);
+    } else if (savedToken) {
+      // If we have a token but no pin (maybe cleared?), we should probably still lock
+      this._isLocked.set(true);
+      this._needsPinSetup.set(false);
     } else {
       this._isLocked.set(true);
       this._needsPinSetup.set(true);
@@ -36,7 +44,30 @@ export class SecurityService {
   }
 
   // 3. Logic to unlock the app
-  verifyPin(input: string): boolean {
+  async verifyPin(input: string): Promise<boolean> {
+    const username = localStorage.getItem('dexii_api_username');
+
+    if (username) {
+      try {
+        const response = await fetch(`${this.apiBase}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, pin: input })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('dexii_api_token', data.token);
+          this._isLocked.set(false);
+          this.router.navigate(['/dashboard']);
+          return true;
+        }
+      } catch (err) {
+        console.error('Auth API error, falling back to local:', err);
+      }
+    }
+
+    // Fallback to local pin if offline or not registered yet
     if (input === this._userPin()) {
       this._isLocked.set(false);
       this.router.navigate(['/dashboard']);
@@ -76,13 +107,19 @@ export class SecurityService {
   }
 
   // 5. Initial setup
-  setInitialPin(newPin: string): void {
+  async setInitialPin(newPin: string): Promise<void> {
     if (!/^\d{4}$/.test(newPin)) {
       return;
     }
     // We now have a confirmation step, so we store it as pending
     localStorage.setItem('dexii_pending_pin', newPin);
-    this.router.navigate(['/signup-email-confirmation']);
+
+    try {
+      await this.registerUser(newPin);
+      this.router.navigate(['/signup-email-confirmation']);
+    } catch (err: any) {
+      this.modal.show("Error: " + err.message);
+    }
   }
 
   finalizeSetup(finalPin: string): void {
@@ -91,6 +128,66 @@ export class SecurityService {
     this._needsPinSetup.set(false);
     this._isLocked.set(false);
     this.router.navigate(['/dashboard']);
+  }
+
+  async registerUser(pin: string): Promise<void> {
+    const username = localStorage.getItem('dexii_api_username');
+    const email = localStorage.getItem('dexii_profile_email');
+    const bio = localStorage.getItem('dexii_profile_bio');
+
+    if (!username) throw new Error('Username missing');
+
+    const response = await fetch(`${this.apiBase}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, pin, email, bio })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Registration failed');
+    }
+  }
+
+  async verifyEmailCode(code: string): Promise<void> {
+    const username = localStorage.getItem('dexii_api_username');
+    if (!username) throw new Error('Username missing');
+
+    const response = await fetch(`${this.apiBase}/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, code })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Verification failed');
+    }
+
+    const data = await response.json();
+    localStorage.setItem('dexii_api_token', data.token);
+
+    // We get the pin from pending since it wasn't saved to dexii_pin yet
+    const pendingPin = localStorage.getItem('dexii_pending_pin');
+    if (pendingPin) {
+       this.finalizeSetup(pendingPin);
+    }
+  }
+
+  async resendVerificationCode(): Promise<void> {
+    const username = localStorage.getItem('dexii_api_username');
+    if (!username) throw new Error('Username missing');
+
+    const response = await fetch(`${this.apiBase}/auth/resend-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to resend code');
+    }
   }
 
   recoverPinToDefault(): void {

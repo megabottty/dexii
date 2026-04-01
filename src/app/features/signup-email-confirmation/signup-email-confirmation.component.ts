@@ -193,32 +193,27 @@ export class SignupEmailConfirmationComponent {
     }
   }
 
-  verifyCode() {
+  async verifyCode() {
     if (this.code().length !== 6) return;
 
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    // Mock verification delay
-    setTimeout(() => {
-      if (this.code() === '123456') {
-        // Success! Complete setup in SecurityService
-        const pendingPin = localStorage.getItem('dexii_pending_pin');
-        if (pendingPin) {
-           this.security.finalizeSetup(pendingPin);
-           localStorage.removeItem('dexii_pending_pin');
-        } else {
-           this.errorMessage.set('Session expired. Please restart setup.');
-           this.isLoading.set(false);
-        }
-      } else {
-        this.errorMessage.set('Invalid verification code. Use 123456 for testing.');
-        this.isLoading.set(false);
-      }
-    }, 1500);
+    try {
+      await this.security.verifyEmailCode(this.code());
+      localStorage.removeItem('dexii_pending_pin');
+    } catch (err: any) {
+      this.errorMessage.set(err.message || 'Verification failed');
+      this.isLoading.set(false);
+    }
   }
 
-  resendCode() {
-    this.modal.show('A new code has been sent to ' + (this.email() || 'your email'));
+  async resendCode() {
+    try {
+      await this.security.resendVerificationCode();
+      this.modal.show('A new code has been sent to ' + (this.email() || 'your email'));
+    } catch (err: any) {
+      this.errorMessage.set(err.message || 'Failed to resend code');
+    }
   }
 }

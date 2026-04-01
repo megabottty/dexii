@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
+
+// Generate 6-digit code
+const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // @desc    Register a new user / Set initial PIN
 // @route   POST /api/auth/register
@@ -9,22 +13,72 @@ exports.register = async (req, res) => {
     const { username, pin, email, bio } = req.body;
 
     // Check if user exists
-    let user = await User.findOne({ username });
+    let user = await User.findOne({ $or: [{ username }, { email }] });
     if (user) {
-      return res.status(400).json({ message: 'Username already taken' });
+      return res.status(400).json({ message: 'Username or Email already taken' });
     }
 
     // Hash PIN
     const salt = await bcrypt.genSalt(10);
     const hashedPin = await bcrypt.hash(pin, salt);
 
+    const verificationCode = generateCode();
+    const verificationCodeExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+
     user = new User({
       username,
       pin: hashedPin,
       email,
-      bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : ''
+      bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : '',
+      verificationCode,
+      verificationCodeExpires,
+      isEmailVerified: false
     });
 
+    await user.save();
+
+    // Send Verification Email
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Dexii Verification Code',
+        message: `Your verification code is: ${verificationCode}. It expires in 10 minutes.`,
+        html: `<h1>Welcome to Dexii</h1><p>Your verification code is: <strong>${verificationCode}</strong></p><p>It expires in 10 minutes.</p>`
+      });
+    } catch (err) {
+      console.error('Email error:', err);
+      // We still registered them, but they'll need to resend
+    }
+
+    res.status(201).json({
+      message: 'Registration successful. Verification code sent to email.',
+      username: user.username,
+      email: user.email
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Verify email code
+// @route   POST /api/auth/verify-email
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { username, code } = req.body;
+
+    const user = await User.findOne({
+      username,
+      verificationCode: code,
+      verificationCodeExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+
+    user.isEmailVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
     await user.save();
 
     // Create Token
@@ -32,7 +86,7 @@ exports.register = async (req, res) => {
       expiresIn: '30d'
     });
 
-    res.status(201).json({
+    res.json({
       token,
       user: {
         id: user._id,
@@ -41,6 +95,35 @@ exports.register = async (req, res) => {
         subscriptionTier: user.subscriptionTier
       }
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Resend verification code
+// @route   POST /api/auth/resend-code
+exports.resendCode = async (req, res) => {
+  try {
+    const { username } = req.body;
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const verificationCode = generateCode();
+    user.verificationCode = verificationCode;
+    user.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendEmail({
+      email: user.email,
+      subject: 'New Dexii Verification Code',
+      message: `Your new verification code is: ${verificationCode}`,
+      html: `<p>Your new verification code is: <strong>${verificationCode}</strong></p>`
+    });
+
+    res.json({ message: 'New code sent to email' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -55,6 +138,10 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (!user.isEmailVerified) {
+       return res.status(401).json({ message: 'Please verify your email first', needsVerification: true });
     }
 
     const isMatch = await bcrypt.compare(pin, user.pin);
