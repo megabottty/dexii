@@ -153,8 +153,10 @@ exports.verifyEmail = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        email: user.email,
         bio: user.bio,
-        subscriptionTier: user.subscriptionTier
+        subscriptionTier: user.subscriptionTier,
+        avatarUrl: user.avatarUrl
       }
     });
   } catch (err) {
@@ -267,9 +269,47 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        email: user.email,
         bio: user.bio,
-        subscriptionTier: user.subscriptionTier
+        subscriptionTier: user.subscriptionTier,
+        avatarUrl: user.avatarUrl
       }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Get current user profile
+// @route   GET /api/auth/me
+exports.getProfile = async (req, res) => {
+  try {
+    // Support demo mode
+    if (mongoose.connection.readyState !== 1) {
+      const state = await readStore();
+      const user = state.users.find(u => u.username === req.user.id);
+      if (!user) return res.status(404).json({ message: 'User not found in demo mode' });
+      return res.json({
+        id: user.username,
+        username: user.username,
+        bio: user.bio || '',
+        subscriptionTier: user.subscriptionTier || 'Free',
+        avatarUrl: user.avatarUrl
+      });
+    }
+
+    const user = await User.findById(req.user.id).select('-pin');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      bio: user.bio,
+      subscriptionTier: user.subscriptionTier,
+      avatarUrl: user.avatarUrl,
+      isEmailVerified: user.isEmailVerified
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

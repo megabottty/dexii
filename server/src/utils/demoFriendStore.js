@@ -28,19 +28,8 @@ const ensureStore = async () => {
 };
 
 const seedDefaultFriendshipIfEmpty = (state) => {
-  const demoUser = 'dexii_demo_user';
-  const defaultFriend = 'Bestie_Sarah';
-
-  const current = Array.isArray(state.friendships[demoUser]) ? state.friendships[demoUser] : [];
-  if (current.length > 0) return;
-
-  const demoExists = state.users.some((u) => u.username === demoUser);
-  const friendExists = state.users.some((u) => u.username === defaultFriend);
-  if (!demoExists || !friendExists) return;
-
-  state.friendships[demoUser] = [defaultFriend];
-  const reverse = Array.isArray(state.friendships[defaultFriend]) ? state.friendships[defaultFriend] : [];
-  state.friendships[defaultFriend] = Array.from(new Set([...reverse, demoUser]));
+  // No automatic seeding of friends for new users
+  return;
 };
 
 const readStore = async () => {
