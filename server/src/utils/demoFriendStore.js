@@ -230,5 +230,7 @@ module.exports = {
   createRequest,
   getIncomingRequests,
   respondToRequest,
-  removeFriend
+  removeFriend,
+  ensureUser,
+  readStore
 };

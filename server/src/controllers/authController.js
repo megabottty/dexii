@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
+const { ensureUser, readStore } = require('../utils/demoFriendStore');
 
 // Generate 6-digit code
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -13,11 +14,29 @@ exports.register = async (req, res) => {
   try {
     const { username, pin, email, bio } = req.body;
 
-    // Fast fail if database is not connected
+    // Support demo mode if database is not connected
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        message: 'Server error: Database not ready',
-        error: 'The database connection is currently unavailable. Please check your MongoDB connection or try again later.'
+      console.warn(`Database not ready. Registering ${username} in demo mode.`);
+      const state = await readStore();
+      const existing = state.users.find(u => u.username === username);
+      if (existing) {
+        return res.status(400).json({ message: 'Username already taken in demo mode' });
+      }
+
+      // In demo mode, we don't strictly hash/save pins in the JSON store for this simple implementation,
+      // but we'll allow the user to proceed as a "demo user".
+      const user = ensureUser(state, username);
+      user.bio = bio;
+      // Note: demoFriendStore.ensureUser already pushes to state.users
+      const fs = require('fs/promises');
+      const path = require('path');
+      await fs.writeFile(path.join(__dirname, '..', '..', 'data', 'demo-friends.json'), JSON.stringify(state, null, 2), 'utf8');
+
+      return res.status(201).json({
+        message: 'Registration successful (Demo Mode).',
+        username: user.username,
+        email: email,
+        isDemo: true
       });
     }
 
@@ -75,6 +94,33 @@ exports.verifyEmail = async (req, res) => {
   try {
     const { username, code } = req.body;
 
+    // Support demo mode
+    if (mongoose.connection.readyState !== 1) {
+      console.warn(`Database not ready. Verifying ${username} in demo mode.`);
+      const state = await readStore();
+      const user = state.users.find(u => u.username === username);
+
+      if (!user) {
+        return res.status(400).json({ message: 'User not found in demo mode' });
+      }
+
+      // In demo mode, we just auto-verify
+      const token = jwt.sign({ id: user.username, isDemo: true }, process.env.JWT_SECRET, {
+        expiresIn: '30d'
+      });
+
+      return res.json({
+        token,
+        isDemo: true,
+        user: {
+          id: user.username,
+          username: user.username,
+          bio: user.bio || '',
+          subscriptionTier: user.subscriptionTier || 'Free'
+        }
+      });
+    }
+
     const user = await User.findOne({
       username,
       verificationCode: code,
@@ -114,6 +160,13 @@ exports.verifyEmail = async (req, res) => {
 exports.resendCode = async (req, res) => {
   try {
     const { username } = req.body;
+
+    // Support demo mode
+    if (mongoose.connection.readyState !== 1) {
+      console.warn(`Database not ready. Resending code for ${username} in demo mode (skipped).`);
+      return res.json({ message: 'Demo Mode: Verification skipped, you can just log in or use any code.' });
+    }
+
     const user = await User.findOne({ username });
 
     if (!user) {
@@ -143,6 +196,33 @@ exports.resendCode = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, pin } = req.body;
+
+    // Support demo mode if database is not connected
+    if (mongoose.connection.readyState !== 1) {
+       console.warn(`Database not ready. Logging in ${username} in demo mode.`);
+       const state = await readStore();
+       const user = state.users.find(u => u.username === username);
+
+       if (!user) {
+         return res.status(400).json({ message: 'User not found in demo mode' });
+       }
+
+       // In demo mode, we'll allow any PIN to facilitate testing when DB is down
+       const token = jwt.sign({ id: user.username, isDemo: true }, process.env.JWT_SECRET, {
+         expiresIn: '30d'
+       });
+
+       return res.json({
+         token,
+         isDemo: true,
+         user: {
+           id: user.username,
+           username: user.username,
+           bio: user.bio || '',
+           subscriptionTier: user.subscriptionTier || 'Free'
+         }
+       });
+    }
 
     const user = await User.findOne({ username });
     if (!user) {
