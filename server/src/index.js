@@ -27,6 +27,11 @@ if (enableMongo) {
     .then(() => console.log('MongoDB Connected...'))
     .catch((err) => {
       console.warn('MongoDB connection error:', err.message);
+      if (err.message.includes('authentication failed')) {
+        console.warn('HELPFUL TIP: Your MONGO_URI in Render Settings might have an incorrect username or password.');
+        console.warn('1. Check that you did NOT include < and > symbols around your password.');
+        console.warn('2. If your password has special characters like ! or @, try replacing them with URL-encoded versions (e.g., ! is %21).');
+      }
       console.warn('Running in demo storage mode.');
     });
 } else {

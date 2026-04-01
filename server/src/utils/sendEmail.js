@@ -10,25 +10,37 @@ const sendEmail = async (options) => {
     return { success: true, debug: true };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_PORT == 465, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      secure: process.env.EMAIL_PORT == 465, // true for 465, false for other ports
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-  const mailOptions = {
-    from: `"Dexii Admin" <${process.env.EMAIL_USER}>`,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-    html: options.html,
-  };
+    const mailOptions = {
+      from: `"Dexii Admin" <${process.env.EMAIL_USER}>`,
+      to: options.email,
+      subject: options.subject,
+      text: options.message,
+      html: options.html,
+    };
 
-  await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent: ${info.messageId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('--- SMTP ERROR DETAILS ---');
+    console.error('Code:', error.code);
+    console.error('Command:', error.command);
+    console.error('Response:', error.response);
+    console.error('Stack:', error.stack);
+    console.error('---------------------------');
+    throw error;
+  }
 };
 
 module.exports = sendEmail;

@@ -27,16 +27,44 @@ exports.register = async (req, res) => {
       // but we'll allow the user to proceed as a "demo user".
       const user = ensureUser(state, username);
       user.bio = bio;
+      user.email = email; // Store email in demo mode too
+
+      const verificationCode = generateCode();
+      user.verificationCode = verificationCode;
+
+      // Send Verification Email even in Demo Mode
+      let emailStatus = 'sent';
+      try {
+        const result = await sendEmail({
+          email: email,
+          subject: 'Dexii Verification Code (Demo Mode)',
+          message: `Your verification code is: ${verificationCode}.`,
+          html: `<h1>Welcome to Dexii (Demo Mode)</h1><p>Your verification code is: <strong>${verificationCode}</strong></p>`
+        });
+        if (result && result.debug) emailStatus = 'debug';
+      } catch (err) {
+        console.error('Demo email error:', err);
+        emailStatus = 'failed';
+      }
+
+      console.warn(`--- DEMO MODE VERIFICATION CODE for ${username}: ${verificationCode} (Status: ${emailStatus}) ---`);
+
       // Note: demoFriendStore.ensureUser already pushes to state.users
       const fs = require('fs/promises');
       const path = require('path');
       await fs.writeFile(path.join(__dirname, '..', '..', 'data', 'demo-friends.json'), JSON.stringify(state, null, 2), 'utf8');
 
       return res.status(201).json({
-        message: 'Registration successful (Demo Mode).',
+        message: emailStatus === 'sent'
+          ? 'Registration successful (Demo Mode). Verification code sent to email.'
+          : emailStatus === 'debug'
+          ? 'Registration successful (Demo Mode). (DEVELOPMENT: Check server console for code)'
+          : 'Registration successful (Demo Mode), but email failed. Check your SMTP settings and server logs.',
         username: user.username,
         email: email,
-        isDemo: true
+        isDemo: true,
+        emailSent: emailStatus === 'sent',
+        debugMode: emailStatus === 'debug'
       });
     }
 
@@ -85,10 +113,11 @@ exports.register = async (req, res) => {
         ? 'Registration successful. Verification code sent to email.'
         : emailStatus === 'debug'
         ? 'Registration successful. (DEVELOPMENT: Check server console for code)'
-        : 'Registration successful, but email failed. Please use resend code after configuring SMTP.',
+        : 'Registration successful, but email failed. Check your SMTP settings and server logs.',
       username: user.username,
       email: user.email,
-      emailSent: emailStatus === 'sent'
+      emailSent: emailStatus === 'sent',
+      debugMode: emailStatus === 'debug'
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -111,7 +140,13 @@ exports.verifyEmail = async (req, res) => {
         return res.status(400).json({ message: 'User not found in demo mode' });
       }
 
-      // In demo mode, we just auto-verify
+      // In demo mode, we previously auto-verified, but to simulate real behavior,
+      // we'll require the code that was logged to the console during registration.
+      // If the user is stuck, we'll allow '000000' as a backdoor for demo mode ONLY.
+      if (code !== '000000' && code !== user.verificationCode) {
+        return res.status(400).json({ message: 'Invalid demo verification code. Use 000000 or see server console.' });
+      }
+
       const token = jwt.sign({ id: user.username, isDemo: true }, process.env.JWT_SECRET, {
         expiresIn: '30d'
       });
@@ -172,8 +207,41 @@ exports.resendCode = async (req, res) => {
 
     // Support demo mode
     if (mongoose.connection.readyState !== 1) {
-      console.warn(`Database not ready. Resending code for ${username} in demo mode (skipped).`);
-      return res.json({ message: 'Demo Mode: Verification skipped, you can just log in or use any code.' });
+      console.warn(`Database not ready. Resending code for ${username} in demo mode.`);
+      const state = await readStore();
+      const user = state.users.find(u => u.username === username);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found in demo mode' });
+      }
+
+      const verificationCode = generateCode();
+      user.verificationCode = verificationCode;
+
+      // Send Verification Email even in Demo Mode
+      let emailStatus = 'sent';
+      try {
+        await sendEmail({
+          email: user.email || 'no-email@example.com',
+          subject: 'Dexii Verification Code (Demo Mode)',
+          message: `Your NEW verification code is: ${verificationCode}.`,
+          html: `<h1>Welcome back to Dexii (Demo Mode)</h1><p>Your NEW verification code is: <strong>${verificationCode}</strong></p>`
+        });
+      } catch (err) {
+        console.error('Demo resend email error:', err);
+        emailStatus = 'failed';
+      }
+
+      // Save to store
+      const fs = require('fs/promises');
+      const path = require('path');
+      await fs.writeFile(path.join(__dirname, '..', '..', 'data', 'demo-friends.json'), JSON.stringify(state, null, 2), 'utf8');
+
+      return res.json({
+        message: emailStatus === 'sent'
+          ? 'New verification code sent to email (Demo Mode).'
+          : 'Failed to send code via email. Check server console for the code.'
+      });
     }
 
     const user = await User.findOne({ username });
@@ -185,6 +253,11 @@ exports.resendCode = async (req, res) => {
     const verificationCode = generateCode();
     user.verificationCode = verificationCode;
     user.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
+
+    if (mongoose.connection.readyState !== 1) {
+       console.warn(`--- DEMO MODE NEW CODE for ${username}: ${verificationCode} ---`);
+    }
+
     await user.save();
 
     let emailStatus = 'sent';
