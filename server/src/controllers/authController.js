@@ -66,22 +66,29 @@ exports.register = async (req, res) => {
     await user.save();
 
     // Send Verification Email
+    let emailStatus = 'sent';
     try {
-      await sendEmail({
+      const result = await sendEmail({
         email: user.email,
         subject: 'Dexii Verification Code',
         message: `Your verification code is: ${verificationCode}. It expires in 10 minutes.`,
         html: `<h1>Welcome to Dexii</h1><p>Your verification code is: <strong>${verificationCode}</strong></p><p>It expires in 10 minutes.</p>`
       });
+      if (result && result.debug) emailStatus = 'debug';
     } catch (err) {
       console.error('Email error:', err);
-      // We still registered them, but they'll need to resend
+      emailStatus = 'failed';
     }
 
     res.status(201).json({
-      message: 'Registration successful. Verification code sent to email.',
+      message: emailStatus === 'sent'
+        ? 'Registration successful. Verification code sent to email.'
+        : emailStatus === 'debug'
+        ? 'Registration successful. (DEVELOPMENT: Check server console for code)'
+        : 'Registration successful, but email failed. Please use resend code after configuring SMTP.',
       username: user.username,
-      email: user.email
+      email: user.email,
+      emailSent: emailStatus === 'sent'
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -178,14 +185,27 @@ exports.resendCode = async (req, res) => {
     user.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    await sendEmail({
-      email: user.email,
-      subject: 'New Dexii Verification Code',
-      message: `Your new verification code is: ${verificationCode}`,
-      html: `<p>Your new verification code is: <strong>${verificationCode}</strong></p>`
-    });
+    let emailStatus = 'sent';
+    try {
+      const result = await sendEmail({
+        email: user.email,
+        subject: 'New Dexii Verification Code',
+        message: `Your new verification code is: ${verificationCode}`,
+        html: `<p>Your new verification code is: <strong>${verificationCode}</strong></p>`
+      });
+      if (result && result.debug) emailStatus = 'debug';
+    } catch (err) {
+      console.error('Email error:', err);
+      emailStatus = 'failed';
+    }
 
-    res.json({ message: 'New code sent to email' });
+    res.json({
+      message: emailStatus === 'sent'
+        ? 'New code sent to email'
+        : emailStatus === 'debug'
+        ? 'New code generated (DEVELOPMENT: Check server console)'
+        : 'New code generated, but email failed to send.'
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

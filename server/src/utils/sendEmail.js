@@ -1,6 +1,15 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('--- EMAIL DEBUG ---');
+    console.warn(`To: ${options.email}`);
+    console.warn(`Subject: ${options.subject}`);
+    console.warn(`Message: ${options.message}`);
+    console.warn('--------------------');
+    return { success: true, debug: true };
+  }
+
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,

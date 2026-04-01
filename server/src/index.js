@@ -55,6 +55,7 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Welcome to the Dexii Private API - High Glamour, High Security.',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected (demo mode)',
+    email: process.env.EMAIL_USER ? 'configured' : 'not configured',
     environment: process.env.NODE_ENV || 'development'
   });
 });
