@@ -41,25 +41,6 @@ export class LockScreenComponent {
     }
   }
 
-  recoverPin() {
-    this.modal.confirm('Reset your PIN to the test PIN 1111?', () => {
-      this.errorMessage.set('');
-      this.security.recoverPinToDefault();
-    });
-  }
-
-  createNewAccount() {
-    this.modal.confirm('Create a new account on this device? This will clear local PIN/profile data.', () => {
-      localStorage.removeItem('dexii_api_username');
-      localStorage.removeItem('dexii_profile_email');
-      localStorage.removeItem('dexii_profile_bio');
-      localStorage.removeItem('dexii_api_token');
-      localStorage.removeItem('dexii_walkthrough_seen');
-      localStorage.removeItem('dexii_api_token'); // Ensure token is gone to trigger isLoggedIn update
-      this.security.resetPinSetup();
-    });
-  }
-
   clear() {
     this.enteredPin.set('');
   }

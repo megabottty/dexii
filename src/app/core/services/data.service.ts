@@ -38,77 +38,8 @@ export class DataService {
   private readonly tokenStorageKey = 'dexii_api_token';
   private readonly usernameStorageKey = 'dexii_api_username';
 
-  private _allCrushes = signal<CrushProfile[]>([
-    {
-      id: '1',
-      userId: 'me',
-      nickname: 'Coffee Shop Cutie',
-      fullName: 'Alex Rivera',
-      status: CrushStatus.Crush,
-      bio: 'Loves oat milk lattes and indie rock. Has a great smile.',
-      avatarUrl: 'https://i.pravatar.cc/150?u=alex',
-      visibility: [],
-      sharedEntries: [],
-      lastInteraction: new Date(),
-      rating: 4,
-      redFlags: 0,
-      vibeHistory: [5, 6, 8, 7, 9]
-    },
-    {
-      id: '2',
-      userId: 'me',
-      nickname: 'Gym Buddy',
-      fullName: 'Jordan Smith',
-      status: CrushStatus.Dating,
-      bio: 'Very consistent, slightly obsessed with protein powder.',
-      avatarUrl: 'https://i.pravatar.cc/150?u=jordan',
-      visibility: [],
-      sharedEntries: [],
-      lastInteraction: new Date(Date.now() - 86400000),
-      rating: 5,
-      redFlags: 1,
-      vibeHistory: [8, 9, 9, 10, 10]
-    },
-    {
-      id: '3',
-      userId: 'me',
-      nickname: 'The Ghost',
-      fullName: 'Casey Moore',
-      status: CrushStatus.Archived,
-      bio: 'Last seen 3 weeks ago. Left me on read.',
-      avatarUrl: 'https://i.pravatar.cc/150?u=casey',
-      visibility: [],
-      sharedEntries: [],
-      lastInteraction: new Date(Date.now() - 2592000000),
-      rating: 1,
-      redFlags: 4,
-      vibeHistory: [7, 5, 3, 2, 1]
-    }
-  ]);
-
-  private _entries = signal<Entry[]>([
-    {
-      id: 'e1',
-      crushId: '1',
-      type: 'Note',
-      content: 'He remembered my name today!',
-      timestamp: new Date(),
-      isBurnAfterReading: false,
-      visibility: [],
-      isSensitive: false
-    },
-    {
-      id: 'e2',
-      crushId: '2',
-      type: 'SafetyCheck',
-      content: 'Safety check active for date at Blue Velvet.',
-      timestamp: new Date(),
-      visibility: [],
-      isSensitive: true,
-      safetyContactId: 'friend_99',
-      safetyStatus: 'Safe'
-    }
-  ]);
+  private _allCrushes = signal<CrushProfile[]>([]);
+  private _entries = signal<Entry[]>([]);
 
   constructor() {
     void this.hydrateCrushesFromBackend();

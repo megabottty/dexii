@@ -9,7 +9,7 @@
     <app-page-hint
       hintKey="lock_inline"
       title="Lock Screen Hint"
-      message="Use your 4-digit PIN to unlock. If needed, use Forgot PIN or test PIN 1111 for local demo mode.">
+      message="Use your 4-digit PIN to unlock.">
     </app-page-hint>
 
     <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
@@ -65,9 +65,6 @@
     </div>
 
     <div class="lock-screen-component__s21">
-      <button (click)="recoverPin()" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="lock-screen-aux-btn">
-        Forgot PIN
-      </button>
       <button routerLink="/login" [style.color]="theme.colors().textSecondary" [style.border]="'1px solid ' + theme.colors().border" class="lock-screen-aux-btn">
         Switch Account
       </button>

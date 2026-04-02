@@ -5,15 +5,7 @@ import { Message } from '../models/message.model';
   providedIn: 'root'
 })
 export class MessagingService {
-  private _messages = signal<Message[]>([
-    {
-      id: 'seed_msg_1',
-      senderId: 'friend_1',
-      receiverId: 'me',
-      content: 'Private tea: I saw your crush at Blue Velvet last night.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 20)
-    }
-  ]);
+  private _messages = signal<Message[]>([]);
   public messages = this._messages.asReadonly();
 
   sendMessage(message: Omit<Message, 'id' | 'timestamp'>): void {

@@ -523,10 +523,10 @@ export class DashboardComponent implements OnInit {
   cropOffsetY = signal(0);
 
   mockAvatars = [
-    'https://i.pravatar.cc/150?u=1',
-    'https://i.pravatar.cc/150?u=2',
-    'https://i.pravatar.cc/150?u=3',
-    'https://i.pravatar.cc/150?u=4'
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Anya',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo'
   ];
 
   showArchived = signal(false);

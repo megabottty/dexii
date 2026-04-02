@@ -17,7 +17,9 @@ export const getApiBaseUrl = (): string => {
     const protocol = window.location.protocol;
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:5001/api';
+      // Allow overriding the port for local development via window variable
+      const port = (window as any).__DEXII_LOCAL_PORT__ || '5001';
+      return `http://${hostname}:${port}/api`;
     }
 
     // Default fallback for hosted frontend + hosted API under /api.

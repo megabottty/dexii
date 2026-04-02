@@ -58,9 +58,6 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </div>
 
         <div class="pin-actions">
-           <button (click)="useDefaultPin()" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="aux-btn">
-              Use Test PIN 1111
-           </button>
            <button routerLink="/signup-profile" [style.color]="theme.colors().textSecondary" [style.border]="'1px solid ' + theme.colors().border" class="aux-btn">
               Back to Profile
            </button>
@@ -189,10 +186,6 @@ export class SignupPinComponent {
         }
       }
     }
-  }
-
-  useDefaultPin() {
-    this.security.setInitialPin('1111');
   }
 
   clear() {
