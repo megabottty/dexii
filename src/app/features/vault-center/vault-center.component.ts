@@ -54,11 +54,27 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           </div>
         </nav>
 
-        <!-- Header -->
         <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="vault-header">
-          <div>
-            <h2 class="vault-center-component__s10">Dexii Vault</h2>
-            <p [style.color]="theme.colors().primary" class="vault-center-component__s11">Private Journal & Intimate Content</p>
+          <div class="logo-group">
+            <div class="logo-wrapper">
+              <span class="logo-text d" [style.color]="theme.colors().text">d</span>
+              <span class="logo-text e" [style.color]="theme.colors().text">e</span>
+              <span class="logo-text x" [style.color]="theme.colors().text">x</span>
+              <div class="logo-icon boy" [style.color]="theme.colors().primary">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="4" r="2"/>
+                  <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
+                </svg>
+              </div>
+              <div class="logo-icon girl" [style.color]="theme.colors().primary">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="4" r="2.5"/>
+                  <path d="M14.89 16L19 7H5l4.11 9H11v6h2v-6h1.89z"/>
+                </svg>
+              </div>
+              <span class="logo-text vault-label" [style.color]="theme.colors().text">vault</span>
+            </div>
+            <p [style.color]="theme.colors().primary" class="vault-subtitle">Private Journal & Intimate Content</p>
           </div>
           <div class="vault-center-component__s12">
              <button (click)="activeTab.set('journal')" [style.color]="activeTab() === 'journal' ? theme.colors().primary : theme.colors().textSecondary"

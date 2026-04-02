@@ -20,7 +20,23 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </app-page-hint>
 
         <div class="login-header">
-           <h2 class="login-title">Dexii</h2>
+           <div class="logo-wrapper">
+             <span class="logo-text d" [style.color]="theme.colors().text">d</span>
+             <span class="logo-text e" [style.color]="theme.colors().text">e</span>
+             <span class="logo-text x" [style.color]="theme.colors().text">x</span>
+             <div class="logo-icon boy" [style.color]="theme.colors().primary">
+               <svg viewBox="0 0 24 24" fill="currentColor">
+                 <circle cx="12" cy="4" r="2"/>
+                 <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
+               </svg>
+             </div>
+             <div class="logo-icon girl" [style.color]="theme.colors().primary">
+               <svg viewBox="0 0 24 24" fill="currentColor">
+                 <circle cx="12" cy="4" r="2.5"/>
+                 <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
+               </svg>
+             </div>
+           </div>
            <p [style.color]="theme.colors().textSecondary" class="login-subtitle">Login to your account</p>
         </div>
 
@@ -80,12 +96,32 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .login-header {
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .login-title {
-      font-size: 2.5rem;
+    .logo-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      margin-bottom: 8px;
+    }
+    .logo-text {
+      font-size: 3rem;
       font-weight: 200;
-      letter-spacing: 4px;
-      margin: 0;
+      line-height: 1;
+      text-transform: lowercase;
+    }
+    .logo-icon {
+      width: 2.2rem;
+      height: 3rem;
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 4px;
+    }
+    .logo-icon svg {
+      width: 100%;
+      height: 80%;
     }
     .login-subtitle {
       font-size: 0.875rem;

@@ -20,7 +20,23 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </app-page-hint>
 
         <div class="confirmation-header">
-           <h2 class="confirmation-title">Dexii</h2>
+           <div class="logo-wrapper">
+             <span class="logo-text d" [style.color]="theme.colors().text">d</span>
+             <span class="logo-text e" [style.color]="theme.colors().text">e</span>
+             <span class="logo-text x" [style.color]="theme.colors().text">x</span>
+             <div class="logo-icon boy" [style.color]="theme.colors().primary">
+               <svg viewBox="0 0 24 24" fill="currentColor">
+                 <circle cx="12" cy="4" r="2"/>
+                 <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
+               </svg>
+             </div>
+             <div class="logo-icon girl" [style.color]="theme.colors().primary">
+               <svg viewBox="0 0 24 24" fill="currentColor">
+                 <circle cx="12" cy="4" r="2.5"/>
+                 <path d="M14.89 16L19 7H5l4.11 9H11v6h2v-6h1.89z"/>
+               </svg>
+             </div>
+           </div>
            <p [style.color]="theme.colors().textSecondary" class="confirmation-subtitle">
              Email Verification
            </p>
@@ -90,12 +106,32 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .confirmation-header {
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .confirmation-title {
-      font-size: 2.5rem;
+    .logo-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      margin-bottom: 8px;
+    }
+    .logo-text {
+      font-size: 3rem;
       font-weight: 200;
-      letter-spacing: 4px;
-      margin: 0;
+      line-height: 1;
+      text-transform: lowercase;
+    }
+    .logo-icon {
+      width: 2.2rem;
+      height: 3rem;
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 4px;
+    }
+    .logo-icon svg {
+      width: 100%;
+      height: 80%;
     }
     .confirmation-subtitle {
       font-size: 0.875rem;
