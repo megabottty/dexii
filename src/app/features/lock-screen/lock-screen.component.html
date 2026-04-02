@@ -68,8 +68,8 @@
       <button (click)="recoverPin()" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="lock-screen-aux-btn">
         Forgot PIN
       </button>
-      <button (click)="createNewAccount()" [style.color]="theme.colors().textSecondary" [style.border]="'1px solid ' + theme.colors().border" class="lock-screen-aux-btn">
-        Create New Account
+      <button routerLink="/login" [style.color]="theme.colors().textSecondary" [style.border]="'1px solid ' + theme.colors().border" class="lock-screen-aux-btn">
+        Switch Account
       </button>
     </div>
 

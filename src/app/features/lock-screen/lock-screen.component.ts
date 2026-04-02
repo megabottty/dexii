@@ -55,6 +55,7 @@ export class LockScreenComponent {
       localStorage.removeItem('dexii_profile_bio');
       localStorage.removeItem('dexii_api_token');
       localStorage.removeItem('dexii_walkthrough_seen');
+      localStorage.removeItem('dexii_api_token'); // Ensure token is gone to trigger isLoggedIn update
       this.security.resetPinSetup();
     });
   }

@@ -33,6 +33,14 @@ const sendEmail = async (options) => {
     console.log(`Email sent: ${info.messageId}`);
     return { success: true };
   } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('--- EMAIL FALLBACK (SMTP FAILED) ---');
+      console.warn(`To: ${options.email}`);
+      console.warn(`Message: ${options.message}`);
+      console.warn('Reason:', error.message);
+      console.warn('-----------------------------------');
+      return { success: true, debug: true };
+    }
     console.error('--- SMTP ERROR DETAILS ---');
     console.error('Code:', error.code);
     console.error('Command:', error.command);

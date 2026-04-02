@@ -56,7 +56,7 @@ const distPath = path.resolve(__dirname, '..', '..', 'dist', 'dexii', 'browser')
 app.use(express.static(distPath));
 
 // Basic Route
-app.get('/', (req, res) => {
+app.get('/api/status', (req, res) => {
   res.json({
     message: 'Welcome to the Dexii Private API - High Glamour, High Security.',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected (demo mode)',

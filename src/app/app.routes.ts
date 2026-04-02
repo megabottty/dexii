@@ -5,7 +5,11 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'dashboard'
+    redirectTo: 'login'
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./features/login/login.component').then(m => m.LoginComponent)
   },
   {
     path: 'lock',

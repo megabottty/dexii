@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Heart-shaped lock for Dexii -->
+  <!-- Padlock Shackle (Mauve) -->
+  <path fill="#a881af" d="M16 2a7 7 0 0 0-7 7v5h14V9a7 7 0 0 0-7-7zM12 14V9a4 4 0 0 1 8 0v5h-8z"/>
+  <!-- Heart Body (Gold) -->
+  <path fill="#d4af37" d="M16 30s-11-6-11-12c0-3.5 2.5-6 6-6 2 0 4 1 5 3 1-2 3-3 5-3 3.5 0 6 2.5 6 6 0 6-11 12-11 12z"/>
+  <!-- Tiny Inner Heart/Keyhole (White/Soft Mauve) -->
+  <path fill="#fff" opacity="0.8" d="M16 22s-2.5-1.5-2.5-3c0-1 0.5-1.5 1.5-1.5 0.5 0 1 0.2 1 0.8 0-0.6 0.5-0.8 1-0.8 1 0 1.5 0.5 1.5 1.5 0 1.5-2.5 3-2.5 3z"/>
+</svg>

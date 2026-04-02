@@ -16,6 +16,10 @@ export class SecurityService {
   private _needsPinSetup = signal<boolean>(false);
   public needsPinSetup = this._needsPinSetup.asReadonly();
 
+  // New logged in state
+  private _isLoggedIn = signal<boolean>(false);
+  public isLoggedIn = this._isLoggedIn.asReadonly();
+
   // 1. The core state of the app's privacy
   private _isLocked = signal<boolean>(true);
   private _userPin = signal<string | null>(null); // In a real app, this would be hashed in storage
@@ -26,6 +30,12 @@ export class SecurityService {
   constructor() {
     const savedPin = localStorage.getItem('dexii_pin');
     const savedToken = localStorage.getItem('dexii_api_token');
+
+    if (savedToken) {
+      this._isLoggedIn.set(true);
+    } else {
+      this._isLoggedIn.set(false);
+    }
 
     if (savedPin && /^\d{4}$/.test(savedPin)) {
       this._userPin.set(savedPin);
@@ -39,12 +49,11 @@ export class SecurityService {
       this._needsPinSetup.set(true);
       this._userPin.set(null);
       localStorage.removeItem('dexii_pin');
-      this.router.navigate(['/signup-profile']);
     }
   }
 
   // 3. Logic to unlock the app
-  async verifyPin(input: string): Promise<boolean> {
+  async verifyPin(input: string, shouldNavigate: boolean = true): Promise<boolean> {
     const username = localStorage.getItem('dexii_api_username');
 
     if (username) {
@@ -58,8 +67,13 @@ export class SecurityService {
         if (response.ok) {
           const data = await response.json();
           localStorage.setItem('dexii_api_token', data.token);
-          this._isLocked.set(false);
-          this.router.navigate(['/dashboard']);
+          this._isLoggedIn.set(true);
+          if (shouldNavigate) {
+            this._isLocked.set(false);
+            this.router.navigate(['/dashboard']);
+          } else {
+            this._isLocked.set(true);
+          }
           return true;
         }
       } catch (err) {
@@ -69,8 +83,12 @@ export class SecurityService {
 
     // Fallback to local pin if offline or not registered yet
     if (input === this._userPin()) {
-      this._isLocked.set(false);
-      this.router.navigate(['/dashboard']);
+      if (shouldNavigate) {
+        this._isLocked.set(false);
+        this.router.navigate(['/dashboard']);
+      } else {
+        this._isLocked.set(true);
+      }
       return true;
     }
     return false;
@@ -126,8 +144,9 @@ export class SecurityService {
     localStorage.setItem('dexii_pin', finalPin);
     this._userPin.set(finalPin);
     this._needsPinSetup.set(false);
-    this._isLocked.set(false);
-    this.router.navigate(['/dashboard']);
+    this._isLoggedIn.set(true);
+    this._isLocked.set(true);
+    this.router.navigate(['/lock']);
   }
 
   async registerUser(pin: string): Promise<void> {
@@ -196,9 +215,12 @@ export class SecurityService {
 
   resetPinSetup(): void {
     localStorage.removeItem('dexii_pin');
+    localStorage.removeItem('dexii_api_token');
+    localStorage.removeItem('dexii_api_username');
     this._userPin.set(null);
+    this._isLoggedIn.set(false);
     this._isLocked.set(true);
     this._needsPinSetup.set(true);
-    this.router.navigate(['/signup-profile']);
+    this.router.navigate(['/login']);
   }
 }

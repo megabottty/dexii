@@ -99,7 +99,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                           [style.border]="'1px solid ' + theme.colors().border"
                           [style.color]="theme.colors().text"
                           rows="4"
-                         
+
                           placeholder="Add your first note about this connection..." class="dashboard-component__s20"></textarea>
 
                 <div class="dashboard-component__s21">
@@ -373,6 +373,13 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                   [style.background-color]="theme.colors().primary"
                   class="dashboard-component__s68">
             Lock
+          </button>
+          <button (click)="security.resetPinSetup()"
+                  [style.background-color]="'transparent'"
+                  [style.color]="theme.colors().textSecondary"
+                  [style.border]="'1px solid ' + theme.colors().border"
+                  class="dashboard-component__s68">
+            Switch Account
           </button>
           <a routerLink="/vault"
              [style.background-color]="theme.colors().accent"

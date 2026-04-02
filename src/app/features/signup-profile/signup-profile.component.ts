@@ -126,7 +126,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             Continue To PIN Setup
           </button>
 
-          <button routerLink="/lock" [style.color]="theme.colors().textSecondary" class="back-link">
+          <button routerLink="/login" [style.color]="theme.colors().textSecondary" class="back-link">
              Back to Login
           </button>
         </div>

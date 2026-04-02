@@ -6,10 +6,11 @@ export const lockGuard: CanActivateFn = (route, state) => {
   const securityService = inject(SecurityService);
   const router = inject(Router);
 
+  if (!securityService.isLoggedIn()) {
+    return router.parseUrl('/login');
+  }
+
   if (securityService.isLocked()) {
-    if (securityService.needsPinSetup()) {
-      return router.parseUrl('/signup-profile');
-    }
     return router.parseUrl('/lock');
   }
   return true;
