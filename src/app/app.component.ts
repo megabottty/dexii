@@ -39,7 +39,7 @@ interface WalkthroughStep {
               <p class="app-component__s5">{{ activeHint() }}</p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <button (click)="userWantsHint.set(false)"
+              <button (click)="showRouteHint.set(false)"
                       aria-label="Hide hint"
                       [style.color]="theme.colors().textSecondary"
                       class="app-component__s6">✕</button>
@@ -54,12 +54,20 @@ interface WalkthroughStep {
         </div>
       }
 
-      <button (click)="openWalkthrough()"
-              aria-label="Open help and tips walkthrough"
-              [style.background-color]="theme.colors().primary"
-              class="app-component__s7">
-        Help & Tips
-      </button>
+      @if (currentPath().startsWith('/chat')) {
+        <button (click)="showRouteHint.set(true)"
+                aria-label="Show chat hint"
+                [style.background-color]="theme.colors().primary"
+                [style.color]="'#fff'"
+                class="app-hint-toggle">💡</button>
+      } @else {
+        <button (click)="openWalkthrough()"
+                aria-label="Open help and tips walkthrough"
+                [style.background-color]="theme.colors().primary"
+                class="app-component__s7">
+          Help & Tips
+        </button>
+      }
 
       @if (showWalkthrough()) {
         <div class="app-component__s8">
@@ -210,7 +218,7 @@ export class AppComponent implements OnInit {
       '/friends': 'Use Bio for friend notes and Sharing Controls to choose which crushes/entries each friend can view.',
       '/friends/:id': 'Save private notes for yourself or shared notes that get sent to this friend.',
       '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each connection.',
-      '/chat': 'Messages marked as shared notes are sent here. Type "secret" to send a self-destructing note.',
+      '/chat': 'Messages marked as shared notes are sent here. Type "secret" in a message to make it self-destruct and disappear.',
       '/vault': 'Vault is your private zone for sensitive content and locked-down entries.',
       '/lock': 'Enter your PIN to unlock, then tap Help & Tips any time for the walkthrough.'
     };

@@ -35,7 +35,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         <app-page-hint
           hintKey="chat_inline"
           title="Chat Hint"
-          message="Shared notes appear here. Send normal messages, and include the word 'secret' for self-destructing messages.">
+          message="Shared notes appear here. Send normal messages, and include the word 'secret' to make a message self-destruct and disappear.">
         </app-page-hint>
 
         @for (msg of activeMessages(); track msg.id) {

@@ -80,17 +80,19 @@
 
 .app-hint-toggle {
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: 82px;
-  z-index: 320;
+  z-index: 321;
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
+  color: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   transition: transform 0.2s ease;
 }
