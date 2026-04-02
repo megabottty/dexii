@@ -69,7 +69,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               <div class="logo-icon girl" [style.color]="theme.colors().primary">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="4" r="2.5"/>
-                  <path d="M14.89 16L19 7H5l4.11 9H11v6h2v-6h1.89z"/>
+                  <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
                 </svg>
               </div>
               <span class="logo-text vault-label" [style.color]="theme.colors().text">vault</span>
