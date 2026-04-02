@@ -38,24 +38,34 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           }
         </div>
 
-        <div class="keypad">
-          @for (num of [1,2,3,4,5,6,7,8,9]; track num) {
-            <button (click)="handleInput(num.toString())"
+        @if (pinConfirmed()) {
+          <div class="pin-actions">
+            <button (click)="createAccount()"
+                    [style.background-color]="theme.colors().primary"
+                    class="submit-button">
+              Create My Account
+            </button>
+          </div>
+        } @else {
+          <div class="keypad">
+            @for (num of [1,2,3,4,5,6,7,8,9]; track num) {
+              <button (click)="handleInput(num.toString())"
+                      [style.background]="'transparent'"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.color]="theme.colors().text"
+                      class="keypad-btn">
+                {{ num }}
+              </button>
+            }
+            <div class="keypad-empty"></div>
+            <button (click)="handleInput('0')"
                     [style.background]="'transparent'"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
-                    class="keypad-btn">
-              {{ num }}
-            </button>
-          }
-          <div class="keypad-empty"></div>
-          <button (click)="handleInput('0')"
-                  [style.background]="'transparent'"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  [style.color]="theme.colors().text"
-                  class="keypad-btn">0</button>
-          <button (click)="clear()" [style.color]="theme.colors().primary" class="keypad-clear-btn">Clear</button>
-        </div>
+                    class="keypad-btn">0</button>
+            <button (click)="clear()" [style.color]="theme.colors().primary" class="keypad-clear-btn">Clear</button>
+          </div>
+        }
 
         <div class="pin-actions">
            <button routerLink="/signup-profile" [style.color]="theme.colors().textSecondary" [style.border]="'1px solid ' + theme.colors().border" class="aux-btn">
@@ -147,6 +157,15 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       width: 100%;
       max-width: 300px;
     }
+    .submit-button {
+      padding: 14px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
     .aux-btn {
       padding: 12px;
       border-radius: 8px;
@@ -164,6 +183,7 @@ export class SignupPinComponent {
 
   enteredPin = signal<string>('');
   setupPinFirst = signal<string>('');
+  pinConfirmed = signal<boolean>(false);
   errorMessage = signal<string>('');
 
   handleInput(val: string) {
@@ -178,13 +198,19 @@ export class SignupPinComponent {
         this.clear();
       } else {
         if (this.setupPinFirst() === nextPin) {
-          this.security.setInitialPin(nextPin);
+          this.pinConfirmed.set(true);
         } else {
           this.errorMessage.set('PINs did not match. Try again.');
           this.setupPinFirst.set('');
           this.clear();
         }
       }
+    }
+  }
+
+  createAccount() {
+    if (this.pinConfirmed()) {
+      this.security.setInitialPin(this.setupPinFirst());
     }
   }
 

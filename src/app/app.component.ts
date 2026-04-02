@@ -17,50 +17,41 @@ interface WalkthroughStep {
   styleUrl: './app.component.css',
   imports: [RouterOutlet, AlertModalComponent],
   template: `
-    <div [style.background-color]="theme.colors().bg" class="app-component__s1">
+    <div [style.background-color]="theme.colors().bg"
+         [class.is-chat-route]="currentPath().startsWith('/chat')"
+         class="app-component__s1">
       <a href="#main-content" class="app-skip-link">Skip to main content</a>
       <main id="main-content">
       <router-outlet></router-outlet>
       </main>
 
       @if (activeHint() && showRouteHint()) {
-        @if (userWantsHint()) {
-          <div [style.background-color]="theme.colors().bgSecondary"
-               [style.color]="theme.colors().text"
-               [style.border]="'1px solid ' + theme.colors().border"
-               role="status"
-               aria-live="polite"
-               class="app-component__s2">
-            <div class="app-component__s3">
-              <div>
-                <p [style.color]="theme.colors().primary"
-                   class="app-component__s4">Quick Hint</p>
-                <p class="app-component__s5">{{ activeHint() }}</p>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button (click)="userWantsHint.set(false)"
-                        aria-label="Hide hint"
-                        [style.color]="theme.colors().textSecondary"
-                        class="app-component__s6">✕</button>
-                <button (click)="dismissHintForCurrentRoute()"
-                        aria-label="Never show this hint again"
-                        [style.color]="theme.colors().textSecondary"
-                        style="font-size: 9px; opacity: 0.6; background: none; border: none; cursor: pointer; padding: 0;">
-                  Dismiss
-                </button>
-              </div>
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.color]="theme.colors().text"
+             [style.border]="'1px solid ' + theme.colors().border"
+             role="status"
+             aria-live="polite"
+             class="app-component__s2">
+          <div class="app-component__s3">
+            <div>
+              <p [style.color]="theme.colors().primary"
+                 class="app-component__s4">Quick Hint</p>
+              <p class="app-component__s5">{{ activeHint() }}</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button (click)="userWantsHint.set(false)"
+                      aria-label="Hide hint"
+                      [style.color]="theme.colors().textSecondary"
+                      class="app-component__s6">✕</button>
+              <button (click)="dismissHintForCurrentRoute()"
+                      aria-label="Never show this hint again"
+                      [style.color]="theme.colors().textSecondary"
+                      style="font-size: 9px; opacity: 0.6; background: none; border: none; cursor: pointer; padding: 0;">
+                Dismiss
+              </button>
             </div>
           </div>
-        } @else {
-          <button (click)="userWantsHint.set(true)"
-                  aria-label="Show hint"
-                  [style.background-color]="theme.colors().bgSecondary"
-                  [style.color]="theme.colors().primary"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  class="app-hint-toggle">
-            💡
-          </button>
-        }
+        </div>
       }
 
       <button (click)="openWalkthrough()"
@@ -130,7 +121,7 @@ export class AppComponent implements OnInit {
   currentPath = signal(this.router.url || '/dashboard');
   activeHint = signal('');
   showRouteHint = signal(true);
-  userWantsHint = signal(false);
+  userWantsHint = signal(true);
   showWalkthrough = signal(this.shouldAutoShowWalkthrough());
   walkthroughSteps: WalkthroughStep[] = [
     {

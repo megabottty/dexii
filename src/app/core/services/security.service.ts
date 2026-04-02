@@ -20,6 +20,9 @@ export class SecurityService {
   private _isLoggedIn = signal<boolean>(false);
   public isLoggedIn = this._isLoggedIn.asReadonly();
 
+  private _currentUser = signal<string | null>(localStorage.getItem('dexii_api_username'));
+  public currentUser = this._currentUser.asReadonly();
+
   // 1. The core state of the app's privacy
   private _isLocked = signal<boolean>(true);
   private _userPin = signal<string | null>(null); // In a real app, this would be hashed in storage
@@ -67,6 +70,8 @@ export class SecurityService {
         if (response.ok) {
           const data = await response.json();
           localStorage.setItem('dexii_api_token', data.token);
+          localStorage.setItem('dexii_api_username', username);
+          this._currentUser.set(username);
           this._isLoggedIn.set(true);
           if (shouldNavigate) {
             this._isLocked.set(false);
@@ -141,6 +146,8 @@ export class SecurityService {
   }
 
   finalizeSetup(finalPin: string): void {
+    const username = localStorage.getItem('dexii_api_username');
+    this._currentUser.set(username);
     localStorage.setItem('dexii_pin', finalPin);
     this._userPin.set(finalPin);
     this._needsPinSetup.set(false);
@@ -217,6 +224,7 @@ export class SecurityService {
     localStorage.removeItem('dexii_pin');
     localStorage.removeItem('dexii_api_token');
     localStorage.removeItem('dexii_api_username');
+    this._currentUser.set(null);
     this._userPin.set(null);
     this._isLoggedIn.set(false);
     this._isLocked.set(true);

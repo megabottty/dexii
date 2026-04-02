@@ -25,12 +25,6 @@ import { Component, Input, signal } from '@angular/core';
             </div>
           </div>
         </div>
-      } @else {
-        <button (click)="expanded.set(true)"
-                aria-label="Show page hint"
-                class="page-hint-toggle">
-          💡
-        </button>
       }
     }
   `
@@ -41,7 +35,7 @@ export class PageHintComponent {
   @Input() hintKey = '';
 
   dismissed = signal(false);
-  expanded = signal(false);
+  expanded = signal(true);
 
   ngOnInit() {
     if (!this.hintKey) return;

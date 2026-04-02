@@ -27,6 +27,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             <span [style.color]="theme.colors().primary" class="messaging-component__s6">End-to-End Encrypted Tea</span>
           </div>
         </div>
+        <div style="width: 100px;"></div> <!-- Spacer for Help button -->
       </header>
 
       <!-- Messages Area -->
@@ -81,7 +82,13 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   public security = inject(SecurityService);
   public modal = inject(ModalService);
 
-  currentChatPartner = signal({ id: 'friend_1', username: 'Bestie_Sarah' });
+  currentChatPartner = computed(() => {
+    const user = this.security.currentUser();
+    return {
+      id: user ? 'me' : 'friend_1',
+      username: user || 'Sarah Best'
+    };
+  });
   newMessage = '';
 
   activeMessages = computed(() =>

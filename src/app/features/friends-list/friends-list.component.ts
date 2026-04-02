@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SlicePipe } from '@angular/common';
@@ -294,7 +294,10 @@ export class FriendsListComponent implements OnInit {
   private dataService = inject(DataService);
 
   private apiBase = `${getApiBaseUrl()}/demo/friends`;
-  private currentUsername = localStorage.getItem('dexii_api_username') || 'dexii_demo_user';
+
+  private get currentUsername(): string {
+    return this.security.currentUser() || 'dexii_demo_user';
+  }
 
   freeTier = SubscriptionTier.Free;
   premiumTier = SubscriptionTier.Premium;
@@ -309,9 +312,21 @@ export class FriendsListComponent implements OnInit {
 
   allCrushes = this.dataService.getAllCrushes();
 
+  constructor() {
+    // React to user changes automatically
+    effect(() => {
+      const user = this.security.currentUser();
+      if (user) {
+        void this.loadFriends();
+        void this.loadIncomingRequests();
+      } else {
+        this.friends.set([]);
+        this.incomingRequests.set([]);
+      }
+    });
+  }
+
   ngOnInit(): void {
-    void this.loadFriends();
-    void this.loadIncomingRequests();
   }
 
   asInputValue(event: Event): string {

@@ -6,6 +6,10 @@
   position: fixed; right: 16px; bottom: 82px; z-index: 320; width: min(360px, calc(100vw - 32px)); padding: 12px;
 }
 
+.is-chat-route .app-component__s2 {
+  bottom: auto; top: 60px;
+}
+
 .app-component__s3 {
   display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
 }
@@ -24,6 +28,10 @@
 
 .app-component__s7 {
   position: fixed; right: 16px; bottom: 16px; z-index: 321; color: white; border: none; padding: 10px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+}
+
+.is-chat-route .app-component__s7 {
+  bottom: auto; top: 16px;
 }
 
 .app-component__s8 {

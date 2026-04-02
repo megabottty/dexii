@@ -6,7 +6,7 @@ const dataFile = path.join(dataDir, 'demo-friends.json');
 
 const defaultUsers = [
   { username: 'dexii_demo_user', avatarUrl: 'https://i.pravatar.cc/150?u=dexii_demo_user', subscriptionTier: 'Premium', friendCategories: ['Close Friends'] },
-  { username: 'Bestie_Sarah', avatarUrl: 'https://i.pravatar.cc/150?u=sarah', subscriptionTier: 'Free', friendCategories: ['Close Friends'] },
+  { username: 'Sarah Best', avatarUrl: 'https://i.pravatar.cc/150?u=sarah', subscriptionTier: 'Free', friendCategories: ['Close Friends'] },
   { username: 'Tea_Spiller_Mark', avatarUrl: 'https://i.pravatar.cc/150?u=mark', subscriptionTier: 'Premium', friendCategories: ['Casual'] },
   { username: 'Work_Bri', avatarUrl: 'https://i.pravatar.cc/150?u=bri', subscriptionTier: 'Free', friendCategories: ['Work'] },
   { username: 'Club_Ari', avatarUrl: 'https://i.pravatar.cc/150?u=ari', subscriptionTier: 'Gold', friendCategories: ['Casual'] }
