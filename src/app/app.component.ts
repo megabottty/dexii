@@ -148,12 +148,15 @@ export class AppComponent implements OnInit {
   protected readonly title = signal('dexii');
 
   ngOnInit() {
-    console.log('AppComponent initialized, isLocked:', this.security.isLocked());
-    if (this.security.isLocked()) {
-      console.log('AppComponent is locked, navigating to /lock');
-      this.router.navigate(['/lock']);
-    } else {
-      console.log('AppComponent is not locked');
+    console.log('AppComponent initialized, isLocked:', this.security.isLocked(), 'isLoggedIn:', this.security.isLoggedIn());
+
+    // Initial routing logic based on auth/lock status
+    if (this.router.url === '/' || this.router.url === '/dashboard') {
+       if (!this.security.isLoggedIn()) {
+         this.router.navigate(['/login']);
+       } else if (this.security.isLocked()) {
+         this.router.navigate(['/lock']);
+       }
     }
 
     this.router.events

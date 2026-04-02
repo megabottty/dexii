@@ -73,11 +73,10 @@ export class SecurityService {
           localStorage.setItem('dexii_api_username', username);
           this._currentUser.set(username);
           this._isLoggedIn.set(true);
+
           if (shouldNavigate) {
             this._isLocked.set(false);
             this.router.navigate(['/dashboard']);
-          } else {
-            this._isLocked.set(true);
           }
           return true;
         }
@@ -91,8 +90,6 @@ export class SecurityService {
       if (shouldNavigate) {
         this._isLocked.set(false);
         this.router.navigate(['/dashboard']);
-      } else {
-        this._isLocked.set(true);
       }
       return true;
     }
