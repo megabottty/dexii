@@ -1,5 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
+const mongoose = require('mongoose');
+const User = require('../models/User');
 
 const dataDir = path.join(__dirname, '..', '..', 'data');
 const dataFile = path.join(dataDir, 'demo-friends.json');
@@ -85,6 +87,32 @@ const searchUsers = async (owner, query) => {
   const state = await readStore();
   const ownerUser = ensureUser(state, owner);
   if (!ownerUser) return [];
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const mongoUsers = await User.find({}, 'username avatarUrl subscriptionTier friendCategories')
+        .lean()
+        .exec();
+      const existing = new Set(state.users.map((u) => (u.username || '').toLowerCase()));
+      for (const mongoUser of mongoUsers) {
+        const username = (mongoUser.username || '').trim();
+        if (!username) continue;
+        const key = username.toLowerCase();
+        if (existing.has(key)) continue;
+        state.users.push({
+          username,
+          avatarUrl: mongoUser.avatarUrl || `https://i.pravatar.cc/150?u=${encodeURIComponent(username)}`,
+          subscriptionTier: mongoUser.subscriptionTier || 'Free',
+          friendCategories: Array.isArray(mongoUser.friendCategories) && mongoUser.friendCategories.length > 0
+            ? mongoUser.friendCategories
+            : ['Close Friends', 'Casual', 'Work']
+        });
+        existing.add(key);
+      }
+    } catch (err) {
+      console.warn('Unable to merge Mongo users into demo friend search:', err.message);
+    }
+  }
 
   const q = (query || '').trim().toLowerCase();
   const friendSet = new Set(getFriendnames(state, ownerUser.username));
