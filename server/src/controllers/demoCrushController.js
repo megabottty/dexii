@@ -1,4 +1,4 @@
-const { getCrushes, addCrush } = require('../utils/demoCrushStore');
+const { getCrushes, addCrush, updateCrush } = require('../utils/demoCrushStore');
 
 const normalizeOwner = (input) => {
   if (!input || typeof input !== 'string') return 'dexii_demo_user';
@@ -25,6 +25,21 @@ exports.createDemoCrush = async (req, res) => {
 
     const crush = await addCrush(owner, req.body);
     res.status(201).json(crush);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.updateDemoCrush = async (req, res) => {
+  try {
+    const owner = normalizeOwner(req.body.owner);
+    const id = req.params.id;
+
+    const crush = await updateCrush(owner, id, req.body);
+    if (!crush) {
+      return res.status(404).json({ message: 'Crush not found' });
+    }
+    res.json(crush);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

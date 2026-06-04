@@ -15,4 +15,7 @@ router.delete('/:friendId', auth, friendController.removeFriend);
 // @route   GET /api/friends/search
 router.get('/search', auth, friendController.searchUsers);
 
+// @route   POST /api/friends/invite
+router.post('/invite', auth, friendController.inviteUser);
+
 module.exports = router;

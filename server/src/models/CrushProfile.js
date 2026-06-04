@@ -18,10 +18,13 @@ const CrushProfileSchema = new mongoose.Schema({
     enum: ['Crush', 'Dating', 'Exclusive', 'Archived'],
     default: 'Crush'
   },
-  visibility: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
+  visibility: {
+    type: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    default: []
+  },
   sharedEntries: [{
     type: String
   }],
@@ -54,7 +57,25 @@ const CrushProfileSchema = new mongoose.Schema({
     facebook: String,
     instagram: String
   },
-  relationshipStatus: String
+  relationshipStatus: String,
+  pronouns: {
+    type: String,
+    enum: ['he', 'she', 'they', 'custom'],
+    default: 'they'
+  },
+  customNotes: {
+    type: String,
+    default: ''
+  },
+  location: String,
+  age: Number,
+  howWeMet: String,
+  whenWeMet: String,
+  grade: String,
+  occupation: String,
+  family: String,
+  memorableMoments: String,
+  friends: [String]
 }, { timestamps: true });
 
 module.exports = mongoose.model('CrushProfile', CrushProfileSchema);

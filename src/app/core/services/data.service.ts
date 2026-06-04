@@ -1,7 +1,8 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
+import { ModalService } from './modal.service';
 
 interface BackendCrush {
   _id: string;
@@ -28,6 +29,17 @@ interface BackendCrush {
     instagram?: string;
   };
   relationshipStatus?: string;
+  pronouns?: string;
+  customNotes?: string;
+  location?: string;
+  age?: number;
+  howWeMet?: string;
+  whenWeMet?: string;
+  grade?: string;
+  occupation?: string;
+  family?: string;
+  memorableMoments?: string;
+  friends?: string[];
 }
 
 @Injectable({
@@ -40,6 +52,7 @@ export class DataService {
 
   private _allCrushes = signal<CrushProfile[]>([]);
   private _entries = signal<Entry[]>([]);
+  private modal = inject(ModalService);
 
   constructor() {
     void this.hydrateCrushesFromBackend();
@@ -72,7 +85,18 @@ export class DataService {
       eyes: crush.eyes || [],
       build: crush.build || [],
       social: crush.social,
-      relationshipStatus: crush.relationshipStatus
+      relationshipStatus: crush.relationshipStatus,
+      pronouns: crush.pronouns as any,
+      customNotes: crush.customNotes,
+      location: crush.location,
+      age: crush.age,
+      howWeMet: crush.howWeMet,
+      whenWeMet: crush.whenWeMet,
+      grade: crush.grade,
+      occupation: crush.occupation,
+      family: crush.family,
+      memorableMoments: crush.memorableMoments,
+      friends: crush.friends || []
     };
   }
 
@@ -202,51 +226,147 @@ export class DataService {
   }
 
   private async persistNewCrush(localId: string, crush: CrushProfile): Promise<void> {
-    const payload = {
-      nickname: crush.nickname,
-      fullName: crush.fullName,
-      avatarUrl: crush.avatarUrl,
-      bio: crush.bio,
-      status: crush.status,
-      visibility: crush.visibility,
-      lastInteraction: crush.lastInteraction,
-      rating: crush.rating,
-      redFlags: crush.redFlags,
-      vibeHistory: crush.vibeHistory,
-      category: crush.category,
-      hair: crush.hair,
-      eyes: crush.eyes,
-      build: crush.build,
-      social: crush.social,
-      relationshipStatus: crush.relationshipStatus
-    };
+    try {
+      const payload = {
+        nickname: crush.nickname,
+        fullName: crush.fullName,
+        avatarUrl: crush.avatarUrl,
+        bio: crush.bio,
+        status: crush.status,
+        visibility: crush.visibility,
+        lastInteraction: crush.lastInteraction,
+        rating: crush.rating,
+        redFlags: crush.redFlags,
+        vibeHistory: crush.vibeHistory,
+        category: crush.category,
+        hair: crush.hair,
+        eyes: crush.eyes,
+        build: crush.build,
+        social: crush.social,
+        relationshipStatus: crush.relationshipStatus,
+        customNotes: crush.customNotes,
+        location: crush.location,
+        age: crush.age,
+        howWeMet: crush.howWeMet,
+        whenWeMet: crush.whenWeMet,
+        grade: crush.grade,
+        occupation: crush.occupation,
+        family: crush.family,
+        memorableMoments: crush.memorableMoments,
+        friends: crush.friends
+      };
 
-    let response = await this.authenticatedFetch('/crushes', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-
-    if (!response || !response.ok) {
-      response = await this.demoFetch('/crushes', {
+      let response = await this.authenticatedFetch('/crushes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...payload,
-          owner: this.getDemoOwner()
-        })
+        body: JSON.stringify(payload)
       });
+
+      if (!response || !response.ok) {
+        response = await this.demoFetch('/crushes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            owner: this.getDemoOwner()
+          })
+        });
+      }
+
+      if (!response || !response.ok) {
+        const errorMsg = response?.status === 413
+          ? 'Image too large. Please use a smaller profile picture.'
+          : 'Failed to save crush to database.';
+        this.modal.show(errorMsg);
+        return;
+      }
+
+      const savedCrush = await response.json() as BackendCrush;
+      const mapped = this.mapBackendCrush(savedCrush);
+
+      this._allCrushes.update(crushes =>
+        crushes.map((existing) => existing.id === localId ? mapped : existing)
+      );
+      this.modal.show('Profile Secured in the Rolodex.');
+    } catch (err) {
+      console.error('Error persisting new crush:', err);
+      this.modal.show('Connection error. Could not save profile.');
     }
+  }
 
-    if (!response || !response.ok) {
-      return;
+  public updateCrush(crush: CrushProfile): void {
+    this._allCrushes.update(crushes => crushes.map(c =>
+      c.id === crush.id ? crush : c
+    ));
+    void this.persistCrushUpdate(crush);
+  }
+
+  private async persistCrushUpdate(crush: CrushProfile): Promise<void> {
+    try {
+      const payload = {
+        nickname: crush.nickname,
+        fullName: crush.fullName,
+        avatarUrl: crush.avatarUrl,
+        bio: crush.bio,
+        status: crush.status,
+        visibility: crush.visibility,
+        lastInteraction: crush.lastInteraction,
+        rating: crush.rating,
+        redFlags: crush.redFlags,
+        vibeHistory: crush.vibeHistory,
+        category: crush.category,
+        hair: crush.hair,
+        eyes: crush.eyes,
+        build: crush.build,
+        social: crush.social,
+        relationshipStatus: crush.relationshipStatus,
+        pronouns: crush.pronouns,
+        customNotes: crush.customNotes,
+        location: crush.location,
+        age: crush.age,
+        howWeMet: crush.howWeMet,
+        whenWeMet: crush.whenWeMet,
+        grade: crush.grade,
+        occupation: crush.occupation,
+        family: crush.family,
+        memorableMoments: crush.memorableMoments,
+        friends: crush.friends
+      };
+
+      let response = await this.authenticatedFetch(`/crushes/${crush.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+
+      if (!response || !response.ok) {
+        response = await this.demoFetch(`/crushes/${crush.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            owner: this.getDemoOwner()
+          })
+        });
+      }
+
+      if (!response || !response.ok) {
+        const errorMsg = response?.status === 413
+          ? 'Image too large. Please use a smaller profile picture.'
+          : 'Failed to update profile in database.';
+        this.modal.show(errorMsg);
+        return;
+      }
+
+      const savedCrush = await response.json() as BackendCrush;
+      const mapped = this.mapBackendCrush(savedCrush);
+
+      this._allCrushes.update(crushes =>
+        crushes.map((existing) => existing.id === crush.id ? mapped : existing)
+      );
+      this.modal.show('Profile updated successfully!');
+    } catch (err) {
+      console.error('Error persisting crush update:', err);
+      this.modal.show('Connection error. Could not update profile.');
     }
-
-    const savedCrush = await response.json() as BackendCrush;
-    const mapped = this.mapBackendCrush(savedCrush);
-
-    this._allCrushes.update(crushes =>
-      crushes.map((existing) => existing.id === localId ? mapped : existing)
-    );
   }
 
   public getEntriesForCrush(crushId: string) {

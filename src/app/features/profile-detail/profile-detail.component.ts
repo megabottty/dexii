@@ -1,5 +1,6 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -7,225 +8,343 @@ import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
-import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, PageHintComponent],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
-         class="profile-detail-component__s1">
+    <div [style.background-color]="theme.colors().bg"
+         [style.color]="theme.colors().text"
+         [style.--primary]="theme.colors().primary"
+         [style.--primary-hover]="theme.colors().primaryHover"
+         [style.--bg-secondary]="theme.colors().bgSecondary"
+         [style.--border]="theme.colors().border"
+         [style.--text]="theme.colors().text"
+         class="profile-container">
 
-      <div class="profile-detail-component__s2">
-        <app-page-hint
-          hintKey="profile_inline"
-          title="Profile Hint"
-          message="Use Add Note for updates, log vibe and red flags over time, and use Safety actions when needed.">
-        </app-page-hint>
+      @if (crush(); as c) {
+        <div [style.background]="'linear-gradient(180deg, ' + theme.colors().primary + '30, ' + theme.colors().bg + ')'"
+             class="header-gradient-container">
+          <a routerLink="/dashboard"
+             [style.color]="theme.colors().text"
+             class="back-link">
+            ← Dashboard
+          </a>
+        </div>
 
-        <!-- Back Button -->
-        <a routerLink="/dashboard" [style.color]="theme.colors().textSecondary"
-           class="profile-detail-component__s3">
-          ← Return to Collection
-        </a>
+        <div class="profile-main-content">
+          <div [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               class="profile-header-card">
+            <div class="profile-header-flex">
+              <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'"
+                   [alt]="c.nickname"
+                   class="profile-avatar">
+              <div class="profile-title-section">
+                <h1 class="profile-name">{{ c.nickname }}</h1>
+                <p [style.color]="theme.colors().primary" class="profile-subtitle">
+                  {{ c.location || 'Location Unknown' }} • {{ c.age ? c.age + ' years' : 'Age Unknown' }}
+                </p>
+                @if (c.bio) {
+                  <p [style.color]="theme.colors().textSecondary" class="profile-bio">{{ c.bio }}</p>
+                }
+              </div>
+            </div>
 
-        @if (crush(); as c) {
-          <!-- Glamour Header -->
-          <header class="profile-detail-component__s4">
-            <div [style.border]="'1px solid ' + theme.colors().border"
-                 class="profile-detail-component__s5">
-              <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
-                   [alt]="c.nickname + ' profile photo'"
-                   class="profile-detail-component__s6">
-              @if (theme.mode() === 'light') {
-                <div class="profile-detail-component__s7"></div>
+            <div class="action-buttons-grid">
+              @if (isEditMode()) {
+                <button (click)="saveEdit(c.id)" class="action-btn-styled primary">Save Changes</button>
+                <button (click)="toggleEditMode()" class="action-btn-styled secondary">Cancel</button>
+              } @else {
+                <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
+                <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
+                <button (click)="logVibe(c.id)" class="action-btn-styled primary">✨ Log Vibe</button>
+                <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
+
+                @if (safetyState() === 'Draft') {
+                  <button (click)="startSafetyCheck(c.id)" class="action-btn-styled safety">🔒 Start Safety</button>
+                } @else if (safetyState() === 'Sent') {
+                  <button (click)="markSafe(c.id)" class="action-btn-styled safe">✅ Mark Safe</button>
+                  <button (click)="triggerEmergency(c.id)" class="action-btn-styled urgent">🚨 URGENT</button>
+                }
+
+                <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
+                  {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
+                </button>
               }
             </div>
-
-            <div class="profile-detail-component__s8">
-              <div class="profile-detail-component__s9">
-                <span [style.color]="theme.colors().primary" class="profile-detail-component__s10">
-                  Exclusive {{ c.status }}
-                </span>
-                <h1 class="profile-detail-component__s11">{{ c.nickname }}</h1>
-              </div>
-
-              <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s12">{{ c.fullName }}</p>
-
-              <div class="profile-detail-component__s13">
-                <button (click)="addNote(c.id)" [style.background-color]="theme.colors().primary"
-                        class="profile-detail-component__s14">
-                  Add Note
-                </button>
-                <button (click)="onDateMode.set(!onDateMode())" [style.background-color]="'transparent'"
-                        [style.color]="onDateMode() ? theme.colors().primary : theme.colors().text"
-                        [style.border]="'1px solid ' + (onDateMode() ? theme.colors().primary : theme.colors().text)"
-                        class="profile-detail-component__s15">
-                  Going on a Date
-                </button>
-                @if (onDateMode()) {
-                  <button (click)="startSafetyCheck(c.id)" [style.background-color]="'transparent'"
-                          [style.color]="safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text"
-                          [style.border]="'1px solid ' + (safetyState() === 'Sent' ? theme.colors().primary : theme.colors().text)"
-                          class="profile-detail-component__s15">
-                    Send Check-In
-                  </button>
-                  <button (click)="markSafe(c.id)" [style.background-color]="'transparent'"
-                          [style.color]="safetyState() === 'Safe' ? '#16a34a' : theme.colors().text"
-                          [style.border]="'1px solid ' + (safetyState() === 'Safe' ? '#16a34a' : theme.colors().text)"
-                          class="profile-detail-component__s15">
-                    Mark Safe
-                  </button>
-                  <button (click)="triggerEmergency(c.id)" [style.background-color]="'transparent'"
-                          [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text"
-                          [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().text)"
-                          class="profile-detail-component__s15">
-                    Emergency Mode
-                  </button>
-                }
-                <button (click)="toggleArchive(c)" [style.background-color]="'transparent'"
-                        [style.color]="theme.colors().textSecondary"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        class="profile-detail-component__s16">
-                  {{ c.status === statuses.Archived ? 'Unarchive' : 'Archive' }}
-                </button>
-              </div>
-              <p [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().textSecondary"
-                 class="profile-detail-component__s17">
-                Safety Status: {{ safetyState() }}
-              </p>
-            </div>
-          </header>
-
-              <div class="profile-detail-component__s18">
-            <!-- Left -->
-            <div>
-              <section class="profile-detail-component__s19">
-                <h3 [style.color]="theme.colors().textSecondary" class="profile-detail-component__s20">The Narrative</h3>
-                <p [style.color]="theme.colors().text" class="profile-detail-component__s21">
-                  "{{ c.bio || 'A mysterious entry in the personal rolodex, awaiting further interaction and documentation.' }}"
-                </p>
-
-                <div [style.border-top]="'1px solid ' + theme.colors().border" class="profile-detail-traits">
-                  @if (c.hair && c.hair.length > 0) {
-                    <div>
-                      <span [style.color]="theme.colors().textSecondary" class="profile-detail-component__s22">Hair</span>
-                      <div class="profile-detail-component__s23">
-                        @for (h of c.hair; track h) {
-                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s24">{{h}}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                  @if (c.eyes && c.eyes.length > 0) {
-                    <div>
-                      <span [style.color]="theme.colors().textSecondary" class="profile-detail-component__s22">Eyes</span>
-                      <div class="profile-detail-component__s23">
-                        @for (e of c.eyes; track e) {
-                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s24">{{e}}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                  @if (c.build && c.build.length > 0) {
-                    <div>
-                      <span [style.color]="theme.colors().textSecondary" class="profile-detail-component__s22">Build</span>
-                      <div class="profile-detail-component__s23">
-                        @for (b of c.build; track b) {
-                          <span [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s24">{{b}}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-
-                @if (c.social && (c.social.snapchat || c.social.whatsapp || c.social.twitter || c.social.facebook || c.social.instagram)) {
-                  <div class="profile-detail-component__s25">
-                    @if (c.social.snapchat) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">👻 {{c.social.snapchat}}</div> }
-                    @if (c.social.whatsapp) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">💬 {{c.social.whatsapp}}</div> }
-                    @if (c.social.twitter) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">🐦 {{c.social.twitter}}</div> }
-                    @if (c.social.facebook) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">📘 {{c.social.facebook}}</div> }
-                    @if (c.social.instagram) { <div [style.color]="theme.colors().text" class="profile-detail-component__s26">📸 {{c.social.instagram}}</div> }
-                  </div>
-                }
-
-                @if (c.relationshipStatus) {
-                  <div [style.border]="'1px dashed ' + theme.colors().primary" class="profile-detail-relationship">
-                    <span [style.color]="theme.colors().primary" class="profile-detail-component__s27">Status with me</span>
-                    <span class="profile-detail-component__s28">{{c.relationshipStatus}}</span>
-                  </div>
-                }
-              </section>
-
-              <section>
-                <h3 [style.color]="theme.colors().textSecondary" class="profile-detail-component__s20">History</h3>
-                <div [style.border-left]="'1px solid ' + theme.colors().border" class="profile-detail-component__s29">
-                   @for (entry of entries(); track entry.id) {
-                     <div class="profile-detail-component__s30">
-                       <div [style.background-color]="theme.colors().primary" class="profile-detail-component__s31"></div>
-                       <span [style.color]="theme.colors().primary" class="profile-detail-component__s22">
-                         {{ entry.type }} • {{ entry.timestamp | date:'MMM d' }}
-                         <span *ngIf="entry.isBurnAfterReading" class="profile-detail-component__s32">🔥 Disappearing</span>
-                       </span>
-                       <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s33">{{ entry.content }}</p>
-                     </div>
-                   }
-                </div>
-              </section>
-            </div>
-
-            <!-- Right -->
-            <div class="profile-detail-component__s34">
-              <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s35">
-                 <h4 [style.color]="theme.colors().textSecondary" class="profile-detail-component__s36">Vibe Analysis</h4>
-
-                 <!-- Tea-Meter Visual -->
-                 <div class="profile-detail-component__s37">
-                    @for (vibe of c.vibeHistory; track $index) {
-                      <div [style.height]="(vibe * 10) + '%'"
-                           [style.background-color]="theme.colors().primary"
-                           [style.opacity]="0.3 + ($index * (0.7 / c.vibeHistory.length))"
-                           class="profile-detail-component__s38"></div>
-                    }
-                 </div>
-
-                 <div class="profile-detail-component__s39">
-                   <button (click)="logVibe(c.id)" [style.color]="theme.colors().primary" class="profile-detail-vibe-btn">
-                     Log New Vibe
-                   </button>
-                 </div>
-
-                 <div class="profile-detail-component__s40">
-                   <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s41">Attraction Level</p>
-                   <div [style.color]="theme.colors().accent" class="profile-detail-component__s42">
-                     @for (star of [1,2,3,4,5]; track star) {
-                       {{ (c.rating || 0) >= star ? '★' : '☆' }}
-                     }
-                   </div>
-                 </div>
-
-                 <div class="profile-detail-component__s40">
-                   <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s43">Cautionary Flags</p>
-                   <p [style.color]="c.redFlags > 2 ? '#ef4444' : theme.colors().text" class="profile-detail-red-flag-count">{{ c.redFlags }}</p>
-                   @if (c.redFlags >= 3) {
-                     <p class="profile-detail-component__s44">Vibe Shift Detected</p>
-                   }
-                 </div>
-
-                 <button (click)="logRedFlag(c.id)" class="profile-detail-component__s45">
-                   Mark Red Flag
-                 </button>
-              </div>
-
-              <div [style.border]="'1px solid ' + theme.colors().border" class="profile-detail-component__s46">
-                 <p [style.color]="theme.colors().textSecondary" class="profile-detail-component__s47">"The tea is always sweeter when it's kept in the vault."</p>
-              </div>
-            </div>
           </div>
-        }
-      </div>
+
+          @if (isEditMode()) {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 class="info-section-card edit-form">
+              <h2 [style.color]="theme.colors().primary" class="info-title">Edit Details</h2>
+              <div class="info-grid">
+                <div class="info-row-styled">
+                  <span class="info-label">Nickname</span>
+                  <input [(ngModel)]="editForm.nickname" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">First Name</span>
+                  <input [(ngModel)]="editForm.fullName" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Pronouns</span>
+                  <div class="edit-options-grid">
+                    @for (p of pronounOptions; track p.value) {
+                      <button (click)="editForm.pronouns = p.value"
+                              [style.background-color]="editForm.pronouns === p.value ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.pronouns === p.value ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.pronouns === p.value ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">
+                        {{ p.label }}
+                      </button>
+                    }
+                  </div>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Initial Vibe</span>
+                  <div class="edit-stars-row">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      <button (click)="editForm.rating = star"
+                              [style.color]="editForm.rating >= star ? theme.colors().accent : theme.colors().border"
+                              class="star-btn">★</button>
+                    }
+                  </div>
+                </div>
+                <div class="info-row-styled full-width">
+                  <span class="info-label">Relationship Status</span>
+                  <div class="edit-options-grid">
+                    @for (s of getRelationshipStatusOptions(); track s) {
+                      <button (click)="editForm.relationshipStatus = s"
+                              [style.background-color]="editForm.relationshipStatus === s ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.relationshipStatus === s ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.relationshipStatus === s ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">
+                        {{ s }}
+                      </button>
+                    }
+                  </div>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Location</span>
+                  <input [(ngModel)]="editForm.location" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Age</span>
+                  <input type="number" [(ngModel)]="editForm.age" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Hair</span>
+                  <input [(ngModel)]="editForm.hair" class="edit-input-styled" placeholder="e.g. Blonde, Brown">
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Eyes</span>
+                  <input [(ngModel)]="editForm.eyes" class="edit-input-styled" placeholder="e.g. Blue, Green">
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Build</span>
+                  <input [(ngModel)]="editForm.build" class="edit-input-styled" placeholder="e.g. Slim, Athletic">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">Crush Status</span>
+                   <select [(ngModel)]="editForm.status" class="edit-input-styled">
+                     <option [value]="statuses.Crushing">Crushing</option>
+                     <option [value]="statuses.Dating">Dating</option>
+                     <option [value]="statuses.Archived">Archived</option>
+                     <option [value]="statuses.Friend">Friend</option>
+                   </select>
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">How we met</span>
+                   <input [(ngModel)]="editForm.howWeMet" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">When we met</span>
+                   <input [(ngModel)]="editForm.whenWeMet" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">Grade</span>
+                   <input [(ngModel)]="editForm.grade" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">Occupation</span>
+                   <input [(ngModel)]="editForm.occupation" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">Family</span>
+                   <input [(ngModel)]="editForm.family" class="edit-input-styled">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">Friends</span>
+                   <input [(ngModel)]="editForm.friends" class="edit-input-styled" placeholder="Comma separated">
+                </div>
+                <div class="info-row-styled">
+                   <span class="info-label">Avatar URL</span>
+                   <input [(ngModel)]="editForm.avatarUrl" class="edit-input-styled">
+                </div>
+              </div>
+
+              <div class="edit-social-section">
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Social Handles</h3>
+                <div class="info-grid">
+                  <div class="info-row-styled">
+                    <span class="info-label">Snapchat</span>
+                    <input [(ngModel)]="editForm.social.snapchat" class="edit-input-styled" placeholder="Username">
+                  </div>
+                  <div class="info-row-styled">
+                    <span class="info-label">WhatsApp</span>
+                    <input [(ngModel)]="editForm.social.whatsapp" class="edit-input-styled" placeholder="Number">
+                  </div>
+                  <div class="info-row-styled">
+                    <span class="info-label">Twitter</span>
+                    <input [(ngModel)]="editForm.social.twitter" class="edit-input-styled" placeholder="@username">
+                  </div>
+                  <div class="info-row-styled">
+                    <span class="info-label">Facebook</span>
+                    <input [(ngModel)]="editForm.social.facebook" class="edit-input-styled" placeholder="profile link">
+                  </div>
+                  <div class="info-row-styled">
+                    <span class="info-label">Instagram</span>
+                    <input [(ngModel)]="editForm.social.instagram" class="edit-input-styled" placeholder="@username">
+                  </div>
+                </div>
+              </div>
+
+              <div class="extended-info-section">
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Bio</h3>
+                <textarea [(ngModel)]="editForm.bio" class="edit-textarea-styled" rows="3"></textarea>
+              </div>
+
+              <div class="extended-info-section">
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Memorable Moments</h3>
+                <textarea [(ngModel)]="editForm.memorableMoments" class="edit-textarea-styled" rows="4"></textarea>
+              </div>
+
+              <div class="extended-info-section">
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
+                <textarea [(ngModel)]="editForm.customNotes" class="edit-textarea-styled" rows="3"></textarea>
+              </div>
+            </div>
+          } @else {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 class="info-section-card">
+              <h2 [style.color]="theme.colors().primary" class="info-title">Vitals</h2>
+              <div class="info-grid">
+                <div class="info-row-styled">
+                  <span class="info-label">Hair</span>
+                  <span class="info-value">{{ c.hair?.join(', ') || 'N/A' }}</span>
+                </div>
+                @if (c.customNotes?.includes('Hair:')) {
+                   <div class="info-row-styled full-width">
+                     <span class="info-label">Hair Notes</span>
+                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Hair:') }}</span>
+                   </div>
+                }
+                <div class="info-row-styled">
+                  <span class="info-label">Eyes</span>
+                  <span class="info-value">{{ c.eyes?.join(', ') || 'N/A' }}</span>
+                </div>
+                @if (c.customNotes?.includes('Eyes:')) {
+                   <div class="info-row-styled full-width">
+                     <span class="info-label">Eye Notes</span>
+                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Eyes:') }}</span>
+                   </div>
+                }
+                <div class="info-row-styled">
+                  <span class="info-label">Build</span>
+                  <span class="info-value">{{ c.build?.join(', ') || 'N/A' }}</span>
+                </div>
+                @if (c.customNotes?.includes('Build:')) {
+                   <div class="info-row-styled full-width">
+                     <span class="info-label">Build Notes</span>
+                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Build:') }}</span>
+                   </div>
+                }
+                <div class="info-row-styled">
+                  <span class="info-label">Pronouns</span>
+                  <span class="info-value">{{ c.pronouns || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Social Status</span>
+                  <span class="info-value">{{ c.relationshipStatus || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Rating</span>
+                  <span [style.color]="theme.colors().accent" class="info-value">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      {{ (c.rating || 0) >= star ? '★' : '☆' }}
+                    }
+                  </span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Relationship Status</span>
+                  <span class="info-value">{{ c.status }}</span>
+                </div>
+                @if (c.customNotes?.includes('Relationship:')) {
+                   <div class="info-row-styled full-width">
+                     <span class="info-label">Relationship Notes</span>
+                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Relationship:') }}</span>
+                   </div>
+                }
+                <div class="info-row-styled">
+                  <span class="info-label">How we met</span>
+                  <span class="info-value">{{ c.howWeMet || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">When we met</span>
+                  <span class="info-value">{{ c.whenWeMet || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Grade</span>
+                  <span class="info-value">{{ c.grade || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Occupation</span>
+                  <span class="info-value">{{ c.occupation || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Family</span>
+                  <span class="info-value">{{ c.family || 'N/A' }}</span>
+                </div>
+                <div class="info-row-styled">
+                  <span class="info-label">Friends</span>
+                  <span class="info-value">{{ c.friends?.join(', ') || 'None' }}</span>
+                </div>
+              </div>
+
+              @if (c.memorableMoments) {
+                <div class="extended-info-section">
+                  <h3 [style.color]="theme.colors().primary" class="extended-info-title">Memorable Moments</h3>
+                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text">{{ c.memorableMoments }}</p>
+                </div>
+              }
+
+              @if (c.customNotes) {
+                <div class="extended-info-section">
+                  <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
+                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ c.customNotes }}</p>
+                </div>
+              }
+
+              <div class="social-links-section">
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Social Connections</h3>
+                <div class="social-icons-grid">
+                  @if (c.social?.snapchat) { <div class="social-icon-item" title="Snapchat">👻 <span>Snapchat</span></div> }
+                  @if (c.social?.whatsapp) { <div class="social-icon-item" title="WhatsApp">💬 <span>WhatsApp</span></div> }
+                  @if (c.social?.twitter) { <div class="social-icon-item" title="Twitter">🐦 <span>Twitter</span></div> }
+                  @if (c.social?.facebook) { <div class="social-icon-item" title="Facebook">📘 <span>Facebook</span></div> }
+                  @if (c.social?.instagram) { <div class="social-icon-item" title="Instagram">📸 <span>Instagram</span></div> }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
     </div>
   `
 })
@@ -241,6 +360,40 @@ export class ProfileDetailComponent {
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
   onDateMode = signal(false);
   statuses = CrushStatus;
+  isEditMode = signal(false);
+
+  pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
+    {label: 'He/Him', value: 'he'},
+    {label: 'She/Her', value: 'she'},
+    {label: 'They/Them', value: 'they'}
+  ];
+
+  editForm: any = {
+    nickname: '',
+    fullName: '',
+    bio: '',
+    pronouns: 'they',
+    relationshipStatus: '',
+    customNotes: '',
+    location: '',
+    age: null,
+    howWeMet: '',
+    whenWeMet: '',
+    grade: '',
+    occupation: '',
+    family: '',
+    memorableMoments: '',
+    friends: '',
+    avatarUrl: '',
+    rating: 3,
+    social: {
+      snapchat: '',
+      whatsapp: '',
+      twitter: '',
+      facebook: '',
+      instagram: ''
+    }
+  };
 
   crush = computed(() => {
     const id = this.crushId();
@@ -258,6 +411,26 @@ export class ProfileDetailComponent {
     this.crushId.set(this.route.snapshot.paramMap.get('id'));
   }
 
+  getRelationshipStatusOptions(): string[] {
+    const pronoun = this.editForm.pronouns || 'they';
+    const subject = pronoun === 'he' ? 'he' : pronoun === 'she' ? 'she' : 'they';
+    const subjectCap = subject.charAt(0).toUpperCase() + subject.slice(1);
+    const object = pronoun === 'he' ? 'him' : pronoun === 'she' ? 'her' : 'them';
+    const verb = pronoun === 'they' ? "don't" : "doesn't";
+    const likes = pronoun === 'they' ? 'like' : 'likes';
+
+    return [
+      `${subjectCap} ${verb} know I exist`,
+      "Just friends",
+      `I think ${subject} ${likes} me`,
+      "Getting serious",
+      "We are a couple",
+      "Friends With Benefits",
+      "We are engaged",
+      "Other"
+    ];
+  }
+
   logRedFlag(id: string) {
     this.dataService.incrementRedFlag(id);
     this.dataService.addEntry({
@@ -268,6 +441,12 @@ export class ProfileDetailComponent {
       visibility: [],
       isSensitive: false
     });
+
+    // Persist the red flag increment to backend
+    const c = this.crush();
+    if (c) {
+      this.dataService.updateCrush({ ...c, redFlags: (c.redFlags || 0) + 1 });
+    }
   }
 
   logVibe(id: string) {
@@ -283,6 +462,15 @@ export class ProfileDetailComponent {
           visibility: [],
           isSensitive: false
         });
+
+        // Persist the vibe history update to backend
+        const c = this.crush();
+        if (c) {
+          const history = [...(c.vibeHistory || [])];
+          if (history.length >= 7) history.shift();
+          history.push(num);
+          this.dataService.updateCrush({ ...c, vibeHistory: history });
+        }
       }
     });
   }
@@ -361,9 +549,70 @@ export class ProfileDetailComponent {
 
   toggleArchive(crush: CrushProfile) {
     const newStatus = crush.status === CrushStatus.Archived ? CrushStatus.Crush : CrushStatus.Archived;
-    this.dataService.setCrushes(this.dataService.visibleCrushes().map(c =>
-      c.id === crush.id ? { ...c, status: newStatus } : c
-    ));
-    this.modal.show(newStatus === CrushStatus.Archived ? 'Profile moved to Archive.' : 'Profile restored to active.');
+    const updatedCrush = { ...crush, status: newStatus };
+    this.dataService.updateCrush(updatedCrush);
+  }
+
+  toggleEditMode() {
+    if (!this.isEditMode()) {
+      // Entering edit mode - populate form
+      const c = this.crush();
+      if (c) {
+        this.editForm = {
+          nickname: c.nickname || '',
+          fullName: c.fullName || '',
+          bio: c.bio || '',
+          pronouns: c.pronouns || 'they',
+          relationshipStatus: c.relationshipStatus || '',
+          customNotes: c.customNotes || '',
+          location: c.location || '',
+          age: c.age || null,
+          hair: c.hair ? c.hair.join(', ') : '',
+          eyes: c.eyes ? c.eyes.join(', ') : '',
+          build: c.build ? c.build.join(', ') : '',
+          howWeMet: c.howWeMet || '',
+          whenWeMet: c.whenWeMet || '',
+          grade: c.grade || '',
+          occupation: c.occupation || '',
+          family: c.family || '',
+          memorableMoments: c.memorableMoments || '',
+          friends: c.friends ? c.friends.join(', ') : '',
+          avatarUrl: c.avatarUrl || '',
+          status: c.status || this.statuses.Crushing,
+          rating: c.rating || 3,
+          social: {
+            snapchat: c.social?.snapchat || '',
+            whatsapp: c.social?.whatsapp || '',
+            twitter: c.social?.twitter || '',
+            facebook: c.social?.facebook || '',
+            instagram: c.social?.instagram || ''
+          }
+        };
+      }
+    }
+    this.isEditMode.set(!this.isEditMode());
+  }
+
+  saveEdit(crushId: string) {
+    const updatedCrush = {
+      ...this.crush(),
+      ...this.editForm,
+      hair: this.editForm.hair ? this.editForm.hair.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
+      eyes: this.editForm.eyes ? this.editForm.eyes.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
+      build: this.editForm.build ? this.editForm.build.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
+      friends: this.editForm.friends ? this.editForm.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
+      id: crushId
+    } as CrushProfile;
+
+    this.dataService.updateCrush(updatedCrush);
+    this.isEditMode.set(false);
+  }
+
+  getNoteDetail(notes: string | undefined, key: string): string {
+    if (!notes || !notes.includes(key)) return '';
+    const parts = notes.split(key);
+    if (parts.length < 2) return '';
+    const detailPart = parts[1].split('\n')[0];
+    return detailPart ? detailPart.trim() : '';
   }
 }

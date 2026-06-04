@@ -51,6 +51,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
+                 autocomplete="off"
                  class="form-input" placeholder="e.g. dev_user">
 
           <label [style.color]="theme.colors().textSecondary" class="form-label">Email (Optional)</label>
@@ -58,6 +59,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
+                 autocomplete="off"
                  class="form-input" placeholder="email@example.com">
 
           <label [style.color]="theme.colors().textSecondary" class="form-label">Bio (Optional)</label>
@@ -261,14 +263,14 @@ export class SignupProfileComponent {
   public theme = inject(ThemeService);
   private router = inject(Router);
 
-  username = signal<string>(localStorage.getItem('dexii_api_username') || '');
-  email = signal<string>(localStorage.getItem('dexii_profile_email') || '');
-  bio = signal<string>(localStorage.getItem('dexii_profile_bio') || '');
-  relationshipStatus = signal<string>(localStorage.getItem('dexii_profile_relationshipStatus') || '');
-  lookingFor = signal<string>(localStorage.getItem('dexii_profile_lookingFor') || '');
-  interestedIn = signal<string>(localStorage.getItem('dexii_profile_interestedIn') || '');
-  loveLanguage = signal<string>(localStorage.getItem('dexii_profile_loveLanguage') || '');
-  idealDate = signal<string>(localStorage.getItem('dexii_profile_idealDate') || '');
+  username = signal<string>('');
+  email = signal<string>('');
+  bio = signal<string>('');
+  relationshipStatus = signal<string>('');
+  lookingFor = signal<string>('');
+  interestedIn = signal<string>('');
+  loveLanguage = signal<string>('');
+  idealDate = signal<string>('');
   errorMessage = signal<string>('');
 
   continue() {

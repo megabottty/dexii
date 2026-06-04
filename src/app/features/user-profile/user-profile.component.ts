@@ -59,13 +59,13 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           <div class="user-profile-component__s12">
             <p [style.color]="theme.colors().textSecondary"
                class="user-profile-component__s13">
-              {{ crushes().length }} connections
+              {{ crushes().length }} crushes
             </p>
             @if (isSelf()) {
               <a routerLink="/dashboard"
                  [style.color]="theme.colors().primary"
                  class="user-profile-component__s14">
-                + Add New Connection
+                + Add New Crush
               </a>
             }
           </div>

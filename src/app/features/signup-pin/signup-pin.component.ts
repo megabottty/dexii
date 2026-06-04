@@ -41,6 +41,10 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
            </p>
         </div>
 
+        @if (successMessage()) {
+          <p [style.color]="theme.colors().primary" class="success-message">{{ successMessage() }}</p>
+        }
+
         @if (errorMessage()) {
           <p class="error-message">{{ errorMessage() }}</p>
         }
@@ -147,6 +151,11 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       font-size: 0.875rem;
       text-align: center;
     }
+    .success-message {
+      font-size: 0.875rem;
+      text-align: center;
+      font-weight: 600;
+    }
     .pin-dots {
       display: flex;
       gap: 20px;
@@ -221,6 +230,7 @@ export class SignupPinComponent {
   setupPinFirst = signal<string>('');
   pinConfirmed = signal<boolean>(false);
   errorMessage = signal<string>('');
+  successMessage = signal<string>('');
 
   handleInput(val: string) {
     if (this.enteredPin().length >= 4) return;
@@ -231,12 +241,17 @@ export class SignupPinComponent {
     if (nextPin.length === 4) {
       if (!this.setupPinFirst()) {
         this.setupPinFirst.set(nextPin);
+        this.successMessage.set('PIN saved! Now confirm it by entering again.');
+        this.errorMessage.set('');
         this.clear();
       } else {
         if (this.setupPinFirst() === nextPin) {
           this.pinConfirmed.set(true);
+          this.successMessage.set('✓ PIN confirmed! Click below to create your account.');
+          this.errorMessage.set('');
         } else {
           this.errorMessage.set('PINs did not match. Try again.');
+          this.successMessage.set('');
           this.setupPinFirst.set('');
           this.clear();
         }

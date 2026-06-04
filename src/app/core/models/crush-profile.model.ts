@@ -1,8 +1,10 @@
 export enum CrushStatus {
   Crush = 'Crush',
+  Crushing = 'Crushing',
   Dating = 'Dating',
   Exclusive = 'Exclusive',
-  Archived = 'Archived'
+  Archived = 'Archived',
+  Friend = 'Friend'
 }
 
 export interface CrushProfile {
@@ -32,4 +34,15 @@ export interface CrushProfile {
     instagram?: string;
   };
   relationshipStatus?: string;
+  pronouns?: 'he' | 'she' | 'they' | 'custom';
+  customNotes?: string;
+  location?: string;
+  age?: number;
+  howWeMet?: string;
+  whenWeMet?: string;
+  grade?: string;
+  occupation?: string;
+  family?: string;
+  memorableMoments?: string;
+  friends?: string[];
 }

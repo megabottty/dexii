@@ -57,17 +57,40 @@ exports.removeFriend = async (req, res) => {
 };
 
 // @route   GET /api/friends/search?username=...
-// @desc    Search for users to add as friends
+// @desc    Search for users to add as friends (case-insensitive)
 // @access  Private
 exports.searchUsers = async (req, res) => {
   try {
     const { username } = req.query;
     const users = await User.find({
-      username: { $regex: username, $options: 'i' },
+      username: { $regex: username, $options: 'i' }, // Case-insensitive search
       _id: { $ne: req.user.id } // Don't include self
     }).select('username avatarUrl');
 
     res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @route   POST /api/friends/invite
+// @desc    Send invite to user via phone or email
+// @access  Private
+exports.inviteUser = async (req, res) => {
+  try {
+    const { contact, method } = req.body; // contact can be phone number or email, method is 'sms' or 'email'
+
+    // TODO: Integrate SMS service (Twilio) or Email service
+    // For now, we'll just log the invite and return success
+
+    console.log(`Invite sent via ${method} to ${contact}`);
+
+    res.json({
+      message: `Invite sent successfully via ${method}`,
+      contact,
+      method
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

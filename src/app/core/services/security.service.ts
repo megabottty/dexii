@@ -120,7 +120,8 @@ export class SecurityService {
   }
 
   // 8. Content Moderation (Mock)
-  moderateContent(content: string): boolean {
+  moderateContent(content: string | undefined | null): boolean {
+    if (!content) return true;
     // Mock logic for AI moderation
     const bannedWords = ['badword1', 'badword2']; // Example
     return !bannedWords.some(word => content.toLowerCase().includes(word));

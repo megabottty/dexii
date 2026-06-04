@@ -27,11 +27,37 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                [style.border]="'1px solid ' + theme.colors().border"
                class="dashboard-component__s3">
 
-            <button (click)="closeModal()" [style.color]="theme.colors().textSecondary" aria-label="Close new connection modal" class="dashboard-component__s4">✕</button>
+            <button (click)="closeModal()" [style.color]="theme.colors().textSecondary" aria-label="Close new crush modal" class="dashboard-component__s4">✕</button>
 
-            <h3 class="dashboard-component__s5">New Connection</h3>
+            <h3 class="dashboard-component__s5">New Crush</h3>
 
             <div class="dashboard-component__s6">
+              <div>
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Pronouns</label>
+                <div class="dashboard-component__s28" style="margin-bottom: 20px;">
+                  @for (p of pronounOptions; track p.value) {
+                    <div (click)="newCrush.pronouns = p.value"
+                         role="button"
+                         tabindex="0"
+                         (keydown.enter)="newCrush.pronouns = p.value"
+                         (keydown.space)="newCrush.pronouns = p.value; $event.preventDefault()"
+                         [attr.aria-pressed]="newCrush.pronouns === p.value"
+                         [style.border]="newCrush.pronouns === p.value ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                         [style.background-color]="newCrush.pronouns === p.value ? theme.colors().primary + '10' : 'transparent'"
+                         class="dashboard-component__s29">
+                      <div [style.border]="'2px solid ' + (newCrush.pronouns === p.value ? theme.colors().primary : theme.colors().textSecondary)"
+                           [style.background-color]="newCrush.pronouns === p.value ? theme.colors().primary : 'transparent'"
+                           class="dashboard-component__s30">
+                         @if (newCrush.pronouns === p.value) {
+                           <span class="dashboard-component__s31">✓</span>
+                         }
+                      </div>
+                      <span class="dashboard-component__s32">{{p.label}}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
               <div>
                 <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Avatar (Optional)</label>
                 <div class="dashboard-component__s8">
@@ -93,14 +119,14 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
               </div>
 
               <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Connection Note (Optional)</label>
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Crush Note (Optional)</label>
                 <textarea [(ngModel)]="newCrush.note"
                           [style.background-color]="theme.colors().bgSecondary"
                           [style.border]="'1px solid ' + theme.colors().border"
                           [style.color]="theme.colors().text"
                           rows="4"
 
-                          placeholder="Add your first note about this connection..." class="dashboard-component__s20"></textarea>
+                          placeholder="Add your first note about this crush..." class="dashboard-component__s20"></textarea>
 
                 <div class="dashboard-component__s21">
                   <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s22">
@@ -153,6 +179,18 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                       </div>
                     }
                   </div>
+                  @if (newCrush.hair.includes('Other')) {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Hair Notes</label>
+                      <textarea [(ngModel)]="newCrush.hairNotes"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                rows="2"
+                                placeholder="Describe their hair..."
+                                class="dashboard-component__s20"></textarea>
+                    </div>
+                  }
                 </div>
 
                 <div class="dashboard-component__s26">
@@ -179,6 +217,18 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                       </div>
                     }
                   </div>
+                  @if (newCrush.eyes.includes('Other')) {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Eye Notes</label>
+                      <textarea [(ngModel)]="newCrush.eyeNotes"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                rows="2"
+                                placeholder="Describe their eyes..."
+                                class="dashboard-component__s20"></textarea>
+                    </div>
+                  }
                 </div>
 
                 <div class="dashboard-component__s26">
@@ -205,6 +255,18 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                       </div>
                     }
                   </div>
+                  @if (newCrush.build.includes('Other')) {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Build Notes</label>
+                      <textarea [(ngModel)]="newCrush.buildNotes"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                rows="2"
+                                placeholder="Describe their build..."
+                                class="dashboard-component__s20"></textarea>
+                    </div>
+                  }
                 </div>
               </div>
 
@@ -239,7 +301,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
               <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
                 <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">Relationship Status</h4>
                 <div class="dashboard-component__s37">
-                  @for (s of ["He doesn't know I exist", "Just friends", "I think he likes me", "Getting serious", "We are a couple", "Friends With Benefits", "We are engaged", "Other"]; track s) {
+                  @for (s of getRelationshipStatusOptions(); track s) {
                     <div (click)="newCrush.relationshipStatus = s"
                          role="button"
                          tabindex="0"
@@ -259,6 +321,18 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                     </div>
                   }
                 </div>
+                @if (newCrush.relationshipStatus === 'Other') {
+                  <div style="margin-top: 12px;">
+                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Relationship Notes</label>
+                    <textarea [(ngModel)]="newCrush.relationshipNotes"
+                              [style.background-color]="theme.colors().bgSecondary"
+                              [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().text"
+                              rows="2"
+                              placeholder="Describe your relationship status..."
+                              class="dashboard-component__s20"></textarea>
+                  </div>
+                }
               </div>
 
               <div>
@@ -273,7 +347,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
             </div>
 
             <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
-              Save Connection
+              Save Crush
             </button>
           </div>
         </div>
@@ -400,7 +474,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
         <div class="dashboard-component__s71">
           <div class="dashboard-component__s72">
             <h2 class="dashboard-component__s73">The Rolodex</h2>
-            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">Curating {{ dataService.visibleCrushes().length }} exclusive connections.</p>
+            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">Curating {{ dataService.visibleCrushes().length }} exclusive crushes.</p>
             @if (!subscription.isPremium()) {
               <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
                 Free tier: up to {{ freeCrushLimit }} crushes.
@@ -489,7 +563,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                 </div>
 
                 <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s95">
-                  "{{ crush.bio || 'A connection waiting to be defined.' }}"
+                  "{{ crush.bio || 'A crush waiting to be defined.' }}"
                 </p>
 
                 <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-component__s96">
@@ -533,6 +607,12 @@ export class DashboardComponent implements OnInit {
   selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
   freeCrushLimit = 5;
 
+  pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
+    {label: 'He/Him', value: 'he'},
+    {label: 'She/Her', value: 'she'},
+    {label: 'They/Them', value: 'they'}
+  ];
+
   filteredCrushes = computed(() => {
     let crushes = this.dataService.visibleCrushes();
 
@@ -565,6 +645,7 @@ export class DashboardComponent implements OnInit {
     noteVisibility: 'private' as 'private' | 'public',
     visibility: [] as string[],
     avatarUrl: '',
+    pronouns: 'they' as 'he' | 'she' | 'they',
     hair: [] as string[],
     eyes: [] as string[],
     build: [] as string[],
@@ -575,10 +656,36 @@ export class DashboardComponent implements OnInit {
       facebook: '',
       instagram: ''
     },
-    relationshipStatus: ''
+    relationshipStatus: '',
+    hairNotes: '',
+    eyeNotes: '',
+    buildNotes: '',
+    relationshipNotes: ''
   };
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.dataService.setViewer(null);
+  }
+
+  getRelationshipStatusOptions(): string[] {
+    const pronoun = this.newCrush.pronouns || 'they';
+    const subject = pronoun === 'he' ? 'he' : pronoun === 'she' ? 'she' : 'they';
+    const subjectCap = subject.charAt(0).toUpperCase() + subject.slice(1);
+    const object = pronoun === 'he' ? 'him' : pronoun === 'she' ? 'her' : 'them';
+    const verb = pronoun === 'they' ? "don't" : "doesn't";
+    const likes = pronoun === 'they' ? 'like' : 'likes';
+
+    return [
+      `${subjectCap} ${verb} know I exist`,
+      "Just friends",
+      `I think ${subject} ${likes} me`,
+      "Getting serious",
+      "We are a couple",
+      "Friends With Benefits",
+      "We are engaged",
+      "Other"
+    ];
+  }
 
   toggleArchived() {
     this.showArchived.update(v => !v);
@@ -640,6 +747,13 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
+    // Combine all "Other" notes into customNotes
+    let customNotes = '';
+    if (this.newCrush.hairNotes) customNotes += `Hair: ${this.newCrush.hairNotes}\n`;
+    if (this.newCrush.eyeNotes) customNotes += `Eyes: ${this.newCrush.eyeNotes}\n`;
+    if (this.newCrush.buildNotes) customNotes += `Build: ${this.newCrush.buildNotes}\n`;
+    if (this.newCrush.relationshipNotes) customNotes += `Relationship: ${this.newCrush.relationshipNotes}\n`;
+
     const createdCrush = this.dataService.addCrush({
       nickname: this.newCrush.nickname,
       fullName: this.newCrush.firstName,
@@ -648,11 +762,22 @@ export class DashboardComponent implements OnInit {
       bio: '',
       visibility: [],
       avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar
+      pronouns: this.newCrush.pronouns,
       hair: this.newCrush.hair,
       eyes: this.newCrush.eyes,
       build: this.newCrush.build,
       social: { ...this.newCrush.social },
-      relationshipStatus: this.newCrush.relationshipStatus
+      relationshipStatus: this.newCrush.relationshipStatus,
+      customNotes: customNotes.trim(),
+      location: '',
+      age: undefined,
+      howWeMet: '',
+      whenWeMet: '',
+      grade: '',
+      occupation: '',
+      family: '',
+      memorableMoments: '',
+      friends: []
     });
 
     const note = this.newCrush.note.trim();
@@ -668,7 +793,6 @@ export class DashboardComponent implements OnInit {
     }
 
     this.closeModal();
-    this.modal.show('Profile Secured in the Rolodex.');
   }
 
   onAvatarFileSelected(event: Event) {
@@ -732,7 +856,7 @@ export class DashboardComponent implements OnInit {
 
       ctx.drawImage(image, dx, dy, drawWidth, drawHeight);
 
-      this.newCrush.avatarUrl = canvas.toDataURL('image/jpeg', 0.92);
+      this.newCrush.avatarUrl = canvas.toDataURL('image/jpeg', 0.85);
       this.showCropModal.set(false);
     };
     image.src = source;
@@ -748,6 +872,7 @@ export class DashboardComponent implements OnInit {
       noteVisibility: 'private',
       visibility: [],
       avatarUrl: '',
+      pronouns: 'they',
       hair: [],
       eyes: [],
       build: [],
@@ -758,7 +883,11 @@ export class DashboardComponent implements OnInit {
         facebook: '',
         instagram: ''
       },
-      relationshipStatus: ''
+      relationshipStatus: '',
+      hairNotes: '',
+      eyeNotes: '',
+      buildNotes: '',
+      relationshipNotes: ''
     };
     this.uploadedAvatarName.set('');
     this.cropSourceImage.set(null);

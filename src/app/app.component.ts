@@ -38,29 +38,23 @@ interface WalkthroughStep {
                  class="app-component__s4">Quick Hint</p>
               <p class="app-component__s5">{{ activeHint() }}</p>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <button (click)="showRouteHint.set(false)"
-                      aria-label="Hide hint"
+            <div style="display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+              <button (click)="dismissHintForCurrentRoute()"
+                      aria-label="Close hint"
                       [style.color]="theme.colors().textSecondary"
                       class="app-component__s6">✕</button>
-              <button (click)="dismissHintForCurrentRoute()"
-                      aria-label="Never show this hint again"
-                      [style.color]="theme.colors().textSecondary"
-                      style="font-size: 9px; opacity: 0.6; background: none; border: none; cursor: pointer; padding: 0;">
-                Dismiss
-              </button>
             </div>
           </div>
         </div>
       }
 
-      @if (currentPath().startsWith('/chat')) {
-        <button (click)="showRouteHint.set(true)"
-                aria-label="Show chat hint"
-                [style.background-color]="theme.colors().primary"
-                [style.color]="'#fff'"
-                class="app-hint-toggle">💡</button>
-      } @else {
+      <button (click)="showRouteHint.set(!showRouteHint())"
+              aria-label="Toggle route hint"
+              [style.background-color]="theme.colors().primary"
+              [style.color]="'#fff'"
+              class="app-hint-toggle">💡</button>
+
+      @if (!currentPath().startsWith('/chat')) {
         <button (click)="openWalkthrough()"
                 aria-label="Open help and tips walkthrough"
                 [style.background-color]="theme.colors().primary"
@@ -128,12 +122,12 @@ export class AppComponent implements OnInit {
 
   currentPath = signal(this.router.url || '/dashboard');
   activeHint = signal('');
-  showRouteHint = signal(true);
+  showRouteHint = signal(false);
   userWantsHint = signal(true);
   showWalkthrough = signal(this.shouldAutoShowWalkthrough());
   walkthroughSteps: WalkthroughStep[] = [
     {
-      title: '1. Add Connections',
+      title: '1. Add Crushes',
       details: 'From Dashboard, tap New Entry to create a crush profile. Free tier supports up to 5 crushes.'
     },
     {
@@ -201,8 +195,7 @@ export class AppComponent implements OnInit {
   private refreshRouteHint() {
     const hint = this.getHintForPath(this.currentPath());
     this.activeHint.set(hint);
-    const key = this.routeHintKey(this.currentPath());
-    this.showRouteHint.set(Boolean(hint) && !this.dismissedHints()[key]);
+    this.showRouteHint.set(false);
   }
 
   private routeHintKey(path: string): string {
@@ -214,10 +207,10 @@ export class AppComponent implements OnInit {
   private getHintForPath(path: string): string {
     const normalized = this.routeHintKey(path);
     const map: Record<string, string> = {
-      '/dashboard': 'Use New Entry to add a connection. Add a Connection Note and set it Private/Public.',
+      '/dashboard': 'Use New Entry to add a crush. Add a Crush Note and set it Private/Public.',
       '/friends': 'Use Bio for friend notes and Sharing Controls to choose which crushes/entries each friend can view.',
       '/friends/:id': 'Save private notes for yourself or shared notes that get sent to this friend.',
-      '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each connection.',
+      '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each crush.',
       '/chat': 'Messages marked as shared notes are sent here. Type "secret" in a message to make it self-destruct and disappear.',
       '/vault': 'Vault is your private zone for sensitive content and locked-down entries.',
       '/lock': 'Enter your PIN to unlock, then tap Help & Tips any time for the walkthrough.'
