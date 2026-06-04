@@ -58,6 +58,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/messaging/messaging.component').then(m => m.MessagingComponent)
   },
   {
+    path: 'shared-history',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/shared-history/shared-history.component').then(m => m.SharedHistoryComponent)
+  },
+  {
     path: 'vault',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/vault-center/vault-center.component').then(m => m.VaultCenterComponent)

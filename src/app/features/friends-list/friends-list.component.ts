@@ -226,6 +226,13 @@ interface FriendRequestItem {
             </button>
           </div>
 
+          <div class="header-actions" style="margin-bottom: 20px; text-align: right;">
+            <a routerLink="/shared-history" [style.color]="theme.colors().primary"
+               style="text-decoration: none; font-weight: 500; font-family: 'Times New Roman', serif; font-size: 1.1rem; border: 1px solid currentColor; padding: 6px 12px; border-radius: 4px;">
+              📜 Shared History
+            </a>
+          </div>
+
           @if (incomingRequests().length > 0) {
             <div class="friends-list-component__s48">
               @for (req of incomingRequests(); track req.id) {
@@ -269,7 +276,7 @@ interface FriendRequestItem {
                 <a [routerLink]="['/friends', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                    class="friends-list-action-link">Bio</a>
                 <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
-                        class="friends-list-action-btn">Sharing Controls</button>
+                        class="friends-list-action-btn">Sharing</button>
                 <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                    class="friends-list-action-link">Chat</a>
                 <button (click)="removeFriend(friend.id)" [style.color]="'#ef4444'"
@@ -472,7 +479,9 @@ export class FriendsListComponent implements OnInit {
 
   isCrushShared(crush: any): boolean {
     const friend = this.selectedFriend();
-    return friend ? crush.visibility.includes(friend.id) : false;
+    if (!friend) return false;
+    const me = this.dataService.getUserId();
+    return crush.visibility.some((id: string) => id === friend.id || (this.dataService.isMe(friend.id) && (id === 'me' || id === me)));
   }
 
   isEntryShared(entry: any): boolean {

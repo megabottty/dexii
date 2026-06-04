@@ -24,10 +24,7 @@ const EntrySchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  visibility: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
+  visibility: [String],
   isSensitive: {
     type: Boolean,
     default: false
@@ -36,10 +33,7 @@ const EntrySchema = new mongoose.Schema({
     type: String,
     enum: ['Draft', 'Sent', 'Safe', 'Urgent']
   },
-  safetyContactId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }
+  safetyContactId: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('Entry', EntrySchema);

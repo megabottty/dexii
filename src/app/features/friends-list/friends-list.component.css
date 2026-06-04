@@ -269,6 +269,25 @@
   cursor: pointer;
 }
 
+.header-actions {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.shared-history-link {
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-variant: small-caps;
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  transition: opacity 0.2s;
+}
+
+.shared-history-link:hover {
+  opacity: 0.7;
+}
+
 .friends-list-action-link {
   text-decoration: none;
   padding: 8px 16px;

@@ -1,9 +1,10 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { MessagingService } from '../../core/services/messaging.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
@@ -27,11 +28,13 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
       @if (crush(); as c) {
         <div [style.background]="'linear-gradient(180deg, ' + theme.colors().primary + '30, ' + theme.colors().bg + ')'"
              class="header-gradient-container">
-          <a routerLink="/dashboard"
-             [style.color]="theme.colors().text"
-             class="back-link">
-            ← Dashboard
-          </a>
+          <div style="display: flex; justify-content: flex-start; align-items: center; padding: 0 2rem;">
+            <a routerLink="/dashboard"
+               [style.color]="theme.colors().text"
+               class="back-link" style="text-decoration: none; font-weight: 500;">
+              ← Dashboard
+            </a>
+          </div>
         </div>
 
         <div class="profile-main-content">
@@ -73,6 +76,9 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
                 </button>
+
+                <button (click)="shareWithFriend(c.id)" class="action-btn-styled primary">🔗 Share</button>
+                <button (click)="deleteCrush(c.id)" class="action-btn-styled danger">🗑️ Delete</button>
               }
             </div>
           </div>
@@ -351,10 +357,12 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
 export class ProfileDetailComponent {
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
+  private messaging = inject(MessagingService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
   public modal = inject(ModalService);
+  private router = inject(Router);
 
   crushId = signal<string | null>(null);
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
@@ -551,6 +559,34 @@ export class ProfileDetailComponent {
     const newStatus = crush.status === CrushStatus.Archived ? CrushStatus.Crush : CrushStatus.Archived;
     const updatedCrush = { ...crush, status: newStatus };
     this.dataService.updateCrush(updatedCrush);
+  }
+
+  shareWithFriend(crushId: string): void {
+    const friendIdFromRoute = this.router.url.split('/user/')[1];
+    const defaultFriend = friendIdFromRoute || 'friend_1';
+
+    this.modal.prompt(`Enter friend ID to share with:`, defaultFriend, (friendId) => {
+      if (friendId) {
+        this.dataService.toggleCrushVisibility(crushId, friendId);
+
+        // Check if now visible or not
+        const c = this.crush();
+        const isShared = c?.visibility.includes(friendId);
+
+        if (isShared) {
+          this.modal.show(`Crush shared with ${friendId}! Check Shared History to track.`);
+        } else {
+          this.modal.show(`Crush unshared from ${friendId}.`);
+        }
+      }
+    });
+  }
+
+  deleteCrush(crushId: string): void {
+    this.modal.confirm('Are you sure you want to delete this crush? This cannot be undone.', () => {
+      this.dataService.deleteCrush(crushId);
+      this.router.navigate(['/dashboard']);
+    });
   }
 
   toggleEditMode() {

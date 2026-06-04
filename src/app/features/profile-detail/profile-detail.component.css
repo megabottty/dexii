@@ -78,8 +78,8 @@
 
 /* Action Buttons Grid */
 .action-buttons-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
   padding-top: 20px;
   border-top: 1px solid var(--border);
@@ -96,7 +96,12 @@
   background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .action-btn-styled.primary {

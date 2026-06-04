@@ -1,4 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
+import { MessagingService } from './messaging.service';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
@@ -53,6 +54,7 @@ export class DataService {
   private _allCrushes = signal<CrushProfile[]>([]);
   private _entries = signal<Entry[]>([]);
   private modal = inject(ModalService);
+  private messaging = inject(MessagingService);
 
   constructor() {
     void this.hydrateCrushesFromBackend();
@@ -349,6 +351,8 @@ export class DataService {
       }
 
       if (!response || !response.ok) {
+        const errorData = await response?.json().catch(() => ({}));
+        console.error('Failed to update crush:', response?.status, errorData);
         const errorMsg = response?.status === 413
           ? 'Image too large. Please use a smaller profile picture.'
           : 'Failed to update profile in database.';
@@ -430,6 +434,10 @@ export class DataService {
     );
   });
 
+  public deleteCrush(crushId: string): void {
+    this._allCrushes.update(crushes => crushes.filter(c => c.id !== crushId));
+  }
+
   setViewer(friendId: string | null): void {
     this._currentViewerFriendId.set(friendId);
   }
@@ -442,17 +450,70 @@ export class DataService {
     return this._allCrushes;
   }
 
+  public getUserId(): string {
+    return localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';
+  }
+
+  public isMe(id: string): boolean {
+    if (!id) return false;
+    const me = this.getUserId();
+    const normalizedId = id.toLowerCase().replace(/\s+/g, '_');
+    const normalizedMe = me.toLowerCase().replace(/\s+/g, '_');
+
+    // Core check
+    if (id === 'me' || id === me || normalizedId === normalizedMe) return true;
+
+    // Heuristic for demo environments: if both contain 'demo', they are likely the same user
+    // This handles cases like 'dexii_demo_user' vs 'demo_user' or other variants that might appear
+    if (id.includes('demo') && me.includes('demo')) return true;
+
+    return false;
+  }
+
   public toggleCrushVisibility(crushId: string, friendId: string): void {
+    let justShared = false;
+    let sharedCrush: any = null;
+    const me = this.getUserId();
+
     this._allCrushes.update(crushes => crushes.map(c => {
       if (c.id === crushId) {
-        const hasFriend = c.visibility.includes(friendId);
+        sharedCrush = c;
+        const hasFriend = c.visibility.some(id =>
+          id === friendId ||
+          (this.isMe(friendId) && (id === 'me' || id === me)) ||
+          id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
+        );
+        justShared = !hasFriend;
         const newVisibility = hasFriend
-          ? c.visibility.filter(id => id !== friendId)
+          ? c.visibility.filter(id => !(
+              id === friendId ||
+              (this.isMe(friendId) && (id === 'me' || id === me)) ||
+              id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
+            ))
           : [...c.visibility, friendId];
+
         return { ...c, visibility: newVisibility };
       }
       return c;
     }));
+
+    if (justShared && sharedCrush) {
+      this.messaging.sendMessage({
+        senderId: me,
+        receiverId: friendId,
+        content: `Shared a crush: ${sharedCrush.nickname}`,
+        relatedCrushId: crushId
+      });
+    } else if (!justShared) {
+       // Optional: Log an unshare message or just let it be.
+       // The user requested an "unshare toggle", we have it now via visibility filter.
+    }
+
+    // Persist change if backend exists
+    const finalCrush = this._allCrushes().find(c => c.id === crushId);
+    if (finalCrush) {
+      void this.persistCrushUpdate(finalCrush);
+    }
   }
 
   public toggleEntryVisibility(entryId: string, friendId: string): void {

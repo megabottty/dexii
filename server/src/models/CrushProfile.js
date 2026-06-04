@@ -15,14 +15,11 @@ const CrushProfileSchema = new mongoose.Schema({
   bio: String,
   status: {
     type: String,
-    enum: ['Crush', 'Dating', 'Exclusive', 'Archived'],
+    enum: ['Crush', 'Crushing', 'Dating', 'Exclusive', 'Archived', 'Friend'],
     default: 'Crush'
   },
   visibility: {
-    type: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }],
+    type: [String],
     default: []
   },
   sharedEntries: [{
