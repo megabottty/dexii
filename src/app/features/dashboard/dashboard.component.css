@@ -238,41 +238,6 @@
   position: absolute; top: 0; right: 0; width: 600px; height: 600px; background: radial-gradient(circle, #fce7f3 0%, transparent 70%); opacity: 0.5; pointer-events: none;
 }
 
-.dashboard-component__s61 {
-  padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; backdrop-blur: 10px;
-}
-
-.dashboard-component__s62 {
-  display: flex; align-items: center; gap: 16px;
-}
-
-.dashboard-component__s63 {
-  width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 200; font-size: 24px; color: white; shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-.dashboard-component__s64 {
-  font-size: 28px; font-weight: 200; letter-spacing: 4px; text-transform: uppercase;
-}
-
-.dashboard-component__s65 {
-  display: flex; gap: 20px;
-}
-
-.dashboard-component__s66 {
-  text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; align-self: center;
-}
-
-.dashboard-component__s67 {
-  padding: 10px 20px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
-}
-
-.dashboard-component__s68 {
-  color: white; border: none; padding: 10px 24px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
-}
-
-.dashboard-component__s69 {
-  color: white; text-decoration: none; padding: 10px 24px; border-radius: 9999px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
-}
 
 .dashboard-component__s70 {
   max-width: 1200px; margin: 0 auto; padding: 60px 40px;

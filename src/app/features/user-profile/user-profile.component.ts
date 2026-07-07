@@ -4,25 +4,21 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
+import { AuditService } from '../../core/services/audit.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
+
+import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
 @Component({
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, RouterModule, PageHintComponent],
+  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
          class="user-profile-component__s1">
-      <div [style.background]="'linear-gradient(180deg, ' + theme.colors().primary + '30, ' + theme.colors().bg + ')'"
-           class="user-profile-component__s2">
-        <a routerLink="/dashboard"
-           [style.color]="theme.colors().text"
-           class="user-profile-component__s3">
-          ← Dashboard
-        </a>
-      </div>
+      <app-navbar></app-navbar>
 
       <div class="user-profile-component__s4">
         <app-page-hint
@@ -40,10 +36,20 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  class="user-profile-component__s7">
             <div>
               <h1 class="user-profile-component__s8">{{ profileDisplayName() }}</h1>
-              <p [style.color]="theme.colors().primary"
-                 class="user-profile-component__s9" style="font-style: italic;">
-                "Spilling the tea since day one."
-              </p>
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem;">
+                <p [style.color]="theme.colors().primary"
+                   class="user-profile-component__s9" style="font-style: italic; margin: 0;">
+                  "Spilling the tea since day one."
+                </p>
+                @if (!isSelf()) {
+                  <button (click)="auditLogView.set(!auditLogView())"
+                          [style.color]="theme.colors().primary"
+                          [style.border]="'1px solid ' + theme.colors().primary"
+                          style="background: transparent; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    📜 {{ auditLogView() ? 'Close History' : 'Shared History' }}
+                  </button>
+                }
+              </div>
               @if (profileBio()) {
                 <p [style.color]="theme.colors().textSecondary"
                    class="user-profile-component__s10">
@@ -53,6 +59,60 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             </div>
           </div>
         </div>
+
+        @if (auditLogView() && !isSelf()) {
+          <div [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               class="user-profile-component__s11" style="margin-top: 1rem; animation: slideDown 0.3s ease-out;">
+            <div class="user-profile-component__s12" style="border-bottom: 1px solid {{theme.colors().border}}; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+              <h2 class="section-title">Audit Log: History with {{ profileDisplayName() }}</h2>
+              <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13">
+                Tracking all shared tea and interactions
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+              @for (entry of auditLog(); track entry.id) {
+                <div [style.border-left]="'3px solid ' + (entry.isFromMe ? theme.colors().primary : '#10b981')"
+                     style="padding: 0.75rem 1rem; background: rgba(0,0,0,0.02); border-radius: 0 8px 8px 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 600; font-size: 0.85rem;" [style.color]="entry.isFromMe ? theme.colors().primary : '#10b981'">
+                      {{ entry.isFromMe ? 'You sent' : entry.friendName + ' sent' }}
+                    </span>
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.75rem;">
+                      {{ entry.timestamp | date:'short' }}
+                    </span>
+                  </div>
+                  <p style="margin: 0; font-size: 0.95rem;">
+                    {{ entry.content }}
+                    @if (entry.crushId) {
+                      <a [routerLink]="['/profile', entry.crushId]" [style.color]="theme.colors().primary" style="text-decoration: underline; margin-left: 4px;">
+                        View {{ entry.crushName }}
+                      </a>
+                    }
+                  </p>
+                  @if (entry.isFromMe) {
+                    <div style="margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+                      @if (entry.readAt) {
+                        <span style="font-size: 0.75rem; color: #10b981; display: flex; align-items: center; gap: 2px;">
+                          <span style="font-size: 0.9rem;">👁️</span> Viewed {{ entry.readAt | date:'shortTime' }}
+                        </span>
+                      } @else {
+                        <span style="font-size: 0.75rem;" [style.color]="theme.colors().textSecondary" title="Pending view">
+                          <span style="font-size: 0.9rem;">⌛👁️</span> Pending...
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              } @empty {
+                <div style="text-align: center; padding: 2rem 0;">
+                  <p [style.color]="theme.colors().textSecondary">No shared history found yet.</p>
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
@@ -256,13 +316,20 @@ export class UserProfileComponent {
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
   private messaging = inject(MessagingService);
+  private audit = inject(AuditService);
   public theme = inject(ThemeService);
 
   private routeUserId = signal('');
+  protected auditLogView = signal(false);
 
   constructor() {
     this.route.paramMap.subscribe(params => {
       this.routeUserId.set(params.get('id') || 'me');
+    });
+    this.route.queryParamMap.subscribe(params => {
+      if (params.get('history') === 'true') {
+        this.auditLogView.set(true);
+      }
     });
   }
 
@@ -317,36 +384,13 @@ export class UserProfileComponent {
   });
 
   sharedWithThem = computed(() => {
-    const all = this.dataService.getAllCrushes()();
     const friendId = this.routeUserId();
-    const msgs = this.messaging.messages();
+    return this.audit.getSentCrushesStatus(friendId, this.dataService)();
+  });
 
-    if (this.isSelf()) return [];
-
-    const myId = this.dataService.getUserId();
-
-    return all
-      .filter(c => {
-        // All crushes in the backend are already filtered by ownership for the current user.
-        return c.visibility.some(id =>
-          id === friendId ||
-          (this.dataService.isMe(friendId) && (id === 'me' || id === myId)) ||
-          (this.dataService.isMe(id) && this.dataService.isMe(friendId)) ||
-          id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
-        );
-      })
-      .map(c => {
-        // Find if there's a message for this sharing
-        const shareMsg = msgs.find(m =>
-          this.dataService.isMe(m.senderId) &&
-          (m.receiverId === friendId || (this.dataService.isMe(friendId) && this.dataService.isMe(m.receiverId))) &&
-          m.relatedCrushId === c.id
-        );
-        return {
-          ...c,
-          viewedByFriend: !!shareMsg?.readAt
-        };
-      });
+  auditLog = computed(() => {
+    const friendId = this.routeUserId();
+    return this.audit.getHistoryWithFriend(friendId, this.dataService)();
   });
 
   myCrushes = computed(() => {
@@ -354,16 +398,11 @@ export class UserProfileComponent {
     return this.dataService.getAllCrushes()();
   });
 
-  showShareSelector = signal(false);
+  protected showShareSelector = signal(false);
 
   isShared(crush: any): boolean {
     const friendId = this.routeUserId();
-    const myId = this.dataService.getUserId();
-    return crush.visibility.some((id: string) =>
-      id === friendId ||
-      (this.dataService.isMe(friendId) && (id === 'me' || id === myId)) ||
-      id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
-    );
+    return this.dataService.isCrushSharedWith(crush, friendId);
   }
 
   toggleShare(crushId: string) {

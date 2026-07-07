@@ -61,11 +61,27 @@ exports.removeFriend = async (req, res) => {
 // @access  Private
 exports.searchUsers = async (req, res) => {
   try {
-    const { username } = req.query;
+    const query = (req.query.username || '').trim();
+    if (!query) return res.json([]);
+
+    // Escape user input for regex
+    const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const safe = escapeRegex(query);
+
+    // If DB not connected, fallback to demo store search
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      const demoStore = require('../utils/demoFriendStore');
+      const owner = req.user.id || req.user.username || 'dexii_demo_user';
+      const results = await demoStore.searchUsers(owner, query);
+      return res.json(results.slice(0, 50));
+    }
+
+    const rx = new RegExp(safe, 'i');
     const users = await User.find({
-      username: { $regex: username, $options: 'i' }, // Case-insensitive search
-      _id: { $ne: req.user.id } // Don't include self
-    }).select('username avatarUrl');
+      username: rx,
+      _id: { $ne: req.user.id }
+    }).select('username avatarUrl subscriptionTier friendCategories').limit(50).lean();
 
     res.json(users);
   } catch (err) {

@@ -144,7 +144,20 @@ export class SecurityService {
   }
 
   finalizeSetup(finalPin: string): void {
-    const username = localStorage.getItem('dexii_api_username');
+    const pendingUsername = localStorage.getItem('dexii_pending_username');
+    const username = localStorage.getItem('dexii_api_username') || pendingUsername;
+    if (pendingUsername && !localStorage.getItem('dexii_api_username')) {
+      // Move pending values to the active keys once registration is complete
+      localStorage.setItem('dexii_api_username', pendingUsername);
+      localStorage.removeItem('dexii_pending_username');
+      localStorage.removeItem('dexii_pending_email');
+      localStorage.removeItem('dexii_pending_bio');
+      localStorage.removeItem('dexii_pending_relationshipStatus');
+      localStorage.removeItem('dexii_pending_lookingFor');
+      localStorage.removeItem('dexii_pending_interestedIn');
+      localStorage.removeItem('dexii_pending_loveLanguage');
+      localStorage.removeItem('dexii_pending_idealDate');
+    }
     this._currentUser.set(username);
     localStorage.setItem('dexii_pin', finalPin);
     this._userPin.set(finalPin);
@@ -155,9 +168,9 @@ export class SecurityService {
   }
 
   async registerUser(pin: string): Promise<void> {
-    const username = localStorage.getItem('dexii_api_username');
-    const email = localStorage.getItem('dexii_profile_email');
-    const bio = localStorage.getItem('dexii_profile_bio');
+    const username = localStorage.getItem('dexii_pending_username');
+    const email = localStorage.getItem('dexii_pending_email');
+    const bio = localStorage.getItem('dexii_pending_bio');
 
     if (!username) throw new Error('Username missing');
 
@@ -174,7 +187,8 @@ export class SecurityService {
   }
 
   async verifyEmailCode(code: string): Promise<void> {
-    const username = localStorage.getItem('dexii_api_username');
+    // Prefer pending username (set during signup) over the existing logged-in username
+    const username = localStorage.getItem('dexii_pending_username') || localStorage.getItem('dexii_api_username');
     if (!username) throw new Error('Username missing');
 
     const response = await fetch(`${this.apiBase}/auth/verify-email`, {
@@ -199,7 +213,7 @@ export class SecurityService {
   }
 
   async resendVerificationCode(): Promise<void> {
-    const username = localStorage.getItem('dexii_api_username');
+    const username = localStorage.getItem('dexii_pending_username') || localStorage.getItem('dexii_api_username');
     if (!username) throw new Error('Username missing');
 
     const response = await fetch(`${this.apiBase}/auth/resend-code`, {

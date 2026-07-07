@@ -11,11 +11,13 @@ import { SubscriptionService } from '../../core/services/subscription.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushStatus } from '../../core/models/crush-profile.model';
 
+import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   styleUrl: './dashboard.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="dashboard-component__s1">
@@ -113,8 +115,11 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                 <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Status</label>
                 <select [(ngModel)]="newCrush.status" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s19">
                   <option [value]="statuses.Crush">Crush</option>
+                  <option [value]="statuses.Crushing">Crushing</option>
                   <option [value]="statuses.Dating">Dating</option>
                   <option [value]="statuses.Exclusive">Exclusive</option>
+                  <option [value]="statuses.Archived">Archived</option>
+                  <option [value]="statuses.Friend">Friend</option>
                 </select>
               </div>
 
@@ -344,6 +349,73 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
                   }
                 </div>
               </div>
+
+              <!-- More About Them -->
+              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
+                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">More About Them</h4>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Bio</label>
+                  <textarea [(ngModel)]="newCrush.bio"
+                            [style.background-color]="theme.colors().bgSecondary"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.color]="theme.colors().text"
+                            rows="3"
+                            placeholder="A little about them..."
+                            class="dashboard-component__s20"></textarea>
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Location</label>
+                  <input [(ngModel)]="newCrush.location" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Age</label>
+                  <input type="number" [(ngModel)]="newCrush.age" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">How We Met</label>
+                  <input [(ngModel)]="newCrush.howWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">When We Met</label>
+                  <input [(ngModel)]="newCrush.whenWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Grade</label>
+                  <input [(ngModel)]="newCrush.grade" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Occupation</label>
+                  <input [(ngModel)]="newCrush.occupation" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Family</label>
+                  <input [(ngModel)]="newCrush.family" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Their Friends (comma separated)</label>
+                  <input [(ngModel)]="newCrush.friends" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17" placeholder="e.g. Alex, Jordan, Sam">
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Memorable Moments</label>
+                  <textarea [(ngModel)]="newCrush.memorableMoments"
+                            [style.background-color]="theme.colors().bgSecondary"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.color]="theme.colors().text"
+                            rows="3"
+                            placeholder="Any moments worth remembering..."
+                            class="dashboard-component__s20"></textarea>
+                </div>
+              </div>
             </div>
 
             <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
@@ -416,52 +488,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
       }
 
       <!-- Navigation -->
-      <nav aria-label="Primary navigation" [style.background-color]="theme.colors().bgSecondary"
-           [style.border-bottom]="'1px solid ' + theme.colors().border"
-           class="dashboard-component__s61">
-        <div class="dashboard-component__s62">
-          <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
-               class="dashboard-component__s63">D</div>
-          <span class="dashboard-component__s64">Dexii</span>
-        </div>
-
-        <div class="dashboard-component__s65">
-          <a routerLink="/friends"
-             [style.color]="theme.colors().text"
-             class="dashboard-component__s66">
-            Friends
-          </a>
-          <a routerLink="/user/me"
-             [style.color]="theme.colors().text"
-             class="dashboard-component__s66">
-            Profile
-          </a>
-          <button (click)="theme.toggleTheme()"
-                  [style.background-color]="'transparent'"
-                  [style.color]="theme.colors().text"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  class="dashboard-component__s67">
-            {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
-          </button>
-          <button (click)="security.lockApp()"
-                  [style.background-color]="theme.colors().primary"
-                  class="dashboard-component__s68">
-            Lock
-          </button>
-          <button (click)="security.resetPinSetup()"
-                  [style.background-color]="'transparent'"
-                  [style.color]="theme.colors().textSecondary"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  class="dashboard-component__s68">
-            Switch Account
-          </button>
-          <a routerLink="/vault"
-             [style.background-color]="theme.colors().accent"
-             class="dashboard-component__s69">
-            Vault
-          </a>
-        </div>
-      </nav>
+      <app-navbar></app-navbar>
 
       <main class="dashboard-component__s70">
         <app-page-hint
@@ -660,7 +687,17 @@ export class DashboardComponent implements OnInit {
     hairNotes: '',
     eyeNotes: '',
     buildNotes: '',
-    relationshipNotes: ''
+    relationshipNotes: '',
+    bio: '',
+    location: '',
+    age: undefined as number | undefined,
+    howWeMet: '',
+    whenWeMet: '',
+    grade: '',
+    occupation: '',
+    family: '',
+    friends: '',
+    memorableMoments: ''
   };
 
   ngOnInit() {
@@ -759,7 +796,7 @@ export class DashboardComponent implements OnInit {
       fullName: this.newCrush.firstName,
       status: this.newCrush.status,
       rating: this.newCrush.rating,
-      bio: '',
+      bio: this.newCrush.bio,
       visibility: [],
       avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar
       pronouns: this.newCrush.pronouns,
@@ -769,15 +806,15 @@ export class DashboardComponent implements OnInit {
       social: { ...this.newCrush.social },
       relationshipStatus: this.newCrush.relationshipStatus,
       customNotes: customNotes.trim(),
-      location: '',
-      age: undefined,
-      howWeMet: '',
-      whenWeMet: '',
-      grade: '',
-      occupation: '',
-      family: '',
-      memorableMoments: '',
-      friends: []
+      location: this.newCrush.location,
+      age: this.newCrush.age,
+      howWeMet: this.newCrush.howWeMet,
+      whenWeMet: this.newCrush.whenWeMet,
+      grade: this.newCrush.grade,
+      occupation: this.newCrush.occupation,
+      family: this.newCrush.family,
+      memorableMoments: this.newCrush.memorableMoments,
+      friends: this.newCrush.friends ? this.newCrush.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : []
     });
 
     const note = this.newCrush.note.trim();
@@ -887,7 +924,17 @@ export class DashboardComponent implements OnInit {
       hairNotes: '',
       eyeNotes: '',
       buildNotes: '',
-      relationshipNotes: ''
+      relationshipNotes: '',
+      bio: '',
+      location: '',
+      age: undefined,
+      howWeMet: '',
+      whenWeMet: '',
+      grade: '',
+      occupation: '',
+      family: '',
+      friends: '',
+      memorableMoments: ''
     };
     this.uploadedAvatarName.set('');
     this.cropSourceImage.set(null);

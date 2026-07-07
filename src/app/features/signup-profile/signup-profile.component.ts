@@ -290,19 +290,18 @@ export class SignupProfileComponent {
       return;
     }
 
-    localStorage.setItem('dexii_api_username', usernameValue);
+    localStorage.setItem('dexii_pending_username', usernameValue);
     if (emailValue) {
-      localStorage.setItem('dexii_profile_email', emailValue);
+      localStorage.setItem('dexii_pending_email', emailValue);
     } else {
-      localStorage.removeItem('dexii_profile_email');
+      localStorage.removeItem('dexii_pending_email');
     }
-    localStorage.setItem('dexii_profile_bio', this.bio().trim());
-    localStorage.setItem('dexii_profile_relationshipStatus', this.relationshipStatus());
-    localStorage.setItem('dexii_profile_lookingFor', this.lookingFor());
-    localStorage.setItem('dexii_profile_interestedIn', this.interestedIn());
-    localStorage.setItem('dexii_profile_loveLanguage', this.loveLanguage());
-    localStorage.setItem('dexii_profile_idealDate', this.idealDate().trim());
-    localStorage.removeItem('dexii_api_token');
+    localStorage.setItem('dexii_pending_bio', this.bio().trim());
+    localStorage.setItem('dexii_pending_relationshipStatus', this.relationshipStatus());
+    localStorage.setItem('dexii_pending_lookingFor', this.lookingFor());
+    localStorage.setItem('dexii_pending_interestedIn', this.interestedIn());
+    localStorage.setItem('dexii_pending_loveLanguage', this.loveLanguage());
+    localStorage.setItem('dexii_pending_idealDate', this.idealDate().trim());
 
     this.errorMessage.set('');
     this.router.navigate(['/signup-pin']);

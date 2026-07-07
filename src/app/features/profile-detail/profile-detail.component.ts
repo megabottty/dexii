@@ -8,13 +8,17 @@ import { MessagingService } from '../../core/services/messaging.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
+import { SubscriptionTier, User } from '../../core/models/user.model';
+import { getApiBaseUrl } from '../../core/config/api-config';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+
+import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
 @Component({
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -24,19 +28,14 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
          [style.--border]="theme.colors().border"
          [style.--text]="theme.colors().text"
          class="profile-container">
+      <app-navbar></app-navbar>
+
+      <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + '22, ' + theme.colors().accent + '22)'"
+           class="header-gradient-container">
+        <a routerLink="/dashboard" [style.color]="theme.colors().text" class="back-link">← Back to Dashboard</a>
+      </div>
 
       @if (crush(); as c) {
-        <div [style.background]="'linear-gradient(180deg, ' + theme.colors().primary + '30, ' + theme.colors().bg + ')'"
-             class="header-gradient-container">
-          <div style="display: flex; justify-content: flex-start; align-items: center; padding: 0 2rem;">
-            <a routerLink="/dashboard"
-               [style.color]="theme.colors().text"
-               class="back-link" style="text-decoration: none; font-weight: 500;">
-              ← Dashboard
-            </a>
-          </div>
-        </div>
-
         <div class="profile-main-content">
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
@@ -62,9 +61,9 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Cancel</button>
               } @else {
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
-                <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
                 <button (click)="logVibe(c.id)" class="action-btn-styled primary">✨ Log Vibe</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
+                <button (click)="showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
 
                 @if (safetyState() === 'Draft') {
                   <button (click)="startSafetyCheck(c.id)" class="action-btn-styled safety">🔒 Start Safety</button>
@@ -76,12 +75,40 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
                 </button>
-
-                <button (click)="shareWithFriend(c.id)" class="action-btn-styled primary">🔗 Share</button>
+                <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
                 <button (click)="deleteCrush(c.id)" class="action-btn-styled danger">🗑️ Delete</button>
               }
             </div>
           </div>
+
+          @if (showShareSelector()) {
+            <div class="selector-overlay" (click)="showShareSelector.set(false)">
+              <div class="selector-card" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
+                <div class="selector-header">
+                  <h3>Share with a Friend</h3>
+                  <button class="close-btn" (click)="showShareSelector.set(false)">✕</button>
+                </div>
+                <div class="friend-list-scroll">
+                  @for (friend of friends(); track friend.id) {
+                    <div class="friend-item" (click)="shareWithFriend(c.id, friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
+                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
+                      <div class="friend-info">
+                        <span class="friend-name">{{ friend.username }}</span>
+                        <span class="friend-status" [style.color]="isShared(c, friend.id) ? theme.colors().primary : theme.colors().textSecondary">
+                          {{ isShared(c, friend.id) ? '✓ Shared' : 'Not shared' }}
+                        </span>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="empty-state">
+                      <p>No friends found.</p>
+                      <a routerLink="/friends" (click)="showShareSelector.set(false)" [style.color]="theme.colors().primary">Add friends</a>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
 
           @if (isEditMode()) {
             <div [style.background-color]="theme.colors().bgSecondary"
@@ -134,6 +161,12 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                       </button>
                     }
                   </div>
+                  @if (editForm.relationshipStatus === 'Other') {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="info-label">Relationship Notes</label>
+                      <textarea [(ngModel)]="editForm.relationshipNotes" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..."></textarea>
+                    </div>
+                  }
                 </div>
                 <div class="info-row-styled">
                   <span class="info-label">Location</span>
@@ -143,23 +176,73 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                   <span class="info-label">Age</span>
                   <input type="number" [(ngModel)]="editForm.age" class="edit-input-styled">
                 </div>
-                <div class="info-row-styled">
+                <div class="info-row-styled full-width">
                   <span class="info-label">Hair</span>
-                  <input [(ngModel)]="editForm.hair" class="edit-input-styled" placeholder="e.g. Blonde, Brown">
+                  <div class="edit-options-grid">
+                    @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
+                      <button (click)="toggleSelection(editForm.hair, h)"
+                              [style.background-color]="editForm.hair.includes(h) ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.hair.includes(h) ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.hair.includes(h) ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">
+                        {{ h }}
+                      </button>
+                    }
+                  </div>
+                  @if (editForm.hair.includes('Other')) {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="info-label">Hair Notes</label>
+                      <textarea [(ngModel)]="editForm.hairNotes" class="edit-textarea-styled" rows="2" placeholder="Describe their hair..."></textarea>
+                    </div>
+                  }
                 </div>
-                <div class="info-row-styled">
+                <div class="info-row-styled full-width">
                   <span class="info-label">Eyes</span>
-                  <input [(ngModel)]="editForm.eyes" class="edit-input-styled" placeholder="e.g. Blue, Green">
+                  <div class="edit-options-grid">
+                    @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
+                      <button (click)="toggleSelection(editForm.eyes, e)"
+                              [style.background-color]="editForm.eyes.includes(e) ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.eyes.includes(e) ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.eyes.includes(e) ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">
+                        {{ e }}
+                      </button>
+                    }
+                  </div>
+                  @if (editForm.eyes.includes('Other')) {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="info-label">Eye Notes</label>
+                      <textarea [(ngModel)]="editForm.eyeNotes" class="edit-textarea-styled" rows="2" placeholder="Describe their eyes..."></textarea>
+                    </div>
+                  }
                 </div>
-                <div class="info-row-styled">
+                <div class="info-row-styled full-width">
                   <span class="info-label">Build</span>
-                  <input [(ngModel)]="editForm.build" class="edit-input-styled" placeholder="e.g. Slim, Athletic">
+                  <div class="edit-options-grid">
+                    @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
+                      <button (click)="toggleSelection(editForm.build, b)"
+                              [style.background-color]="editForm.build.includes(b) ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.build.includes(b) ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.build.includes(b) ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">
+                        {{ b }}
+                      </button>
+                    }
+                  </div>
+                  @if (editForm.build.includes('Other')) {
+                    <div style="margin-top: 12px;">
+                      <label [style.color]="theme.colors().textSecondary" class="info-label">Build Notes</label>
+                      <textarea [(ngModel)]="editForm.buildNotes" class="edit-textarea-styled" rows="2" placeholder="Describe their build..."></textarea>
+                    </div>
+                  }
                 </div>
                 <div class="info-row-styled">
                    <span class="info-label">Crush Status</span>
                    <select [(ngModel)]="editForm.status" class="edit-input-styled">
+                     <option [value]="statuses.Crush">Crush</option>
                      <option [value]="statuses.Crushing">Crushing</option>
                      <option [value]="statuses.Dating">Dating</option>
+                     <option [value]="statuses.Exclusive">Exclusive</option>
                      <option [value]="statuses.Archived">Archived</option>
                      <option [value]="statuses.Friend">Friend</option>
                    </select>
@@ -246,9 +329,9 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                   <span class="info-value">{{ c.hair?.join(', ') || 'N/A' }}</span>
                 </div>
                 @if (c.customNotes?.includes('Hair:')) {
-                   <div class="info-row-styled full-width">
+                   <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Hair Notes</span>
-                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Hair:') }}</span>
+                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Hair:') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -256,9 +339,9 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                   <span class="info-value">{{ c.eyes?.join(', ') || 'N/A' }}</span>
                 </div>
                 @if (c.customNotes?.includes('Eyes:')) {
-                   <div class="info-row-styled full-width">
+                   <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Eye Notes</span>
-                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Eyes:') }}</span>
+                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Eyes:') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -266,9 +349,9 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                   <span class="info-value">{{ c.build?.join(', ') || 'N/A' }}</span>
                 </div>
                 @if (c.customNotes?.includes('Build:')) {
-                   <div class="info-row-styled full-width">
+                   <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Build Notes</span>
-                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Build:') }}</span>
+                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Build:') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -276,9 +359,15 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                   <span class="info-value">{{ c.pronouns || 'N/A' }}</span>
                 </div>
                 <div class="info-row-styled">
-                  <span class="info-label">Social Status</span>
-                  <span class="info-value">{{ c.relationshipStatus || 'N/A' }}</span>
+                  <span class="info-label">Status</span>
+                  <span class="info-value">{{ c.status }}</span>
                 </div>
+                @if (c.customNotes?.includes('Relationship:')) {
+                   <div class="info-row-styled full-width note-detail">
+                     <span class="info-label">Relationship Notes</span>
+                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Relationship:') }}</span>
+                   </div>
+                }
                 <div class="info-row-styled">
                   <span class="info-label">Rating</span>
                   <span [style.color]="theme.colors().accent" class="info-value">
@@ -288,15 +377,9 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                   </span>
                 </div>
                 <div class="info-row-styled">
-                  <span class="info-label">Relationship Status</span>
-                  <span class="info-value">{{ c.status }}</span>
+                  <span class="info-label">Social Standing</span>
+                  <span class="info-value">{{ c.relationshipStatus || 'N/A' }}</span>
                 </div>
-                @if (c.customNotes?.includes('Relationship:')) {
-                   <div class="info-row-styled full-width">
-                     <span class="info-label">Relationship Notes</span>
-                     <span class="info-value">{{ getNoteDetail(c.customNotes, 'Relationship:') }}</span>
-                   </div>
-                }
                 <div class="info-row-styled">
                   <span class="info-label">How we met</span>
                   <span class="info-value">{{ c.howWeMet || 'N/A' }}</span>
@@ -330,10 +413,10 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
                 </div>
               }
 
-              @if (c.customNotes) {
+              @if (getFilteredNotes(c.customNotes)) {
                 <div class="extended-info-section">
                   <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
-                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ c.customNotes }}</p>
+                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ getFilteredNotes(c.customNotes) }}</p>
                 </div>
               }
 
@@ -369,6 +452,8 @@ export class ProfileDetailComponent {
   onDateMode = signal(false);
   statuses = CrushStatus;
   isEditMode = signal(false);
+  showShareSelector = signal(false);
+  friends = signal<User[]>([]);
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
     {label: 'He/Him', value: 'he'},
@@ -382,9 +467,16 @@ export class ProfileDetailComponent {
     bio: '',
     pronouns: 'they',
     relationshipStatus: '',
+    relationshipNotes: '',
     customNotes: '',
     location: '',
     age: null,
+    hair: [] as string[],
+    eyes: [] as string[],
+    build: [] as string[],
+    hairNotes: '',
+    eyeNotes: '',
+    buildNotes: '',
     howWeMet: '',
     whenWeMet: '',
     grade: '',
@@ -417,6 +509,32 @@ export class ProfileDetailComponent {
 
   constructor() {
     this.crushId.set(this.route.snapshot.paramMap.get('id'));
+    this.loadFriends();
+  }
+
+  private async loadFriends() {
+    const currentUsername = this.security.currentUser() || 'dexii_demo_user';
+    const apiBase = `${getApiBaseUrl()}/demo/friends`;
+    try {
+      const response = await fetch(`${apiBase}/list?username=${encodeURIComponent(currentUsername)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          this.friends.set(data.map(f => ({
+            id: f.id || f.username,
+            username: f.username,
+            friends: [],
+            blockedUsers: [],
+            subscriptionTier: f.subscriptionTier || SubscriptionTier.Free,
+            isVerified18: true,
+            avatarUrl: f.avatarUrl,
+            friendCategories: f.friendCategories || ['Close Friends']
+          } as User)));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load friends', err);
+    }
   }
 
   getRelationshipStatusOptions(): string[] {
@@ -561,25 +679,29 @@ export class ProfileDetailComponent {
     this.dataService.updateCrush(updatedCrush);
   }
 
-  shareWithFriend(crushId: string): void {
-    const friendIdFromRoute = this.router.url.split('/user/')[1];
-    const defaultFriend = friendIdFromRoute || 'friend_1';
+  shareWithFriend(crushId: string, friendId: string): void {
+    if (friendId) {
+      this.dataService.toggleCrushVisibility(crushId, friendId);
 
-    this.modal.prompt(`Enter friend ID to share with:`, defaultFriend, (friendId) => {
-      if (friendId) {
-        this.dataService.toggleCrushVisibility(crushId, friendId);
+      // Check if now visible or not
+      const c = this.crush();
+      const isSharedNow = c?.visibility.some(id =>
+        id === friendId ||
+        (this.dataService.isMe(friendId) && (id === 'me' || id === this.dataService.getUserId())) ||
+        id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
+      );
 
-        // Check if now visible or not
-        const c = this.crush();
-        const isShared = c?.visibility.includes(friendId);
-
-        if (isShared) {
-          this.modal.show(`Crush shared with ${friendId}! Check Shared History to track.`);
-        } else {
-          this.modal.show(`Crush unshared from ${friendId}.`);
-        }
+      if (isSharedNow) {
+        this.modal.show(`Crush shared with ${friendId}! Check Shared History to track.`);
+      } else {
+        this.modal.show(`Crush unshared from ${friendId}.`);
       }
-    });
+      this.showShareSelector.set(false);
+    }
+  }
+
+  isShared(crush: CrushProfile, friendId: string): boolean {
+    return this.dataService.isCrushSharedWith(crush, friendId);
   }
 
   deleteCrush(crushId: string): void {
@@ -587,6 +709,15 @@ export class ProfileDetailComponent {
       this.dataService.deleteCrush(crushId);
       this.router.navigate(['/dashboard']);
     });
+  }
+
+  toggleSelection(list: string[], item: string) {
+    const index = list.indexOf(item);
+    if (index > -1) {
+      list.splice(index, 1);
+    } else {
+      list.push(item);
+    }
   }
 
   toggleEditMode() {
@@ -600,12 +731,16 @@ export class ProfileDetailComponent {
           bio: c.bio || '',
           pronouns: c.pronouns || 'they',
           relationshipStatus: c.relationshipStatus || '',
-          customNotes: c.customNotes || '',
+          relationshipNotes: this.getNoteDetail(c.customNotes, 'Relationship:'),
+          customNotes: this.getFilteredNotes(c.customNotes),
           location: c.location || '',
           age: c.age || null,
-          hair: c.hair ? c.hair.join(', ') : '',
-          eyes: c.eyes ? c.eyes.join(', ') : '',
-          build: c.build ? c.build.join(', ') : '',
+          hair: c.hair ? [...c.hair] : [],
+          eyes: c.eyes ? [...c.eyes] : [],
+          build: c.build ? [...c.build] : [],
+          hairNotes: this.getNoteDetail(c.customNotes, 'Hair:'),
+          eyeNotes: this.getNoteDetail(c.customNotes, 'Eyes:'),
+          buildNotes: this.getNoteDetail(c.customNotes, 'Build:'),
           howWeMet: c.howWeMet || '',
           whenWeMet: c.whenWeMet || '',
           grade: c.grade || '',
@@ -630,13 +765,21 @@ export class ProfileDetailComponent {
   }
 
   saveEdit(crushId: string) {
+    let customNotes = '';
+    if (this.editForm.hairNotes) customNotes += `Hair: ${this.editForm.hairNotes}\n`;
+    if (this.editForm.eyeNotes) customNotes += `Eyes: ${this.editForm.eyeNotes}\n`;
+    if (this.editForm.buildNotes) customNotes += `Build: ${this.editForm.buildNotes}\n`;
+    if (this.editForm.relationshipNotes) customNotes += `Relationship: ${this.editForm.relationshipNotes}\n`;
+    if (this.editForm.customNotes) customNotes += this.editForm.customNotes;
+
     const updatedCrush = {
       ...this.crush(),
       ...this.editForm,
-      hair: this.editForm.hair ? this.editForm.hair.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
-      eyes: this.editForm.eyes ? this.editForm.eyes.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
-      build: this.editForm.build ? this.editForm.build.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
+      hair: Array.isArray(this.editForm.hair) ? this.editForm.hair : [],
+      eyes: Array.isArray(this.editForm.eyes) ? this.editForm.eyes : [],
+      build: Array.isArray(this.editForm.build) ? this.editForm.build : [],
       friends: this.editForm.friends ? this.editForm.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
+      customNotes: customNotes.trim(),
       id: crushId
     } as CrushProfile;
 
@@ -650,5 +793,14 @@ export class ProfileDetailComponent {
     if (parts.length < 2) return '';
     const detailPart = parts[1].split('\n')[0];
     return detailPart ? detailPart.trim() : '';
+  }
+
+  getFilteredNotes(notes: string | undefined): string {
+    if (!notes) return '';
+    const keys = ['Hair:', 'Eyes:', 'Build:', 'Relationship:'];
+    return notes.split('\n')
+      .filter(line => !keys.some(key => line.startsWith(key)))
+      .join('\n')
+      .trim();
   }
 }

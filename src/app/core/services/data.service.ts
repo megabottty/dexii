@@ -1,5 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { MessagingService } from './messaging.service';
+import { AuditService } from './audit.service';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
@@ -55,6 +56,7 @@ export class DataService {
   private _entries = signal<Entry[]>([]);
   private modal = inject(ModalService);
   private messaging = inject(MessagingService);
+  private audit = inject(AuditService);
 
   constructor() {
     void this.hydrateCrushesFromBackend();
@@ -129,6 +131,13 @@ export class DataService {
     }
 
     const credentials = this.getDemoCredentials();
+
+    // Auto-register/login for demo users is disabled by default.
+    // To enable automated demo registration, set localStorage 'dexii_enable_demo_auto_register' = 'true'.
+    const allowAutoRegister = localStorage.getItem('dexii_enable_demo_auto_register') === 'true';
+    if (!allowAutoRegister) {
+      return null;
+    }
 
     try {
       const registerRes = await fetch(`${this.apiBaseUrl}/auth/register`, {
@@ -470,6 +479,16 @@ export class DataService {
     return false;
   }
 
+  public isCrushSharedWith(crush: any, friendId: string): boolean {
+    if (!crush || !friendId) return false;
+    const me = this.getUserId();
+    return (crush.visibility || []).some((id: string) =>
+      id === friendId ||
+      (this.isMe(friendId) && (id === 'me' || id === me)) ||
+      id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
+    );
+  }
+
   public toggleCrushVisibility(crushId: string, friendId: string): void {
     let justShared = false;
     let sharedCrush: any = null;
@@ -478,11 +497,7 @@ export class DataService {
     this._allCrushes.update(crushes => crushes.map(c => {
       if (c.id === crushId) {
         sharedCrush = c;
-        const hasFriend = c.visibility.some(id =>
-          id === friendId ||
-          (this.isMe(friendId) && (id === 'me' || id === me)) ||
-          id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
-        );
+        const hasFriend = this.isCrushSharedWith(c, friendId);
         justShared = !hasFriend;
         const newVisibility = hasFriend
           ? c.visibility.filter(id => !(
@@ -498,12 +513,7 @@ export class DataService {
     }));
 
     if (justShared && sharedCrush) {
-      this.messaging.sendMessage({
-        senderId: me,
-        receiverId: friendId,
-        content: `Shared a crush: ${sharedCrush.nickname}`,
-        relatedCrushId: crushId
-      });
+      this.audit.logEvent(me, friendId, `Shared a crush: ${sharedCrush.nickname}`, crushId);
     } else if (!justShared) {
        // Optional: Log an unshare message or just let it be.
        // The user requested an "unshare toggle", we have it now via visibility filter.

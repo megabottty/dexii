@@ -28,40 +28,17 @@ interface FriendRequestItem {
   createdAt: string;
 }
 
+import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+
 @Component({
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, RouterModule, SlicePipe, PageHintComponent],
+  imports: [CommonModule, RouterModule, SlicePipe, PageHintComponent, NavbarComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
-      <nav aria-label="Primary navigation" [style.background-color]="theme.colors().bgSecondary"
-           [style.border]="'1px solid ' + theme.colors().border"
-           class="friends-list-component__s2">
-        <div class="friends-list-component__s3">
-          <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
-               class="friends-list-component__s4">D</div>
-          <span class="friends-list-component__s5">Dexii</span>
-        </div>
-        <div class="friends-list-component__s6">
-          <a routerLink="/dashboard" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-             class="friends-list-nav-link">Dashboard</a>
-          <a routerLink="/vault" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-             class="friends-list-nav-link">Vault</a>
-          <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-             class="friends-list-nav-link">Chat</a>
-          <button (click)="theme.toggleTheme()" [style.color]="theme.colors().text"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  class="friends-list-component__s7">
-            {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
-          </button>
-          <button (click)="lockApp()" [style.background-color]="theme.colors().primary"
-                  class="friends-list-component__s8">
-            Lock
-          </button>
-        </div>
-      </nav>
+      <app-navbar></app-navbar>
 
       @if (selectedFriend()) {
         <div class="friends-list-component__s9">
@@ -273,6 +250,9 @@ interface FriendRequestItem {
               <div class="friends-list-component__s59">
                 <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                    class="friends-list-action-link">Profile</a>
+                <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
+                   [queryParams]="{history: true}"
+                   class="friends-list-action-link">History</a>
                 <a [routerLink]="['/friends', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                    class="friends-list-action-link">Bio</a>
                 <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
@@ -480,8 +460,7 @@ export class FriendsListComponent implements OnInit {
   isCrushShared(crush: any): boolean {
     const friend = this.selectedFriend();
     if (!friend) return false;
-    const me = this.dataService.getUserId();
-    return crush.visibility.some((id: string) => id === friend.id || (this.dataService.isMe(friend.id) && (id === 'me' || id === me)));
+    return this.dataService.isCrushSharedWith(crush, friend.id);
   }
 
   isEntryShared(entry: any): boolean {
