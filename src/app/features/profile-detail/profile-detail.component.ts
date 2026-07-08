@@ -114,31 +114,51 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="info-section-card edit-form">
               <h2 [style.color]="theme.colors().primary" class="info-title">Edit Details</h2>
-              <div class="info-grid">
-                <div class="info-row-styled">
-                  <span class="info-label">Nickname</span>
-                  <input [(ngModel)]="editForm.nickname" class="edit-input-styled">
+
+              <!-- Basic Info -->
+              <div class="edit-section">
+                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Basic Info</h3>
+                <div class="edit-fields-grid">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Nickname</label>
+                    <input [(ngModel)]="editForm.nickname" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">First Name</label>
+                    <input [(ngModel)]="editForm.fullName" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Crush Status</label>
+                    <select [(ngModel)]="editForm.status" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                      <option [value]="statuses.Crush">Crush</option>
+                      <option [value]="statuses.Crushing">Crushing</option>
+                      <option [value]="statuses.Dating">Dating</option>
+                      <option [value]="statuses.Exclusive">Exclusive</option>
+                      <option [value]="statuses.Archived">Archived</option>
+                      <option [value]="statuses.Friend">Friend</option>
+                    </select>
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Avatar URL</label>
+                    <input [(ngModel)]="editForm.avatarUrl" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="https://...">
+                  </div>
                 </div>
-                <div class="info-row-styled">
-                  <span class="info-label">First Name</span>
-                  <input [(ngModel)]="editForm.fullName" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Pronouns</span>
-                  <div class="edit-options-grid">
+
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Pronouns</label>
+                  <div class="edit-chip-grid">
                     @for (p of pronounOptions; track p.value) {
                       <button (click)="editForm.pronouns = p.value"
                               [style.background-color]="editForm.pronouns === p.value ? theme.colors().primary : 'transparent'"
                               [style.color]="editForm.pronouns === p.value ? 'white' : theme.colors().text"
                               [style.border-color]="editForm.pronouns === p.value ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">
-                        {{ p.label }}
-                      </button>
+                              class="option-btn">{{ p.label }}</button>
                     }
                   </div>
                 </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Initial Vibe</span>
+
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Initial Vibe</label>
                   <div class="edit-stars-row">
                     @for (star of [1,2,3,4,5]; track star) {
                       <button (click)="editForm.rating = star"
@@ -147,175 +167,160 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     }
                   </div>
                 </div>
-                <div class="info-row-styled full-width">
-                  <span class="info-label">Relationship Status</span>
-                  <div class="edit-options-grid">
+              </div>
+
+              <!-- About Them -->
+              <div class="edit-section">
+                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">About Them</h3>
+
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Relationship Status</label>
+                  <div class="edit-chip-grid">
                     @for (s of getRelationshipStatusOptions(); track s) {
                       <button (click)="editForm.relationshipStatus = s"
                               [style.background-color]="editForm.relationshipStatus === s ? theme.colors().primary : 'transparent'"
                               [style.color]="editForm.relationshipStatus === s ? 'white' : theme.colors().text"
                               [style.border-color]="editForm.relationshipStatus === s ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">
-                        {{ s }}
-                      </button>
+                              class="option-btn">{{ s }}</button>
                     }
                   </div>
                   @if (editForm.relationshipStatus === 'Other') {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="info-label">Relationship Notes</label>
-                      <textarea [(ngModel)]="editForm.relationshipNotes" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..."></textarea>
-                    </div>
+                    <textarea [(ngModel)]="editForm.relationshipNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..." style="margin-top:10px;"></textarea>
                   }
                 </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Location</span>
-                  <input [(ngModel)]="editForm.location" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Age</span>
-                  <input type="number" [(ngModel)]="editForm.age" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled full-width">
-                  <span class="info-label">Hair</span>
-                  <div class="edit-options-grid">
+
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Hair</label>
+                  <div class="edit-chip-grid">
                     @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
                       <button (click)="toggleSelection(editForm.hair, h)"
                               [style.background-color]="editForm.hair.includes(h) ? theme.colors().primary : 'transparent'"
                               [style.color]="editForm.hair.includes(h) ? 'white' : theme.colors().text"
                               [style.border-color]="editForm.hair.includes(h) ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">
-                        {{ h }}
-                      </button>
+                              class="option-btn">{{ h }}</button>
                     }
                   </div>
                   @if (editForm.hair.includes('Other')) {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="info-label">Hair Notes</label>
-                      <textarea [(ngModel)]="editForm.hairNotes" class="edit-textarea-styled" rows="2" placeholder="Describe their hair..."></textarea>
-                    </div>
+                    <textarea [(ngModel)]="editForm.hairNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their hair..." style="margin-top:10px;"></textarea>
                   }
                 </div>
-                <div class="info-row-styled full-width">
-                  <span class="info-label">Eyes</span>
-                  <div class="edit-options-grid">
+
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Eyes</label>
+                  <div class="edit-chip-grid">
                     @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
                       <button (click)="toggleSelection(editForm.eyes, e)"
                               [style.background-color]="editForm.eyes.includes(e) ? theme.colors().primary : 'transparent'"
                               [style.color]="editForm.eyes.includes(e) ? 'white' : theme.colors().text"
                               [style.border-color]="editForm.eyes.includes(e) ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">
-                        {{ e }}
-                      </button>
+                              class="option-btn">{{ e }}</button>
                     }
                   </div>
                   @if (editForm.eyes.includes('Other')) {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="info-label">Eye Notes</label>
-                      <textarea [(ngModel)]="editForm.eyeNotes" class="edit-textarea-styled" rows="2" placeholder="Describe their eyes..."></textarea>
-                    </div>
+                    <textarea [(ngModel)]="editForm.eyeNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their eyes..." style="margin-top:10px;"></textarea>
                   }
                 </div>
-                <div class="info-row-styled full-width">
-                  <span class="info-label">Build</span>
-                  <div class="edit-options-grid">
+
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Build</label>
+                  <div class="edit-chip-grid">
                     @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
                       <button (click)="toggleSelection(editForm.build, b)"
                               [style.background-color]="editForm.build.includes(b) ? theme.colors().primary : 'transparent'"
                               [style.color]="editForm.build.includes(b) ? 'white' : theme.colors().text"
                               [style.border-color]="editForm.build.includes(b) ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">
-                        {{ b }}
-                      </button>
+                              class="option-btn">{{ b }}</button>
                     }
                   </div>
                   @if (editForm.build.includes('Other')) {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="info-label">Build Notes</label>
-                      <textarea [(ngModel)]="editForm.buildNotes" class="edit-textarea-styled" rows="2" placeholder="Describe their build..."></textarea>
-                    </div>
+                    <textarea [(ngModel)]="editForm.buildNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their build..." style="margin-top:10px;"></textarea>
                   }
                 </div>
-                <div class="info-row-styled">
-                   <span class="info-label">Crush Status</span>
-                   <select [(ngModel)]="editForm.status" class="edit-input-styled">
-                     <option [value]="statuses.Crush">Crush</option>
-                     <option [value]="statuses.Crushing">Crushing</option>
-                     <option [value]="statuses.Dating">Dating</option>
-                     <option [value]="statuses.Exclusive">Exclusive</option>
-                     <option [value]="statuses.Archived">Archived</option>
-                     <option [value]="statuses.Friend">Friend</option>
-                   </select>
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">How we met</span>
-                   <input [(ngModel)]="editForm.howWeMet" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">When we met</span>
-                   <input [(ngModel)]="editForm.whenWeMet" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">Grade</span>
-                   <input [(ngModel)]="editForm.grade" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">Occupation</span>
-                   <input [(ngModel)]="editForm.occupation" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">Family</span>
-                   <input [(ngModel)]="editForm.family" class="edit-input-styled">
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">Friends</span>
-                   <input [(ngModel)]="editForm.friends" class="edit-input-styled" placeholder="Comma separated">
-                </div>
-                <div class="info-row-styled">
-                   <span class="info-label">Avatar URL</span>
-                   <input [(ngModel)]="editForm.avatarUrl" class="edit-input-styled">
-                </div>
               </div>
 
-              <div class="edit-social-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Social Handles</h3>
-                <div class="info-grid">
-                  <div class="info-row-styled">
-                    <span class="info-label">Snapchat</span>
-                    <input [(ngModel)]="editForm.social.snapchat" class="edit-input-styled" placeholder="Username">
+              <!-- Details -->
+              <div class="edit-section">
+                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Details</h3>
+                <div class="edit-fields-grid">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Location</label>
+                    <input [(ngModel)]="editForm.location" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
-                  <div class="info-row-styled">
-                    <span class="info-label">WhatsApp</span>
-                    <input [(ngModel)]="editForm.social.whatsapp" class="edit-input-styled" placeholder="Number">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Age</label>
+                    <input type="number" [(ngModel)]="editForm.age" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
-                  <div class="info-row-styled">
-                    <span class="info-label">Twitter</span>
-                    <input [(ngModel)]="editForm.social.twitter" class="edit-input-styled" placeholder="@username">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">How We Met</label>
+                    <input [(ngModel)]="editForm.howWeMet" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
-                  <div class="info-row-styled">
-                    <span class="info-label">Facebook</span>
-                    <input [(ngModel)]="editForm.social.facebook" class="edit-input-styled" placeholder="profile link">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">When We Met</label>
+                    <input [(ngModel)]="editForm.whenWeMet" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
-                  <div class="info-row-styled">
-                    <span class="info-label">Instagram</span>
-                    <input [(ngModel)]="editForm.social.instagram" class="edit-input-styled" placeholder="@username">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Grade</label>
+                    <input [(ngModel)]="editForm.grade" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Occupation</label>
+                    <input [(ngModel)]="editForm.occupation" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Family</label>
+                    <input [(ngModel)]="editForm.family" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Their Friends</label>
+                    <input [(ngModel)]="editForm.friends" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="Comma separated">
                   </div>
                 </div>
               </div>
 
-              <div class="extended-info-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Bio</h3>
-                <textarea [(ngModel)]="editForm.bio" class="edit-textarea-styled" rows="3"></textarea>
+              <!-- Social Handles -->
+              <div class="edit-section">
+                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Social Handles</h3>
+                <div class="edit-fields-grid">
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">👻 Snapchat</label>
+                    <input [(ngModel)]="editForm.social.snapchat" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="Username">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">💬 WhatsApp</label>
+                    <input [(ngModel)]="editForm.social.whatsapp" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="Number">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">🐦 Twitter</label>
+                    <input [(ngModel)]="editForm.social.twitter" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="@username">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">📘 Facebook</label>
+                    <input [(ngModel)]="editForm.social.facebook" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="profile link">
+                  </div>
+                  <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">📸 Instagram</label>
+                    <input [(ngModel)]="editForm.social.instagram" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="@username">
+                  </div>
+                </div>
               </div>
 
-              <div class="extended-info-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Memorable Moments</h3>
-                <textarea [(ngModel)]="editForm.memorableMoments" class="edit-textarea-styled" rows="4"></textarea>
+              <!-- Bio & Notes -->
+              <div class="edit-section">
+                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Bio & Notes</h3>
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Bio</label>
+                  <textarea [(ngModel)]="editForm.bio" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="A little about them..."></textarea>
+                </div>
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Memorable Moments</label>
+                  <textarea [(ngModel)]="editForm.memorableMoments" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="4" placeholder="Any moments worth remembering..."></textarea>
+                </div>
+                <div class="edit-field edit-field--full">
+                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Private Notes</label>
+                  <textarea [(ngModel)]="editForm.customNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="Your private thoughts..."></textarea>
+                </div>
               </div>
 
-              <div class="extended-info-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
-                <textarea [(ngModel)]="editForm.customNotes" class="edit-textarea-styled" rows="3"></textarea>
-              </div>
             </div>
           } @else {
             <div [style.background-color]="theme.colors().bgSecondary"

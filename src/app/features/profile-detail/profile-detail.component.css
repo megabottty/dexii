@@ -294,6 +294,60 @@
 }
 
 /* Edit Form Styles */
+.edit-form {
+  padding: 32px 40px;
+}
+
+.edit-section {
+  margin-bottom: 36px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--border);
+}
+
+.edit-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.edit-section-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  margin: 0 0 20px 0;
+  opacity: 0.6;
+}
+
+.edit-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-field--full {
+  grid-column: 1 / -1;
+}
+
+.edit-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.edit-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .edit-options-grid {
   display: flex;
   flex-wrap: wrap;
@@ -306,12 +360,16 @@
   font-weight: 600;
   padding: 8px 16px;
   border: 1.5px solid var(--border);
-  border-radius: 6px;
+  border-radius: 20px;
   background: transparent;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   transition: all 0.2s ease;
+}
+
+.option-btn:hover {
+  opacity: 0.85;
 }
 
 .edit-stars-row {
@@ -322,7 +380,7 @@
 .star-btn {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
   padding: 0;
   transition: transform 0.15s ease;
@@ -338,12 +396,13 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  padding: 16px;
+  padding: 14px 16px;
   font-family: inherit;
   font-size: 15px;
   line-height: 1.6;
   resize: vertical;
   transition: border-color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .edit-textarea-styled:focus {
@@ -360,13 +419,14 @@
 .edit-input-styled {
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 14px;
+  border-radius: 8px;
+  padding: 12px 14px;
   font-family: inherit;
   font-size: 15px;
-  width: 65%;
+  width: 100%;
   color: inherit;
   transition: border-color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .edit-input-styled:focus {
@@ -378,9 +438,10 @@ select.edit-input-styled {
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
   background-size: 1em;
-  padding-right: 32px;
+  padding-right: 36px;
+  cursor: pointer;
 }
 
 /* Share Selector Styles */
