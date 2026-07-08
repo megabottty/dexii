@@ -100,7 +100,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
                 <div class="vibe-banner-stars">
                   @for (star of [1,2,3,4,5]; track star) {
-                    <button (click)="logVibeInline(c.id, star); showVibeBanner.set(false)"
+                    <button (click)="logVibeInline(c.id, star)"
                             [style.color]="theme.colors().accent"
                             class="vibe-banner-star"
                             [attr.aria-label]="'Log vibe ' + star + ' stars'">★</button>
@@ -191,14 +191,30 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </div>
                 </div>
 
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Initial Vibe</label>
-                  <div class="edit-stars-row">
-                    @for (star of [1,2,3,4,5]; track star) {
-                      <button (click)="editForm.rating = star"
-                              [style.color]="editForm.rating >= star ? theme.colors().accent : theme.colors().border"
-                              class="star-btn">★</button>
-                    }
+                <div class="edit-field edit-field--full vibe-pair-row">
+                  <div class="vibe-pair-item">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Initial Vibe
+                      <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— set when you first added them</span>
+                    </label>
+                    <div class="edit-stars-row">
+                      @for (star of [1,2,3,4,5]; track star) {
+                        <button (click)="editForm.initialRating = star"
+                                [style.color]="(editForm.initialRating || 3) >= star ? theme.colors().accent : theme.colors().border"
+                                class="star-btn">★</button>
+                      }
+                    </div>
+                  </div>
+                  <div class="vibe-pair-item">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Current Vibe
+                      <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— how you feel right now</span>
+                    </label>
+                    <div class="edit-stars-row">
+                      @for (star of [1,2,3,4,5]; track star) {
+                        <button (click)="editForm.rating = star"
+                                [style.color]="editForm.rating >= star ? theme.colors().accent : theme.colors().border"
+                                class="star-btn">★</button>
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -565,6 +581,7 @@ export class ProfileDetailComponent {
     friends: '',
     avatarUrl: '',
     rating: 3,
+    initialRating: 3,
     social: {
       snapchat: '',
       whatsapp: '',
@@ -589,6 +606,14 @@ export class ProfileDetailComponent {
   constructor() {
     this.crushId.set(this.route.snapshot.paramMap.get('id'));
     this.loadFriends();
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      const key = `vibe_checked_${id}`;
+      const last = localStorage.getItem(key);
+      if (last && Date.now() - Number(last) < 24 * 60 * 60 * 1000) {
+        this.showVibeBanner.set(false);
+      }
+    }
   }
 
   private async loadFriends() {
@@ -673,6 +698,8 @@ export class ProfileDetailComponent {
       history.push(num);
       this.dataService.updateCrush({ ...c, rating: num, vibeHistory: history });
     }
+    localStorage.setItem(`vibe_checked_${id}`, String(Date.now()));
+    this.showVibeBanner.set(false);
     this.pendingVibe.set(0);
   }
 
@@ -826,6 +853,7 @@ export class ProfileDetailComponent {
           avatarUrl: c.avatarUrl || '',
           status: c.status || this.statuses.Crushing,
           rating: c.rating || 3,
+          initialRating: c.initialRating || c.rating || 3,
           social: {
             snapchat: c.social?.snapchat || '',
             whatsapp: c.social?.whatsapp || '',

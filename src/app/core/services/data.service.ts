@@ -415,14 +415,16 @@ export class DataService {
 
   public addCrush(crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'> & { initialRating?: number }): CrushProfile {
     const localId = Math.random().toString(36).substring(7);
-    const { initialRating, ...crushData } = crush as any;
+    const { initialRating: passedInitial, ...crushData } = crush as any;
+    const startRating = passedInitial ?? crush.rating ?? 3;
     const newCrush: CrushProfile = {
       ...crushData,
       id: localId,
       userId: 'me',
       lastInteraction: new Date(),
       redFlags: 0,
-      vibeHistory: [initialRating ?? crush.rating ?? 3],
+      initialRating: startRating,
+      vibeHistory: [startRating],
       sharedEntries: []
     };
 

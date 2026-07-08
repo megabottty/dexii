@@ -18,7 +18,8 @@ export interface CrushProfile {
   visibility: string[]; // List of friend IDs who can see basic info
   sharedEntries: string[]; // List of specific entry IDs shared with friends
   lastInteraction: Date;
-  rating?: number; // 1-5 stars
+  rating?: number; // 1-5 stars — current/latest vibe
+  initialRating?: number; // 1-5 stars — set at creation, never overwritten by vibe logs
   redFlags: number;
   vibeHistory: number[]; // Array of last 10 vibe scores (1-5 stars)
   isStealth?: boolean;

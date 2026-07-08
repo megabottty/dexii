@@ -752,3 +752,26 @@ select.edit-input-styled {
   font-size: 16px;
   letter-spacing: 2px;
 }
+
+/* Side-by-side Initial / Current Vibe in edit form */
+.vibe-pair-row {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.vibe-pair-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vibe-sub-label {
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.65;
+  margin-left: 6px;
+}
