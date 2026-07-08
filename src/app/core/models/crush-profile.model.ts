@@ -20,7 +20,7 @@ export interface CrushProfile {
   lastInteraction: Date;
   rating?: number; // 1-5 stars
   redFlags: number;
-  vibeHistory: number[]; // Array of last 5 vibe scores (1-10)
+  vibeHistory: number[]; // Array of last 10 vibe scores (1-5 stars)
   isStealth?: boolean;
   category?: string; // e.g. "Work", "Old Crush"
   hair?: string[];

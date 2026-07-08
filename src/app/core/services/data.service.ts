@@ -413,15 +413,16 @@ export class DataService {
     }));
   }
 
-  public addCrush(crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'>): CrushProfile {
+  public addCrush(crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'> & { initialRating?: number }): CrushProfile {
     const localId = Math.random().toString(36).substring(7);
+    const { initialRating, ...crushData } = crush as any;
     const newCrush: CrushProfile = {
-      ...crush,
+      ...crushData,
       id: localId,
       userId: 'me',
       lastInteraction: new Date(),
       redFlags: 0,
-      vibeHistory: [5],
+      vibeHistory: [initialRating ?? crush.rating ?? 3],
       sharedEntries: []
     };
 

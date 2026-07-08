@@ -796,6 +796,7 @@ export class DashboardComponent implements OnInit {
       fullName: this.newCrush.firstName,
       status: this.newCrush.status,
       rating: this.newCrush.rating,
+      initialRating: this.newCrush.rating,
       bio: this.newCrush.bio,
       visibility: [],
       avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar

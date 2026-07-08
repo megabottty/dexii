@@ -61,7 +61,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Cancel</button>
               } @else {
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
-                <button (click)="logVibe(c.id)" class="action-btn-styled primary">✨ Log Vibe</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
 
@@ -420,6 +419,45 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
               }
 
+              <!-- Vibe Tracker -->
+              <div [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   class="extended-info-section vibe-tracker-section">
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title">✨ Vibe Tracker</h3>
+
+                <div class="vibe-log-row">
+                  <span [style.color]="theme.colors().textSecondary" class="vibe-log-label">How's the vibe today?</span>
+                  <div class="vibe-stars-row">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      <button (click)="logVibeInline(c.id, star)"
+                              [style.color]="pendingVibe() >= star ? theme.colors().accent : theme.colors().border"
+                              (mouseenter)="pendingVibe.set(star)"
+                              (mouseleave)="pendingVibe.set(0)"
+                              class="vibe-star-btn"
+                              [attr.aria-label]="'Log vibe ' + star + ' stars'">★</button>
+                    }
+                  </div>
+                </div>
+
+                @if (c.vibeHistory && c.vibeHistory.length > 0) {
+                  <div class="vibe-history">
+                    <span [style.color]="theme.colors().textSecondary" class="vibe-history-label">Vibe History</span>
+                    <div class="vibe-history-list">
+                      @for (v of c.vibeHistory.slice().reverse(); track $index) {
+                        <div class="vibe-history-row">
+                          <span [style.color]="theme.colors().textSecondary" class="vibe-entry-num">#{{ c.vibeHistory.length - $index }}</span>
+                          <span [style.color]="theme.colors().accent" class="vibe-entry-stars">
+                            @for (star of [1,2,3,4,5]; track star) {
+                              {{ v >= star ? '★' : '☆' }}
+                            }
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
               <div class="social-links-section">
                 <h3 [style.color]="theme.colors().primary" class="extended-info-title">Social Connections</h3>
                 <div class="social-icons-grid">
@@ -454,6 +492,7 @@ export class ProfileDetailComponent {
   isEditMode = signal(false);
   showShareSelector = signal(false);
   friends = signal<User[]>([]);
+  pendingVibe = signal(0);
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
     {label: 'He/Him', value: 'he'},
@@ -575,30 +614,26 @@ export class ProfileDetailComponent {
     }
   }
 
-  logVibe(id: string) {
-    this.modal.prompt("Rate the current vibe (1-10):", "5", (score) => {
-      if (score && !isNaN(Number(score))) {
-        const num = Math.max(1, Math.min(10, Number(score)));
-        this.dataService.updateVibe(id, num);
-        this.dataService.addEntry({
-          crushId: id,
-          type: 'Note',
-          content: `New Vibe Analysis Logged: ${num}/10`,
-          isBurnAfterReading: false,
-          visibility: [],
-          isSensitive: false
-        });
-
-        // Persist the vibe history update to backend
-        const c = this.crush();
-        if (c) {
-          const history = [...(c.vibeHistory || [])];
-          if (history.length >= 7) history.shift();
-          history.push(num);
-          this.dataService.updateCrush({ ...c, vibeHistory: history });
-        }
-      }
+  logVibeInline(id: string, rating: number) {
+    const num = Math.max(1, Math.min(5, rating));
+    this.dataService.updateVibe(id, num);
+    this.dataService.addEntry({
+      crushId: id,
+      type: 'Note',
+      content: `Vibe logged: ${'★'.repeat(num)}${'☆'.repeat(5 - num)} (${num}/5)`,
+      isBurnAfterReading: false,
+      visibility: [],
+      isSensitive: false
     });
+
+    const c = this.crush();
+    if (c) {
+      const history = [...(c.vibeHistory || [])];
+      if (history.length >= 10) history.shift();
+      history.push(num);
+      this.dataService.updateCrush({ ...c, rating: num, vibeHistory: history });
+    }
+    this.pendingVibe.set(0);
   }
 
   addNote(id: string) {

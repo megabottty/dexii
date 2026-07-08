@@ -515,3 +515,73 @@ select.edit-input-styled {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* Vibe Tracker */
+.vibe-tracker-section {
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.vibe-log-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.vibe-log-label {
+  font-size: 13px;
+  min-width: 140px;
+}
+
+.vibe-stars-row {
+  display: flex;
+  gap: 4px;
+}
+
+.vibe-star-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: transform 0.1s, color 0.1s;
+}
+
+.vibe-star-btn:hover {
+  transform: scale(1.2);
+}
+
+.vibe-history-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.vibe-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vibe-history-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vibe-entry-num {
+  font-size: 11px;
+  min-width: 30px;
+  opacity: 0.6;
+}
+
+.vibe-entry-stars {
+  font-size: 16px;
+  letter-spacing: 2px;
+}
