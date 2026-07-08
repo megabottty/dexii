@@ -176,44 +176,44 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Avatar URL</label>
                     <input [(ngModel)]="editForm.avatarUrl" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="https://...">
                   </div>
-                </div>
-
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Pronouns</label>
-                  <div class="edit-chip-grid">
-                    @for (p of pronounOptions; track p.value) {
-                      <button (click)="editForm.pronouns = p.value"
-                              [style.background-color]="editForm.pronouns === p.value ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.pronouns === p.value ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.pronouns === p.value ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">{{ p.label }}</button>
-                    }
-                  </div>
-                </div>
-
-                <div class="edit-field edit-field--full vibe-pair-row">
-                  <div class="vibe-pair-item">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Initial Vibe
-                      <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— set when you first added them</span>
-                    </label>
-                    <div class="edit-stars-row">
-                      @for (star of [1,2,3,4,5]; track star) {
-                        <button (click)="editForm.initialRating = star"
-                                [style.color]="(editForm.initialRating || 3) >= star ? theme.colors().accent : theme.colors().border"
-                                class="star-btn">★</button>
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Pronouns</label>
+                    <div class="edit-chip-grid">
+                      @for (p of pronounOptions; track p.value) {
+                        <button (click)="editForm.pronouns = p.value"
+                                [style.background-color]="editForm.pronouns === p.value ? theme.colors().primary : 'transparent'"
+                                [style.color]="editForm.pronouns === p.value ? 'white' : theme.colors().text"
+                                [style.border-color]="editForm.pronouns === p.value ? theme.colors().primary : theme.colors().border"
+                                class="option-btn">{{ p.label }}</button>
                       }
                     </div>
                   </div>
-                  <div class="vibe-pair-item">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Current Vibe
-                      <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— how you feel right now</span>
-                    </label>
-                    <div class="edit-stars-row">
-                      @for (star of [1,2,3,4,5]; track star) {
-                        <button (click)="editForm.rating = star"
-                                [style.color]="editForm.rating >= star ? theme.colors().accent : theme.colors().border"
-                                class="star-btn">★</button>
-                      }
+                  <div class="edit-field edit-field--full">
+                    <div class="vibe-pair-row">
+                      <div class="vibe-pair-item">
+                        <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Initial Vibe
+                          <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— first impression</span>
+                        </label>
+                        <div class="edit-stars-row">
+                          @for (star of [1,2,3,4,5]; track star) {
+                            <button (click)="editForm.initialRating = star"
+                                    [style.color]="(editForm.initialRating || 3) >= star ? theme.colors().accent : theme.colors().border"
+                                    class="star-btn">★</button>
+                          }
+                        </div>
+                      </div>
+                      <div class="vibe-pair-item">
+                        <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Current Vibe
+                          <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— how you feel now</span>
+                        </label>
+                        <div class="edit-stars-row">
+                          @for (star of [1,2,3,4,5]; track star) {
+                            <button (click)="editForm.rating = star"
+                                    [style.color]="editForm.rating >= star ? theme.colors().accent : theme.colors().border"
+                                    class="star-btn">★</button>
+                          }
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -222,69 +222,67 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <!-- About Them -->
               <div class="edit-section">
                 <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">About Them</h3>
-
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Relationship Status</label>
-                  <div class="edit-chip-grid">
-                    @for (s of getRelationshipStatusOptions(); track s) {
-                      <button (click)="editForm.relationshipStatus = s"
-                              [style.background-color]="editForm.relationshipStatus === s ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.relationshipStatus === s ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.relationshipStatus === s ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">{{ s }}</button>
+                <div class="edit-fields-grid">
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Relationship Status</label>
+                    <div class="edit-chip-grid">
+                      @for (s of getRelationshipStatusOptions(); track s) {
+                        <button (click)="editForm.relationshipStatus = s"
+                                [style.background-color]="editForm.relationshipStatus === s ? theme.colors().primary : 'transparent'"
+                                [style.color]="editForm.relationshipStatus === s ? 'white' : theme.colors().text"
+                                [style.border-color]="editForm.relationshipStatus === s ? theme.colors().primary : theme.colors().border"
+                                class="option-btn">{{ s }}</button>
+                      }
+                    </div>
+                    @if (editForm.relationshipStatus === 'Other') {
+                      <textarea [(ngModel)]="editForm.relationshipNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..." style="margin-top:12px;"></textarea>
                     }
                   </div>
-                  @if (editForm.relationshipStatus === 'Other') {
-                    <textarea [(ngModel)]="editForm.relationshipNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..." style="margin-top:10px;"></textarea>
-                  }
-                </div>
-
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Hair</label>
-                  <div class="edit-chip-grid">
-                    @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
-                      <button (click)="toggleSelection(editForm.hair, h)"
-                              [style.background-color]="editForm.hair.includes(h) ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.hair.includes(h) ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.hair.includes(h) ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">{{ h }}</button>
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Hair</label>
+                    <div class="edit-chip-grid">
+                      @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
+                        <button (click)="toggleSelection(editForm.hair, h)"
+                                [style.background-color]="editForm.hair.includes(h) ? theme.colors().primary : 'transparent'"
+                                [style.color]="editForm.hair.includes(h) ? 'white' : theme.colors().text"
+                                [style.border-color]="editForm.hair.includes(h) ? theme.colors().primary : theme.colors().border"
+                                class="option-btn">{{ h }}</button>
+                      }
+                    </div>
+                    @if (editForm.hair.includes('Other')) {
+                      <textarea [(ngModel)]="editForm.hairNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their hair..." style="margin-top:12px;"></textarea>
                     }
                   </div>
-                  @if (editForm.hair.includes('Other')) {
-                    <textarea [(ngModel)]="editForm.hairNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their hair..." style="margin-top:10px;"></textarea>
-                  }
-                </div>
-
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Eyes</label>
-                  <div class="edit-chip-grid">
-                    @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
-                      <button (click)="toggleSelection(editForm.eyes, e)"
-                              [style.background-color]="editForm.eyes.includes(e) ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.eyes.includes(e) ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.eyes.includes(e) ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">{{ e }}</button>
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Eyes</label>
+                    <div class="edit-chip-grid">
+                      @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
+                        <button (click)="toggleSelection(editForm.eyes, e)"
+                                [style.background-color]="editForm.eyes.includes(e) ? theme.colors().primary : 'transparent'"
+                                [style.color]="editForm.eyes.includes(e) ? 'white' : theme.colors().text"
+                                [style.border-color]="editForm.eyes.includes(e) ? theme.colors().primary : theme.colors().border"
+                                class="option-btn">{{ e }}</button>
+                      }
+                    </div>
+                    @if (editForm.eyes.includes('Other')) {
+                      <textarea [(ngModel)]="editForm.eyeNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their eyes..." style="margin-top:12px;"></textarea>
                     }
                   </div>
-                  @if (editForm.eyes.includes('Other')) {
-                    <textarea [(ngModel)]="editForm.eyeNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their eyes..." style="margin-top:10px;"></textarea>
-                  }
-                </div>
-
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Build</label>
-                  <div class="edit-chip-grid">
-                    @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
-                      <button (click)="toggleSelection(editForm.build, b)"
-                              [style.background-color]="editForm.build.includes(b) ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.build.includes(b) ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.build.includes(b) ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">{{ b }}</button>
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Build</label>
+                    <div class="edit-chip-grid">
+                      @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
+                        <button (click)="toggleSelection(editForm.build, b)"
+                                [style.background-color]="editForm.build.includes(b) ? theme.colors().primary : 'transparent'"
+                                [style.color]="editForm.build.includes(b) ? 'white' : theme.colors().text"
+                                [style.border-color]="editForm.build.includes(b) ? theme.colors().primary : theme.colors().border"
+                                class="option-btn">{{ b }}</button>
+                      }
+                    </div>
+                    @if (editForm.build.includes('Other')) {
+                      <textarea [(ngModel)]="editForm.buildNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their build..." style="margin-top:12px;"></textarea>
                     }
                   </div>
-                  @if (editForm.build.includes('Other')) {
-                    <textarea [(ngModel)]="editForm.buildNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their build..." style="margin-top:10px;"></textarea>
-                  }
                 </div>
               </div>
 
@@ -357,17 +355,19 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <!-- Bio & Notes -->
               <div class="edit-section">
                 <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Bio & Notes</h3>
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Bio</label>
-                  <textarea [(ngModel)]="editForm.bio" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="A little about them..."></textarea>
-                </div>
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Memorable Moments</label>
-                  <textarea [(ngModel)]="editForm.memorableMoments" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="4" placeholder="Any moments worth remembering..."></textarea>
-                </div>
-                <div class="edit-field edit-field--full">
-                  <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Private Notes</label>
-                  <textarea [(ngModel)]="editForm.customNotes" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="Your private thoughts..."></textarea>
+                <div class="edit-fields-grid">
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Bio</label>
+                    <textarea [(ngModel)]="editForm.bio" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="A little about them..."></textarea>
+                  </div>
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Memorable Moments</label>
+                    <textarea [(ngModel)]="editForm.memorableMoments" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="4" placeholder="Any moments worth remembering..."></textarea>
+                  </div>
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Private Notes</label>
+                    <textarea [(ngModel)]="editForm.customNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="Your private thoughts..."></textarea>
+                  </div>
                 </div>
               </div>
 

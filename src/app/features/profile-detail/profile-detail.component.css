@@ -315,14 +315,15 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2.5px;
-  margin: 0 0 20px 0;
+  margin: 0 0 16px 0;
   opacity: 0.6;
 }
 
 .edit-fields-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
+  align-items: start;
 }
 
 .edit-field {
@@ -755,10 +756,10 @@ select.edit-input-styled {
 
 /* Side-by-side Initial / Current Vibe in edit form */
 .vibe-pair-row {
-  display: flex !important;
   flex-direction: row !important;
   gap: 40px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .vibe-pair-item {
