@@ -41,9 +41,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                [style.border]="'1px solid ' + theme.colors().border"
                class="profile-header-card">
             <div class="profile-header-flex">
-              <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'"
-                   [alt]="c.nickname"
-                   class="profile-avatar">
+              <div class="profile-avatar-wrap">
+                <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'"
+                     [alt]="c.nickname"
+                     class="profile-avatar">
+                <div [style.color]="theme.colors().accent" class="profile-avatar-stars">
+                  @for (star of [1,2,3,4,5]; track star) {
+                    {{ (c.rating || 0) >= star ? '★' : '☆' }}
+                  }
+                </div>
+              </div>
               <div class="profile-title-section">
                 <h1 class="profile-name">{{ c.nickname }}</h1>
                 <p [style.color]="theme.colors().primary" class="profile-subtitle">
@@ -79,6 +86,33 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               }
             </div>
           </div>
+
+          <!-- Vibe Check Banner -->
+          @if (showVibeBanner()) {
+            <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + '18, ' + theme.colors().accent + '18)'"
+                 [style.border]="'1px solid ' + theme.colors().primary + '40'"
+                 class="vibe-banner">
+              <div class="vibe-banner-content">
+                <span class="vibe-banner-emoji">✨</span>
+                <div class="vibe-banner-text">
+                  <span [style.color]="theme.colors().text" class="vibe-banner-title">How's the vibe with {{ c.nickname }}?</span>
+                  <span [style.color]="theme.colors().textSecondary" class="vibe-banner-sub">Tap a star to log today's vibe</span>
+                </div>
+                <div class="vibe-banner-stars">
+                  @for (star of [1,2,3,4,5]; track star) {
+                    <button (click)="logVibeInline(c.id, star); showVibeBanner.set(false)"
+                            [style.color]="theme.colors().accent"
+                            class="vibe-banner-star"
+                            [attr.aria-label]="'Log vibe ' + star + ' stars'">★</button>
+                  }
+                </div>
+              </div>
+              <button (click)="showVibeBanner.set(false)"
+                      [style.color]="theme.colors().textSecondary"
+                      class="vibe-banner-dismiss"
+                      aria-label="Dismiss">✕</button>
+            </div>
+          }
 
           @if (showShareSelector()) {
             <div class="selector-overlay" (click)="showShareSelector.set(false)">
@@ -496,6 +530,7 @@ export class ProfileDetailComponent {
   statuses = CrushStatus;
   isEditMode = signal(false);
   showShareSelector = signal(false);
+  showVibeBanner = signal(true);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
 
