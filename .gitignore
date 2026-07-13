@@ -47,3 +47,4 @@ Thumbs.db
 .env
 server/node_modules/
 server/data/*.json
+LOCAL_TESTING_NOTES.md

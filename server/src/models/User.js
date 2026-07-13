@@ -96,7 +96,7 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-UserSchema.pre('validate', function normalizeForSearch(next) {
+UserSchema.pre('validate', function normalizeForSearch() {
   this.username = (this.username || '').trim();
   this.firstName = (this.firstName || '').trim();
   this.lastName = (this.lastName || '').trim();
@@ -110,7 +110,6 @@ UserSchema.pre('validate', function normalizeForSearch(next) {
 
   const parts = [this.firstName, this.lastName].filter(Boolean);
   this.searchName = (parts.join(' ') || this.username).trim().toLowerCase();
-  next();
 });
 
 UserSchema.index({ username: 1 }, { unique: true });
