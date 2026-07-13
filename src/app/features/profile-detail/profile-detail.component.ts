@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed } from '@angular/core';
+import { Component, signal, inject, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
@@ -37,6 +37,29 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
       @if (crush(); as c) {
         <div class="profile-main-content">
+          @if (safetyState() !== 'Draft') {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().border)"
+                 style="position: sticky; top: 12px; z-index: 30; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <div>
+                <div style="font-weight: 700;" [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().primary">
+                  @if (safetyState() === 'Sent') { 🔒 Safety Check Active }
+                  @if (safetyState() === 'Safe') { ✅ Safety Check Resolved }
+                  @if (safetyState() === 'Urgent') { 🚨 Emergency Mode Active }
+                </div>
+                <div [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem; margin-top: 2px;">
+                  Contacts: {{ selectedSafetyContactNames() || 'None selected' }} • Interval: {{ safetyDurationMinutes() }} min
+                </div>
+              </div>
+              @if (safetyState() === 'Sent') {
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button (click)="markSafe(c.id)" class="action-btn-styled safe">✅ Mark Safe</button>
+                  <button (click)="triggerEmergency(c.id)" class="action-btn-styled urgent">🚨 URGENT</button>
+                </div>
+              }
+            </div>
+          }
+
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                class="profile-header-card">
@@ -45,10 +68,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'"
                      [alt]="c.nickname"
                      class="profile-avatar">
-                <div [style.color]="theme.colors().accent" class="profile-avatar-stars">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    {{ (c.rating || 0) >= star ? '★' : '☆' }}
-                  }
+                <div class="profile-avatar-stars" style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                  <span [style.color]="theme.colors().accent">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      {{ (c.rating || 0) >= star ? '★' : '☆' }}
+                    }
+                  </span>
+                  <span
+                    [style.color]="(c.redFlags || 0) > 0 ? '#ef4444' : '#22c55e'"
+                    [style.border]="'1px solid ' + ((c.redFlags || 0) > 0 ? '#ef4444' : '#22c55e')"
+                    style="padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; line-height: 1.2;">
+                    {{ (c.redFlags || 0) > 0 ? '🚩' : '✅' }}
+                    @if ((c.redFlags || 0) > 0) {
+                      ({{ c.redFlags }})
+                    }
+                  </span>
                 </div>
               </div>
               <div class="profile-title-section">
@@ -69,14 +103,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               } @else {
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
-                <button (click)="showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
-
-                @if (safetyState() === 'Draft') {
-                  <button (click)="startSafetyCheck(c.id)" class="action-btn-styled safety">🔒 Start Safety</button>
-                } @else if (safetyState() === 'Sent') {
-                  <button (click)="markSafe(c.id)" class="action-btn-styled safe">✅ Mark Safe</button>
-                  <button (click)="triggerEmergency(c.id)" class="action-btn-styled urgent">🚨 URGENT</button>
-                }
+                <button (click)="pendingShareEntryId.set(null); showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
 
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
@@ -85,6 +112,54 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="deleteCrush(c.id)" class="action-btn-styled danger">🗑️ Delete</button>
               }
             </div>
+
+            @if (!isEditMode()) {
+              <div [style.border]="'1px solid ' + theme.colors().border"
+                   [style.background-color]="theme.colors().bg"
+                   style="margin-top: 14px; border-radius: 10px; padding: 12px;">
+                <h3 [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 1rem;">Safety Check-In Setup</h3>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 10px;">
+                  <label [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem;">Check-in interval</label>
+                  <select [ngModel]="safetyDurationMinutes()"
+                          (ngModelChange)="setSafetyDuration($event)"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          style="padding: 6px 10px; border-radius: 6px;">
+                    @for (minutes of safetyDurationOptions; track minutes) {
+                      <option [ngValue]="minutes">{{ minutes }} min</option>
+                    }
+                  </select>
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: 0.78rem;">
+                    We’ll pop a halfway check-in prompt automatically.
+                  </span>
+                </div>
+
+                <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0; font-size: 0.85rem;">Share with trusted friends:</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  @for (friend of friends(); track friend.id) {
+                    <button (click)="toggleSafetyContact(friend.id)"
+                            [style.background-color]="isSafetyContact(friend.id) ? theme.colors().primary : 'transparent'"
+                            [style.color]="isSafetyContact(friend.id) ? 'white' : theme.colors().text"
+                            [style.border]="'1px solid ' + (isSafetyContact(friend.id) ? theme.colors().primary : theme.colors().border)"
+                            style="padding: 5px 10px; border-radius: 999px; cursor: pointer; font-size: 0.8rem;">
+                      {{ isSafetyContact(friend.id) ? '✓ ' : '' }}{{ friend.username }}
+                    </button>
+                  } @empty {
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.82rem;">No friends found. Add friends first.</span>
+                  }
+                </div>
+
+                <div style="margin-top: 10px;">
+                  <button (click)="startSafetyCheck(c.id)"
+                          [style.background-color]="theme.colors().primary"
+                          class="action-btn-styled safety">
+                    {{ safetyState() === 'Sent' ? 'Restart Safety Check' : '🔒 Start Safety Check' }}
+                  </button>
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Vibe Check Banner -->
@@ -115,11 +190,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           }
 
           @if (showShareSelector()) {
-            <div class="selector-overlay" (click)="showShareSelector.set(false)">
+            <div class="selector-overlay" (click)="showShareSelector.set(false); pendingShareEntryId.set(null)">
               <div class="selector-card" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3>Share with a Friend</h3>
-                  <button class="close-btn" (click)="showShareSelector.set(false)">✕</button>
+                  <h3>{{ pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend' }}</h3>
+                  <button class="close-btn" (click)="showShareSelector.set(false); pendingShareEntryId.set(null)">✕</button>
                 </div>
                 <div class="friend-list-scroll">
                   @for (friend of friends(); track friend.id) {
@@ -127,15 +202,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
                       <div class="friend-info">
                         <span class="friend-name">{{ friend.username }}</span>
-                        <span class="friend-status" [style.color]="isShared(c, friend.id) ? theme.colors().primary : theme.colors().textSecondary">
-                          {{ isShared(c, friend.id) ? '✓ Shared' : 'Not shared' }}
+                        <span class="friend-status" [style.color]="(pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? theme.colors().primary : theme.colors().textSecondary">
+                          {{ (pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? '✓ Shared' : 'Not shared' }}
                         </span>
                       </div>
                     </div>
                   } @empty {
                     <div class="empty-state">
                       <p>No friends found.</p>
-                      <a routerLink="/friends" (click)="showShareSelector.set(false)" [style.color]="theme.colors().primary">Add friends</a>
+                      <a routerLink="/friends" (click)="showShareSelector.set(false); pendingShareEntryId.set(null)" [style.color]="theme.colors().primary">Add friends</a>
                     </div>
                   }
                 </div>
@@ -474,11 +549,42 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
               }
 
+              <div class="extended-info-section">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                  <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">Added Notes</h3>
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem;">{{ noteEntries().length }} total</span>
+                </div>
+
+                @if (noteEntries().length > 0) {
+                  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                    @for (entry of noteEntries(); track entry.id) {
+                      <div [style.border]="'1px solid ' + theme.colors().border"
+                           [style.background-color]="theme.colors().bg"
+                           style="padding: 12px; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                          <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                            {{ entry.timestamp | date:'MMM d, h:mm a' }}
+                          </span>
+                          <button (click)="startSharingNote(entry.id)"
+                                  [style.background-color]="theme.colors().primary"
+                                  style="border: none; color: white; border-radius: 999px; padding: 4px 10px; font-size: 0.78rem; cursor: pointer;">
+                            Share note
+                          </button>
+                        </div>
+                        <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text">No notes yet. Tap “Add Note” to save one.</p>
+                }
+              </div>
+
               <!-- Vibe Tracker -->
               <div [style.background-color]="theme.colors().bgSecondary"
                    [style.border]="'1px solid ' + theme.colors().border"
                    class="extended-info-section vibe-tracker-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title">✨ Vibe Tracker</h3>
+                <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
 
                 <div class="vibe-log-row">
                   <span [style.color]="theme.colors().textSecondary" class="vibe-log-label">How's the vibe today?</span>
@@ -530,7 +636,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
     </div>
   `
 })
-export class ProfileDetailComponent {
+export class ProfileDetailComponent implements OnDestroy {
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
   private messaging = inject(MessagingService);
@@ -549,6 +655,11 @@ export class ProfileDetailComponent {
   showVibeBanner = signal(true);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
+  pendingShareEntryId = signal<string | null>(null);
+  safetyDurationMinutes = signal<number>(60);
+  safetyContactIds = signal<string[]>([]);
+  safetyDurationOptions = [30, 60, 90, 120, 150, 180, 210, 240];
+  private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
     {label: 'He/Him', value: 'he'},
@@ -603,6 +714,20 @@ export class ProfileDetailComponent {
     return this.dataService.getEntriesForCrush(id)();
   });
 
+  noteEntries = computed(() =>
+    this.entries()
+      .filter((entry) => entry.type === 'Note')
+      .slice()
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  );
+
+  selectedSafetyContactNames = computed(() => {
+    const selected = this.safetyContactIds();
+    if (selected.length === 0) return '';
+    const byId = new Map(this.friends().map((friend) => [friend.id, friend.username]));
+    return selected.map((id) => byId.get(id) || id).join(', ');
+  });
+
   constructor() {
     this.crushId.set(this.route.snapshot.paramMap.get('id'));
     this.loadFriends();
@@ -614,6 +739,10 @@ export class ProfileDetailComponent {
         this.showVibeBanner.set(false);
       }
     }
+  }
+
+  ngOnDestroy(): void {
+    this.clearSafetyTimers();
   }
 
   private async loadFriends() {
@@ -652,6 +781,8 @@ export class ProfileDetailComponent {
     return [
       `${subjectCap} ${verb} know I exist`,
       "Just friends",
+      "Just flirting",
+      "Just sexting",
       `I think ${subject} ${likes} me`,
       "Getting serious",
       "We are a couple",
@@ -733,44 +864,191 @@ export class ProfileDetailComponent {
     });
   }
 
-  startSafetyCheck(id: string) {
-    this.safetyState.set('Sent');
-    this.dataService.addEntry({
-      crushId: id,
-      type: 'SafetyCheck',
-      content: 'Safety Check-In Started.',
-      visibility: [],
-      isSensitive: true,
-      safetyStatus: 'Sent',
-      safetyContactId: 'friend_99' // Mock contact
+  setSafetyDuration(value: unknown): void {
+    const minutes = Number(value);
+    if (!Number.isFinite(minutes) || minutes < 30) return;
+    this.safetyDurationMinutes.set(minutes);
+  }
+
+  isSafetyContact(friendId: string): boolean {
+    return this.safetyContactIds().includes(friendId);
+  }
+
+  toggleSafetyContact(friendId: string): void {
+    this.safetyContactIds.update((ids) =>
+      ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
+    );
+  }
+
+  private getSafetyContacts(): User[] {
+    const selected = new Set(this.safetyContactIds());
+    return this.friends().filter((friend) => selected.has(friend.id));
+  }
+
+  private clearSafetyTimers(): void {
+    if (this.halfwaySafetyTimer) {
+      clearTimeout(this.halfwaySafetyTimer);
+      this.halfwaySafetyTimer = null;
+    }
+  }
+
+  private supportsBrowserNotifications(): boolean {
+    return typeof window !== 'undefined' && 'Notification' in window;
+  }
+
+  private async ensureSafetyNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
+    if (!this.supportsBrowserNotifications()) {
+      return 'unsupported';
+    }
+    if (Notification.permission === 'granted') {
+      return 'granted';
+    }
+    if (Notification.permission === 'denied') {
+      return 'denied';
+    }
+    return Notification.requestPermission();
+  }
+
+  private showHalfwaySafetyNotification(): void {
+    if (!this.supportsBrowserNotifications() || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const crushName = this.crush()?.nickname || 'your date';
+    const notification = new Notification('Dexii Safety Check-In', {
+      body: `Halfway reminder for ${crushName}: check in and confirm you are safe/having fun.`,
+      tag: `dexii-safety-halfway-${this.crushId() || 'current'}`,
+      requireInteraction: true
     });
-    this.modal.show('Safety Check Enabled. Your trusted contacts have been notified.');
+
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  }
+
+  private scheduleHalfwayCheck(crushId: string): void {
+    this.clearSafetyTimers();
+    const durationMs = this.safetyDurationMinutes() * 60 * 1000;
+    const halfwayMs = Math.max(1000, Math.floor(durationMs / 2));
+
+    this.halfwaySafetyTimer = setTimeout(() => {
+      if (this.safetyState() !== 'Sent') {
+        return;
+      }
+
+      this.showHalfwaySafetyNotification();
+      const contacts = this.getSafetyContacts();
+      this.modal.confirm(
+        `Halfway check-in (${this.safetyDurationMinutes()} min plan): are you safe and having fun?`,
+        () => {
+          contacts.forEach((friend) => {
+            this.messaging.sendMessage({
+              senderId: 'me',
+              receiverId: friend.id,
+              content: `Halfway check-in: I'm safe and having fun with ${this.crush()?.nickname || 'my date'}.`
+            });
+            this.dataService.addEntry({
+              crushId,
+              type: 'SafetyCheck',
+              content: `Halfway check-in sent to ${friend.username}: safe and having fun.`,
+              visibility: [],
+              isSensitive: true,
+              safetyStatus: 'Sent',
+              safetyContactId: friend.id
+            });
+          });
+          this.modal.show('Great. Halfway safety check-in sent.');
+        },
+        () => {
+          this.modal.show('If anything feels off, tap URGENT in the safety bar at the top.');
+        }
+      );
+    }, halfwayMs);
+  }
+
+  async startSafetyCheck(id: string): Promise<void> {
+    const contacts = this.getSafetyContacts();
+    if (contacts.length === 0) {
+      this.modal.show('Choose at least one trusted friend for this safety check.');
+      return;
+    }
+
+    const notificationPermission = await this.ensureSafetyNotificationPermission();
+
+    this.safetyState.set('Sent');
+    contacts.forEach((friend) => {
+      this.dataService.addEntry({
+        crushId: id,
+        type: 'SafetyCheck',
+        content: `Safety check started and shared with ${friend.username}.`,
+        visibility: [],
+        isSensitive: true,
+        safetyStatus: 'Sent',
+        safetyContactId: friend.id
+      });
+
+      this.messaging.sendMessage({
+        senderId: 'me',
+        receiverId: friend.id,
+        content: `Safety check started for ${this.crush()?.nickname || 'my date'}. Check-in interval: ${this.safetyDurationMinutes()} minutes.`
+      });
+    });
+    this.scheduleHalfwayCheck(id);
+
+    if (notificationPermission === 'granted') {
+      this.modal.show('Safety Check enabled. Trusted contacts were notified and you will get a phone/browser notification at halfway.');
+      return;
+    }
+
+    if (notificationPermission === 'denied') {
+      this.modal.show('Safety Check enabled. Trusted contacts were notified. Browser notifications are blocked, so halfway check-in will appear in-app only.');
+      return;
+    }
+
+    this.modal.show('Safety Check enabled. Trusted contacts were notified, and a halfway in-app check-in is scheduled.');
   }
 
   markSafe(id: string) {
+    this.clearSafetyTimers();
     this.safetyState.set('Safe');
-    this.dataService.addEntry({
-      crushId: id,
-      type: 'SafetyCheck',
-      content: 'Safety Check-In Resolved: I am safe.',
-      visibility: [],
-      isSensitive: true,
-      safetyStatus: 'Safe',
-      safetyContactId: 'friend_99'
+    this.getSafetyContacts().forEach((friend) => {
+      this.dataService.addEntry({
+        crushId: id,
+        type: 'SafetyCheck',
+        content: `Safety check resolved: marked safe with ${friend.username}.`,
+        visibility: [],
+        isSensitive: true,
+        safetyStatus: 'Safe',
+        safetyContactId: friend.id
+      });
+      this.messaging.sendMessage({
+        senderId: 'me',
+        receiverId: friend.id,
+        content: `Safety check resolved: I'm safe and good.`
+      });
     });
     this.modal.show('Safety Check resolved and marked Safe.');
   }
 
   triggerEmergency(id: string) {
+    this.clearSafetyTimers();
     this.safetyState.set('Urgent');
-    this.dataService.addEntry({
-      crushId: id,
-      type: 'SafetyCheck',
-      content: 'Emergency Mode escalated. Immediate assistance requested.',
-      visibility: [],
-      isSensitive: true,
-      safetyStatus: 'Urgent',
-      safetyContactId: 'friend_99'
+    this.getSafetyContacts().forEach((friend) => {
+      this.dataService.addEntry({
+        crushId: id,
+        type: 'SafetyCheck',
+        content: `Emergency mode escalated and sent to ${friend.username}.`,
+        visibility: [],
+        isSensitive: true,
+        safetyStatus: 'Urgent',
+        safetyContactId: friend.id
+      });
+      this.messaging.sendMessage({
+        senderId: 'me',
+        receiverId: friend.id,
+        content: `🚨 Emergency mode enabled for ${this.crush()?.nickname || 'my date'}. Please check in now.`
+      });
     });
     this.modal.show('Emergency Mode enabled. Trusted contacts alerted urgently.');
   }
@@ -783,6 +1061,29 @@ export class ProfileDetailComponent {
 
   shareWithFriend(crushId: string, friendId: string): void {
     if (friendId) {
+      const entryId = this.pendingShareEntryId();
+      if (entryId) {
+        if (!this.isEntrySharedWithFriend(friendId)) {
+          this.dataService.toggleEntryVisibility(entryId, friendId);
+        }
+
+        const note = this.entries().find((entry) => entry.id === entryId);
+        if (note) {
+          this.messaging.sendMessage({
+            senderId: 'me',
+            receiverId: friendId,
+            content: `Shared note about ${this.crush()?.nickname || 'this crush'}: ${note.content}`,
+            relatedCrushId: crushId,
+            relatedEntryId: note.id
+          });
+        }
+
+        this.pendingShareEntryId.set(null);
+        this.showShareSelector.set(false);
+        this.modal.show(`Note shared with ${friendId}.`);
+        return;
+      }
+
       this.dataService.toggleCrushVisibility(crushId, friendId);
 
       // Check if now visible or not
@@ -800,6 +1101,23 @@ export class ProfileDetailComponent {
       }
       this.showShareSelector.set(false);
     }
+  }
+
+  startSharingNote(entryId: string): void {
+    if (this.friends().length === 0) {
+      this.modal.show('Add at least one friend first to share notes.');
+      return;
+    }
+    this.pendingShareEntryId.set(entryId);
+    this.showShareSelector.set(true);
+  }
+
+  isEntrySharedWithFriend(friendId: string): boolean {
+    const entryId = this.pendingShareEntryId();
+    if (!entryId) return false;
+    const entry = this.entries().find((currentEntry) => currentEntry.id === entryId);
+    if (!entry) return false;
+    return entry.visibility.includes(friendId) || entry.visibility.includes('public');
   }
 
   isShared(crush: CrushProfile, friendId: string): boolean {

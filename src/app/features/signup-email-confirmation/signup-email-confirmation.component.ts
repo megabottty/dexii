@@ -57,10 +57,11 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               type="text"
               maxlength="1"
               class="code-box"
+              [value]="codeDigits()[$index]"
               [style.background]="'transparent'"
-              [style.border]="'1px solid ' + (code()[$index] ? theme.colors().primary : theme.colors().border)"
+              [style.border]="'1px solid ' + (codeDigits()[$index] ? theme.colors().primary : theme.colors().border)"
               [style.color]="theme.colors().text"
-              [style.box-shadow]="code()[$index] ? '0 0 10px ' + theme.colors().primary : 'none'"
+              [style.box-shadow]="codeDigits()[$index] ? '0 0 10px ' + theme.colors().primary : 'none'"
               (input)="onInput($event, $index)"
               (keydown)="onKeyDown($event, $index)"
               #codeBox
@@ -70,7 +71,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 
         <button
           (click)="verifyCode()"
-          [disabled]="code().length < 6 || isLoading()"
+          [disabled]="codeValue().length < 6 || isLoading()"
           [style.background-color]="theme.colors().primary"
           class="verify-button">
           {{ isLoading() ? 'Verifying...' : 'Verify & Complete' }}
@@ -196,47 +197,65 @@ export class SignupEmailConfirmationComponent {
   private router = inject(Router);
   private modal = inject(ModalService);
 
-  email = signal<string>(localStorage.getItem('dexii_profile_email') || '');
-  code = signal<string>('');
+  email = signal<string>(localStorage.getItem('dexii_pending_email') || localStorage.getItem('dexii_profile_email') || '');
+  codeDigits = signal<string[]>(Array(6).fill(''));
   errorMessage = signal<string>('');
   isLoading = signal<boolean>(false);
 
+  codeValue(): string {
+    return this.codeDigits().join('');
+  }
+
   onInput(event: any, index: number) {
-    const val = event.target.value;
+    const raw = String(event.target.value || '');
+    const val = raw.slice(-1);
     if (!/^\d?$/.test(val)) {
       event.target.value = '';
       return;
     }
 
-    let currentCode = this.code().split('');
-    currentCode[index] = val;
-    this.code.set(currentCode.join(''));
+    this.codeDigits.update((digits) => {
+      const next = [...digits];
+      next[index] = val;
+      return next;
+    });
 
     if (val && index < 5) {
       const nextInput = event.target.nextElementSibling;
       if (nextInput) nextInput.focus();
     }
-
-    if (this.code().length === 6) {
-      // Auto verify? Maybe not yet
-    }
   }
 
   onKeyDown(event: any, index: number) {
+    if (event.key === 'Backspace' && event.target.value) {
+      this.codeDigits.update((digits) => {
+        const next = [...digits];
+        next[index] = '';
+        return next;
+      });
+      return;
+    }
+
     if (event.key === 'Backspace' && !event.target.value && index > 0) {
+      this.codeDigits.update((digits) => {
+        const next = [...digits];
+        next[index - 1] = '';
+        return next;
+      });
       const prevInput = event.target.previousElementSibling;
       if (prevInput) prevInput.focus();
     }
   }
 
   async verifyCode() {
-    if (this.code().length !== 6) return;
+    const code = this.codeValue();
+    if (code.length !== 6) return;
 
     this.isLoading.set(true);
     this.errorMessage.set('');
 
     try {
-      await this.security.verifyEmailCode(this.code());
+      await this.security.verifyEmailCode(code);
       localStorage.removeItem('dexii_pending_pin');
     } catch (err: any) {
       this.errorMessage.set(err.message || 'Verification failed');

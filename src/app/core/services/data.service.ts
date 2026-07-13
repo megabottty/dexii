@@ -51,15 +51,73 @@ export class DataService {
   private readonly apiBaseUrl = getApiBaseUrl();
   private readonly tokenStorageKey = 'dexii_api_token';
   private readonly usernameStorageKey = 'dexii_api_username';
+  private readonly entriesStorageKey = 'dexii_entries';
 
   private _allCrushes = signal<CrushProfile[]>([]);
-  private _entries = signal<Entry[]>([]);
+  private _entries = signal<Entry[]>(this.readEntriesFromStorage());
   private modal = inject(ModalService);
   private messaging = inject(MessagingService);
   private audit = inject(AuditService);
 
   constructor() {
     void this.hydrateCrushesFromBackend();
+  }
+
+  private persistEntries(): void {
+    const serialized = this._entries().map((entry) => ({
+      ...entry,
+      timestamp: entry.timestamp.toISOString()
+    }));
+    localStorage.setItem(this.entriesStorageKey, JSON.stringify(serialized));
+  }
+
+  private readEntriesFromStorage(): Entry[] {
+    try {
+      const raw = localStorage.getItem(this.entriesStorageKey);
+      if (!raw) return [];
+
+      const parsed = JSON.parse(raw) as Array<{
+        id: string;
+        crushId: string;
+        type: Entry['type'];
+        content: string;
+        timestamp: string;
+        isBurnAfterReading?: boolean;
+        hasViewed?: boolean;
+        visibility?: string[];
+        isSensitive?: boolean;
+        safetyContactId?: string;
+        safetyStatus?: Entry['safetyStatus'];
+        redFlagCount?: number;
+      }>;
+
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed
+        .filter((entry) =>
+          typeof entry.id === 'string' &&
+          typeof entry.crushId === 'string' &&
+          typeof entry.type === 'string' &&
+          typeof entry.content === 'string' &&
+          typeof entry.timestamp === 'string'
+        )
+        .map((entry) => ({
+          id: entry.id,
+          crushId: entry.crushId,
+          type: entry.type,
+          content: entry.content,
+          timestamp: new Date(entry.timestamp),
+          isBurnAfterReading: Boolean(entry.isBurnAfterReading),
+          hasViewed: Boolean(entry.hasViewed),
+          visibility: Array.isArray(entry.visibility) ? entry.visibility.map(String) : [],
+          isSensitive: Boolean(entry.isSensitive),
+          safetyContactId: entry.safetyContactId,
+          safetyStatus: entry.safetyStatus,
+          redFlagCount: entry.redFlagCount
+        }));
+    } catch {
+      return [];
+    }
   }
 
   private toCrushStatus(status?: string): CrushStatus {
@@ -393,6 +451,7 @@ export class DataService {
       timestamp: new Date()
     };
     this._entries.update(prev => [newEntry, ...prev]);
+    this.persistEntries();
   }
 
   public incrementRedFlag(crushId: string) {
@@ -543,5 +602,6 @@ export class DataService {
       }
       return e;
     }));
+    this.persistEntries();
   }
 }

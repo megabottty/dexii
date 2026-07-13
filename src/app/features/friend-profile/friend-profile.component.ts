@@ -34,11 +34,19 @@ interface FriendView {
           message="Keep private notes for yourself or mark notes as shared to send them to this friend in chat.">
         </app-page-hint>
 
-        <a routerLink="/friends"
-           [style.color]="theme.colors().textSecondary"
-           class="friend-profile-component__s3">
-          ← Back to Inner Circle
-        </a>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <a routerLink="/friends"
+             [style.color]="theme.colors().textSecondary"
+             class="friend-profile-component__s3">
+            ← Back to Inner Circle
+          </a>
+          <a routerLink="/dashboard"
+             [style.color]="theme.colors().primary"
+             [style.border]="'1px solid ' + theme.colors().primary"
+             style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
+            Dashboard
+          </a>
+        </div>
 
         @if (friend(); as f) {
           <div [style.border]="'1px solid ' + theme.colors().border"
@@ -58,6 +66,13 @@ interface FriendView {
                    [style.color]="theme.colors().primary"
                    class="friend-profile-component__s9">
                   Open Profile
+                </a>
+                <a [routerLink]="['/chat']"
+                   [queryParams]="{ friendId: f.id, friendName: f.username }"
+                   [style.color]="theme.colors().primary"
+                   class="friend-profile-component__s9"
+                   style="margin-left: 12px;">
+                  Open Chat
                 </a>
               </div>
             </div>

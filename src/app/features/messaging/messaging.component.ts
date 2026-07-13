@@ -1,7 +1,7 @@
 import { Component, signal, inject, computed, ElementRef, ViewChild, AfterViewChecked, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MessagingService } from '../../core/services/messaging.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
@@ -27,7 +27,12 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             <span [style.color]="theme.colors().primary" class="messaging-component__s6">End-to-End Encrypted Tea</span>
           </div>
         </div>
-        <div style="width: 100px;"></div> <!-- Spacer for Help button -->
+        <a routerLink="/dashboard"
+           [style.color]="theme.colors().primary"
+           [style.border]="'1px solid ' + theme.colors().primary"
+           style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
+          Dashboard
+        </a>
       </header>
 
       <!-- Messages Area -->
@@ -77,16 +82,20 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 export class MessagingComponent implements OnInit, AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
+  private route = inject(ActivatedRoute);
   public messaging = inject(MessagingService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public modal = inject(ModalService);
+  private fallbackPartnerId = 'friend_1';
+  private fallbackPartnerName = 'Sarah Best';
+  private chatPartnerId = signal<string>(this.fallbackPartnerId);
+  private chatPartnerName = signal<string>(this.fallbackPartnerName);
 
   currentChatPartner = computed(() => {
-    const user = this.security.currentUser();
     return {
-      id: user ? 'me' : 'friend_1',
-      username: user || 'Sarah Best'
+      id: this.chatPartnerId(),
+      username: this.chatPartnerName()
     };
   });
   newMessage = '';
@@ -94,6 +103,41 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   activeMessages = computed(() =>
     this.messaging.getConversation('me', this.currentChatPartner().id)
   );
+
+  constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      const partnerId = (params.get('friendId') || params.get('friend') || '').trim();
+      const partnerName = (params.get('friendName') || params.get('name') || '').trim();
+
+      if (partnerId) {
+        this.chatPartnerId.set(partnerId);
+        this.chatPartnerName.set(partnerName || partnerId);
+        return;
+      }
+
+      const fallback = this.getLatestConversationPartner();
+      if (fallback) {
+        this.chatPartnerId.set(fallback.id);
+        this.chatPartnerName.set(fallback.username);
+      } else {
+        this.chatPartnerId.set(this.fallbackPartnerId);
+        this.chatPartnerName.set(this.fallbackPartnerName);
+      }
+    });
+  }
+
+  private getLatestConversationPartner(): { id: string; username: string } | null {
+    const messages = this.messaging.messages().slice().reverse();
+    for (const msg of messages) {
+      if (msg.senderId === 'me' && msg.receiverId !== 'me') {
+        return { id: msg.receiverId, username: msg.receiverId };
+      }
+      if (msg.receiverId === 'me' && msg.senderId !== 'me') {
+        return { id: msg.senderId, username: msg.senderId };
+      }
+    }
+    return null;
+  }
 
   ngOnInit() {
     this.messaging.markConversationAsRead('me', this.currentChatPartner().id);

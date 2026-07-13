@@ -15,6 +15,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="shared-history-container" style="font-family: 'Times New Roman', serif; min-height: 100vh;">
       <div class="header-section" style="padding: 2rem; border-bottom: 1px solid {{theme.colors().border}};">
         <a routerLink="/friends" [style.color]="theme.colors().textSecondary" class="back-link" style="text-decoration: none; display: block; margin-bottom: 1rem;">← Back to Inner Circle</a>
+        <a routerLink="/dashboard" [style.color]="theme.colors().primary" style="text-decoration: none; display: inline-block; margin-bottom: 1rem; border: 1px solid currentColor; padding: 6px 12px; border-radius: 6px; font-weight: 600;">Dashboard</a>
         <h1 class="page-title" style="font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -1px;">Shared History</h1>
         <p [style.color]="theme.colors().textSecondary" style="font-size: 1.1rem; font-style: italic;">Track the crushes you've shared with friends.</p>
       </div>

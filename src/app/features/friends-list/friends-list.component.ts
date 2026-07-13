@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { SubscriptionService } from '../../core/services/subscription.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ModalService } from '../../core/services/modal.service';
 import { User, SubscriptionTier } from '../../core/models/user.model';
@@ -13,6 +12,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 
 interface FriendSearchResult {
   username: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
   subscriptionTier?: SubscriptionTier;
   friendCategories?: string[];
@@ -26,6 +27,8 @@ interface FriendRequestItem {
   to: string;
   status: 'pending' | 'accepted' | 'declined';
   createdAt: string;
+  nudgeCount?: number;
+  lastNudgedAt?: string;
 }
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -121,161 +124,202 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           The Inner Circle
         </h2>
 
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s33">
-          <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s34">
-            Subscription Tier: {{ subscription.tier() }}
-          </p>
-          <div class="friends-list-component__s6">
-            <button (click)="subscription.upgrade(freeTier)"
-                    [style.background-color]="subscription.tier() === freeTier ? theme.colors().primary : 'transparent'"
-                    [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    class="friends-list-component__s35">Free</button>
-            <button (click)="subscription.upgrade(premiumTier)"
-                    [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
-                    [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    class="friends-list-component__s35">Premium ($5/mo)</button>
-            <button (click)="subscription.upgrade(goldTier)"
-                    [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
-                    [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    class="friends-list-component__s35">Gold ($15/mo)</button>
-          </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+          <button (click)="activeTab.set('friends')"
+                  [style.background-color]="activeTab() === 'friends' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'friends' ? 'white' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'friends' ? theme.colors().primary : theme.colors().border)"
+                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Friends ({{ friends().length }})</button>
+          <button (click)="activeTab.set('find')"
+                  [style.background-color]="activeTab() === 'find' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'find' ? 'white' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'find' ? theme.colors().primary : theme.colors().border)"
+                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Find Friends</button>
+          <button (click)="activeTab.set('incoming')"
+                  [style.background-color]="activeTab() === 'incoming' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'incoming' ? 'white' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'incoming' ? theme.colors().primary : theme.colors().border)"
+                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Incoming ({{ incomingRequests().length }})</button>
+          <button (click)="activeTab.set('sent')"
+                  [style.background-color]="activeTab() === 'sent' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'sent' ? 'white' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'sent' ? theme.colors().primary : theme.colors().border)"
+                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Pending Sent ({{ outgoingRequests().length }})</button>
         </div>
 
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s36">
-          <p class="friends-list-component__s37">Find Friends</p>
-          <div class="friends-list-component__s38">
-            <input
-              [value]="searchQuery()"
-              (input)="searchQuery.set(asInputValue($event))"
-              (keyup.enter)="searchUsers()"
-              placeholder="Search by username"
-              [style.background-color]="theme.colors().bg"
-              [style.border]="'1px solid ' + theme.colors().border"
-              [style.color]="theme.colors().text"
+        @if (activeTab() === 'find') {
+          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s36">
+            <p class="friends-list-component__s37">Find Friends</p>
+            <div class="friends-list-component__s38">
+              <input
+                [value]="searchQuery()"
+                (input)="searchQuery.set(asInputValue($event))"
+                (keyup.enter)="searchUsers()"
+                placeholder="Search by name, username, email, or phone"
+                [style.background-color]="theme.colors().bg"
+                [style.border]="'1px solid ' + theme.colors().border"
+                [style.color]="theme.colors().text"
+               class="friends-list-component__s39">
+              <button (click)="searchUsers()" [style.background-color]="theme.colors().primary" class="friends-list-component__s40">Search</button>
+            </div>
 
-             class="friends-list-component__s39">
-            <button (click)="searchUsers()" [style.background-color]="theme.colors().primary" class="friends-list-component__s40">Search</button>
-          </div>
-
-          @if (searchResults().length > 0) {
-            <div class="friends-list-component__s41">
-              @for (candidate of searchResults(); track candidate.username) {
-                <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
-                  <div class="friends-list-component__s3">
-                    <img [src]="candidate.avatarUrl || 'https://i.pravatar.cc/150?u=' + candidate.username" [alt]="candidate.username + ' avatar'" class="friends-list-component__s43">
-                    <span class="friends-list-component__s44">{{ candidate.username }}</span>
+            @if (searchResults().length > 0) {
+              <div class="friends-list-component__s41">
+                @for (candidate of searchResults(); track candidate.username) {
+                  <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
+                    <div class="friends-list-component__s3">
+                      <img [src]="candidate.avatarUrl || 'https://i.pravatar.cc/150?u=' + candidate.username" [alt]="candidate.username + ' avatar'" class="friends-list-component__s43">
+                      <div>
+                        <span class="friends-list-component__s44">{{ candidateDisplayName(candidate) }}</span>
+                        <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">@{{ candidate.username }}</div>
+                      </div>
+                    </div>
+                    <button
+                      (click)="sendFriendRequest(candidate)"
+                      [disabled]="candidate.isFriend || candidate.hasPendingRequest"
+                      [style.opacity]="candidate.isFriend || candidate.hasPendingRequest ? '0.5' : '1'"
+                      [style.background-color]="theme.colors().primary"
+                     class="friends-list-component__s8">
+                      {{ candidate.isFriend ? 'Friend' : (candidate.hasPendingRequest ? 'Pending' : 'Request') }}
+                    </button>
                   </div>
-                  <button
-                    (click)="sendFriendRequest(candidate)"
-                    [disabled]="candidate.isFriend || candidate.hasPendingRequest"
-                    [style.opacity]="candidate.isFriend || candidate.hasPendingRequest ? '0.5' : '1'"
-                    [style.background-color]="theme.colors().primary"
-
-                   class="friends-list-component__s8">
-                    {{ candidate.isFriend ? 'Friend' : (candidate.hasPendingRequest ? 'Pending' : 'Request') }}
+                }
+              </div>
+            } @else if (didSearch()) {
+              <div>
+                <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s45">No users found.</p>
+                @if (searchQuery().trim()) {
+                  <button (click)="inviteTypedUsername()"
+                          [style.background-color]="theme.colors().primary"
+                          class="friends-list-component__s8">
+                    Invite {{ searchQuery().trim() }}
                   </button>
-                </div>
-              }
-            </div>
-          } @else if (didSearch()) {
-            <div>
-              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s45">No users found.</p>
-              @if (searchQuery().trim()) {
-                <button (click)="inviteTypedUsername()"
-                        [style.background-color]="theme.colors().primary"
-                        class="friends-list-component__s8">
-                  Invite {{ searchQuery().trim() }}
-                </button>
-              }
-            </div>
-          }
-        </div>
-
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" class="friends-list-component__s36">
-          <div class="friends-list-component__s46">
-            <p class="friends-list-component__s47">Friend Requests</p>
-            <button (click)="simulateIncomingRequest()" [style.color]="theme.colors().accent" [style.border]="'1px solid ' + theme.colors().accent"
-                    class="friends-list-simulate-btn">
-              Simulate Request
-            </button>
+                }
+              </div>
+            }
           </div>
+        }
 
-          <div class="header-actions" style="margin-bottom: 20px; text-align: right;">
+        @if (activeTab() === 'incoming') {
+          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" class="friends-list-component__s36">
+            <div class="friends-list-component__s46">
+              <p class="friends-list-component__s47">Friend Requests</p>
+              <button (click)="simulateIncomingRequest()" [style.color]="theme.colors().accent" [style.border]="'1px solid ' + theme.colors().accent"
+                      class="friends-list-simulate-btn">
+                Simulate Request
+              </button>
+            </div>
+
+            @if (incomingRequests().length > 0) {
+              <div class="friends-list-component__s48">
+                @for (req of incomingRequests(); track req.id) {
+                  <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
+                    <span>{{ req.from }} wants to connect</span>
+                    <div class="friends-list-component__s49">
+                      <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#16a34a'" class="friends-list-component__s50">Accept</button>
+                      <button (click)="respondToRequest(req, 'decline')" [style.background-color]="'#ef4444'" class="friends-list-component__s50">Decline</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">No incoming requests yet. Tap “Simulate Request” to see the flow.</p>
+            }
+          </div>
+        }
+
+        @if (activeTab() === 'sent') {
+          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" class="friends-list-component__s36">
+            <div class="friends-list-component__s46">
+              <p class="friends-list-component__s47">Pending Sent Requests</p>
+            </div>
+
+            @if (outgoingRequests().length > 0) {
+              <div class="friends-list-component__s48">
+                @for (req of outgoingRequests(); track req.id) {
+                  <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
+                    <div>
+                      <div style="font-weight: 600;">To: {{ req.to }}</div>
+                      <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                        Sent {{ req.createdAt | date:'MMM d, h:mm a' }}
+                        @if (req.lastNudgedAt) {
+                          • Nudged {{ req.lastNudgedAt | date:'MMM d, h:mm a' }} ({{ req.nudgeCount || 1 }})
+                        }
+                      </div>
+                    </div>
+                    <button (click)="nudgeRequest(req)"
+                            [style.background-color]="theme.colors().primary"
+                            class="friends-list-component__s50">
+                      Nudge
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">No open sent requests right now.</p>
+            }
+          </div>
+        }
+
+        @if (activeTab() === 'friends') {
+          <div class="header-actions" style="margin-bottom: 14px; text-align: right;">
             <a routerLink="/shared-history" [style.color]="theme.colors().primary"
                style="text-decoration: none; font-weight: 500; font-family: 'Times New Roman', serif; font-size: 1.1rem; border: 1px solid currentColor; padding: 6px 12px; border-radius: 4px;">
               📜 Shared History
             </a>
           </div>
 
-          @if (incomingRequests().length > 0) {
-            <div class="friends-list-component__s48">
-              @for (req of incomingRequests(); track req.id) {
-                <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
-                  <span>{{ req.from }} wants to connect</span>
-                  <div class="friends-list-component__s49">
-                    <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#16a34a'" class="friends-list-component__s50">Accept</button>
-                    <button (click)="respondToRequest(req, 'decline')" [style.background-color]="'#ef4444'" class="friends-list-component__s50">Decline</button>
+          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent"
+               class="friends-list-component__s52">
+            <p class="friends-list-component__s47">
+              Friends are unlimited on all tiers.
+            </p>
+          </div>
+
+          <div class="friends-list-component__s53">
+            @for (friend of friends(); track friend.id) {
+              <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
+                   class="friends-list-component__s54">
+
+                <div class="friends-list-component__s55">
+                  <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                  <div>
+                    <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
+                    <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
                   </div>
                 </div>
-              }
-            </div>
-          } @else {
-            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">No incoming requests yet. Tap “Simulate Request” to see the flow.</p>
-          }
-        </div>
 
-        <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent"
-             class="friends-list-component__s52">
-          <p class="friends-list-component__s47">
-            Friends are unlimited on all tiers.
-          </p>
-        </div>
-
-        <div class="friends-list-component__s53">
-          @for (friend of friends(); track friend.id) {
-            <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
-                 class="friends-list-component__s54">
-
-              <div class="friends-list-component__s55">
-                <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
-                <div>
-                  <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
-                  <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
+                <div class="friends-list-component__s59">
+                  <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                     class="friends-list-action-link">Profile</a>
+                  <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
+                     [queryParams]="{history: true}"
+                     class="friends-list-action-link">History</a>
+                  <a [routerLink]="['/friends', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                     class="friends-list-action-link">Bio</a>
+                  <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
+                          class="friends-list-action-btn">Sharing</button>
+                  <a routerLink="/chat"
+                     [queryParams]="{ friendId: friend.id, friendName: friend.username }"
+                     [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                     class="friends-list-action-link">Chat</a>
+                  <button (click)="removeFriend(friend.id)" [style.color]="'#ef4444'"
+                          class="friends-list-component__s60">Remove</button>
                 </div>
               </div>
-
-              <div class="friends-list-component__s59">
-                <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                   class="friends-list-action-link">Profile</a>
-                <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
-                   [queryParams]="{history: true}"
-                   class="friends-list-action-link">History</a>
-                <a [routerLink]="['/friends', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                   class="friends-list-action-link">Bio</a>
-                <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
-                        class="friends-list-action-btn">Sharing</button>
-                <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                   class="friends-list-action-link">Chat</a>
-                <button (click)="removeFriend(friend.id)" [style.color]="'#ef4444'"
-                        class="friends-list-component__s60">Remove</button>
+            } @empty {
+              <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
+                 <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">Your inner circle is currently empty.</p>
               </div>
-            </div>
-          } @empty {
-            <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
-               <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">Your inner circle is currently empty.</p>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
     </div>
   `
 })
 export class FriendsListComponent implements OnInit {
   public theme = inject(ThemeService);
-  public subscription = inject(SubscriptionService);
   public security = inject(SecurityService);
   public modal = inject(ModalService);
   private dataService = inject(DataService);
@@ -286,15 +330,13 @@ export class FriendsListComponent implements OnInit {
     return this.security.currentUser() || 'dexii_demo_user';
   }
 
-  freeTier = SubscriptionTier.Free;
-  premiumTier = SubscriptionTier.Premium;
-  goldTier = SubscriptionTier.Gold;
-
   selectedFriend = signal<User | null>(null);
+  activeTab = signal<'friends' | 'find' | 'incoming' | 'sent'>('friends');
   friends = signal<User[]>([]);
   searchQuery = signal('');
   searchResults = signal<FriendSearchResult[]>([]);
   incomingRequests = signal<FriendRequestItem[]>([]);
+  outgoingRequests = signal<FriendRequestItem[]>([]);
   didSearch = signal(false);
 
   allCrushes = this.dataService.getAllCrushes();
@@ -306,9 +348,11 @@ export class FriendsListComponent implements OnInit {
       if (user) {
         void this.loadFriends();
         void this.loadIncomingRequests();
+        void this.loadOutgoingRequests();
       } else {
         this.friends.set([]);
         this.incomingRequests.set([]);
+        this.outgoingRequests.set([]);
       }
     });
   }
@@ -319,6 +363,11 @@ export class FriendsListComponent implements OnInit {
   asInputValue(event: Event): string {
     const target = event.target as HTMLInputElement | null;
     return target?.value ?? '';
+  }
+
+  candidateDisplayName(candidate: FriendSearchResult): string {
+    const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
+    return fullName || candidate.username;
   }
 
   private mapApiUser(friend: any): User {
@@ -358,6 +407,13 @@ export class FriendsListComponent implements OnInit {
     this.incomingRequests.set(data);
   }
 
+  async loadOutgoingRequests() {
+    const encoded = encodeURIComponent(this.currentUsername);
+    const data = await this.demoFetch(`/requests/sent?username=${encoded}`);
+    if (!Array.isArray(data)) return;
+    this.outgoingRequests.set(data);
+  }
+
   async searchUsers() {
     this.didSearch.set(true);
     const query = encodeURIComponent(this.searchQuery().trim());
@@ -390,6 +446,7 @@ export class FriendsListComponent implements OnInit {
         u.username === candidate.username ? { ...u, hasPendingRequest: true } : u
       )
     );
+    await this.loadOutgoingRequests();
     this.modal.show(result.status === 'already_friends' ? 'Already friends.' : 'Request sent.');
   }
 
@@ -415,6 +472,7 @@ export class FriendsListComponent implements OnInit {
     if (action === 'accept') {
       await this.loadFriends();
     }
+    await this.loadOutgoingRequests();
   }
 
   async removeFriend(id: string) {
@@ -455,6 +513,22 @@ export class FriendsListComponent implements OnInit {
     } else {
       this.modal.show(`Incoming request from ${pick}.`);
     }
+  }
+
+  async nudgeRequest(req: FriendRequestItem) {
+    const result = await this.demoFetch(`/requests/${encodeURIComponent(req.id)}/nudge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: this.currentUsername })
+    });
+
+    if (!result?.ok) {
+      this.modal.show('Unable to send nudge right now.');
+      return;
+    }
+
+    await this.loadOutgoingRequests();
+    this.modal.show(`Nudge sent to ${req.to}.`);
   }
 
   isCrushShared(crush: any): boolean {

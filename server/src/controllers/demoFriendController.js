@@ -3,6 +3,8 @@ const {
   getFriends,
   createRequest,
   getIncomingRequests,
+  getOutgoingRequests,
+  nudgeRequest,
   respondToRequest,
   removeFriend
 } = require('../utils/demoFriendStore');
@@ -59,12 +61,36 @@ exports.incoming = async (req, res) => {
   }
 };
 
+exports.outgoing = async (req, res) => {
+  try {
+    const username = normalize(req.query.username);
+    const requests = await getOutgoingRequests(username);
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 exports.respond = async (req, res) => {
   try {
     const username = normalize(req.body.username);
     const action = req.body.action === 'accept' ? 'accept' : 'decline';
     const request = await respondToRequest(username, req.params.requestId, action);
     res.json(request);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.nudge = async (req, res) => {
+  try {
+    const username = normalize(req.body.username || req.query.username);
+    const request = await nudgeRequest(username, req.params.requestId);
+    res.json({
+      ok: true,
+      message: `Nudge sent to ${request.to}`,
+      request
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

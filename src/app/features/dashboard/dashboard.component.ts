@@ -10,6 +10,7 @@ import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushStatus } from '../../core/models/crush-profile.model';
+import { SubscriptionTier } from '../../core/models/user.model';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
@@ -502,11 +503,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           <div class="dashboard-component__s72">
             <h2 class="dashboard-component__s73">The Rolodex</h2>
             <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">Curating {{ dataService.visibleCrushes().length }} exclusive crushes.</p>
-            @if (!subscription.isPremium()) {
-              <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
-                Free tier: up to {{ freeCrushLimit }} crushes.
-              </p>
-            }
+            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
+              {{ subscription.tier() }} tier: up to {{ subscription.getCrushLimit() }} crushes.
+            </p>
           </div>
           <div class="dashboard-component__s76">
             <button (click)="simulateNote()"
@@ -520,6 +519,42 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     class="dashboard-component__s78">
                + New Entry
             </button>
+          </div>
+        </div>
+
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.border]="'1px solid ' + theme.colors().border"
+             style="border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <div>
+              <p style="margin: 0; font-weight: 600;">Crush Plan</p>
+              <p [style.color]="theme.colors().textSecondary" style="margin: 4px 0 0 0; font-size: 0.85rem;">
+                Friends are unlimited. Plans only change crush capacity.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button (click)="subscription.upgrade(freeTier)"
+                      [style.background-color]="subscription.tier() === freeTier ? theme.colors().primary : 'transparent'"
+                      [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
+                      [style.border]="'1px solid ' + (subscription.tier() === freeTier ? theme.colors().primary : theme.colors().border)"
+                      style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                Free (5)
+              </button>
+              <button (click)="subscription.upgrade(premiumTier)"
+                      [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
+                      [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
+                      [style.border]="'1px solid ' + (subscription.tier() === premiumTier ? theme.colors().primary : theme.colors().border)"
+                      style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                Premium (25)
+              </button>
+              <button (click)="subscription.upgrade(goldTier)"
+                      [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
+                      [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
+                      [style.border]="'1px solid ' + (subscription.tier() === goldTier ? theme.colors().primary : theme.colors().border)"
+                      style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                Gold (100)
+              </button>
+            </div>
           </div>
         </div>
 
@@ -632,7 +667,9 @@ export class DashboardComponent implements OnInit {
 
   showArchived = signal(false);
   selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
-  freeCrushLimit = 5;
+  freeTier = SubscriptionTier.Free;
+  premiumTier = SubscriptionTier.Premium;
+  goldTier = SubscriptionTier.Gold;
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
     {label: 'He/Him', value: 'he'},
@@ -715,6 +752,8 @@ export class DashboardComponent implements OnInit {
     return [
       `${subjectCap} ${verb} know I exist`,
       "Just friends",
+      "Just flirting",
+      "Just sexting",
       `I think ${subject} ${likes} me`,
       "Getting serious",
       "We are a couple",
@@ -745,8 +784,9 @@ export class DashboardComponent implements OnInit {
   }
 
   openNewEntryModal() {
-    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length, this.freeCrushLimit)) {
-      this.modal.show(`Free tier allows up to ${this.freeCrushLimit} crushes. Upgrade to add more.`);
+    const crushLimit = this.subscription.getCrushLimit();
+    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length)) {
+      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} crushes. Upgrade to add more.`);
       return;
     }
     this.showNewEntryModal.set(true);
@@ -768,8 +808,9 @@ export class DashboardComponent implements OnInit {
   }
 
   saveCrush() {
-    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length, this.freeCrushLimit)) {
-      this.modal.show(`Free tier allows up to ${this.freeCrushLimit} crushes. Upgrade to add more.`);
+    const crushLimit = this.subscription.getCrushLimit();
+    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length)) {
+      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} crushes. Upgrade to add more.`);
       return;
     }
 

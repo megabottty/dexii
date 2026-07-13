@@ -7,6 +7,11 @@ import { SubscriptionTier } from '../models/user.model';
 export class SubscriptionService {
   private _tier = signal<SubscriptionTier>(SubscriptionTier.Free);
   public tier = this._tier.asReadonly();
+  private readonly crushLimits: Record<SubscriptionTier, number> = {
+    [SubscriptionTier.Free]: 5,
+    [SubscriptionTier.Premium]: 25,
+    [SubscriptionTier.Gold]: 100
+  };
 
   upgrade(tier: SubscriptionTier): void {
     // In a real app, integrate Stripe or App Store logic
@@ -18,8 +23,12 @@ export class SubscriptionService {
     return this._tier() !== SubscriptionTier.Free;
   }
 
-  checkLimit(currentCount: number, limit: number): boolean {
-    if (this.isPremium()) return true;
-    return currentCount < limit;
+  getCrushLimit(): number {
+    return this.crushLimits[this._tier()];
+  }
+
+  checkLimit(currentCount: number, limit?: number): boolean {
+    const max = typeof limit === 'number' ? limit : this.getCrushLimit();
+    return currentCount < max;
   }
 }

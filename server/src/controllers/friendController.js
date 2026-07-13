@@ -1,4 +1,21 @@
 const User = require('../models/User');
+const mongoose = require('mongoose');
+
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizePhoneE164 = (value) => {
+  if (typeof value !== 'string') return '';
+  const raw = value.trim();
+  if (!raw) return '';
+  const hasPlus = raw.startsWith('+');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  if (hasPlus) return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
+};
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // @route   GET /api/friends
 // @desc    Get user's friends
@@ -56,20 +73,15 @@ exports.removeFriend = async (req, res) => {
   }
 };
 
-// @route   GET /api/friends/search?username=...
-// @desc    Search for users to add as friends (case-insensitive)
+// @route   GET /api/friends/search?query=...
+// @desc    Search users by name, username, email, or phone
 // @access  Private
 exports.searchUsers = async (req, res) => {
   try {
-    const query = (req.query.username || '').trim();
+    const query = (req.query.query || req.query.username || '').trim();
     if (!query) return res.json([]);
 
-    // Escape user input for regex
-    const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const safe = escapeRegex(query);
-
     // If DB not connected, fallback to demo store search
-    const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       const demoStore = require('../utils/demoFriendStore');
       const owner = req.user.id || req.user.username || 'dexii_demo_user';
@@ -77,13 +89,38 @@ exports.searchUsers = async (req, res) => {
       return res.json(results.slice(0, 50));
     }
 
+    const normalizedEmail = normalizeEmail(query);
+    const normalizedPhone = normalizePhoneE164(query);
+    const safe = escapeRegex(query);
     const rx = new RegExp(safe, 'i');
-    const users = await User.find({
-      username: rx,
-      _id: { $ne: req.user.id }
-    }).select('username avatarUrl subscriptionTier friendCategories').limit(50).lean();
 
-    res.json(users);
+    let filter = { _id: { $ne: req.user.id } };
+
+    if (normalizedEmail && normalizedEmail.includes('@')) {
+      filter = { ...filter, email: normalizedEmail };
+    } else if (normalizedPhone) {
+      filter = { ...filter, phoneE164: normalizedPhone };
+    } else {
+      filter = {
+        ...filter,
+        $or: [
+          { username: rx },
+          { firstName: rx },
+          { lastName: rx },
+          { searchName: rx }
+        ]
+      };
+    }
+
+    const users = await User.find(filter)
+      .select('username firstName lastName avatarUrl subscriptionTier friendCategories')
+      .limit(50)
+      .lean();
+
+    res.json(users.map((user) => ({
+      ...user,
+      id: String(user._id || user.id || user.username)
+    })));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

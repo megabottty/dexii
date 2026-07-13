@@ -6,12 +6,35 @@ const User = require('../models/User');
 const dataDir = path.join(__dirname, '..', '..', 'data');
 const dataFile = path.join(dataDir, 'demo-friends.json');
 
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizePhoneE164 = (value) => {
+  if (typeof value !== 'string') return '';
+  const raw = value.trim();
+  if (!raw) return '';
+  const hasPlus = raw.startsWith('+');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  if (hasPlus) return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
+};
+
+const splitNameFromUsername = (username) => {
+  if (!username) return { firstName: '', lastName: '' };
+  const parts = String(username).replace(/[_-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || '',
+    lastName: parts.slice(1).join(' ')
+  };
+};
+
 const defaultUsers = [
-  { username: 'dexii_demo_user', avatarUrl: 'https://i.pravatar.cc/150?u=dexii_demo_user', subscriptionTier: 'Premium', friendCategories: ['Close Friends'] },
-  { username: 'Sarah Best', avatarUrl: 'https://i.pravatar.cc/150?u=sarah', subscriptionTier: 'Free', friendCategories: ['Close Friends'] },
-  { username: 'Tea_Spiller_Mark', avatarUrl: 'https://i.pravatar.cc/150?u=mark', subscriptionTier: 'Premium', friendCategories: ['Casual'] },
-  { username: 'Work_Bri', avatarUrl: 'https://i.pravatar.cc/150?u=bri', subscriptionTier: 'Free', friendCategories: ['Work'] },
-  { username: 'Club_Ari', avatarUrl: 'https://i.pravatar.cc/150?u=ari', subscriptionTier: 'Gold', friendCategories: ['Casual'] }
+  { username: 'dexii_demo_user', firstName: 'Dexii', lastName: 'Demo', email: 'demo@dexii.local', phoneE164: '+15550000001', avatarUrl: 'https://i.pravatar.cc/150?u=dexii_demo_user', subscriptionTier: 'Premium', friendCategories: ['Close Friends'] },
+  { username: 'Sarah Best', firstName: 'Sarah', lastName: 'Best', email: 'sarah.best@demo.local', phoneE164: '+15550000002', avatarUrl: 'https://i.pravatar.cc/150?u=sarah', subscriptionTier: 'Free', friendCategories: ['Close Friends'] },
+  { username: 'Tea_Spiller_Mark', firstName: 'Mark', lastName: 'Spiller', email: 'mark@demo.local', phoneE164: '+15550000003', avatarUrl: 'https://i.pravatar.cc/150?u=mark', subscriptionTier: 'Premium', friendCategories: ['Casual'] },
+  { username: 'Work_Bri', firstName: 'Bri', lastName: 'Johnson', email: 'bri@demo.local', phoneE164: '+15550000004', avatarUrl: 'https://i.pravatar.cc/150?u=bri', subscriptionTier: 'Free', friendCategories: ['Work'] },
+  { username: 'Club_Ari', firstName: 'Ari', lastName: 'Lopez', email: 'ari@demo.local', phoneE164: '+15550000005', avatarUrl: 'https://i.pravatar.cc/150?u=ari', subscriptionTier: 'Gold', friendCategories: ['Casual'] }
 ];
 
 const initialState = {
@@ -67,6 +90,9 @@ const ensureUser = (state, username) => {
 
   const created = {
     username: clean,
+    ...splitNameFromUsername(clean),
+    email: '',
+    phoneE164: '',
     avatarUrl: `https://i.pravatar.cc/150?u=${encodeURIComponent(clean)}`,
     subscriptionTier: 'Free',
     friendCategories: ['Close Friends', 'Casual', 'Work']
@@ -90,7 +116,7 @@ const searchUsers = async (owner, query) => {
 
   if (mongoose.connection.readyState === 1) {
     try {
-      const mongoUsers = await User.find({}, 'username avatarUrl subscriptionTier friendCategories')
+      const mongoUsers = await User.find({}, 'username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .lean()
         .exec();
       const existing = new Set(state.users.map((u) => (u.username || '').toLowerCase()));
@@ -101,6 +127,10 @@ const searchUsers = async (owner, query) => {
         if (existing.has(key)) continue;
         state.users.push({
           username,
+          firstName: mongoUser.firstName || splitNameFromUsername(username).firstName,
+          lastName: mongoUser.lastName || splitNameFromUsername(username).lastName,
+          email: normalizeEmail(mongoUser.email || ''),
+          phoneE164: normalizePhoneE164(mongoUser.phoneE164 || ''),
           avatarUrl: mongoUser.avatarUrl || `https://i.pravatar.cc/150?u=${encodeURIComponent(username)}`,
           subscriptionTier: mongoUser.subscriptionTier || 'Free',
           friendCategories: Array.isArray(mongoUser.friendCategories) && mongoUser.friendCategories.length > 0
@@ -115,15 +145,30 @@ const searchUsers = async (owner, query) => {
   }
 
   const q = (query || '').trim().toLowerCase();
+  const qEmail = normalizeEmail(query);
+  const qPhone = normalizePhoneE164(query);
   const friendSet = new Set(getFriendnames(state, ownerUser.username));
 
   await writeStore(state);
 
   return state.users
     .filter((u) => u.username !== ownerUser.username)
-    .filter((u) => !q || u.username.toLowerCase().includes(q))
+    .filter((u) => {
+      if (!q) return true;
+      const username = (u.username || '').toLowerCase();
+      const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
+      const email = normalizeEmail(u.email || '');
+      const phone = normalizePhoneE164(u.phoneE164 || '');
+
+      if (qEmail && qEmail.includes('@')) return email === qEmail;
+      if (qPhone) return phone === qPhone;
+
+      return username.includes(q) || fullName.includes(q);
+    })
     .map((u) => ({
       ...u,
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
       isFriend: friendSet.has(u.username),
       hasPendingRequest:
         state.requests.some((r) => r.from === ownerUser.username && r.to === u.username && r.status === 'pending') ||
@@ -144,6 +189,8 @@ const getFriends = async (username) => {
     .map((u) => ({
       id: u.username,
       username: u.username,
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
       avatarUrl: u.avatarUrl,
       friendCategories: u.friendCategories || ['Close Friends'],
       subscriptionTier: u.subscriptionTier || 'Free'
@@ -202,6 +249,35 @@ const getIncomingRequests = async (username) => {
   return incoming;
 };
 
+const getOutgoingRequests = async (username) => {
+  const state = await readStore();
+  const user = ensureUser(state, username);
+  if (!user) return [];
+
+  const outgoing = state.requests.filter((r) => r.from === user.username && r.status === 'pending');
+  await writeStore(state);
+
+  return outgoing;
+};
+
+const nudgeRequest = async (username, requestId) => {
+  const state = await readStore();
+  const user = ensureUser(state, username);
+  if (!user) throw new Error('Invalid user');
+
+  const request = state.requests.find((r) => r.id === requestId);
+  if (!request || request.from !== user.username || request.status !== 'pending') {
+    throw new Error('Pending outgoing request not found');
+  }
+
+  const now = new Date().toISOString();
+  request.nudgeCount = Number(request.nudgeCount || 0) + 1;
+  request.lastNudgedAt = now;
+
+  await writeStore(state);
+  return request;
+};
+
 const respondToRequest = async (username, requestId, action) => {
   const state = await readStore();
   const user = ensureUser(state, username);
@@ -246,6 +322,8 @@ module.exports = {
   getFriends,
   createRequest,
   getIncomingRequests,
+  getOutgoingRequests,
+  nudgeRequest,
   respondToRequest,
   removeFriend,
   ensureUser,

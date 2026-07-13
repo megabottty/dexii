@@ -19,6 +19,11 @@ import { SecurityService } from '../../services/security.service';
       </div>
 
       <div class="navbar-links">
+        <a routerLink="/dashboard"
+           [style.color]="theme.colors().text"
+           class="navbar-link">
+          Dashboard
+        </a>
         <a routerLink="/friends"
            [style.color]="theme.colors().text"
            class="navbar-link">

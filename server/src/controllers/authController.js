@@ -7,12 +7,32 @@ const { ensureUser, readStore } = require('../utils/demoFriendStore');
 
 // Generate 6-digit code
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizePhoneE164 = (value) => {
+  if (typeof value !== 'string') return '';
+  const raw = value.trim();
+  if (!raw) return '';
+  const hasPlus = raw.startsWith('+');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  if (hasPlus) return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
+};
 
 // @desc    Register a new user / Set initial PIN
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { username, pin, email, bio } = req.body;
+    const { username, pin, email, bio, firstName, lastName, phoneNumber, phoneE164 } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhone = normalizePhoneE164(phoneE164 || phoneNumber);
+    const safeFirstName = typeof firstName === 'string' ? firstName.trim().slice(0, 80) : '';
+    const safeLastName = typeof lastName === 'string' ? lastName.trim().slice(0, 80) : '';
+    if ((phoneNumber || phoneE164) && !normalizedPhone) {
+      return res.status(400).json({ message: 'Invalid phone number format' });
+    }
 
     // Support demo mode if database is not connected
     if (mongoose.connection.readyState !== 1) {
@@ -27,7 +47,10 @@ exports.register = async (req, res) => {
       // but we'll allow the user to proceed as a "demo user".
       const user = ensureUser(state, username);
       user.bio = bio;
-      user.email = email; // Store email in demo mode too
+      user.email = normalizedEmail || '';
+      user.firstName = safeFirstName;
+      user.lastName = safeLastName;
+      user.phoneE164 = normalizedPhone || '';
 
       const verificationCode = generateCode();
       user.verificationCode = verificationCode;
@@ -36,7 +59,7 @@ exports.register = async (req, res) => {
       let emailStatus = 'sent';
       try {
         const result = await sendEmail({
-          email: email,
+          email: normalizedEmail,
           subject: 'Dexii Verification Code (Demo Mode)',
           message: `Your verification code is: ${verificationCode}.`,
           html: `<h1>Welcome to Dexii (Demo Mode)</h1><p>Your verification code is: <strong>${verificationCode}</strong></p>`
@@ -61,7 +84,10 @@ exports.register = async (req, res) => {
           ? 'Registration successful (Demo Mode). (DEVELOPMENT: Check server console for code)'
           : 'Registration successful (Demo Mode), but email failed. Check your SMTP settings and server logs.',
         username: user.username,
-        email: email,
+        email: normalizedEmail,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phoneE164: user.phoneE164 || '',
         isDemo: true,
         emailSent: emailStatus === 'sent',
         debugMode: emailStatus === 'debug'
@@ -69,9 +95,13 @@ exports.register = async (req, res) => {
     }
 
     // Check if user exists
-    let user = await User.findOne({ $or: [{ username }, { email }] });
+    const duplicateChecks = [{ username }];
+    if (normalizedEmail) duplicateChecks.push({ email: normalizedEmail });
+    if (normalizedPhone) duplicateChecks.push({ phoneE164: normalizedPhone });
+
+    let user = await User.findOne({ $or: duplicateChecks });
     if (user) {
-      return res.status(400).json({ message: 'Username or Email already taken' });
+      return res.status(400).json({ message: 'Username, email, or phone already taken' });
     }
 
     // Hash PIN
@@ -83,8 +113,11 @@ exports.register = async (req, res) => {
 
     user = new User({
       username,
+      firstName: safeFirstName,
+      lastName: safeLastName,
       pin: hashedPin,
-      email,
+      email: normalizedEmail || undefined,
+      phoneE164: normalizedPhone || undefined,
       bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : '',
       verificationCode,
       verificationCodeExpires,
@@ -116,6 +149,9 @@ exports.register = async (req, res) => {
         : 'Registration successful, but email failed. Check your SMTP settings and server logs.',
       username: user.username,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneE164: user.phoneE164,
       emailSent: emailStatus === 'sent',
       debugMode: emailStatus === 'debug'
     });
@@ -157,6 +193,9 @@ exports.verifyEmail = async (req, res) => {
         user: {
           id: user.username,
           username: user.username,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          phoneE164: user.phoneE164 || '',
           bio: user.bio || '',
           subscriptionTier: user.subscriptionTier || 'Free'
         }
@@ -188,6 +227,9 @@ exports.verifyEmail = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneE164: user.phoneE164,
         email: user.email,
         bio: user.bio,
         subscriptionTier: user.subscriptionTier,
@@ -313,6 +355,9 @@ exports.login = async (req, res) => {
          user: {
            id: user.username,
            username: user.username,
+           firstName: user.firstName || '',
+           lastName: user.lastName || '',
+           phoneE164: user.phoneE164 || '',
            bio: user.bio || '',
            subscriptionTier: user.subscriptionTier || 'Free'
          }
@@ -342,6 +387,9 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneE164: user.phoneE164,
         email: user.email,
         bio: user.bio,
         subscriptionTier: user.subscriptionTier,
@@ -365,6 +413,9 @@ exports.getProfile = async (req, res) => {
       return res.json({
         id: user.username,
         username: user.username,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phoneE164: user.phoneE164 || '',
         bio: user.bio || '',
         subscriptionTier: user.subscriptionTier || 'Free',
         avatarUrl: user.avatarUrl
@@ -378,6 +429,9 @@ exports.getProfile = async (req, res) => {
     res.json({
       id: user._id,
       username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneE164: user.phoneE164,
       email: user.email,
       bio: user.bio,
       subscriptionTier: user.subscriptionTier,
