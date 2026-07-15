@@ -339,6 +339,27 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                               class="dashboard-component__s20"></textarea>
                   </div>
                 }
+                @if (newCrush.relationshipStatus === 'Heartbroken') {
+                  <div style="margin-top: 12px;">
+                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Heartbreak Song</label>
+                    <input [(ngModel)]="newCrush.heartbreakSong"
+                           [style.background-color]="theme.colors().bgSecondary"
+                           [style.border]="'1px solid ' + theme.colors().border"
+                           [style.color]="theme.colors().text"
+                           placeholder="What song are you listening to?"
+                           class="dashboard-component__s17">
+                  </div>
+                  <div style="margin-top: 12px;">
+                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">How I'm Getting Over It</label>
+                    <textarea [(ngModel)]="newCrush.heartbreakRecovery"
+                              [style.background-color]="theme.colors().bgSecondary"
+                              [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().text"
+                              rows="2"
+                              placeholder="Gym, journaling, long walks, etc."
+                              class="dashboard-component__s20"></textarea>
+                  </div>
+                }
               </div>
 
               <div>
@@ -721,6 +742,8 @@ export class DashboardComponent implements OnInit {
       instagram: ''
     },
     relationshipStatus: '',
+    heartbreakSong: '',
+    heartbreakRecovery: '',
     hairNotes: '',
     eyeNotes: '',
     buildNotes: '',
@@ -754,6 +777,7 @@ export class DashboardComponent implements OnInit {
       "Just friends",
       "Just flirting",
       "Just sexting",
+      "Heartbroken",
       `I think ${subject} ${likes} me`,
       "Getting serious",
       "We are a couple",
@@ -847,6 +871,8 @@ export class DashboardComponent implements OnInit {
       build: this.newCrush.build,
       social: { ...this.newCrush.social },
       relationshipStatus: this.newCrush.relationshipStatus,
+      heartbreakSong: this.newCrush.heartbreakSong,
+      heartbreakRecovery: this.newCrush.heartbreakRecovery,
       customNotes: customNotes.trim(),
       location: this.newCrush.location,
       age: this.newCrush.age,
@@ -963,6 +989,8 @@ export class DashboardComponent implements OnInit {
         instagram: ''
       },
       relationshipStatus: '',
+      heartbreakSong: '',
+      heartbreakRecovery: '',
       hairNotes: '',
       eyeNotes: '',
       buildNotes: '',

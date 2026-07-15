@@ -125,7 +125,9 @@ const migrateCrushes = async (userMap) => {
       eyes: Array.isArray(demoCrush.eyes) ? demoCrush.eyes : [],
       build: Array.isArray(demoCrush.build) ? demoCrush.build : [],
       social: demoCrush.social || {},
-      relationshipStatus: demoCrush.relationshipStatus || ''
+      relationshipStatus: demoCrush.relationshipStatus || '',
+      heartbreakSong: demoCrush.heartbreakSong || '',
+      heartbreakRecovery: demoCrush.heartbreakRecovery || ''
     });
 
     inserted += 1;

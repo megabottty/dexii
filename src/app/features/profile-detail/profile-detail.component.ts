@@ -103,7 +103,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               } @else {
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
-                <button (click)="pendingShareEntryId.set(null); showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
+                <button (click)="shareSelectorMode.set('crush'); pendingShareEntryId.set(null); showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
+                <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary">📣 Share Dating Status</button>
 
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
@@ -182,7 +183,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   }
                 </div>
               </div>
-              <button (click)="showVibeBanner.set(false)"
+              <button (click)="dismissVibePrompt(c.id)"
                       [style.color]="theme.colors().textSecondary"
                       class="vibe-banner-dismiss"
                       aria-label="Dismiss">✕</button>
@@ -190,30 +191,40 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           }
 
           @if (showShareSelector()) {
-            <div class="selector-overlay" (click)="showShareSelector.set(false); pendingShareEntryId.set(null)">
+            <div class="selector-overlay" (click)="closeShareSelector()">
               <div class="selector-card" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3>{{ pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend' }}</h3>
-                  <button class="close-btn" (click)="showShareSelector.set(false); pendingShareEntryId.set(null)">✕</button>
+                  <h3>{{ shareSelectorMode() === 'dating' ? 'Share dating status' : (pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend') }}</h3>
+                  <button class="close-btn" (click)="closeShareSelector()">✕</button>
                 </div>
                 <div class="friend-list-scroll">
                   @for (friend of friends(); track friend.id) {
-                    <div class="friend-item" (click)="shareWithFriend(c.id, friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
+                    <div class="friend-item" (click)="shareSelectorMode() === 'dating' ? toggleDatingShareFriend(friend.id) : shareWithFriend(c.id, friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
                       <div class="friend-info">
                         <span class="friend-name">{{ friend.username }}</span>
-                        <span class="friend-status" [style.color]="(pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? theme.colors().primary : theme.colors().textSecondary">
-                          {{ (pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? '✓ Shared' : 'Not shared' }}
+                        <span class="friend-status" [style.color]="shareSelectorMode() === 'dating' ? (isDatingShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary) : ((pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? theme.colors().primary : theme.colors().textSecondary)">
+                          @if (shareSelectorMode() === 'dating') {
+                            {{ isDatingShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
+                          } @else {
+                            {{ (pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? '✓ Shared' : 'Not shared' }}
+                          }
                         </span>
                       </div>
                     </div>
                   } @empty {
                     <div class="empty-state">
                       <p>No friends found.</p>
-                      <a routerLink="/friends" (click)="showShareSelector.set(false); pendingShareEntryId.set(null)" [style.color]="theme.colors().primary">Add friends</a>
+                      <a routerLink="/friends" (click)="closeShareSelector()" [style.color]="theme.colors().primary">Add friends</a>
                     </div>
                   }
                 </div>
+                @if (shareSelectorMode() === 'dating') {
+                  <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
+                    <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
+                    <button class="action-btn-styled primary" (click)="confirmDatingStatusShare(c.id)">Share with selected</button>
+                  </div>
+                }
               </div>
             </div>
           }
@@ -311,6 +322,23 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     </div>
                     @if (editForm.relationshipStatus === 'Other') {
                       <textarea [(ngModel)]="editForm.relationshipNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..." style="margin-top:12px;"></textarea>
+                    }
+                    @if (editForm.relationshipStatus === 'Heartbroken') {
+                      <input [(ngModel)]="editForm.heartbreakSong"
+                             [style.background-color]="theme.colors().bg"
+                             [style.border-color]="theme.colors().border"
+                             [style.color]="theme.colors().text"
+                             class="edit-input-styled"
+                             placeholder="Heartbreak song"
+                             style="margin-top:12px;">
+                      <textarea [(ngModel)]="editForm.heartbreakRecovery"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border-color]="theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                class="edit-textarea-styled"
+                                rows="2"
+                                placeholder="What you're doing to get over it..."
+                                style="margin-top:12px;"></textarea>
                     }
                   </div>
                   <div class="edit-field edit-field--full">
@@ -509,6 +537,18 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <span class="info-label">Social Standing</span>
                   <span class="info-value">{{ c.relationshipStatus || 'N/A' }}</span>
                 </div>
+                @if (c.heartbreakSong) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Heartbreak Song</span>
+                    <span class="info-value">{{ c.heartbreakSong }}</span>
+                  </div>
+                }
+                @if (c.heartbreakRecovery) {
+                  <div class="info-row-styled full-width note-detail">
+                    <span class="info-label">Healing Plan</span>
+                    <span class="info-value note-text">{{ c.heartbreakRecovery }}</span>
+                  </div>
+                }
                 <div class="info-row-styled">
                   <span class="info-label">How we met</span>
                   <span class="info-value">{{ c.howWeMet || 'N/A' }}</span>
@@ -584,7 +624,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div [style.background-color]="theme.colors().bgSecondary"
                    [style.border]="'1px solid ' + theme.colors().border"
                    class="extended-info-section vibe-tracker-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                  <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">Ask me</span>
+                    <select [ngModel]="vibePromptFrequencyHours()" (ngModelChange)="setVibePromptFrequency($event)"
+                            [style.background-color]="theme.colors().bg"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.color]="theme.colors().text"
+                            style="padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
+                      @for (option of vibePromptOptions; track option.hours) {
+                        <option [ngValue]="option.hours">{{ option.label }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
 
                 <div class="vibe-log-row">
                   <span [style.color]="theme.colors().textSecondary" class="vibe-log-label">How's the vibe today?</span>
@@ -652,13 +706,23 @@ export class ProfileDetailComponent implements OnDestroy {
   statuses = CrushStatus;
   isEditMode = signal(false);
   showShareSelector = signal(false);
+  shareSelectorMode = signal<'crush' | 'dating'>('crush');
   showVibeBanner = signal(true);
+  vibePromptFrequencyHours = signal(24);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
   pendingShareEntryId = signal<string | null>(null);
+  datingShareFriendIds = signal<string[]>([]);
   safetyDurationMinutes = signal<number>(60);
   safetyContactIds = signal<string[]>([]);
   safetyDurationOptions = [30, 60, 90, 120, 150, 180, 210, 240];
+  vibePromptOptions = [
+    { label: 'Every 6 hours', hours: 6 },
+    { label: 'Every 12 hours', hours: 12 },
+    { label: 'Daily', hours: 24 },
+    { label: 'Every 2 days', hours: 48 },
+    { label: 'Weekly', hours: 168 }
+  ];
   private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
@@ -673,6 +737,8 @@ export class ProfileDetailComponent implements OnDestroy {
     bio: '',
     pronouns: 'they',
     relationshipStatus: '',
+    heartbreakSong: '',
+    heartbreakRecovery: '',
     relationshipNotes: '',
     customNotes: '',
     location: '',
@@ -731,14 +797,8 @@ export class ProfileDetailComponent implements OnDestroy {
   constructor() {
     this.crushId.set(this.route.snapshot.paramMap.get('id'));
     this.loadFriends();
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      const key = `vibe_checked_${id}`;
-      const last = localStorage.getItem(key);
-      if (last && Date.now() - Number(last) < 24 * 60 * 60 * 1000) {
-        this.showVibeBanner.set(false);
-      }
-    }
+    this.loadVibePromptFrequency();
+    this.refreshVibePromptVisibility();
   }
 
   ngOnDestroy(): void {
@@ -783,6 +843,7 @@ export class ProfileDetailComponent implements OnDestroy {
       "Just friends",
       "Just flirting",
       "Just sexting",
+      "Heartbroken",
       `I think ${subject} ${likes} me`,
       "Getting serious",
       "We are a couple",
@@ -790,6 +851,53 @@ export class ProfileDetailComponent implements OnDestroy {
       "We are engaged",
       "Other"
     ];
+  }
+
+  private getVibePromptSettingsKey(): string {
+    const username = this.security.currentUser() || 'dexii_demo_user';
+    return `dexii_vibe_prompt_hours_${username}`;
+  }
+
+  private getVibeCheckedKey(crushId: string): string {
+    return `vibe_checked_${crushId}`;
+  }
+
+  private loadVibePromptFrequency(): void {
+    const raw = localStorage.getItem(this.getVibePromptSettingsKey());
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      this.vibePromptFrequencyHours.set(parsed);
+    }
+  }
+
+  private refreshVibePromptVisibility(): void {
+    const id = this.crushId();
+    if (!id) {
+      this.showVibeBanner.set(false);
+      return;
+    }
+
+    const last = Number(localStorage.getItem(this.getVibeCheckedKey(id)) || 0);
+    if (!Number.isFinite(last) || last <= 0) {
+      this.showVibeBanner.set(true);
+      return;
+    }
+
+    const cooldownMs = this.vibePromptFrequencyHours() * 60 * 60 * 1000;
+    this.showVibeBanner.set(Date.now() - last >= cooldownMs);
+  }
+
+  setVibePromptFrequency(value: unknown): void {
+    const hours = Number(value);
+    if (!Number.isFinite(hours) || hours <= 0) return;
+    this.vibePromptFrequencyHours.set(hours);
+    localStorage.setItem(this.getVibePromptSettingsKey(), String(hours));
+    this.refreshVibePromptVisibility();
+  }
+
+  dismissVibePrompt(crushId: string): void {
+    localStorage.setItem(this.getVibeCheckedKey(crushId), String(Date.now()));
+    this.showVibeBanner.set(false);
   }
 
   logRedFlag(id: string) {
@@ -829,7 +937,7 @@ export class ProfileDetailComponent implements OnDestroy {
       history.push(num);
       this.dataService.updateCrush({ ...c, rating: num, vibeHistory: history });
     }
-    localStorage.setItem(`vibe_checked_${id}`, String(Date.now()));
+    localStorage.setItem(this.getVibeCheckedKey(id), String(Date.now()));
     this.showVibeBanner.set(false);
     this.pendingVibe.set(0);
   }
@@ -1059,6 +1167,81 @@ export class ProfileDetailComponent implements OnDestroy {
     this.dataService.updateCrush(updatedCrush);
   }
 
+  openDatingStatusShareSelector(): void {
+    if (this.friends().length === 0) {
+      this.modal.show('Add at least one friend first to share your dating status.');
+      return;
+    }
+    this.pendingShareEntryId.set(null);
+    this.shareSelectorMode.set('dating');
+    this.datingShareFriendIds.set([]);
+    this.showShareSelector.set(true);
+  }
+
+  closeShareSelector(): void {
+    this.showShareSelector.set(false);
+    this.pendingShareEntryId.set(null);
+    this.shareSelectorMode.set('crush');
+    this.datingShareFriendIds.set([]);
+  }
+
+  toggleDatingShareFriend(friendId: string): void {
+    this.datingShareFriendIds.update((ids) =>
+      ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
+    );
+  }
+
+  isDatingShareFriendSelected(friendId: string): boolean {
+    return this.datingShareFriendIds().includes(friendId);
+  }
+
+  confirmDatingStatusShare(crushId: string): void {
+    const crush = this.crush();
+    if (!crush) {
+      this.modal.show('Unable to share dating status right now.');
+      return;
+    }
+
+    const selectedIds = this.datingShareFriendIds();
+    if (selectedIds.length === 0) {
+      this.modal.show('Select at least one friend to share your dating status.');
+      return;
+    }
+    const contacts = this.friends().filter((friend) => selectedIds.includes(friend.id));
+
+    const statusLabel = crush.relationshipStatus?.trim() || crush.status;
+    const parts = [
+      `Dating status update for ${crush.nickname}: ${statusLabel}.`
+    ];
+    if (crush.relationshipStatus === 'Heartbroken' && crush.heartbreakSong) {
+      parts.push(`Current song: ${crush.heartbreakSong}.`);
+    }
+    if (crush.relationshipStatus === 'Heartbroken' && crush.heartbreakRecovery) {
+      parts.push(`Getting over it by: ${crush.heartbreakRecovery}.`);
+    }
+    const content = parts.join(' ');
+
+    contacts.forEach((friend) => {
+      this.messaging.sendMessage({
+        senderId: 'me',
+        receiverId: friend.id,
+        content,
+        relatedCrushId: crushId
+      });
+    });
+
+    this.dataService.addEntry({
+      crushId,
+      type: 'Note',
+      content: `Shared dating status with ${contacts.length} friend${contacts.length === 1 ? '' : 's'}: ${statusLabel}.`,
+      isBurnAfterReading: false,
+      visibility: [],
+      isSensitive: false
+    });
+    this.closeShareSelector();
+    this.modal.show(`Dating status shared with ${contacts.length} friend${contacts.length === 1 ? '' : 's'}.`);
+  }
+
   shareWithFriend(crushId: string, friendId: string): void {
     if (friendId) {
       const entryId = this.pendingShareEntryId();
@@ -1078,8 +1261,7 @@ export class ProfileDetailComponent implements OnDestroy {
           });
         }
 
-        this.pendingShareEntryId.set(null);
-        this.showShareSelector.set(false);
+        this.closeShareSelector();
         this.modal.show(`Note shared with ${friendId}.`);
         return;
       }
@@ -1099,7 +1281,7 @@ export class ProfileDetailComponent implements OnDestroy {
       } else {
         this.modal.show(`Crush unshared from ${friendId}.`);
       }
-      this.showShareSelector.set(false);
+      this.closeShareSelector();
     }
   }
 
@@ -1108,6 +1290,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.modal.show('Add at least one friend first to share notes.');
       return;
     }
+    this.shareSelectorMode.set('crush');
     this.pendingShareEntryId.set(entryId);
     this.showShareSelector.set(true);
   }
@@ -1151,6 +1334,8 @@ export class ProfileDetailComponent implements OnDestroy {
           bio: c.bio || '',
           pronouns: c.pronouns || 'they',
           relationshipStatus: c.relationshipStatus || '',
+          heartbreakSong: c.heartbreakSong || '',
+          heartbreakRecovery: c.heartbreakRecovery || '',
           relationshipNotes: this.getNoteDetail(c.customNotes, 'Relationship:'),
           customNotes: this.getFilteredNotes(c.customNotes),
           location: c.location || '',
@@ -1200,6 +1385,8 @@ export class ProfileDetailComponent implements OnDestroy {
       eyes: Array.isArray(this.editForm.eyes) ? this.editForm.eyes : [],
       build: Array.isArray(this.editForm.build) ? this.editForm.build : [],
       friends: this.editForm.friends ? this.editForm.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
+      heartbreakSong: this.editForm.heartbreakSong || '',
+      heartbreakRecovery: this.editForm.heartbreakRecovery || '',
       customNotes: customNotes.trim(),
       id: crushId
     } as CrushProfile;

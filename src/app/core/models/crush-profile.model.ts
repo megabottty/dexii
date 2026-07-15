@@ -35,6 +35,8 @@ export interface CrushProfile {
     instagram?: string;
   };
   relationshipStatus?: string;
+  heartbreakSong?: string;
+  heartbreakRecovery?: string;
   pronouns?: 'he' | 'she' | 'they' | 'custom';
   customNotes?: string;
   location?: string;

@@ -1,10 +1,11 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { MessagingService } from './messaging.service';
 import { AuditService } from './audit.service';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
 import { ModalService } from './modal.service';
+import { SecurityService } from './security.service';
 
 interface BackendCrush {
   _id: string;
@@ -31,6 +32,8 @@ interface BackendCrush {
     instagram?: string;
   };
   relationshipStatus?: string;
+  heartbreakSong?: string;
+  heartbreakRecovery?: string;
   pronouns?: string;
   customNotes?: string;
   location?: string;
@@ -51,29 +54,40 @@ export class DataService {
   private readonly apiBaseUrl = getApiBaseUrl();
   private readonly tokenStorageKey = 'dexii_api_token';
   private readonly usernameStorageKey = 'dexii_api_username';
-  private readonly entriesStorageKey = 'dexii_entries';
+  private readonly entriesStorageKeyPrefix = 'dexii_entries';
 
   private _allCrushes = signal<CrushProfile[]>([]);
-  private _entries = signal<Entry[]>(this.readEntriesFromStorage());
+  private _entries = signal<Entry[]>([]);
+  private _activeOwner = signal<string>('');
   private modal = inject(ModalService);
   private messaging = inject(MessagingService);
   private audit = inject(AuditService);
+  private security = inject(SecurityService);
 
   constructor() {
-    void this.hydrateCrushesFromBackend();
+    effect(() => {
+      const owner = this.security.currentUser() || localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';
+      if (!owner || owner === this._activeOwner()) return;
+      void this.syncUserData(owner);
+    }, { allowSignalWrites: true });
   }
 
   private persistEntries(): void {
+    const owner = this._activeOwner();
     const serialized = this._entries().map((entry) => ({
       ...entry,
       timestamp: entry.timestamp.toISOString()
     }));
-    localStorage.setItem(this.entriesStorageKey, JSON.stringify(serialized));
+    localStorage.setItem(this.getEntriesStorageKey(owner), JSON.stringify(serialized));
   }
 
-  private readEntriesFromStorage(): Entry[] {
+  private getEntriesStorageKey(owner: string): string {
+    return `${this.entriesStorageKeyPrefix}_${owner}`;
+  }
+
+  private readEntriesFromStorage(owner: string): Entry[] {
     try {
-      const raw = localStorage.getItem(this.entriesStorageKey);
+      const raw = localStorage.getItem(this.getEntriesStorageKey(owner));
       if (!raw) return [];
 
       const parsed = JSON.parse(raw) as Array<{
@@ -120,6 +134,16 @@ export class DataService {
     }
   }
 
+  private async syncUserData(owner: string): Promise<void> {
+    if (!owner) return;
+    if (owner === this._activeOwner()) return;
+
+    this._activeOwner.set(owner);
+    this._allCrushes.set([]);
+    this._entries.set(this.readEntriesFromStorage(owner));
+    await this.hydrateCrushesFromBackend();
+  }
+
   private toCrushStatus(status?: string): CrushStatus {
     if (status === CrushStatus.Crush || status === CrushStatus.Dating || status === CrushStatus.Exclusive || status === CrushStatus.Archived) {
       return status;
@@ -148,6 +172,8 @@ export class DataService {
       build: crush.build || [],
       social: crush.social,
       relationshipStatus: crush.relationshipStatus,
+      heartbreakSong: crush.heartbreakSong,
+      heartbreakRecovery: crush.heartbreakRecovery,
       pronouns: crush.pronouns as any,
       customNotes: crush.customNotes,
       location: crush.location,
@@ -179,7 +205,7 @@ export class DataService {
   }
 
   private getDemoOwner(): string {
-    return localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';
+    return this._activeOwner() || localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';
   }
 
   private async ensureAuthToken(): Promise<string | null> {
@@ -284,10 +310,14 @@ export class DataService {
       response = await this.demoFetch(`/crushes?owner=${owner}`);
     }
 
-    if (!response || !response.ok) return;
+    if (!response || !response.ok) {
+      this._allCrushes.set([]);
+      return;
+    }
 
     const crushes = await response.json() as BackendCrush[];
-    if (!Array.isArray(crushes) || crushes.length === 0) {
+    if (!Array.isArray(crushes)) {
+      this._allCrushes.set([]);
       return;
     }
 
@@ -313,6 +343,8 @@ export class DataService {
         build: crush.build,
         social: crush.social,
         relationshipStatus: crush.relationshipStatus,
+        heartbreakSong: crush.heartbreakSong,
+        heartbreakRecovery: crush.heartbreakRecovery,
         customNotes: crush.customNotes,
         location: crush.location,
         age: crush.age,
@@ -388,6 +420,8 @@ export class DataService {
         build: crush.build,
         social: crush.social,
         relationshipStatus: crush.relationshipStatus,
+        heartbreakSong: crush.heartbreakSong,
+        heartbreakRecovery: crush.heartbreakRecovery,
         pronouns: crush.pronouns,
         customNotes: crush.customNotes,
         location: crush.location,
@@ -479,7 +513,7 @@ export class DataService {
     const newCrush: CrushProfile = {
       ...crushData,
       id: localId,
-      userId: 'me',
+      userId: this.getUserId(),
       lastInteraction: new Date(),
       redFlags: 0,
       initialRating: startRating,

@@ -55,6 +55,8 @@ const CrushProfileSchema = new mongoose.Schema({
     instagram: String
   },
   relationshipStatus: String,
+  heartbreakSong: String,
+  heartbreakRecovery: String,
   pronouns: {
     type: String,
     enum: ['he', 'she', 'they', 'custom'],
