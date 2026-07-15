@@ -100,6 +100,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           class="dashboard-component__s16">
                    }
                 </div>
+                <div style="margin-top: 10px;">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Avatar URL (Optional)</label>
+                  <input [(ngModel)]="newCrush.avatarUrl"
+                         [style.background-color]="theme.colors().bgSecondary"
+                         [style.border]="'1px solid ' + theme.colors().border"
+                         [style.color]="theme.colors().text"
+                         class="dashboard-component__s17"
+                         placeholder="https://...">
+                </div>
               </div>
 
               <div>
@@ -366,8 +375,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41">Initial Vibe (1-5 Stars)</label>
                 <div class="dashboard-component__s42">
                   @for (star of [1,2,3,4,5]; track star) {
-                    <button type="button" (click)="newCrush.rating = star" [attr.aria-label]="'Set rating to ' + star + ' stars'"
-                            [style.color]="newCrush.rating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
+                    <button type="button" (click)="newCrush.initialRating = star" [attr.aria-label]="'Set initial vibe to ' + star + ' stars'"
+                            [style.color]="newCrush.initialRating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
+                  }
+                </div>
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41" style="margin-top: 10px; display: block;">Current Vibe (1-5 Stars)</label>
+                <div class="dashboard-component__s42">
+                  @for (star of [1,2,3,4,5]; track star) {
+                    <button type="button" (click)="newCrush.currentRating = star" [attr.aria-label]="'Set current vibe to ' + star + ' stars'"
+                            [style.color]="newCrush.currentRating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
                   }
                 </div>
               </div>
@@ -435,6 +451,17 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             [style.color]="theme.colors().text"
                             rows="3"
                             placeholder="Any moments worth remembering..."
+                            class="dashboard-component__s20"></textarea>
+                </div>
+
+                <div class="dashboard-component__s26">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Private Notes</label>
+                  <textarea [(ngModel)]="newCrush.privateNotes"
+                            [style.background-color]="theme.colors().bgSecondary"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.color]="theme.colors().text"
+                            rows="3"
+                            placeholder="Your private thoughts..."
                             class="dashboard-component__s20"></textarea>
                 </div>
               </div>
@@ -725,7 +752,8 @@ export class DashboardComponent implements OnInit {
     nickname: '',
     firstName: '',
     status: CrushStatus.Crush,
-    rating: 3,
+    initialRating: 3,
+    currentRating: 3,
     note: '',
     noteVisibility: 'private' as 'private' | 'public',
     visibility: [] as string[],
@@ -757,7 +785,8 @@ export class DashboardComponent implements OnInit {
     occupation: '',
     family: '',
     friends: '',
-    memorableMoments: ''
+    memorableMoments: '',
+    privateNotes: ''
   };
 
   ngOnInit() {
@@ -844,7 +873,8 @@ export class DashboardComponent implements OnInit {
     }
     if (!this.security.moderateContent(this.newCrush.nickname) ||
         !this.security.moderateContent(this.newCrush.firstName) ||
-        !this.security.moderateContent(this.newCrush.note)) {
+        !this.security.moderateContent(this.newCrush.note) ||
+        !this.security.moderateContent(this.newCrush.privateNotes)) {
       this.modal.show('Profile text flagged by AI moderation.');
       return;
     }
@@ -855,13 +885,14 @@ export class DashboardComponent implements OnInit {
     if (this.newCrush.eyeNotes) customNotes += `Eyes: ${this.newCrush.eyeNotes}\n`;
     if (this.newCrush.buildNotes) customNotes += `Build: ${this.newCrush.buildNotes}\n`;
     if (this.newCrush.relationshipNotes) customNotes += `Relationship: ${this.newCrush.relationshipNotes}\n`;
+    if (this.newCrush.privateNotes) customNotes += this.newCrush.privateNotes;
 
     const createdCrush = this.dataService.addCrush({
       nickname: this.newCrush.nickname,
       fullName: this.newCrush.firstName,
       status: this.newCrush.status,
-      rating: this.newCrush.rating,
-      initialRating: this.newCrush.rating,
+      rating: this.newCrush.currentRating,
+      initialRating: this.newCrush.initialRating,
       bio: this.newCrush.bio,
       visibility: [],
       avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar
@@ -972,7 +1003,8 @@ export class DashboardComponent implements OnInit {
       nickname: '',
       firstName: '',
       status: CrushStatus.Crush,
-      rating: 3,
+      initialRating: 3,
+      currentRating: 3,
       note: '',
       noteVisibility: 'private',
       visibility: [],
@@ -1004,7 +1036,8 @@ export class DashboardComponent implements OnInit {
       occupation: '',
       family: '',
       friends: '',
-      memorableMoments: ''
+      memorableMoments: '',
+      privateNotes: ''
     };
     this.uploadedAvatarName.set('');
     this.cropSourceImage.set(null);

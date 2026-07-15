@@ -104,7 +104,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="shareSelectorMode.set('crush'); pendingShareEntryId.set(null); showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
-                <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary">📣 Share Dating Status</button>
+                <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary action-btn-no-wrap">📣 Share Dating Status</button>
 
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
@@ -261,6 +261,19 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Avatar URL</label>
                     <input [(ngModel)]="editForm.avatarUrl" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="https://...">
+                    <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                      @for (avatar of mockAvatars; track avatar) {
+                        <img [src]="avatar"
+                             [alt]="'Avatar option ' + ($index + 1)"
+                             (click)="editForm.avatarUrl = avatar"
+                             role="button"
+                             tabindex="0"
+                             (keydown.enter)="editForm.avatarUrl = avatar"
+                             (keydown.space)="editForm.avatarUrl = avatar; $event.preventDefault()"
+                             [style.border]="editForm.avatarUrl === avatar ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                             style="width: 42px; height: 42px; border-radius: 10px; object-fit: cover; cursor: pointer;">
+                      }
+                    </div>
                   </div>
                   <div class="edit-field edit-field--full">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Pronouns</label>
@@ -459,6 +472,28 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div class="edit-section">
                 <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Bio & Notes</h3>
                 <div class="edit-fields-grid">
+                  <div class="edit-field edit-field--full">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Crush Note (Optional)</label>
+                    <textarea [(ngModel)]="editForm.note"
+                              [style.background-color]="theme.colors().bgSecondary"
+                              [style.border-color]="theme.colors().border"
+                              [style.color]="theme.colors().text"
+                              class="edit-textarea-styled"
+                              rows="3"
+                              placeholder="Add a new note while editing..."></textarea>
+                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                      <button (click)="editForm.noteVisibility = 'private'"
+                              [style.background-color]="editForm.noteVisibility === 'private' ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.noteVisibility === 'private' ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.noteVisibility === 'private' ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">Private</button>
+                      <button (click)="editForm.noteVisibility = 'public'"
+                              [style.background-color]="editForm.noteVisibility === 'public' ? theme.colors().primary : 'transparent'"
+                              [style.color]="editForm.noteVisibility === 'public' ? 'white' : theme.colors().text"
+                              [style.border-color]="editForm.noteVisibility === 'public' ? theme.colors().primary : theme.colors().border"
+                              class="option-btn">Public</button>
+                    </div>
+                  </div>
                   <div class="edit-field edit-field--full">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Bio</label>
                     <textarea [(ngModel)]="editForm.bio" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="A little about them..."></textarea>
@@ -723,6 +758,12 @@ export class ProfileDetailComponent implements OnDestroy {
     { label: 'Every 2 days', hours: 48 },
     { label: 'Weekly', hours: 168 }
   ];
+  mockAvatars = [
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Anya',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo'
+  ];
   private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
@@ -765,7 +806,9 @@ export class ProfileDetailComponent implements OnDestroy {
       twitter: '',
       facebook: '',
       instagram: ''
-    }
+    },
+    note: '',
+    noteVisibility: 'private'
   };
 
   crush = computed(() => {
@@ -918,13 +961,16 @@ export class ProfileDetailComponent implements OnDestroy {
     }
   }
 
-  logVibeInline(id: string, rating: number) {
+  private applyVibeLog(id: string, rating: number, reason?: string): void {
     const num = Math.max(1, Math.min(5, rating));
+    const trimmedReason = (reason || '').trim();
     this.dataService.updateVibe(id, num);
     this.dataService.addEntry({
       crushId: id,
       type: 'Note',
-      content: `Vibe logged: ${'★'.repeat(num)}${'☆'.repeat(5 - num)} (${num}/5)`,
+      content: trimmedReason
+        ? `Vibe logged: ${'★'.repeat(num)}${'☆'.repeat(5 - num)} (${num}/5)\nWhy: ${trimmedReason}`
+        : `Vibe logged: ${'★'.repeat(num)}${'☆'.repeat(5 - num)} (${num}/5)`,
       isBurnAfterReading: false,
       visibility: [],
       isSensitive: false
@@ -940,6 +986,24 @@ export class ProfileDetailComponent implements OnDestroy {
     localStorage.setItem(this.getVibeCheckedKey(id), String(Date.now()));
     this.showVibeBanner.set(false);
     this.pendingVibe.set(0);
+  }
+
+  logVibeInline(id: string, rating: number) {
+    const num = Math.max(1, Math.min(5, rating));
+    this.modal.prompt(
+      `Optional: add a note for why today's vibe is ${num}/5.`,
+      '',
+      (reason) => {
+        const trimmedReason = (reason || '').trim();
+        if (trimmedReason && !this.security.moderateContent(trimmedReason)) {
+          this.modal.show('Vibe note flagged by AI moderation. Logged vibe without note.');
+          this.applyVibeLog(id, num);
+          return;
+        }
+        this.applyVibeLog(id, num, trimmedReason);
+      },
+      () => this.applyVibeLog(id, num)
+    );
   }
 
   addNote(id: string) {
@@ -1363,7 +1427,9 @@ export class ProfileDetailComponent implements OnDestroy {
             twitter: c.social?.twitter || '',
             facebook: c.social?.facebook || '',
             instagram: c.social?.instagram || ''
-          }
+          },
+          note: '',
+          noteVisibility: 'private'
         };
       }
     }
@@ -1392,6 +1458,18 @@ export class ProfileDetailComponent implements OnDestroy {
     } as CrushProfile;
 
     this.dataService.updateCrush(updatedCrush);
+
+    const note = (this.editForm.note || '').trim();
+    if (note) {
+      this.dataService.addEntry({
+        crushId,
+        type: 'Note',
+        content: note,
+        isBurnAfterReading: false,
+        visibility: this.editForm.noteVisibility === 'public' ? ['public'] : [],
+        isSensitive: false
+      });
+    }
     this.isEditMode.set(false);
   }
 
