@@ -26,10 +26,14 @@ const normalizePhoneE164 = (value) => {
 exports.register = async (req, res) => {
   try {
     const { username, pin, email, bio, firstName, lastName, phoneNumber, phoneE164 } = req.body;
+    const safeUsername = typeof username === 'string' ? username.trim() : '';
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhone = normalizePhoneE164(phoneE164 || phoneNumber);
     const safeFirstName = typeof firstName === 'string' ? firstName.trim().slice(0, 80) : '';
     const safeLastName = typeof lastName === 'string' ? lastName.trim().slice(0, 80) : '';
+    if (!safeUsername) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
     if ((phoneNumber || phoneE164) && !normalizedPhone) {
       return res.status(400).json({ message: 'Invalid phone number format' });
     }
@@ -38,14 +42,14 @@ exports.register = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       console.warn(`Database not ready. Registering ${username} in demo mode.`);
       const state = await readStore();
-      const existing = state.users.find(u => u.username === username);
+      const existing = state.users.find(u => u.username === safeUsername);
       if (existing) {
         return res.status(400).json({ message: 'Username already taken in demo mode' });
       }
 
       // In demo mode, we don't strictly hash/save pins in the JSON store for this simple implementation,
       // but we'll allow the user to proceed as a "demo user".
-      const user = ensureUser(state, username);
+      const user = ensureUser(state, safeUsername);
       user.bio = bio;
       user.email = normalizedEmail || '';
       user.firstName = safeFirstName;
@@ -70,7 +74,7 @@ exports.register = async (req, res) => {
         emailStatus = 'failed';
       }
 
-      console.warn(`--- DEMO MODE VERIFICATION CODE for ${username}: ${verificationCode} (Status: ${emailStatus}) ---`);
+      console.warn(`--- DEMO MODE VERIFICATION CODE for ${safeUsername}: ${verificationCode} (Status: ${emailStatus}) ---`);
 
       // Note: demoFriendStore.ensureUser already pushes to state.users
       const fs = require('fs/promises');
@@ -95,12 +99,78 @@ exports.register = async (req, res) => {
     }
 
     // Check if user exists
-    const duplicateChecks = [{ username }];
+    const duplicateChecks = [{ username: safeUsername }];
     if (normalizedEmail) duplicateChecks.push({ email: normalizedEmail });
     if (normalizedPhone) duplicateChecks.push({ phoneE164: normalizedPhone });
 
     let user = await User.findOne({ $or: duplicateChecks });
     if (user) {
+      if (!user.isEmailVerified) {
+        const usernameOwner = await User.findOne({ username: safeUsername });
+        if (usernameOwner && usernameOwner._id.toString() !== user._id.toString() && usernameOwner.isEmailVerified) {
+          return res.status(400).json({ message: 'Username already taken' });
+        }
+
+        if (normalizedEmail) {
+          const emailOwner = await User.findOne({ email: normalizedEmail });
+          if (emailOwner && emailOwner._id.toString() !== user._id.toString() && emailOwner.isEmailVerified) {
+            return res.status(400).json({ message: 'Email already taken' });
+          }
+        }
+
+        if (normalizedPhone) {
+          const phoneOwner = await User.findOne({ phoneE164: normalizedPhone });
+          if (phoneOwner && phoneOwner._id.toString() !== user._id.toString() && phoneOwner.isEmailVerified) {
+            return res.status(400).json({ message: 'Phone already taken' });
+          }
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPin = await bcrypt.hash(pin, salt);
+        const verificationCode = generateCode();
+
+        user.username = safeUsername;
+        user.firstName = safeFirstName;
+        user.lastName = safeLastName;
+        user.pin = hashedPin;
+        user.email = normalizedEmail || undefined;
+        user.phoneE164 = normalizedPhone || undefined;
+        user.bio = typeof bio === 'string' ? bio.trim().slice(0, 500) : '';
+        user.verificationCode = verificationCode;
+        user.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
+        user.isEmailVerified = false;
+        await user.save();
+
+        let emailStatus = 'sent';
+        try {
+          const result = await sendEmail({
+            email: user.email,
+            subject: 'Dexii Verification Code',
+            message: `Your verification code is: ${verificationCode}. It expires in 10 minutes.`,
+            html: `<h1>Welcome to Dexii</h1><p>Your verification code is: <strong>${verificationCode}</strong></p><p>It expires in 10 minutes.</p>`
+          });
+          if (result && result.debug) emailStatus = 'debug';
+        } catch (err) {
+          console.error('Email error:', err);
+          emailStatus = 'failed';
+        }
+
+        return res.status(200).json({
+          message: emailStatus === 'sent'
+            ? 'Existing unverified account updated. Verification code sent to email.'
+            : emailStatus === 'debug'
+            ? 'Existing unverified account updated. (DEVELOPMENT: Check server console for code)'
+            : 'Existing unverified account updated, but email failed. Check your SMTP settings and server logs.',
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phoneE164: user.phoneE164,
+          emailSent: emailStatus === 'sent',
+          debugMode: emailStatus === 'debug'
+        });
+      }
+
       return res.status(400).json({ message: 'Username, email, or phone already taken' });
     }
 
@@ -112,7 +182,7 @@ exports.register = async (req, res) => {
     const verificationCodeExpires = Date.now() + 10 * 60 * 1000; // 10 mins
 
     user = new User({
-      username,
+      username: safeUsername,
       firstName: safeFirstName,
       lastName: safeLastName,
       pin: hashedPin,
