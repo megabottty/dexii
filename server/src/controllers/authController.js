@@ -34,6 +34,9 @@ exports.register = async (req, res) => {
     if (!safeUsername) {
       return res.status(400).json({ message: 'Username is required' });
     }
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
     if ((phoneNumber || phoneE164) && !normalizedPhone) {
       return res.status(400).json({ message: 'Invalid phone number format' });
     }
@@ -51,7 +54,7 @@ exports.register = async (req, res) => {
       // but we'll allow the user to proceed as a "demo user".
       const user = ensureUser(state, safeUsername);
       user.bio = bio;
-      user.email = normalizedEmail || '';
+      user.email = normalizedEmail;
       user.firstName = safeFirstName;
       user.lastName = safeLastName;
       user.phoneE164 = normalizedPhone || '';
@@ -186,7 +189,7 @@ exports.register = async (req, res) => {
       firstName: safeFirstName,
       lastName: safeLastName,
       pin: hashedPin,
-      email: normalizedEmail || undefined,
+      email: normalizedEmail,
       phoneE164: normalizedPhone || undefined,
       bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : '',
       verificationCode,
@@ -360,6 +363,9 @@ exports.resendCode = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.email) {
+      return res.status(400).json({ message: 'Cannot resend code: account has no email address.' });
     }
 
     const verificationCode = generateCode();

@@ -50,8 +50,12 @@ describe('SignupProfileComponent', () => {
     expect(component.errorMessage()).toBe('');
   });
 
-  it('should validate email format when provided', () => {
+  it('should require an email and validate email format', () => {
     component.username.set('validuser');
+    component.email.set('');
+    component.continue();
+    expect(component.errorMessage()).toContain('Email is required');
+
     component.email.set('invalid-email');
     component.continue();
     expect(component.errorMessage()).toContain('valid email');

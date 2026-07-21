@@ -54,7 +54,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  autocomplete="off"
                  class="form-input" placeholder="e.g. dev_user">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Email (Optional)</label>
+          <label [style.color]="theme.colors().textSecondary" class="form-label">Email</label>
           <input [ngModel]="email()" (ngModelChange)="email.set($event)"
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
@@ -285,8 +285,12 @@ export class SignupProfileComponent {
     }
 
     const emailValue = this.email().trim();
-    if (emailValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-      this.errorMessage.set('Enter a valid email or leave it blank.');
+    if (!emailValue) {
+      this.errorMessage.set('Email is required.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+      this.errorMessage.set('Enter a valid email address.');
       return;
     }
 

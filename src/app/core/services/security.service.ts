@@ -173,6 +173,7 @@ export class SecurityService {
     const bio = localStorage.getItem('dexii_pending_bio');
 
     if (!username) throw new Error('Username missing');
+    if (!email) throw new Error('Email is required');
 
     const response = await fetch(`${this.apiBase}/auth/register`, {
       method: 'POST',
@@ -180,9 +181,14 @@ export class SecurityService {
       body: JSON.stringify({ username, pin, email, bio })
     });
 
+    const payload = await response.json();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Registration failed');
+      throw new Error(payload.message || 'Registration failed');
+    }
+
+    if (!payload.emailSent) {
+      throw new Error(payload.message || 'Verification email could not be sent. Please try again.');
     }
   }
 
