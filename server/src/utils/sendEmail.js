@@ -1,52 +1,43 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('--- EMAIL DEBUG ---');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('--- EMAIL DEBUG (no RESEND_API_KEY set) ---');
     console.warn(`To: ${options.email}`);
     console.warn(`Subject: ${options.subject}`);
     console.warn(`Message: ${options.message}`);
-    console.warn('--------------------');
+    console.warn('-------------------------------------------');
     return { success: true, debug: true };
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: process.env.EMAIL_PORT == 465, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const from = process.env.EMAIL_FROM || 'Dexii Admin <onboarding@resend.dev>';
 
-    const mailOptions = {
-      from: `"Dexii Admin" <${process.env.EMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from,
       to: options.email,
       subject: options.subject,
       text: options.message,
       html: options.html,
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email sent: ${info.messageId}`);
+    if (error) throw new Error(error.message);
+
+    console.log(`Email sent: ${data.id}`);
     return { success: true };
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
-      console.warn('--- EMAIL FALLBACK (SMTP FAILED) ---');
+      console.warn('--- EMAIL FALLBACK (Resend failed) ---');
       console.warn(`To: ${options.email}`);
       console.warn(`Message: ${options.message}`);
       console.warn('Reason:', error.message);
-      console.warn('-----------------------------------');
+      console.warn('--------------------------------------');
       return { success: true, debug: true };
     }
-    console.error('--- SMTP ERROR DETAILS ---');
-    console.error('Code:', error.code);
-    console.error('Command:', error.command);
-    console.error('Response:', error.response);
-    console.error('Stack:', error.stack);
-    console.error('---------------------------');
+    console.error('--- RESEND ERROR ---');
+    console.error('Message:', error.message);
+    console.error('--------------------');
     throw error;
   }
 };
