@@ -149,8 +149,15 @@
 }
 
 .action-btn-styled.safety {
-  color: #4a90e2;
-  border-color: #4a90e2;
+  color: #ffffff;
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.action-btn-styled.safety:hover {
+  background-color: #1e40af;
+  border-color: #1e40af;
+  color: #ffffff;
 }
 
 .action-btn-styled.safe {

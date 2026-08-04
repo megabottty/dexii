@@ -14,12 +14,16 @@ interface FriendSearchResult {
   username: string;
   firstName?: string;
   lastName?: string;
+  email?: string;
+  phoneE164?: string;
   avatarUrl?: string;
   subscriptionTier?: SubscriptionTier;
   friendCategories?: string[];
   isFriend?: boolean;
   hasPendingRequest?: boolean;
 }
+
+type InviteMethod = 'email' | 'sms' | 'whatsapp' | 'copy' | 'share';
 
 interface FriendRequestItem {
   id: string;
@@ -29,6 +33,19 @@ interface FriendRequestItem {
   createdAt: string;
   nudgeCount?: number;
   lastNudgedAt?: string;
+  friendshipProfile?: {
+    relationshipName?: string;
+    relationshipType?: string;
+    howMet?: string;
+    trustLevel?: string;
+    notes?: string;
+  };
+  invite?: {
+    method?: InviteMethod;
+    contact?: string;
+    message?: string;
+    sentAt?: string;
+  };
 }
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -134,7 +151,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   [style.background-color]="activeTab() === 'find' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'find' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'find' ? theme.colors().primary : theme.colors().border)"
-                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Find Friends</button>
+                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Add Friend</button>
           <button (click)="activeTab.set('incoming')"
                   [style.background-color]="activeTab() === 'incoming' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'incoming' ? 'white' : theme.colors().text"
@@ -149,7 +166,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
         @if (activeTab() === 'find') {
           <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s36">
-            <p class="friends-list-component__s37">Find Friends</p>
+            <p class="friends-list-component__s37">Add Friend</p>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+              <button (click)="startAddFriendFlow()"
+                      [style.background-color]="theme.colors().primary"
+                      class="friends-list-component__s8">
+                + Start Add Friend
+              </button>
+            </div>
             <div class="friends-list-component__s38">
               <input
                 [value]="searchQuery()"
@@ -175,12 +199,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       </div>
                     </div>
                     <button
-                      (click)="sendFriendRequest(candidate)"
-                      [disabled]="candidate.isFriend || candidate.hasPendingRequest"
-                      [style.opacity]="candidate.isFriend || candidate.hasPendingRequest ? '0.5' : '1'"
+                      (click)="openAddFriendModal(candidate)"
+                      [disabled]="candidate.isFriend"
+                      [style.opacity]="candidate.isFriend ? '0.5' : '1'"
                       [style.background-color]="theme.colors().primary"
                      class="friends-list-component__s8">
-                      {{ candidate.isFriend ? 'Friend' : (candidate.hasPendingRequest ? 'Pending' : 'Request') }}
+                      {{ candidate.isFriend ? 'Friend' : (candidate.hasPendingRequest ? 'Continue Invite' : 'Add Friend') }}
                     </button>
                   </div>
                 }
@@ -189,7 +213,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div>
                 <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s45">No users found.</p>
                 @if (searchQuery().trim()) {
-                  <button (click)="inviteTypedUsername()"
+                  <button (click)="openAddFriendModal({ username: searchQuery().trim() })"
                           [style.background-color]="theme.colors().primary"
                           class="friends-list-component__s8">
                     Invite {{ searchQuery().trim() }}
@@ -315,6 +339,140 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           </div>
         }
       </div>
+
+      @if (addFriendCandidate()) {
+        <div class="friends-list-component__s9">
+          <div [style.background-color]="theme.colors().bg"
+               [style.border]="'1px solid ' + theme.colors().border"
+               class="friends-list-component__s10">
+            <button (click)="closeAddFriendModal()"
+                    [style.color]="theme.colors().textSecondary"
+                    aria-label="Close add friend modal"
+                    class="friends-list-component__s11">✕</button>
+
+            <h3 class="friends-list-component__s12">Add Friend</h3>
+            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s13">
+              Create a friendship profile and send an invite to {{ addFriendCandidate()?.username }}.
+            </p>
+
+            <div class="friends-list-add-modal-grid">
+              <label class="friends-list-add-modal-label">
+                Friendship Name
+                <input [value]="addFriendRelationshipName()"
+                       (input)="addFriendRelationshipName.set(asInputValue($event))"
+                       [style.background-color]="theme.colors().bgSecondary"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       class="friends-list-add-modal-input"
+                       placeholder="How you'll label this friendship">
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                Relationship Type
+                <select [value]="addFriendRelationshipType()"
+                        (change)="addFriendRelationshipType.set(asSelectValue($event))"
+                        [style.background-color]="theme.colors().bgSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().text"
+                        class="friends-list-add-modal-input">
+                  <option value="Close Friend">Close Friend</option>
+                  <option value="Bestie">Bestie</option>
+                  <option value="Work Friend">Work Friend</option>
+                  <option value="Family Friend">Family Friend</option>
+                  <option value="New Friend">New Friend</option>
+                </select>
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                How You Met
+                <input [value]="addFriendHowMet()"
+                       (input)="addFriendHowMet.set(asInputValue($event))"
+                       [style.background-color]="theme.colors().bgSecondary"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       class="friends-list-add-modal-input"
+                       placeholder="Work, school, mutuals, app, etc.">
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                Trust Level
+                <select [value]="addFriendTrustLevel()"
+                        (change)="addFriendTrustLevel.set(asSelectValue($event))"
+                        [style.background-color]="theme.colors().bgSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().text"
+                        class="friends-list-add-modal-input">
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </label>
+
+              <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
+                Notes
+                <textarea [value]="addFriendNotes()"
+                          (input)="addFriendNotes.set(asTextAreaValue($event))"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          class="friends-list-add-modal-textarea"
+                          placeholder="Anything helpful to remember before connecting"></textarea>
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                Invite Method
+                <select [value]="addFriendInviteMethod()"
+                        (change)="setInviteMethod(asSelectValue($event))"
+                        [style.background-color]="theme.colors().bgSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().text"
+                        class="friends-list-add-modal-input">
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="copy">Copy Message</option>
+                  <option value="share">Share Sheet</option>
+                </select>
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                Invite Contact
+                <input [value]="addFriendInviteContact()"
+                       (input)="addFriendInviteContact.set(asInputValue($event))"
+                       [style.background-color]="theme.colors().bgSecondary"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       class="friends-list-add-modal-input"
+                       [placeholder]="inviteContactPlaceholder()">
+              </label>
+
+              <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
+                Invite Message
+                <textarea [value]="addFriendInviteMessage()"
+                          (input)="addFriendInviteMessage.set(asTextAreaValue($event))"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          class="friends-list-add-modal-textarea"
+                          placeholder="Message they’ll receive"></textarea>
+              </label>
+            </div>
+
+            <div class="friends-list-add-modal-actions">
+              <button (click)="closeAddFriendModal()"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      class="friends-list-action-btn">
+                Cancel
+              </button>
+              <button (click)="addFriendAndInvite()"
+                      [style.background-color]="theme.colors().primary"
+                      class="friends-list-component__s8">
+                Add Friend & Invite
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -338,6 +496,15 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   incomingRequests = signal<FriendRequestItem[]>([]);
   outgoingRequests = signal<FriendRequestItem[]>([]);
   didSearch = signal(false);
+  addFriendCandidate = signal<FriendSearchResult | null>(null);
+  addFriendRelationshipName = signal('');
+  addFriendRelationshipType = signal('Close Friend');
+  addFriendHowMet = signal('');
+  addFriendTrustLevel = signal('Medium');
+  addFriendNotes = signal('');
+  addFriendInviteMethod = signal<InviteMethod>('email');
+  addFriendInviteContact = signal('');
+  addFriendInviteMessage = signal('');
   private hasInitializedIncoming = false;
   private incomingPollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -375,9 +542,27 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return target?.value ?? '';
   }
 
+  asSelectValue(event: Event): string {
+    const target = event.target as HTMLSelectElement | null;
+    return target?.value ?? '';
+  }
+
+  asTextAreaValue(event: Event): string {
+    const target = event.target as HTMLTextAreaElement | null;
+    return target?.value ?? '';
+  }
+
   candidateDisplayName(candidate: FriendSearchResult): string {
     const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
     return fullName || candidate.username;
+  }
+
+  inviteContactPlaceholder(): string {
+    const method = this.addFriendInviteMethod();
+    if (method === 'email') return 'friend@email.com';
+    if (method === 'sms') return '+1 555 123 4567';
+    if (method === 'whatsapp') return '+1 555 123 4567';
+    return 'Optional';
   }
 
   private mapApiUser(friend: any): User {
@@ -521,19 +706,223 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.searchResults.set(data);
   }
 
-  async sendFriendRequest(candidate: FriendSearchResult) {
+  openAddFriendModal(candidate: FriendSearchResult) {
+    const cleanUsername = (candidate.username || '').trim();
+    if (!cleanUsername) {
+      this.modal.show('Enter a username first.');
+      return;
+    }
+
+    const displayName = this.candidateDisplayName(candidate).trim() || cleanUsername;
+    const inviteMethod: InviteMethod = candidate.email ? 'email' : candidate.phoneE164 ? 'sms' : 'copy';
+    const inviteContact = inviteMethod === 'email'
+      ? (candidate.email || '')
+      : inviteMethod === 'sms'
+      ? (candidate.phoneE164 || '')
+      : '';
+
+    this.addFriendCandidate.set({ ...candidate, username: cleanUsername });
+    this.addFriendRelationshipName.set(displayName);
+    this.addFriendRelationshipType.set('Close Friend');
+    this.addFriendHowMet.set('');
+    this.addFriendTrustLevel.set('Medium');
+    this.addFriendNotes.set('');
+    this.addFriendInviteMethod.set(inviteMethod);
+    this.addFriendInviteContact.set(inviteContact);
+    this.addFriendInviteMessage.set(
+      `Hey ${displayName}! I added you in my Dexii circle. Make your own account and we can connect there.`
+    );
+  }
+
+  closeAddFriendModal() {
+    this.addFriendCandidate.set(null);
+  }
+
+  setInviteMethod(value: string) {
+    const allowed: InviteMethod[] = ['email', 'sms', 'whatsapp', 'copy', 'share'];
+    const method: InviteMethod = allowed.includes(value as InviteMethod) ? (value as InviteMethod) : 'copy';
+    this.addFriendInviteMethod.set(method);
+  }
+
+  private buildInviteMessage(username: string): string {
+    const custom = this.addFriendInviteMessage().trim();
+    const base = custom || `Hey! I added you in my Dexii circle.`;
+    const appUrl = typeof window !== 'undefined' ? `${window.location.origin}/signup-profile` : '/signup-profile';
+    return `${base}\n\nMake your own Dexii account: ${appUrl}\nThen search for me: @${this.currentUsername}`;
+  }
+
+  private async dispatchInvite(method: InviteMethod, contact: string, message: string, launchUrl?: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    const encodedMessage = encodeURIComponent(message);
+    const cleanContact = (contact || '').trim();
+
+    if (method === 'email') {
+      if (launchUrl) {
+        window.location.href = launchUrl;
+        return;
+      }
+      const subject = encodeURIComponent('You are invited to Dexii');
+      const to = encodeURIComponent(cleanContact);
+      window.location.href = `mailto:${to}?subject=${subject}&body=${encodedMessage}`;
+      return;
+    }
+
+    if (method === 'sms') {
+      if (launchUrl) {
+        window.location.href = launchUrl;
+        return;
+      }
+      const to = encodeURIComponent(cleanContact);
+      window.location.href = `sms:${to}?body=${encodedMessage}`;
+      return;
+    }
+
+    if (method === 'whatsapp') {
+      if (launchUrl) {
+        window.open(launchUrl, '_blank', 'noopener');
+        return;
+      }
+      const digits = cleanContact.replace(/\D/g, '');
+      const target = digits ? `https://wa.me/${digits}?text=${encodedMessage}` : `https://wa.me/?text=${encodedMessage}`;
+      window.open(target, '_blank', 'noopener');
+      return;
+    }
+
+    if (method === 'share' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Dexii Invite',
+          text: message
+        });
+        return;
+      } catch {
+        // Fall through to clipboard for canceled/unsupported share.
+      }
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(message);
+      this.modal.show('Invite copied to clipboard.');
+      return;
+    }
+
+    this.modal.show('Could not open invite channel on this device.');
+  }
+
+  private async sendInvite(
+    payload: { toUsername: string; method: InviteMethod; contact: string; message: string }
+  ): Promise<{ ok: boolean; method: InviteMethod; delivery?: string; launchUrl?: string; message?: string } | null> {
+    const response = await this.demoFetch('/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: this.currentUsername,
+        toUsername: payload.toUsername,
+        method: payload.method,
+        contact: payload.contact,
+        message: payload.message
+      })
+    });
+
+    if (!response?.ok) {
+      this.modal.show(response?.message || 'Unable to send invite right now.');
+      return null;
+    }
+
+    return response as { ok: boolean; method: InviteMethod; delivery?: string; launchUrl?: string; message?: string };
+  }
+
+  async addFriendAndInvite() {
+    const candidate = this.addFriendCandidate();
+    if (!candidate) return;
+
+    const username = (candidate.username || '').trim();
+    if (!username) {
+      this.modal.show('Missing friend username.');
+      return;
+    }
+
+    const inviteMethod = this.addFriendInviteMethod();
+    const inviteContact = this.addFriendInviteContact().trim();
+    if ((inviteMethod === 'email' || inviteMethod === 'sms') && !inviteContact) {
+      this.modal.show('Please enter contact info for that invite method.');
+      return;
+    }
+
+    const result = await this.sendFriendRequest(
+      { ...candidate, username },
+      {
+        friendshipProfile: {
+          relationshipName: this.addFriendRelationshipName().trim(),
+          relationshipType: this.addFriendRelationshipType().trim(),
+          howMet: this.addFriendHowMet().trim(),
+          trustLevel: this.addFriendTrustLevel().trim(),
+          notes: this.addFriendNotes().trim()
+        },
+        invite: {
+          method: inviteMethod,
+          contact: inviteContact,
+          message: this.buildInviteMessage(username),
+          sentAt: new Date().toISOString()
+        }
+      }
+    );
+
+    if (!result) return;
+
+    const inviteMessage = this.buildInviteMessage(username);
+    const inviteResult = await this.sendInvite({
+      toUsername: username,
+      method: inviteMethod,
+      contact: inviteContact,
+      message: inviteMessage
+    });
+    if (!inviteResult) return;
+
+    if (inviteMethod === 'email') {
+      this.modal.show('Invite email sent.');
+    } else {
+      await this.dispatchInvite(inviteMethod, inviteContact, inviteMessage, inviteResult.launchUrl);
+      if (inviteMethod === 'sms' || inviteMethod === 'whatsapp') {
+        this.modal.show('Invite prepared. Finish sending in your messaging app.');
+      }
+    }
+    this.closeAddFriendModal();
+  }
+
+  async sendFriendRequest(
+    candidate: FriendSearchResult,
+    details?: {
+      friendshipProfile?: {
+        relationshipName?: string;
+        relationshipType?: string;
+        howMet?: string;
+        trustLevel?: string;
+        notes?: string;
+      };
+      invite?: {
+        method?: InviteMethod;
+        contact?: string;
+        message?: string;
+        sentAt?: string;
+      };
+    }
+  ) {
     const result = await this.demoFetch('/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: this.currentUsername,
-        to: candidate.username
+        to: candidate.username,
+        friendshipProfile: details?.friendshipProfile,
+        invite: details?.invite
       })
     });
 
     if (!result) {
       this.modal.show('Unable to send request right now.');
-      return;
+      return null;
     }
 
     this.searchResults.update((items) =>
@@ -542,13 +931,40 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       )
     );
     await this.loadOutgoingRequests();
-    this.modal.show(result.status === 'already_friends' ? 'Already friends.' : 'Request sent.');
+    if (result.status === 'already_friends') {
+      this.modal.show('Already friends.');
+      return result;
+    }
+    if (result.status === 'already_pending') {
+      this.modal.show('Request already pending.');
+      return result;
+    }
+    this.modal.show('Friend request saved.');
+    return result;
   }
 
   async inviteTypedUsername() {
     const username = this.searchQuery().trim();
     if (!username) return;
-    await this.sendFriendRequest({ username });
+    this.openAddFriendModal({ username });
+  }
+
+  startAddFriendFlow() {
+    const usernameFromSearch = this.searchQuery().trim();
+    if (usernameFromSearch) {
+      this.openAddFriendModal({ username: usernameFromSearch });
+      return;
+    }
+
+    this.modal.prompt('Who do you want to add? Enter their username.', '', (value) => {
+      const username = (value || '').trim();
+      if (!username) {
+        this.modal.show('Please enter a username.');
+        return;
+      }
+      this.searchQuery.set(username);
+      this.openAddFriendModal({ username });
+    });
   }
 
   async respondToRequest(req: FriendRequestItem, action: 'accept' | 'decline') {

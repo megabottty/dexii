@@ -87,6 +87,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
               <div class="profile-title-section">
                 <h1 class="profile-name">{{ c.nickname }}</h1>
+                <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap;">
+                  <span [style.color]="theme.colors().primary"
+                        [style.border]="'1px solid ' + theme.colors().primary"
+                        style="padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;">
+                    Status: {{ c.status || 'Crushing' }}
+                  </span>
+                </p>
                 <p [style.color]="theme.colors().primary" class="profile-subtitle">
                   {{ c.location || 'Location Unknown' }} • {{ c.age ? c.age + ' years' : 'Age Unknown' }}
                 </p>
@@ -105,6 +112,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="shareSelectorMode.set('crush'); pendingShareEntryId.set(null); showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
                 <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary action-btn-no-wrap">📣 Share Dating Status</button>
+                <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
+                  {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
+                </button>
 
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
@@ -114,7 +124,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               }
             </div>
 
-            @if (!isEditMode()) {
+            @if (!isEditMode() && showSafetySetup()) {
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bg"
                    style="margin-top: 14px; border-radius: 10px; padding: 12px;">
@@ -257,6 +267,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <option [value]="statuses.Archived">Archived</option>
                       <option [value]="statuses.Friend">Friend</option>
                     </select>
+                    <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">Where things stand right now.</span>
                   </div>
                   <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Avatar URL</label>
@@ -323,7 +334,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">About Them</h3>
                 <div class="edit-fields-grid">
                   <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Relationship Status</label>
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Relationship Label</label>
+                    <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">More specific context you can share with friends.</span>
                     <div class="edit-chip-grid">
                       @for (s of getRelationshipStatusOptions(); track s) {
                         <button (click)="editForm.relationshipStatus = s"
@@ -551,7 +563,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <span class="info-value">{{ c.pronouns || 'N/A' }}</span>
                 </div>
                 <div class="info-row-styled">
-                  <span class="info-label">Status</span>
+                  <span class="info-label">Crush Status</span>
                   <span class="info-value">{{ c.status }}</span>
                 </div>
                 @if (c.customNotes?.includes('Relationship:')) {
@@ -569,7 +581,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </span>
                 </div>
                 <div class="info-row-styled">
-                  <span class="info-label">Social Standing</span>
+                  <span class="info-label">Relationship Label</span>
                   <span class="info-value">{{ c.relationshipStatus || 'N/A' }}</span>
                 </div>
                 @if (c.heartbreakSong) {
@@ -743,6 +755,7 @@ export class ProfileDetailComponent implements OnDestroy {
   showShareSelector = signal(false);
   shareSelectorMode = signal<'crush' | 'dating'>('crush');
   showVibeBanner = signal(true);
+  showSafetySetup = signal(false);
   vibePromptFrequencyHours = signal(24);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
@@ -944,7 +957,10 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   logRedFlag(id: string) {
-    this.dataService.incrementRedFlag(id);
+    const c = this.crush();
+    if (!c) return;
+
+    this.dataService.updateCrush({ ...c, redFlags: (c.redFlags || 0) + 1 });
     this.dataService.addEntry({
       crushId: id,
       type: 'RedFlag',
@@ -953,12 +969,6 @@ export class ProfileDetailComponent implements OnDestroy {
       visibility: [],
       isSensitive: false
     });
-
-    // Persist the red flag increment to backend
-    const c = this.crush();
-    if (c) {
-      this.dataService.updateCrush({ ...c, redFlags: (c.redFlags || 0) + 1 });
-    }
   }
 
   private applyVibeLog(id: string, rating: number, reason?: string): void {
@@ -1389,6 +1399,7 @@ export class ProfileDetailComponent implements OnDestroy {
 
   toggleEditMode() {
     if (!this.isEditMode()) {
+      this.showSafetySetup.set(false);
       // Entering edit mode - populate form
       const c = this.crush();
       if (c) {
@@ -1434,6 +1445,10 @@ export class ProfileDetailComponent implements OnDestroy {
       }
     }
     this.isEditMode.set(!this.isEditMode());
+  }
+
+  toggleSafetySetup(): void {
+    this.showSafetySetup.update((open) => !open);
   }
 
   saveEdit(crushId: string) {

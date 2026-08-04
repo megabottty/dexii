@@ -29,6 +29,17 @@ const splitNameFromUsername = (username) => {
   };
 };
 
+const sanitizeText = (value, max = 240) => {
+  if (typeof value !== 'string') return '';
+  return value.trim().slice(0, max);
+};
+
+const normalizeInviteMethod = (value) => {
+  const method = sanitizeText(value, 24).toLowerCase();
+  if (['email', 'sms', 'whatsapp', 'copy', 'share'].includes(method)) return method;
+  return 'copy';
+};
+
 const defaultUsers = [
   { username: 'dexii_demo_user', firstName: 'Dexii', lastName: 'Demo', email: 'demo@dexii.local', phoneE164: '+15550000001', avatarUrl: 'https://i.pravatar.cc/150?u=dexii_demo_user', subscriptionTier: 'Premium', friendCategories: ['Close Friends'] },
   { username: 'Sarah Best', firstName: 'Sarah', lastName: 'Best', email: 'sarah.best@demo.local', phoneE164: '+15550000002', avatarUrl: 'https://i.pravatar.cc/150?u=sarah', subscriptionTier: 'Free', friendCategories: ['Close Friends'] },
@@ -197,7 +208,7 @@ const getFriends = async (username) => {
     }));
 };
 
-const createRequest = async (from, to) => {
+const createRequest = async (from, to, details = {}) => {
   const state = await readStore();
   const fromUser = ensureUser(state, from);
   const toUser = ensureUser(state, to);
@@ -220,16 +231,58 @@ const createRequest = async (from, to) => {
   );
 
   if (existingPending) {
+    if (details && typeof details === 'object') {
+      const friendshipProfile = details.friendshipProfile && typeof details.friendshipProfile === 'object'
+        ? {
+            relationshipName: sanitizeText(details.friendshipProfile.relationshipName, 80),
+            relationshipType: sanitizeText(details.friendshipProfile.relationshipType, 60),
+            howMet: sanitizeText(details.friendshipProfile.howMet, 120),
+            trustLevel: sanitizeText(details.friendshipProfile.trustLevel, 30),
+            notes: sanitizeText(details.friendshipProfile.notes, 500)
+          }
+        : undefined;
+      const invite = details.invite && typeof details.invite === 'object'
+        ? {
+            method: normalizeInviteMethod(details.invite.method),
+            contact: sanitizeText(details.invite.contact, 120),
+            message: sanitizeText(details.invite.message, 1000),
+            sentAt: sanitizeText(details.invite.sentAt, 64) || new Date().toISOString()
+          }
+        : undefined;
+      if (friendshipProfile) existingPending.friendshipProfile = friendshipProfile;
+      if (invite) existingPending.invite = invite;
+    }
     await writeStore(state);
     return { status: 'already_pending', request: existingPending };
   }
+
+  const friendshipProfile = details.friendshipProfile && typeof details.friendshipProfile === 'object'
+    ? {
+        relationshipName: sanitizeText(details.friendshipProfile.relationshipName, 80),
+        relationshipType: sanitizeText(details.friendshipProfile.relationshipType, 60),
+        howMet: sanitizeText(details.friendshipProfile.howMet, 120),
+        trustLevel: sanitizeText(details.friendshipProfile.trustLevel, 30),
+        notes: sanitizeText(details.friendshipProfile.notes, 500)
+      }
+    : undefined;
+
+  const invite = details.invite && typeof details.invite === 'object'
+    ? {
+        method: normalizeInviteMethod(details.invite.method),
+        contact: sanitizeText(details.invite.contact, 120),
+        message: sanitizeText(details.invite.message, 1000),
+        sentAt: sanitizeText(details.invite.sentAt, 64) || new Date().toISOString()
+      }
+    : undefined;
 
   const request = {
     id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     from: fromUser.username,
     to: toUser.username,
     status: 'pending',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    friendshipProfile,
+    invite
   };
 
   state.requests.push(request);

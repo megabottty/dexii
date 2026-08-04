@@ -550,7 +550,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <div class="dashboard-component__s71">
           <div class="dashboard-component__s72">
             <h2 class="dashboard-component__s73">The Rolodex</h2>
-            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">Curating {{ dataService.visibleCrushes().length }} exclusive crushes.</p>
+            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">
+              Curating {{ activeCrushCount() }} active crushes
+              @if (archivedCrushCount() > 0) {
+                ({{ archivedCrushCount() }} archived)
+              }.
+            </p>
             <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
               {{ subscription.tier() }} tier: up to {{ subscription.getCrushLimit() }} crushes.
             </p>
@@ -745,6 +750,12 @@ export class DashboardComponent implements OnInit {
 
     return crushes;
   });
+  activeCrushCount = computed(() =>
+    this.dataService.getAllCrushes()().filter((c: any) => c.status !== CrushStatus.Archived).length
+  );
+  archivedCrushCount = computed(() =>
+    this.dataService.getAllCrushes()().filter((c: any) => c.status === CrushStatus.Archived).length
+  );
 
   unreadTeaCount = computed(() => this.messaging.getUnreadForUser('me').length);
 
@@ -838,8 +849,8 @@ export class DashboardComponent implements OnInit {
 
   openNewEntryModal() {
     const crushLimit = this.subscription.getCrushLimit();
-    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length)) {
-      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} crushes. Upgrade to add more.`);
+    if (!this.subscription.checkLimit(this.activeCrushCount())) {
+      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} active crushes. Archive one or upgrade to add more.`);
       return;
     }
     this.showNewEntryModal.set(true);
@@ -862,8 +873,8 @@ export class DashboardComponent implements OnInit {
 
   saveCrush() {
     const crushLimit = this.subscription.getCrushLimit();
-    if (!this.subscription.checkLimit(this.dataService.getAllCrushes()().length)) {
-      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} crushes. Upgrade to add more.`);
+    if (!this.subscription.checkLimit(this.activeCrushCount())) {
+      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} active crushes. Archive one or upgrade to add more.`);
       return;
     }
 

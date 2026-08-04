@@ -7,6 +7,7 @@ router.get('/list', controller.list);
 router.get('/requests', controller.incoming);
 router.get('/requests/sent', controller.outgoing);
 router.post('/request', controller.request);
+router.post('/invite', controller.invite);
 router.post('/requests/:requestId/respond', controller.respond);
 router.post('/requests/:requestId/nudge', controller.nudge);
 router.delete('/list/:friendUsername', controller.remove);

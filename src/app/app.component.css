@@ -71,11 +71,21 @@
 }
 
 .app-component__s17 {
-  margin-top: 18px; display: flex; justify-content: flex-end;
+  margin-top: 18px; display: flex; justify-content: flex-end; gap: 8px;
 }
 
 .app-component__s18 {
   color: white; border: none; padding: 10px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+}
+
+.app-component__s19 {
+  background: transparent;
+  color: inherit;
+  padding: 10px 14px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
 }
 
 .app-hint-toggle {

@@ -312,3 +312,48 @@
   text-align: center;
   padding: 60px;
 }
+
+.friends-list-add-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.friends-list-add-modal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.friends-list-add-modal-input,
+.friends-list-add-modal-textarea {
+  width: 100%;
+  font-family: 'Times New Roman', serif;
+  padding: 9px 10px;
+}
+
+.friends-list-add-modal-textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.friends-list-add-modal-label--full {
+  grid-column: 1 / -1;
+}
+
+.friends-list-add-modal-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 800px) {
+  .friends-list-add-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
