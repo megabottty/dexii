@@ -6,6 +6,7 @@ import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
 import { ModalService } from './modal.service';
 import { SecurityService } from './security.service';
+import { EntriesApiService, SharedEntry } from './entries-api.service';
 
 interface BackendCrush {
   _id: string;
@@ -56,14 +57,17 @@ export class DataService {
   private readonly tokenStorageKey = 'dexii_api_token';
   private readonly usernameStorageKey = 'dexii_api_username';
   private readonly entriesStorageKeyPrefix = 'dexii_entries';
+  private readonly entriesMigrationStorageKeyPrefix = 'dexii_entries_migrated';
 
   private _allCrushes = signal<CrushProfile[]>([]);
   private _entries = signal<Entry[]>([]);
+  private _sharedEntries = signal<SharedEntry[]>([]);
   private _activeOwner = signal<string>('');
   private modal = inject(ModalService);
   private messaging = inject(MessagingService);
   private audit = inject(AuditService);
   private security = inject(SecurityService);
+  private entriesApi = inject(EntriesApiService);
 
   constructor() {
     effect(() => {
@@ -84,6 +88,11 @@ export class DataService {
 
   private getEntriesStorageKey(owner: string): string {
     return `${this.entriesStorageKeyPrefix}_${owner}`;
+  }
+
+  private getEntriesMigrationStorageKey(owner: string): string {
+    const userId = this.security.currentUserId() || owner;
+    return `${this.entriesMigrationStorageKeyPrefix}_${userId}`;
   }
 
   private readEntriesFromStorage(owner: string): Entry[] {
@@ -135,13 +144,118 @@ export class DataService {
     }
   }
 
+  private entryFingerprint(entry: Entry): string {
+    return JSON.stringify({
+      crushId: entry.crushId,
+      type: entry.type,
+      content: entry.content,
+      timestamp: entry.timestamp.toISOString(),
+      isBurnAfterReading: Boolean(entry.isBurnAfterReading),
+      hasViewed: Boolean(entry.hasViewed),
+      visibility: [...(entry.visibility || [])].map(String).sort(),
+      isSensitive: Boolean(entry.isSensitive),
+      safetyContactId: entry.safetyContactId || '',
+      safetyStatus: entry.safetyStatus || '',
+      redFlagCount: entry.redFlagCount ?? null
+    });
+  }
+
+  private mergeLocalOnlyEntries(
+    serverEntries: Entry[],
+    localEntries: Entry[],
+    migratedLocalIds = new Set<string>()
+  ): Entry[] {
+    const serverIds = new Set(serverEntries.map((entry) => entry.id));
+    const serverFingerprints = new Set(serverEntries.map((entry) => this.entryFingerprint(entry)));
+    const localOnly = localEntries.filter((entry) =>
+      !migratedLocalIds.has(entry.id) &&
+      !serverIds.has(entry.id) && !serverFingerprints.has(this.entryFingerprint(entry))
+    );
+
+    return [...serverEntries, ...localOnly].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
+  }
+
+  private async migrateLocalEntries(
+    owner: string,
+    localEntries: Entry[],
+    serverEntries: Entry[]
+  ): Promise<{ entries: Entry[]; complete: boolean }> {
+    if (!localEntries.length) {
+      localStorage.setItem(this.getEntriesMigrationStorageKey(owner), new Date().toISOString());
+      return { entries: serverEntries, complete: true };
+    }
+
+    const migrationKey = this.getEntriesMigrationStorageKey(owner);
+    if (localStorage.getItem(migrationKey)) {
+      return { entries: this.mergeLocalOnlyEntries(serverEntries, localEntries), complete: true };
+    }
+
+    const mergedEntries = [...serverEntries];
+    const migratedLocalIds = new Set<string>();
+    let complete = true;
+
+    for (const localEntry of localEntries) {
+      const hasServerCounterpart = mergedEntries.some((serverEntry) =>
+        serverEntry.id === localEntry.id ||
+        this.entryFingerprint(serverEntry) === this.entryFingerprint(localEntry)
+      );
+
+      if (hasServerCounterpart) {
+        continue;
+      }
+
+      try {
+        const { id: localId, ...payload } = localEntry;
+        const savedEntry = await this.entriesApi.create(payload);
+        migratedLocalIds.add(localId);
+        mergedEntries.unshift(savedEntry);
+      } catch (error) {
+        complete = false;
+        console.warn('Dexii entry migration failed for a local entry; keeping it local.', error);
+      }
+    }
+
+    const entries = this.mergeLocalOnlyEntries(mergedEntries, localEntries, migratedLocalIds);
+    if (complete) {
+      localStorage.setItem(migrationKey, new Date().toISOString());
+    }
+
+    return { entries, complete };
+  }
+
+  private async hydrateEntriesFromBackend(owner: string, localEntries: Entry[]): Promise<void> {
+    if (!this.entriesApi.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const serverEntries = await this.entriesApi.list();
+      const { entries } = await this.migrateLocalEntries(owner, localEntries, serverEntries);
+      this._entries.set(entries);
+      this.persistEntries();
+    } catch (error) {
+      console.warn('Dexii entries sync failed, keeping local entries.', error);
+    }
+
+    try {
+      this._sharedEntries.set(await this.entriesApi.listShared());
+    } catch (error) {
+      console.warn('Dexii shared entries sync failed.', error);
+    }
+  }
+
   private async syncUserData(owner: string): Promise<void> {
     if (!owner) return;
     if (owner === this._activeOwner()) return;
 
     this._activeOwner.set(owner);
     this._allCrushes.set([]);
-    this._entries.set(this.readEntriesFromStorage(owner));
+    this._sharedEntries.set([]);
+    const localEntries = this.readEntriesFromStorage(owner);
+    this._entries.set(localEntries);
+    await this.hydrateEntriesFromBackend(owner, localEntries);
     await this.hydrateCrushesFromBackend();
   }
 
@@ -491,6 +605,10 @@ export class DataService {
     return computed(() => this._entries().filter(e => e.crushId === crushId));
   }
 
+  public getSharedEntries() {
+    return this._sharedEntries.asReadonly();
+  }
+
   public addEntry(entry: Omit<Entry, 'id' | 'timestamp'>) {
     const newEntry: Entry = {
       ...entry,
@@ -499,6 +617,45 @@ export class DataService {
     };
     this._entries.update(prev => [newEntry, ...prev]);
     this.persistEntries();
+    void this.persistNewEntry(newEntry);
+  }
+
+  private async persistNewEntry(entry: Entry): Promise<void> {
+    if (!this.entriesApi.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const { id, ...payload } = entry;
+      const savedEntry = await this.entriesApi.create(payload);
+      this._entries.update(entries => entries.map((existing) =>
+        existing.id === id ? savedEntry : existing
+      ));
+      this.persistEntries();
+    } catch (error) {
+      localStorage.removeItem(this.getEntriesMigrationStorageKey(this._activeOwner()));
+      console.error('Error persisting new entry:', error);
+      const message = error instanceof Error ? error.message : 'Connection error.';
+      this.modal.show(`Entry saved locally, but could not sync yet: ${message}`);
+    }
+  }
+
+  private async persistEntryUpdate(entry: Entry): Promise<void> {
+    if (!this.entriesApi.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const savedEntry = await this.entriesApi.update(entry);
+      this._entries.update(entries => entries.map((existing) =>
+        existing.id === entry.id ? savedEntry : existing
+      ));
+      this.persistEntries();
+    } catch (error) {
+      console.error('Error persisting entry update:', error);
+      const message = error instanceof Error ? error.message : 'Connection error.';
+      this.modal.show(`Entry updated locally, but sharing could not sync yet: ${message}`);
+    }
   }
 
   public incrementRedFlag(crushId: string) {
@@ -664,19 +821,27 @@ export class DataService {
   }
 
   public toggleEntryVisibility(entryId: string, friendId: string): void {
+    let updatedEntry: Entry | null = null;
+
     this._entries.update(entries => entries.map(e => {
       if (e.id === entryId) {
         if (e.visibility.includes('public')) {
-          return { ...e, visibility: [] };
+          updatedEntry = { ...e, visibility: [] };
+          return updatedEntry;
         }
         const hasFriend = e.visibility.includes(friendId);
         const newVisibility = hasFriend
           ? e.visibility.filter(id => id !== friendId)
           : [...e.visibility, friendId];
-        return { ...e, visibility: newVisibility };
+        updatedEntry = { ...e, visibility: newVisibility };
+        return updatedEntry;
       }
       return e;
     }));
     this.persistEntries();
+
+    if (updatedEntry) {
+      void this.persistEntryUpdate(updatedEntry);
+    }
   }
 }
