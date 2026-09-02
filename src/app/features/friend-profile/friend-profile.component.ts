@@ -6,9 +6,8 @@ import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier } from '../../core/models/user.model';
-import { getApiBaseUrl } from '../../core/config/api-config';
-import { FriendNotesService, FriendNoteVisibility } from '../../core/services/friend-notes.service';
-import { MessagingService } from '../../core/services/messaging.service';
+import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
+import { FriendNotesService } from '../../core/services/friend-notes.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 interface FriendView {
@@ -17,6 +16,13 @@ interface FriendView {
   avatarUrl?: string;
   friendCategories: string[];
   subscriptionTier: SubscriptionTier;
+  friendshipProfile?: {
+    relationshipName?: string;
+    relationshipType?: string;
+    howMet?: string;
+    trustLevel?: string;
+    notes?: string;
+  } | null;
 }
 
 @Component({
@@ -31,7 +37,7 @@ interface FriendView {
         <app-page-hint
           hintKey="friend_bio_inline"
           title="Friend Bio Hint"
-          message="Keep private notes for yourself or mark notes as shared to send them to this friend in chat.">
+          message="Keep private notes for yourself on this friend.">
         </app-page-hint>
 
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
@@ -92,20 +98,6 @@ interface FriendView {
                       class="friend-profile-component__s11"></textarea>
 
             <div class="friend-profile-component__s12">
-              <button (click)="draftVisibility = 'private'"
-                      [style.background-color]="draftVisibility === 'private' ? theme.colors().primary : 'transparent'"
-                      [style.color]="draftVisibility === 'private' ? 'white' : theme.colors().text"
-                      [style.border]="'1px solid ' + (draftVisibility === 'private' ? theme.colors().primary : theme.colors().border)"
-                      class="friend-profile-component__s13">
-                Private
-              </button>
-              <button (click)="draftVisibility = 'shared'"
-                      [style.background-color]="draftVisibility === 'shared' ? theme.colors().primary : 'transparent'"
-                      [style.color]="draftVisibility === 'shared' ? 'white' : theme.colors().text"
-                      [style.border]="'1px solid ' + (draftVisibility === 'shared' ? theme.colors().primary : theme.colors().border)"
-                      class="friend-profile-component__s13">
-                Shared
-              </button>
               <button (click)="addFriendNote()"
                       [style.background-color]="theme.colors().primary"
                       class="friend-profile-component__s14">
@@ -135,7 +127,7 @@ interface FriendView {
                       <button (click)="toggleNote(note.id)"
                               [style.border]="'1px solid ' + theme.colors().border"
                               class="friend-profile-component__s20">
-                        {{ note.visibility === 'shared' ? 'Shared' : 'Private' }}
+                        Private
                       </button>
                     </div>
                     <p class="friend-profile-component__s21">{{ note.content }}</p>
@@ -144,6 +136,43 @@ interface FriendView {
               </div>
             } @else {
               <p [style.color]="theme.colors().textSecondary" class="friend-profile-component__s22">No notes yet.</p>
+            }
+          </div>
+
+          <div [style.border]="'1px solid ' + theme.colors().border"
+               [style.background-color]="theme.colors().bgSecondary"
+               class="friend-profile-component__s15">
+            <h3 class="friend-profile-component__s10">
+              Friendship Profile
+            </h3>
+
+            @if (friend(); as f) {
+              @if (f.friendshipProfile) {
+                <div class="friend-profile-friendship-grid">
+                  <div class="friend-profile-friendship-row">
+                    <span class="friend-profile-friendship-label">Relationship Name</span>
+                    <span class="friend-profile-friendship-value">{{ f.friendshipProfile.relationshipName || 'N/A' }}</span>
+                  </div>
+                  <div class="friend-profile-friendship-row">
+                    <span class="friend-profile-friendship-label">Relationship Type</span>
+                    <span class="friend-profile-friendship-value">{{ f.friendshipProfile.relationshipType || 'N/A' }}</span>
+                  </div>
+                  <div class="friend-profile-friendship-row">
+                    <span class="friend-profile-friendship-label">How You Met</span>
+                    <span class="friend-profile-friendship-value">{{ f.friendshipProfile.howMet || 'N/A' }}</span>
+                  </div>
+                  <div class="friend-profile-friendship-row">
+                    <span class="friend-profile-friendship-label">Trust Level</span>
+                    <span class="friend-profile-friendship-value">{{ f.friendshipProfile.trustLevel || 'N/A' }}</span>
+                  </div>
+                  <div class="friend-profile-friendship-row friend-profile-friendship-row--full">
+                    <span class="friend-profile-friendship-label">Notes</span>
+                    <span class="friend-profile-friendship-value">{{ f.friendshipProfile.notes || 'N/A' }}</span>
+                  </div>
+                </div>
+              } @else {
+                <p [style.color]="theme.colors().textSecondary" class="friend-profile-component__s22">No friendship profile saved yet.</p>
+              }
             }
           </div>
         } @else {
@@ -163,15 +192,12 @@ export class FriendProfileComponent {
   private security = inject(SecurityService);
   private modal = inject(ModalService);
   private notesService = inject(FriendNotesService);
-  private messaging = inject(MessagingService);
+  private friendsApi = inject(FriendsApiService);
 
-  private apiBase = `${getApiBaseUrl()}/demo/friends`;
-  private currentUsername = localStorage.getItem('dexii_api_username') || 'dexii_demo_user';
   private friendId = signal(this.route.snapshot.paramMap.get('id') || '');
 
   friend = signal<FriendView | null>(null);
   draftNote = '';
-  draftVisibility: FriendNoteVisibility = 'private';
 
   notes = computed(() => this.notesService.getNotesForFriend(this.friendId()));
 
@@ -180,11 +206,16 @@ export class FriendProfileComponent {
   }
 
   private async loadFriend() {
-    const username = encodeURIComponent(this.currentUsername);
-    const response = await this.demoFetch(`/list?username=${username}`);
-    if (!Array.isArray(response)) return;
+    if (!this.friendsApi.isAuthenticated()) return;
 
-    const match = response.find((f) => (f.id || f.username) === this.friendId());
+    let friends: FriendSummary[] = [];
+    try {
+      friends = await this.friendsApi.listFriends();
+    } catch {
+      return;
+    }
+
+    const match = friends.find((f) => f.id === this.friendId() || f.username === this.friendId());
     if (!match) return;
 
     this.friend.set({
@@ -192,15 +223,17 @@ export class FriendProfileComponent {
       username: match.username,
       avatarUrl: match.avatarUrl,
       friendCategories: match.friendCategories || ['Close Friends'],
-      subscriptionTier: match.subscriptionTier || SubscriptionTier.Free
+      subscriptionTier: SubscriptionTier.Free,
+      friendshipProfile: this.readLocalFriendshipProfile(match.id || match.username)
     });
   }
 
-  private async demoFetch(path: string, init: RequestInit = {}): Promise<any | null> {
+  private readLocalFriendshipProfile(friendId: string): any {
+    const ownerId = this.security.currentUserId() || 'signed_out';
     try {
-      const response = await fetch(`${this.apiBase}${path}`, init);
-      if (!response.ok) return null;
-      return await response.json();
+      const raw = localStorage.getItem(`dexii_friendship_profiles_${ownerId}`);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === 'object' ? parsed[friendId] || null : null;
     } catch {
       return null;
     }
@@ -216,37 +249,12 @@ export class FriendProfileComponent {
       return;
     }
 
-    const note = this.notesService.addNote(friend.id, content, this.draftVisibility);
-    if (note.visibility === 'shared') {
-      this.messaging.sendMessage({
-        senderId: 'me',
-        receiverId: friend.id,
-        content: `Shared note: ${note.content}`
-      });
-      this.modal.show('Note saved and shared with friend.');
-    } else {
-      this.modal.show('Private note saved.');
-    }
+    this.notesService.addNote(friend.id, content, 'private');
+    this.modal.show('Private note saved.');
     this.draftNote = '';
-    this.draftVisibility = 'private';
   }
 
   toggleNote(noteId: string) {
-    const friend = this.friend();
-    if (!friend) return;
-
-    const note = this.notesService.toggleVisibility(noteId);
-    if (!note) return;
-
-    if (note.visibility === 'shared') {
-      this.messaging.sendMessage({
-        senderId: 'me',
-        receiverId: friend.id,
-        content: `Shared note: ${note.content}`
-      });
-      this.modal.show('Note is now shared with friend.');
-    } else {
-      this.modal.show('Note is now private.');
-    }
+    void noteId;
   }
 }

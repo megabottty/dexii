@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
+import { UserSettingsService } from '../../core/services/user-settings.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
@@ -262,15 +263,16 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 export class SignupProfileComponent {
   public theme = inject(ThemeService);
   private router = inject(Router);
+  private settings = inject(UserSettingsService);
 
-  username = signal<string>('');
-  email = signal<string>('');
-  bio = signal<string>('');
-  relationshipStatus = signal<string>('');
-  lookingFor = signal<string>('');
-  interestedIn = signal<string>('');
-  loveLanguage = signal<string>('');
-  idealDate = signal<string>('');
+  username = signal<string>(this.settings.getSignupDraft().username || '');
+  email = signal<string>(this.settings.getSignupDraft().email || '');
+  bio = signal<string>(this.settings.getSignupDraft().bio || '');
+  relationshipStatus = signal<string>(this.settings.getSignupDraft().relationshipStatus || '');
+  lookingFor = signal<string>(this.settings.getSignupDraft().lookingFor || '');
+  interestedIn = signal<string>(this.settings.getSignupDraft().interestedIn || '');
+  loveLanguage = signal<string>(this.settings.getSignupDraft().loveLanguage || '');
+  idealDate = signal<string>(this.settings.getSignupDraft().idealDate || '');
   errorMessage = signal<string>('');
 
   continue() {
@@ -294,12 +296,20 @@ export class SignupProfileComponent {
       return;
     }
 
+    this.settings.updateSignupDraft({
+      username: usernameValue,
+      email: emailValue,
+      bio: this.bio().trim(),
+      relationshipStatus: this.relationshipStatus() as any,
+      lookingFor: this.lookingFor() as any,
+      interestedIn: this.interestedIn() as any,
+      loveLanguage: this.loveLanguage() as any,
+      idealDate: this.idealDate().trim(),
+      displayName: usernameValue
+    });
+
     localStorage.setItem('dexii_pending_username', usernameValue);
-    if (emailValue) {
-      localStorage.setItem('dexii_pending_email', emailValue);
-    } else {
-      localStorage.removeItem('dexii_pending_email');
-    }
+    localStorage.setItem('dexii_pending_email', emailValue);
     localStorage.setItem('dexii_pending_bio', this.bio().trim());
     localStorage.setItem('dexii_pending_relationshipStatus', this.relationshipStatus());
     localStorage.setItem('dexii_pending_lookingFor', this.lookingFor());

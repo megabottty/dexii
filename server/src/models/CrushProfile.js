@@ -37,8 +37,11 @@ const CrushProfileSchema = new mongoose.Schema({
   },
   redFlags: {
     type: Number,
+    min: 0,
+    max: 1,
     default: 0
   },
+  redFlagReason: String,
   vibeHistory: {
     type: [Number],
     default: [5]

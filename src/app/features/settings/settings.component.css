@@ -1,0 +1,361 @@
+.settings-page {
+  min-height: 100vh;
+}
+
+.settings-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+.settings-card {
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.settings-eyebrow {
+  margin: 0 0 4px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 200;
+}
+
+.settings-subtitle {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.settings-reset-btn {
+  background: transparent;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.settings-profile-banner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 18px;
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+
+.settings-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-photo-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings-photo-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.settings-photo-btn--ghost {
+  background: transparent;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.settings-field--full {
+  grid-column: 1 / -1;
+}
+
+.settings-field input,
+.settings-field textarea,
+.settings-field select {
+  width: 100%;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.settings-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 10px 12px;
+  transition: all 0.2s;
+}
+
+.settings-chip-indicator {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transition: all 0.2s;
+}
+
+.settings-chip-check {
+  color: white;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.settings-chip-label {
+  font-size: 13px;
+}
+
+.settings-divider {
+  height: 1px;
+  margin: 20px 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+}
+
+.settings-plan-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-plan-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.settings-section-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 200;
+}
+
+.settings-plan-copy {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+}
+
+.settings-plan-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-plan-option {
+  border-radius: 14px;
+  cursor: pointer;
+  padding: 14px;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.settings-plan-tier,
+.settings-plan-limit,
+.settings-plan-active {
+  display: block;
+}
+
+.settings-plan-tier {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-plan-limit {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.settings-plan-active {
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.settings-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.settings-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.settings-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.settings-modal-card {
+  width: 100%;
+  max-width: 760px;
+  max-height: 84vh;
+  overflow: auto;
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.settings-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.settings-modal-eyebrow {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.settings-modal-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 200;
+}
+
+.settings-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.settings-modal-help {
+  margin: 12px 0 18px 0;
+}
+
+.settings-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-modal-friend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.settings-modal-friend-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-modal-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.settings-modal-friend-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.settings-modal-friend-meta {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+}
+
+.settings-modal-empty {
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+
+.settings-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .settings-grid,
+  .settings-toggles,
+  .settings-plan-options {
+    grid-template-columns: 1fr;
+  }
+}

@@ -57,7 +57,11 @@ export class ModalService {
     }
   }
 
+  // Callbacks are cleared here so a dismissed modal can never re-invoke a stale
+  // handler, which previously allowed one action to be recorded twice.
   close(): void {
     this._message.set(null);
+    this._onConfirm = null;
+    this._onCancel = null;
   }
 }

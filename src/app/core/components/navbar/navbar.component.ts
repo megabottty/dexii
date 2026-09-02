@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 import { SecurityService } from '../../services/security.service';
+import { UserSettingsService } from '../../services/user-settings.service';
 
 @Component({
   selector: 'app-navbar',
@@ -15,7 +16,14 @@ import { SecurityService } from '../../services/security.service';
       <div class="navbar-brand">
         <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
              class="navbar-logo">D</div>
-        <span class="navbar-title">Dexii</span>
+        <div class="navbar-brand-copy">
+          <span class="navbar-title">Dexii</span>
+          @if (settings.settings().showUsername) {
+            <span [style.color]="theme.colors().textSecondary" class="navbar-username">
+              {{ settings.settings().displayName || '@' + (security.currentUser() || 'guest') }}
+            </span>
+          }
+        </div>
       </div>
 
       <div class="navbar-links">
@@ -33,6 +41,11 @@ import { SecurityService } from '../../services/security.service';
            [style.color]="theme.colors().text"
            class="navbar-link">
           Profile
+        </a>
+        <a routerLink="/settings"
+           [style.color]="theme.colors().text"
+           class="navbar-link">
+          Settings
         </a>
         <button (click)="theme.toggleTheme()"
                 [style.background-color]="'transparent'"
@@ -66,4 +79,5 @@ import { SecurityService } from '../../services/security.service';
 export class NavbarComponent {
   theme = inject(ThemeService);
   security = inject(SecurityService);
+  settings = inject(UserSettingsService);
 }

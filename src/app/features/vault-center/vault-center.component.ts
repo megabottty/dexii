@@ -33,9 +33,12 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           <div class="vault-center-component__s4">
             <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
                  class="vault-center-component__s5">D</div>
-            <span class="vault-center-component__s6">Dexii</span>
+            <div class="vault-brand-copy">
+              <span class="vault-center-component__s6">Dexii</span>
+              <span [style.color]="theme.colors().textSecondary" class="vault-center-component__s7">@{{ security.currentUser() || 'guest' }}</span>
+            </div>
           </div>
-          <div class="vault-center-component__s7">
+          <div class="vault-center-component__s8">
             <a routerLink="/dashboard" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                class="vault-nav-link">Dashboard</a>
             <a routerLink="/friends" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"

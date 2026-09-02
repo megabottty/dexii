@@ -51,6 +51,7 @@ const defaultUsers = [
 const initialState = {
   users: defaultUsers,
   friendships: {},
+  archivedFriendships: {},
   requests: []
 };
 
@@ -76,6 +77,7 @@ const readStore = async () => {
     const state = {
       users: Array.isArray(parsed.users) ? parsed.users : [...defaultUsers],
       friendships: parsed.friendships && typeof parsed.friendships === 'object' ? parsed.friendships : {},
+      archivedFriendships: parsed.archivedFriendships && typeof parsed.archivedFriendships === 'object' ? parsed.archivedFriendships : {},
       requests: Array.isArray(parsed.requests) ? parsed.requests : []
     };
     seedDefaultFriendshipIfEmpty(state);
@@ -116,8 +118,87 @@ const getFriendnames = (state, username) => {
   return Array.isArray(state.friendships[username]) ? state.friendships[username] : [];
 };
 
+const getArchivedFriendnames = (state, username) => {
+  return Array.isArray(state.archivedFriendships[username]) ? state.archivedFriendships[username] : [];
+};
+
 const setFriendnames = (state, username, list) => {
   state.friendships[username] = Array.from(new Set(list));
+};
+
+const setArchivedFriendnames = (state, username, list) => {
+  state.archivedFriendships[username] = Array.from(new Set(list));
+};
+
+const getLatestFriendshipProfile = (state, ownerUsername, friendUsername) => {
+  const matches = state.requests
+    .filter((request) =>
+      request.status === 'accepted' &&
+      (
+        (request.from === ownerUsername && request.to === friendUsername) ||
+        (request.from === friendUsername && request.to === ownerUsername)
+      ) &&
+      request.friendshipProfile
+    )
+    .sort((a, b) => {
+      const aTime = new Date(a.respondedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.respondedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+  return matches[0]?.friendshipProfile || null;
+};
+
+const upsertFriendshipProfile = async (ownerUsername, friendUsername, profileInput) => {
+  const state = await readStore();
+  const ownerUser = ensureUser(state, ownerUsername);
+  const friendUser = ensureUser(state, friendUsername);
+
+  if (!ownerUser || !friendUser) {
+    throw new Error('Invalid friendship users');
+  }
+
+  const friendshipProfile = {
+    relationshipName: sanitizeText(profileInput?.relationshipName, 80),
+    relationshipType: sanitizeText(profileInput?.relationshipType, 60),
+    howMet: sanitizeText(profileInput?.howMet, 120),
+    trustLevel: sanitizeText(profileInput?.trustLevel, 30),
+    notes: sanitizeText(profileInput?.notes, 500)
+  };
+
+  const pairMatch = state.requests
+    .filter((request) =>
+      (
+        (request.from === ownerUser.username && request.to === friendUser.username) ||
+        (request.from === friendUser.username && request.to === ownerUser.username)
+      ) &&
+      (request.status === 'accepted' || request.status === 'pending')
+    )
+    .sort((a, b) => {
+      const aTime = new Date(a.respondedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.respondedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    })[0];
+
+  if (pairMatch) {
+    pairMatch.friendshipProfile = friendshipProfile;
+    if (pairMatch.status === 'pending' && !pairMatch.respondedAt) {
+      pairMatch.updatedAt = new Date().toISOString();
+    }
+  } else {
+    state.requests.push({
+      id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      from: ownerUser.username,
+      to: friendUser.username,
+      status: 'accepted',
+      createdAt: new Date().toISOString(),
+      respondedAt: new Date().toISOString(),
+      friendshipProfile
+    });
+  }
+
+  await writeStore(state);
+  return friendshipProfile;
 };
 
 const searchUsers = async (owner, query) => {
@@ -193,10 +274,11 @@ const getFriends = async (username) => {
   if (!user) return [];
 
   const friendnames = getFriendnames(state, user.username);
+  const archivedFriendnames = getArchivedFriendnames(state, user.username);
   await writeStore(state);
 
   return state.users
-    .filter((u) => friendnames.includes(u.username))
+    .filter((u) => friendnames.includes(u.username) && !archivedFriendnames.includes(u.username))
     .map((u) => ({
       id: u.username,
       username: u.username,
@@ -204,7 +286,30 @@ const getFriends = async (username) => {
       lastName: u.lastName || '',
       avatarUrl: u.avatarUrl,
       friendCategories: u.friendCategories || ['Close Friends'],
-      subscriptionTier: u.subscriptionTier || 'Free'
+      subscriptionTier: u.subscriptionTier || 'Free',
+      friendshipProfile: getLatestFriendshipProfile(state, user.username, u.username)
+    }));
+};
+
+const getArchivedFriends = async (username) => {
+  const state = await readStore();
+  const user = ensureUser(state, username);
+  if (!user) return [];
+
+  const archivedFriendnames = getArchivedFriendnames(state, user.username);
+  await writeStore(state);
+
+  return state.users
+    .filter((u) => archivedFriendnames.includes(u.username))
+    .map((u) => ({
+      id: u.username,
+      username: u.username,
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
+      avatarUrl: u.avatarUrl,
+      friendCategories: u.friendCategories || ['Close Friends'],
+      subscriptionTier: u.subscriptionTier || 'Free',
+      friendshipProfile: getLatestFriendshipProfile(state, user.username, u.username)
     }));
 };
 
@@ -357,6 +462,26 @@ const respondToRequest = async (username, requestId, action) => {
   return request;
 };
 
+const cancelRequest = async (username, requestId) => {
+  const state = await readStore();
+  const user = ensureUser(state, username);
+  if (!user) throw new Error('Invalid user');
+
+  const index = state.requests.findIndex((r) => r.id === requestId);
+  if (index === -1) {
+    throw new Error('Request not found');
+  }
+
+  const request = state.requests[index];
+  if (request.from !== user.username || request.status !== 'pending') {
+    throw new Error('Pending outgoing request not found');
+  }
+
+  state.requests.splice(index, 1);
+  await writeStore(state);
+  return request;
+};
+
 const removeFriend = async (username, friendUsername) => {
   const state = await readStore();
   ensureUser(state, username);
@@ -364,8 +489,38 @@ const removeFriend = async (username, friendUsername) => {
 
   const a = getFriendnames(state, username).filter((name) => name !== friendUsername);
   const b = getFriendnames(state, friendUsername).filter((name) => name !== username);
+  const archivedA = getArchivedFriendnames(state, username).filter((name) => name !== friendUsername);
+  const archivedB = getArchivedFriendnames(state, friendUsername).filter((name) => name !== username);
   setFriendnames(state, username, a);
   setFriendnames(state, friendUsername, b);
+  setArchivedFriendnames(state, username, archivedA);
+  setArchivedFriendnames(state, friendUsername, archivedB);
+
+  await writeStore(state);
+};
+
+const archiveFriend = async (username, friendUsername) => {
+  const state = await readStore();
+  ensureUser(state, username);
+  ensureUser(state, friendUsername);
+
+  const active = getFriendnames(state, username).filter((name) => name !== friendUsername);
+  const archived = Array.from(new Set([...getArchivedFriendnames(state, username), friendUsername]));
+  setFriendnames(state, username, active);
+  setArchivedFriendnames(state, username, archived);
+
+  await writeStore(state);
+};
+
+const unarchiveFriend = async (username, friendUsername) => {
+  const state = await readStore();
+  ensureUser(state, username);
+  ensureUser(state, friendUsername);
+
+  const active = Array.from(new Set([...getFriendnames(state, username), friendUsername]));
+  const archived = getArchivedFriendnames(state, username).filter((name) => name !== friendUsername);
+  setFriendnames(state, username, active);
+  setArchivedFriendnames(state, username, archived);
 
   await writeStore(state);
 };
@@ -373,11 +528,16 @@ const removeFriend = async (username, friendUsername) => {
 module.exports = {
   searchUsers,
   getFriends,
+  getArchivedFriends,
   createRequest,
+  upsertFriendshipProfile,
   getIncomingRequests,
   getOutgoingRequests,
   nudgeRequest,
   respondToRequest,
+  cancelRequest,
+  archiveFriend,
+  unarchiveFriend,
   removeFriend,
   ensureUser,
   readStore

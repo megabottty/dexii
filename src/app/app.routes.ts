@@ -68,6 +68,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/vault-center/vault-center.component').then(m => m.VaultCenterComponent)
   },
   {
+    path: 'settings',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
+  },
+  {
     path: '**',
     redirectTo: 'dashboard'
   }

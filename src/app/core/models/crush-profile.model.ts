@@ -3,6 +3,8 @@ export enum CrushStatus {
   Crushing = 'Crushing',
   Dating = 'Dating',
   Exclusive = 'Exclusive',
+  BrokenUp = 'Broken Up',
+  Heartbroken = 'Heartbroken',
   Archived = 'Archived',
   Friend = 'Friend'
 }
@@ -21,6 +23,7 @@ export interface CrushProfile {
   rating?: number; // 1-5 stars — current/latest vibe
   initialRating?: number; // 1-5 stars — set at creation, never overwritten by vibe logs
   redFlags: number;
+  redFlagReason?: string;
   vibeHistory: number[]; // Array of last 10 vibe scores (1-5 stars)
   isStealth?: boolean;
   category?: string; // e.g. "Work", "Old Crush"

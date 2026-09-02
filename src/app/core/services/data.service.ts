@@ -16,6 +16,7 @@ interface BackendCrush {
   bio?: string;
   status?: string;
   visibility?: string[];
+  redFlagReason?: string;
   lastInteraction?: string;
   rating?: number;
   redFlags?: number;
@@ -145,7 +146,16 @@ export class DataService {
   }
 
   private toCrushStatus(status?: string): CrushStatus {
-    if (status === CrushStatus.Crush || status === CrushStatus.Dating || status === CrushStatus.Exclusive || status === CrushStatus.Archived) {
+    if (
+      status === CrushStatus.Crush ||
+      status === CrushStatus.Crushing ||
+      status === CrushStatus.Dating ||
+      status === CrushStatus.Exclusive ||
+      status === CrushStatus.BrokenUp ||
+      status === CrushStatus.Heartbroken ||
+      status === CrushStatus.Archived ||
+      status === CrushStatus.Friend
+    ) {
       return status;
     }
     return CrushStatus.Crush;
@@ -164,7 +174,8 @@ export class DataService {
       sharedEntries: [],
       lastInteraction: crush.lastInteraction ? new Date(crush.lastInteraction) : new Date(),
       rating: crush.rating,
-      redFlags: crush.redFlags ?? 0,
+      redFlags: crush.redFlags && crush.redFlags > 0 ? 1 : 0,
+      redFlagReason: crush.redFlagReason || '',
       vibeHistory: crush.vibeHistory?.length ? crush.vibeHistory : [5],
       category: crush.category,
       hair: crush.hair || [],
@@ -336,6 +347,7 @@ export class DataService {
         lastInteraction: crush.lastInteraction,
         rating: crush.rating,
         redFlags: crush.redFlags,
+        redFlagReason: crush.redFlagReason,
         vibeHistory: crush.vibeHistory,
         category: crush.category,
         hair: crush.hair,
@@ -413,6 +425,7 @@ export class DataService {
         lastInteraction: crush.lastInteraction,
         rating: crush.rating,
         redFlags: crush.redFlags,
+        redFlagReason: crush.redFlagReason,
         vibeHistory: crush.vibeHistory,
         category: crush.category,
         hair: crush.hair,
@@ -489,9 +502,36 @@ export class DataService {
   }
 
   public incrementRedFlag(crushId: string) {
+    const crush = this._allCrushes().find((item) => item.id === crushId);
+    if (!crush) return;
+
+    const updated = { ...crush, redFlags: 1 };
     this._allCrushes.update(crushes => crushes.map(c =>
-      c.id === crushId ? { ...c, redFlags: c.redFlags + 1 } : c
+      c.id === crushId ? updated : c
     ));
+    void this.persistCrushUpdate(updated);
+  }
+
+  public setRedFlag(crushId: string, reason: string) {
+    const crush = this._allCrushes().find((item) => item.id === crushId);
+    if (!crush) return;
+
+    const updated = { ...crush, redFlags: 1, redFlagReason: reason.trim() };
+    this._allCrushes.update(crushes => crushes.map(c =>
+      c.id === crushId ? updated : c
+    ));
+    void this.persistCrushUpdate(updated);
+  }
+
+  public clearRedFlag(crushId: string) {
+    const crush = this._allCrushes().find((item) => item.id === crushId);
+    if (!crush) return;
+
+    const updated = { ...crush, redFlags: 0, redFlagReason: '' };
+    this._allCrushes.update(crushes => crushes.map(c =>
+      c.id === crushId ? updated : c
+    ));
+    void this.persistCrushUpdate(updated);
   }
 
   public updateVibe(crushId: string, score: number) {
@@ -516,6 +556,7 @@ export class DataService {
       userId: this.getUserId(),
       lastInteraction: new Date(),
       redFlags: 0,
+      redFlagReason: '',
       initialRating: startRating,
       vibeHistory: [startRating],
       sharedEntries: []

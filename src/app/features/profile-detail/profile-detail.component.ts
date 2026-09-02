@@ -9,7 +9,7 @@ import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier, User } from '../../core/models/user.model';
-import { getApiBaseUrl } from '../../core/config/api-config';
+import { FriendsApiService } from '../../core/services/friends-api.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -74,25 +74,69 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       {{ (c.rating || 0) >= star ? '★' : '☆' }}
                     }
                   </span>
-                  <span
-                    [style.color]="(c.redFlags || 0) > 0 ? '#ef4444' : '#22c55e'"
-                    [style.border]="'1px solid ' + ((c.redFlags || 0) > 0 ? '#ef4444' : '#22c55e')"
-                    style="padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; line-height: 1.2;">
-                    {{ (c.redFlags || 0) > 0 ? '🚩' : '✅' }}
-                    @if ((c.redFlags || 0) > 0) {
-                      ({{ c.redFlags }})
-                    }
-                  </span>
+                  @if ((c.redFlags || 0) > 0) {
+                    <button type="button"
+                            (click)="showRedFlagReason(c)"
+                            [style.color]="'#ef4444'"
+                            [style.border]="'1px solid #ef4444'"
+                            class="status-chip-button red-flag-chip-button">
+                      🚩 Flagged
+                    </button>
+                  } @else {
+                    <span
+                      [style.color]="'#22c55e'"
+                      [style.border]="'1px solid #22c55e'"
+                      style="padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; line-height: 1.2;">
+                      ✅ Clear
+                    </span>
+                  }
                 </div>
               </div>
               <div class="profile-title-section">
                 <h1 class="profile-name">{{ c.nickname }}</h1>
+                @if (c.relationshipStatus) {
+                  <p [style.color]="theme.colors().textSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     [style.background-color]="theme.colors().bg"
+                     class="profile-relationship-status">
+                    {{ c.relationshipStatus }}
+                  </p>
+                }
                 <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap;">
-                  <span [style.color]="theme.colors().primary"
-                        [style.border]="'1px solid ' + theme.colors().primary"
-                        style="padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;">
-                    Status: {{ c.status || 'Crushing' }}
-                  </span>
+                  @if (!statusQuickEditOpen()) {
+                    <button type="button"
+                            (click)="statusQuickEditOpen.set(true)"
+                            [style.color]="theme.colors().primary"
+                            [style.border]="'1px solid ' + theme.colors().primary"
+                            class="status-chip-button">
+                      Status: {{ c.status || 'Crushing' }}
+                    </button>
+                  } @else {
+                    <div class="status-quick-edit">
+                      <select [value]="c.status || statuses.Crushing"
+                              (change)="setQuickStatus(c.id, asSelectValue($event))"
+                              [style.background-color]="theme.colors().bg"
+                              [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().text"
+                              class="status-quick-select">
+                        <option [value]="statuses.Crush">Crush</option>
+                        <option [value]="statuses.Crushing">Crushing</option>
+                        <option [value]="statuses.Dating">Dating</option>
+                        <option [value]="statuses.Exclusive">Exclusive</option>
+                        <option [value]="statuses.BrokenUp">Broken Up</option>
+                        <option [value]="statuses.Heartbroken">Heartbroken</option>
+                        <option [value]="statuses.Archived">Archived</option>
+                        <option [value]="statuses.Friend">Friend</option>
+                      </select>
+                      <button type="button"
+                              (click)="statusQuickEditOpen.set(false)"
+                              [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().textSecondary"
+                              class="status-chip-button status-chip-button--ghost">
+                        Cancel
+                      </button>
+                    </div>
+                  }
                 </p>
                 <p [style.color]="theme.colors().primary" class="profile-subtitle">
                   {{ c.location || 'Location Unknown' }} • {{ c.age ? c.age + ' years' : 'Age Unknown' }}
@@ -103,14 +147,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
             </div>
 
-            <div class="action-buttons-grid">
-              @if (isEditMode()) {
-                <button (click)="saveEdit(c.id)" class="action-btn-styled primary">Save Changes</button>
-                <button (click)="toggleEditMode()" class="action-btn-styled secondary">Cancel</button>
-              } @else {
+            @if (!isEditMode()) {
+              <div class="action-buttons-grid">
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
-                <button (click)="shareSelectorMode.set('crush'); pendingShareEntryId.set(null); showShareSelector.set(true)" class="action-btn-styled primary">🔗 Share</button>
+                <button (click)="openShareSelector(c.id)" class="action-btn-styled primary">🔗 Share</button>
                 <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary action-btn-no-wrap">📣 Share Dating Status</button>
                 <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
                   {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
@@ -119,10 +160,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
                 </button>
-                <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
+                @if ((c.redFlags || 0) > 0) {
+                  <button (click)="removeRedFlag(c.id)" class="action-btn-styled danger">🧹 Remove Red Flag</button>
+                } @else {
+                  <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
+                }
                 <button (click)="deleteCrush(c.id)" class="action-btn-styled danger">🗑️ Delete</button>
-              }
-            </div>
+              </div>
+            }
 
             @if (!isEditMode() && showSafetySetup()) {
               <div [style.border]="'1px solid ' + theme.colors().border"
@@ -205,19 +250,30 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div class="selector-card" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
                 <div class="selector-header">
                   <h3>{{ shareSelectorMode() === 'dating' ? 'Share dating status' : (pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend') }}</h3>
-                  <button class="close-btn" (click)="closeShareSelector()">✕</button>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    @if (shareSelectorMode() === 'dating') {
+                      <button class="action-btn-styled secondary" style="padding: 6px 10px; font-size: 10px;" (click)="toggleSelectAllDatingShareFriends()">
+                        {{ areAllDatingShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
+                      </button>
+                    } @else {
+                      <button class="action-btn-styled secondary" style="padding: 6px 10px; font-size: 10px;" (click)="toggleSelectAllShareFriends()">
+                        {{ areAllShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
+                      </button>
+                    }
+                    <button class="close-btn" (click)="closeShareSelector()">✕</button>
+                  </div>
                 </div>
                 <div class="friend-list-scroll">
                   @for (friend of friends(); track friend.id) {
-                    <div class="friend-item" (click)="shareSelectorMode() === 'dating' ? toggleDatingShareFriend(friend.id) : shareWithFriend(c.id, friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
+                    <div class="friend-item" (click)="shareSelectorMode() === 'dating' ? toggleDatingShareFriend(friend.id, friend.username) : toggleShareFriend(friend.id, friend.username)" [style.border-bottom]="'1px solid ' + theme.colors().border">
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
                       <div class="friend-info">
                         <span class="friend-name">{{ friend.username }}</span>
-                        <span class="friend-status" [style.color]="shareSelectorMode() === 'dating' ? (isDatingShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary) : ((pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? theme.colors().primary : theme.colors().textSecondary)">
+                        <span class="friend-status" [style.color]="shareSelectorMode() === 'dating' ? (isDatingShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary) : (isShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary)">
                           @if (shareSelectorMode() === 'dating') {
                             {{ isDatingShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
                           } @else {
-                            {{ (pendingShareEntryId() ? isEntrySharedWithFriend(friend.id) : isShared(c, friend.id)) ? '✓ Shared' : 'Not shared' }}
+                            {{ isShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
                           }
                         </span>
                       </div>
@@ -233,6 +289,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
                     <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
                     <button class="action-btn-styled primary" (click)="confirmDatingStatusShare(c.id)">Share with selected</button>
+                  </div>
+                } @else {
+                  <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
+                    <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
+                    <button class="action-btn-styled primary" (click)="confirmShareSelected(c.id)">
+                      {{ pendingShareEntryId() ? 'Share Note with Selected' : 'Share with Selected' }}
+                    </button>
                   </div>
                 }
               </div>
@@ -264,6 +327,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <option [value]="statuses.Crushing">Crushing</option>
                       <option [value]="statuses.Dating">Dating</option>
                       <option [value]="statuses.Exclusive">Exclusive</option>
+                      <option [value]="statuses.BrokenUp">Broken Up</option>
+                      <option [value]="statuses.Heartbroken">Heartbroken</option>
                       <option [value]="statuses.Archived">Archived</option>
                       <option [value]="statuses.Friend">Friend</option>
                     </select>
@@ -521,6 +586,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
               </div>
 
+              <div class="edit-actions-footer">
+                <button (click)="saveEdit(c.id)" class="action-btn-styled primary">Save Changes</button>
+                <button (click)="toggleEditMode()" class="action-btn-styled secondary">Cancel</button>
+              </div>
+
             </div>
           } @else {
             <div [style.background-color]="theme.colors().bgSecondary"
@@ -580,10 +650,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     }
                   </span>
                 </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Relationship Label</span>
-                  <span class="info-value">{{ c.relationshipStatus || 'N/A' }}</span>
-                </div>
                 @if (c.heartbreakSong) {
                   <div class="info-row-styled">
                     <span class="info-label">Heartbreak Song</span>
@@ -633,6 +699,33 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <div class="extended-info-section">
                   <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
                   <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ getFilteredNotes(c.customNotes) }}</p>
+                </div>
+              }
+
+              @if (redFlagEntries().length > 0) {
+                <div class="extended-info-section">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <h3 [style.color]="'#ef4444'" class="extended-info-title" style="margin: 0;">🚩 Red Flag Entries</h3>
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem;">{{ redFlagEntries().length }} total</span>
+                  </div>
+
+                  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                    @for (entry of redFlagEntries(); track entry.id) {
+                      <div [style.border]="'1px solid #ef4444'"
+                           [style.background-color]="theme.colors().bg"
+                           style="padding: 12px; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                          <span [style.color]="'#ef4444'" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                            🚩 Red Flag
+                          </span>
+                          <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                            {{ entry.timestamp | date:'MMM d, h:mm a' }}
+                          </span>
+                        </div>
+                        <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                      </div>
+                    }
+                  </div>
                 </div>
               }
 
@@ -745,6 +838,7 @@ export class ProfileDetailComponent implements OnDestroy {
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
   public modal = inject(ModalService);
+  private friendsApi = inject(FriendsApiService);
   private router = inject(Router);
 
   crushId = signal<string | null>(null);
@@ -756,10 +850,12 @@ export class ProfileDetailComponent implements OnDestroy {
   shareSelectorMode = signal<'crush' | 'dating'>('crush');
   showVibeBanner = signal(true);
   showSafetySetup = signal(false);
+  statusQuickEditOpen = signal(false);
   vibePromptFrequencyHours = signal(24);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
   pendingShareEntryId = signal<string | null>(null);
+  shareFriendIds = signal<string[]>([]);
   datingShareFriendIds = signal<string[]>([]);
   safetyDurationMinutes = signal<number>(60);
   safetyContactIds = signal<string[]>([]);
@@ -778,6 +874,7 @@ export class ProfileDetailComponent implements OnDestroy {
     'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo'
   ];
   private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingRedFlagLogs = new Set<string>();
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
     {label: 'He/Him', value: 'he'},
@@ -843,6 +940,14 @@ export class ProfileDetailComponent implements OnDestroy {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
   );
 
+  redFlagEntries = computed(() =>
+    this.entries()
+      .filter((entry) => entry.type === 'RedFlag')
+      .slice()
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, (this.crush()?.redFlags || 0) > 0 ? 1 : 0)
+  );
+
   selectedSafetyContactNames = computed(() => {
     const selected = this.safetyContactIds();
     if (selected.length === 0) return '';
@@ -857,30 +962,29 @@ export class ProfileDetailComponent implements OnDestroy {
     this.refreshVibePromptVisibility();
   }
 
+  asSelectValue(event: Event): string {
+    const target = event.target as HTMLSelectElement | null;
+    return target?.value ?? '';
+  }
+
   ngOnDestroy(): void {
     this.clearSafetyTimers();
   }
 
   private async loadFriends() {
-    const currentUsername = this.security.currentUser() || 'dexii_demo_user';
-    const apiBase = `${getApiBaseUrl()}/demo/friends`;
+    if (!this.friendsApi.isAuthenticated()) return;
     try {
-      const response = await fetch(`${apiBase}/list?username=${encodeURIComponent(currentUsername)}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          this.friends.set(data.map(f => ({
-            id: f.id || f.username,
-            username: f.username,
-            friends: [],
-            blockedUsers: [],
-            subscriptionTier: f.subscriptionTier || SubscriptionTier.Free,
-            isVerified18: true,
-            avatarUrl: f.avatarUrl,
-            friendCategories: f.friendCategories || ['Close Friends']
-          } as User)));
-        }
-      }
+      const data = await this.friendsApi.listFriends();
+      this.friends.set(data.map(f => ({
+        id: f.id || f.username,
+        username: f.username,
+        friends: [],
+        blockedUsers: [],
+        subscriptionTier: SubscriptionTier.Free,
+        isVerified18: true,
+        avatarUrl: f.avatarUrl,
+        friendCategories: f.friendCategories || ['Close Friends']
+      } as User)));
     } catch (err) {
       console.error('Failed to load friends', err);
     }
@@ -959,15 +1063,60 @@ export class ProfileDetailComponent implements OnDestroy {
   logRedFlag(id: string) {
     const c = this.crush();
     if (!c) return;
+    if ((c.redFlags || 0) > 0) {
+      this.showRedFlagReason(c);
+      return;
+    }
+    if (this.pendingRedFlagLogs.has(id)) return;
 
-    this.dataService.updateCrush({ ...c, redFlags: (c.redFlags || 0) + 1 });
-    this.dataService.addEntry({
-      crushId: id,
-      type: 'RedFlag',
-      content: 'A new cautionary flag was raised.',
-      isBurnAfterReading: false,
-      visibility: [],
-      isSensitive: false
+    this.pendingRedFlagLogs.add(id);
+    this.modal.prompt('Why are you adding a red flag?', c.redFlagReason || '', (reason) => {
+      if (!this.pendingRedFlagLogs.has(id)) return;
+      this.pendingRedFlagLogs.delete(id);
+
+      const trimmedReason = reason.trim();
+      if (!trimmedReason) {
+        this.modal.show('Please add a reason before saving the red flag.');
+        return;
+      }
+
+      const latestCrush = this.dataService.visibleCrushes().find((item) => item.id === id);
+      if (!latestCrush) return;
+      if ((latestCrush.redFlags || 0) > 0) {
+        this.showRedFlagReason(latestCrush);
+        return;
+      }
+
+      this.dataService.setRedFlag(id, trimmedReason);
+      this.dataService.addEntry({
+        crushId: id,
+        type: 'RedFlag',
+        content: `Red flag added: ${trimmedReason}`,
+        isBurnAfterReading: false,
+        visibility: [],
+        isSensitive: false,
+        redFlagCount: 1
+      });
+      this.modal.show(`Red flag added: ${trimmedReason}`);
+    }, () => {
+      this.pendingRedFlagLogs.delete(id);
+    });
+  }
+
+  showRedFlagReason(crush: CrushProfile) {
+    const reason = (crush.redFlagReason || '').trim();
+    if (!reason) {
+      this.modal.show('This crush has one red flag, but no reason was saved yet.');
+      return;
+    }
+
+    this.modal.show(`Red flag reason: ${reason}`);
+  }
+
+  removeRedFlag(id: string) {
+    this.modal.confirm('Remove the red flag from this crush?', () => {
+      this.dataService.clearRedFlag(id);
+      this.modal.show('Red flag removed.');
     });
   }
 
@@ -1248,7 +1397,19 @@ export class ProfileDetailComponent implements OnDestroy {
     }
     this.pendingShareEntryId.set(null);
     this.shareSelectorMode.set('dating');
+    this.shareFriendIds.set([]);
     this.datingShareFriendIds.set([]);
+    this.showShareSelector.set(true);
+  }
+
+  openShareSelector(crushId: string): void {
+    if (this.friends().length === 0) {
+      this.modal.show('Add at least one friend first to share.');
+      return;
+    }
+    this.pendingShareEntryId.set(null);
+    this.shareSelectorMode.set('crush');
+    this.shareFriendIds.set(this.friends().filter((friend) => this.crush() ? this.isShared(this.crush()!, friend.id) : false).map((friend) => friend.id));
     this.showShareSelector.set(true);
   }
 
@@ -1256,13 +1417,49 @@ export class ProfileDetailComponent implements OnDestroy {
     this.showShareSelector.set(false);
     this.pendingShareEntryId.set(null);
     this.shareSelectorMode.set('crush');
+    this.shareFriendIds.set([]);
     this.datingShareFriendIds.set([]);
   }
 
-  toggleDatingShareFriend(friendId: string): void {
+  toggleDatingShareFriend(friendId: string, friendName?: string): void {
     this.datingShareFriendIds.update((ids) =>
       ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
     );
+  }
+
+  areAllDatingShareFriendsSelected(): boolean {
+    const friends = this.friends();
+    const selected = this.datingShareFriendIds();
+    return friends.length > 0 && selected.length === friends.length;
+  }
+
+  toggleSelectAllDatingShareFriends(): void {
+    if (this.areAllDatingShareFriendsSelected()) {
+      this.datingShareFriendIds.set([]);
+      return;
+    }
+
+    this.datingShareFriendIds.set(this.friends().map((friend) => friend.id));
+  }
+
+  isShareFriendSelected(friendId: string): boolean {
+    return this.shareFriendIds().includes(friendId);
+  }
+
+  areAllShareFriendsSelected(): boolean {
+    const friends = this.friends();
+    return friends.length > 0 && this.shareFriendIds().length === friends.length;
+  }
+
+  toggleSelectAllShareFriends(): void {
+    const friends = this.friends();
+    if (friends.length === 0) return;
+    if (this.areAllShareFriendsSelected()) {
+      this.shareFriendIds.set([]);
+      return;
+    }
+
+    this.shareFriendIds.set(friends.map((friend) => friend.id));
   }
 
   isDatingShareFriendSelected(friendId: string): boolean {
@@ -1316,47 +1513,69 @@ export class ProfileDetailComponent implements OnDestroy {
     this.modal.show(`Dating status shared with ${contacts.length} friend${contacts.length === 1 ? '' : 's'}.`);
   }
 
-  shareWithFriend(crushId: string, friendId: string): void {
-    if (friendId) {
-      const entryId = this.pendingShareEntryId();
-      if (entryId) {
-        if (!this.isEntrySharedWithFriend(friendId)) {
-          this.dataService.toggleEntryVisibility(entryId, friendId);
-        }
-
-        const note = this.entries().find((entry) => entry.id === entryId);
-        if (note) {
-          this.messaging.sendMessage({
-            senderId: 'me',
-            receiverId: friendId,
-            content: `Shared note about ${this.crush()?.nickname || 'this crush'}: ${note.content}`,
-            relatedCrushId: crushId,
-            relatedEntryId: note.id
-          });
-        }
-
-        this.closeShareSelector();
-        this.modal.show(`Note shared with ${friendId}.`);
-        return;
-      }
-
-      this.dataService.toggleCrushVisibility(crushId, friendId);
-
-      // Check if now visible or not
-      const c = this.crush();
-      const isSharedNow = c?.visibility.some(id =>
-        id === friendId ||
-        (this.dataService.isMe(friendId) && (id === 'me' || id === this.dataService.getUserId())) ||
-        id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
-      );
-
-      if (isSharedNow) {
-        this.modal.show(`Crush shared with ${friendId}! Check Shared History to track.`);
-      } else {
-        this.modal.show(`Crush unshared from ${friendId}.`);
-      }
-      this.closeShareSelector();
+  confirmShareSelected(crushId: string): void {
+    const selectedIds = this.shareFriendIds();
+    if (selectedIds.length === 0) {
+      this.modal.show('Select at least one friend to share with.');
+      return;
     }
+
+    const crush = this.crush();
+    if (!crush) {
+      this.modal.show('Unable to share right now.');
+      return;
+    }
+
+    const entryId = this.pendingShareEntryId();
+    const selectedFriends = this.friends().filter((friend) => selectedIds.includes(friend.id));
+    const selectedSet = new Set(selectedIds);
+
+    if (entryId) {
+      const currentSet = new Set(this.friends().filter((friend) => this.isEntrySharedWithFriend(friend.id)).map((friend) => friend.id));
+      this.friends().forEach((friend) => {
+        const shouldBeSelected = selectedSet.has(friend.id);
+        const isSelected = currentSet.has(friend.id);
+        if (shouldBeSelected !== isSelected) {
+          this.dataService.toggleEntryVisibility(entryId, friend.id);
+        }
+      });
+
+      selectedFriends.forEach((friend) => {
+        this.messaging.sendMessage({
+          senderId: 'me',
+          receiverId: friend.id,
+          content: `Shared note about ${this.crush()?.nickname || 'this crush'}: ${this.entries().find((entry) => entry.id === entryId)?.content || 'Shared note'}`,
+          relatedCrushId: crushId,
+          relatedEntryId: entryId
+        });
+      });
+
+      this.closeShareSelector();
+      this.modal.show(`Note shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
+      return;
+    }
+
+    const currentSet = new Set(this.friends().filter((friend) => this.isShared(crush, friend.id)).map((friend) => friend.id));
+    this.friends().forEach((friend) => {
+      const shouldBeSelected = selectedSet.has(friend.id);
+      const isSelected = currentSet.has(friend.id);
+      if (shouldBeSelected !== isSelected) {
+        this.dataService.toggleCrushVisibility(crushId, friend.id);
+      }
+    });
+
+    this.closeShareSelector();
+    this.modal.show(`Crush shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
+  }
+
+  shareWithFriend(crushId: string, friendId: string, friendName?: string): void {
+    this.toggleShareFriend(friendId, friendName);
+  }
+
+  toggleShareFriend(friendId: string, friendName?: string): void {
+    this.shareFriendIds.update((ids) =>
+      ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
+    );
   }
 
   startSharingNote(entryId: string): void {
@@ -1449,6 +1668,16 @@ export class ProfileDetailComponent implements OnDestroy {
 
   toggleSafetySetup(): void {
     this.showSafetySetup.update((open) => !open);
+  }
+
+  setQuickStatus(crushId: string, statusValue: string): void {
+    const crush = this.crush();
+    if (!crush) return;
+
+    const nextStatus = statusValue as CrushStatus;
+    this.dataService.updateCrush({ ...crush, status: nextStatus });
+    this.statusQuickEditOpen.set(false);
+    this.modal.show(`Status updated to ${nextStatus}.`);
   }
 
   saveEdit(crushId: string) {

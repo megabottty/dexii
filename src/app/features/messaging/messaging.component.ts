@@ -40,23 +40,28 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         <app-page-hint
           hintKey="chat_inline"
           title="Chat Hint"
-          message="Shared notes appear here. Send normal messages, and include the word 'secret' to make a message self-destruct and disappear.">
+          message="Shared notes appear here. Send normal messages, and include the word 'secret' to make a message self-destruct after it is opened.">
         </app-page-hint>
 
         @for (msg of activeMessages(); track msg.id) {
-          <div [style.align-self]="msg.senderId === 'me' ? 'flex-end' : 'flex-start'"
+          <div [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'"
                [style.max-width]="'70%'"
                class="messaging-component__s8">
-            <div [style.background-color]="msg.senderId === 'me' ? theme.colors().primary : theme.colors().bgSecondary"
-                 [style.color]="msg.senderId === 'me' ? 'white' : theme.colors().text"
-                 [style.border]="msg.senderId === 'me' ? 'none' : '1px solid ' + theme.colors().border"
+            <div [style.background-color]="isMine(msg) ? theme.colors().primary : theme.colors().bgSecondary"
+                 [style.color]="isMine(msg) ? 'white' : theme.colors().text"
+                 [style.border]="isMine(msg) ? 'none' : '1px solid ' + theme.colors().border"
                  class="messaging-component__s9">
               {{ msg.content }}
               @if (msg.isSelfDestruct) {
-                <span class="messaging-component__s10">🔥 Self-Destructing</span>
+                <span class="messaging-component__s10">
+                  🔥 Self-Destructing
+                  @if (msg.selfDestructDurationMs) {
+                    • {{ formatSelfDestructDuration(msg.selfDestructDurationMs) }} after opened
+                  }
+                </span>
               }
             </div>
-            <span [style.color]="theme.colors().textSecondary" [style.text-align]="msg.senderId === 'me' ? 'right' : 'left'" class="messaging-time">
+            <span [style.color]="theme.colors().textSecondary" [style.text-align]="isMine(msg) ? 'right' : 'left'" class="messaging-time">
               {{ msg.timestamp | date:'h:mm a' }}
             </span>
           </div>
@@ -66,11 +71,30 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       <!-- Input Area -->
       <div [style.background-color]="theme.colors().bgSecondary" [style.border-top]="'1px solid ' + theme.colors().border"
            class="messaging-component__s11">
-        <input [(ngModel)]="newMessage" (keyup.enter)="send()"
-               [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-               placeholder="Spill the tea..."
-               aria-label="Message input"
-               class="messaging-component__s12">
+        <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+          <input [(ngModel)]="newMessage" (keyup.enter)="send()"
+                 [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                 placeholder="Spill the tea..."
+                 aria-label="Message input"
+                 class="messaging-component__s12">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <label [style.color]="theme.colors().textSecondary" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+              Self-destruct after
+            </label>
+            <select [(ngModel)]="selfDestructDurationMs"
+                    [style.background-color]="theme.colors().bg"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.color]="theme.colors().text"
+                    style="padding: 8px 10px; border-radius: 0; font-family: 'Times New Roman', serif;">
+              @for (option of selfDestructOptions; track option.ms) {
+                <option [ngValue]="option.ms">{{ option.label }}</option>
+              }
+            </select>
+            <span [style.color]="theme.colors().textSecondary" style="font-size: 11px;">
+              Type “secret” to trigger the timer.
+            </span>
+          </div>
+        </div>
         <button (click)="send()" [style.background-color]="theme.colors().primary"
                 class="messaging-component__s13">
           Send
@@ -91,6 +115,13 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   private fallbackPartnerName = 'Sarah Best';
   private chatPartnerId = signal<string>(this.fallbackPartnerId);
   private chatPartnerName = signal<string>(this.fallbackPartnerName);
+  selfDestructDurationMs = signal(30000);
+  selfDestructOptions = [
+    { label: '10 seconds', ms: 10000 },
+    { label: '30 seconds', ms: 30000 },
+    { label: '1 minute', ms: 60000 },
+    { label: '5 minutes', ms: 300000 }
+  ];
 
   currentChatPartner = computed(() => {
     return {
@@ -100,8 +131,17 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   });
   newMessage = '';
 
+  // Falls back to the legacy local-only 'me' marker when signed out, so existing
+  // locally stored conversations still render.
+  selfId = computed(() => this.security.currentUserId() || 'me');
+
+  /** True when the message was sent by the signed-in user. */
+  isMine(msg: { senderId: string }): boolean {
+    return msg.senderId === this.selfId();
+  }
+
   activeMessages = computed(() =>
-    this.messaging.getConversation('me', this.currentChatPartner().id)
+    this.messaging.getConversation(this.selfId(), this.currentChatPartner().id)
   );
 
   constructor() {
@@ -112,6 +152,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
       if (partnerId) {
         this.chatPartnerId.set(partnerId);
         this.chatPartnerName.set(partnerName || partnerId);
+        void this.messaging.loadConversation(partnerId);
         return;
       }
 
@@ -127,12 +168,13 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   }
 
   private getLatestConversationPartner(): { id: string; username: string } | null {
+    const self = this.selfId();
     const messages = this.messaging.messages().slice().reverse();
     for (const msg of messages) {
-      if (msg.senderId === 'me' && msg.receiverId !== 'me') {
+      if (msg.senderId === self && msg.receiverId !== self) {
         return { id: msg.receiverId, username: msg.receiverId };
       }
-      if (msg.receiverId === 'me' && msg.senderId !== 'me') {
+      if (msg.receiverId === self && msg.senderId !== self) {
         return { id: msg.senderId, username: msg.senderId };
       }
     }
@@ -140,11 +182,12 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   }
 
   ngOnInit() {
-    this.messaging.markConversationAsRead('me', this.currentChatPartner().id);
+    this.messaging.markConversationAsRead(this.selfId(), this.currentChatPartner().id);
+    void this.messaging.loadConversation(this.currentChatPartner().id);
   }
 
   ngAfterViewChecked() {
-    this.messaging.markConversationAsRead('me', this.currentChatPartner().id);
+    this.messaging.markConversationAsRead(this.selfId(), this.currentChatPartner().id);
     this.scrollToBottom();
   }
 
@@ -162,12 +205,23 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
       return;
     }
 
+    const isSelfDestruct = this.newMessage.toLowerCase().includes('secret');
     this.messaging.sendMessage({
-      senderId: 'me',
+      senderId: this.selfId(),
       receiverId: this.currentChatPartner().id,
       content: this.newMessage,
-      isSelfDestruct: this.newMessage.toLowerCase().includes('secret')
+      isSelfDestruct,
+      selfDestructDurationMs: isSelfDestruct ? this.selfDestructDurationMs() : undefined
     });
     this.newMessage = '';
+  }
+
+  formatSelfDestructDuration(ms: number): string {
+    if (ms >= 60000 && ms % 60000 === 0) {
+      const minutes = ms / 60000;
+      return `${minutes} min${minutes === 1 ? '' : 's'}`;
+    }
+    const seconds = Math.max(1, Math.round(ms / 1000));
+    return `${seconds} sec${seconds === 1 ? '' : 's'}`;
   }
 }

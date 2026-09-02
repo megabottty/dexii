@@ -264,7 +264,7 @@
 }
 
 .dashboard-component__s76 {
-  display: flex; gap: 16px;
+  display: flex; gap: 16px; flex-wrap: wrap;
 }
 
 .dashboard-component__s77 {
@@ -377,4 +377,14 @@
   font-size: 8px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.dashboard-red-flag-chip-button {
+  border: none;
+  border: 1px solid #ef4444;
+  cursor: pointer;
+}
+
+.dashboard-red-flag-chip-button:hover {
+  background-color: #dc2626;
 }

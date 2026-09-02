@@ -6,21 +6,24 @@ import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ModalService } from '../../core/services/modal.service';
+import { MessagingService } from '../../core/services/messaging.service';
+import {
+  FriendsApiService,
+  type FriendSearchResult as ApiFriendSearchResult,
+  type FriendSummary
+} from '../../core/services/friends-api.service';
 import { User, SubscriptionTier } from '../../core/models/user.model';
-import { getApiBaseUrl } from '../../core/config/api-config';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
-interface FriendSearchResult {
+interface FriendSearchResult extends Omit<Partial<ApiFriendSearchResult>, 'subscriptionTier'> {
   username: string;
   firstName?: string;
   lastName?: string;
   email?: string;
   phoneE164?: string;
   avatarUrl?: string;
-  subscriptionTier?: SubscriptionTier;
+  subscriptionTier?: SubscriptionTier | string;
   friendCategories?: string[];
-  isFriend?: boolean;
-  hasPendingRequest?: boolean;
 }
 
 type InviteMethod = 'email' | 'sms' | 'whatsapp' | 'copy' | 'share';
@@ -29,6 +32,8 @@ interface FriendRequestItem {
   id: string;
   from: string;
   to: string;
+  fromId?: string;
+  toId?: string;
   status: 'pending' | 'accepted' | 'declined';
   createdAt: string;
   nudgeCount?: number;
@@ -46,6 +51,25 @@ interface FriendRequestItem {
     message?: string;
     sentAt?: string;
   };
+}
+
+interface FriendshipProfile {
+  relationshipName?: string;
+  relationshipType?: string;
+  howMet?: string;
+  trustLevel?: string;
+  notes?: string;
+}
+
+interface FriendCardView {
+  id: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  friendCategories: string[];
+  subscriptionTier: SubscriptionTier;
+  friendshipProfile?: FriendshipProfile | null;
 }
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -101,26 +125,35 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             [style.background-color]="isCrushShared(crush) ? theme.colors().primary : 'transparent'"
                             [style.color]="isCrushShared(crush) ? 'white' : theme.colors().text"
                             [style.border]="'1px solid ' + (isCrushShared(crush) ? theme.colors().primary : theme.colors().border)"
+                            [attr.aria-pressed]="isCrushShared(crush)"
+                            [attr.aria-label]="(isCrushShared(crush) ? 'Unshare ' : 'Share ') + crush.nickname + ' with ' + (selectedFriend()?.username || 'selected friend')"
                             class="friends-list-component__s25">
-                      {{ isCrushShared(crush) ? 'Shared' : 'Private' }}
+                      {{ isCrushShared(crush) ? 'Unshare' : 'Share' }}
                     </button>
                   </div>
 
                   @if (isCrushShared(crush)) {
                     <div class="friends-list-component__s26">
                       <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s27">Specific Entries</p>
-                      @for (entry of getEntries(crush.id); track entry.id) {
-                        <div class="friends-list-component__s28">
-                          <span class="friends-list-component__s29">"{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
-                          <button (click)="toggleEntrySharing(entry.id)"
-                                  [style.color]="isEntryShared(entry) ? theme.colors().accent : theme.colors().textSecondary"
-                                  class="friends-list-component__s30">
-                            {{ isEntryShared(entry) ? '👁️' : '🔒' }}
-                          </button>
-                        </div>
-                      } @empty {
-                        <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s31">No specific entries to share.</p>
-                      }
+                      <div
+                        [style.max-height]="getEntries(crush.id).length > 3 ? '260px' : 'none'"
+                        [style.overflow-y]="getEntries(crush.id).length > 3 ? 'auto' : 'visible'"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.background-color]="theme.colors().bg"
+                        class="friends-list-specific-entries">
+                        @for (entry of getEntries(crush.id); track entry.id) {
+                          <div class="friends-list-component__s28">
+                            <span class="friends-list-component__s29">"{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
+                            <button (click)="toggleEntrySharing(entry)"
+                                    [style.color]="isEntryShared(entry) ? theme.colors().accent : theme.colors().textSecondary"
+                                    class="friends-list-component__s30">
+                              {{ isEntryShared(entry) ? '👁️' : '🔒' }}
+                            </button>
+                          </div>
+                        } @empty {
+                          <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s31">No specific entries to share.</p>
+                        }
+                      </div>
                     </div>
                   }
                 </div>
@@ -140,6 +173,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <h2 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
           The Inner Circle
         </h2>
+
+        @if (!isAuthenticated()) {
+          <div class="friends-list-auth-state" role="status">
+            <p class="friends-list-auth-state__title">Sign in to manage live friends</p>
+            <p class="friends-list-auth-state__message">
+              Friend search, requests, and your inner circle now use the live Dexii API and require your signed-in account.
+            </p>
+          </div>
+        }
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
           <button (click)="activeTab.set('friends')"
@@ -184,10 +226,26 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 [style.border]="'1px solid ' + theme.colors().border"
                 [style.color]="theme.colors().text"
                class="friends-list-component__s39">
-              <button (click)="searchUsers()" [style.background-color]="theme.colors().primary" class="friends-list-component__s40">Search</button>
+              <button (click)="searchUsers()"
+                      [disabled]="isSearching() || !isAuthenticated()"
+                      [style.opacity]="isSearching() || !isAuthenticated() ? '0.6' : '1'"
+                      [style.background-color]="theme.colors().primary"
+                      class="friends-list-component__s40">
+                {{ isSearching() ? 'Searching…' : 'Search' }}
+              </button>
             </div>
 
-            @if (searchResults().length > 0) {
+            @if (searchError()) {
+              <div class="friends-list-search-empty" role="alert" aria-live="assertive">
+                <div class="friends-list-search-empty__icon" aria-hidden="true">⚠️</div>
+                <div class="friends-list-search-empty__content">
+                  <p class="friends-list-search-empty__title">Search unavailable</p>
+                  <p class="friends-list-search-empty__message">{{ searchError() }}</p>
+                </div>
+              </div>
+            } @else if (isSearching()) {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Searching live Dexii users…</p>
+            } @else if (searchResults().length > 0) {
               <div class="friends-list-component__s41">
                 @for (candidate of searchResults(); track candidate.username) {
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
@@ -198,24 +256,47 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">@{{ candidate.username }}</div>
                       </div>
                     </div>
-                    <button
-                      (click)="openAddFriendModal(candidate)"
-                      [disabled]="candidate.isFriend"
-                      [style.opacity]="candidate.isFriend ? '0.5' : '1'"
-                      [style.background-color]="theme.colors().primary"
-                     class="friends-list-component__s8">
-                      {{ candidate.isFriend ? 'Friend' : (candidate.hasPendingRequest ? 'Continue Invite' : 'Add Friend') }}
-                    </button>
+                    <div class="friends-list-component__s49">
+                      @if (candidate.relationship === 'request_received') {
+                        <button
+                          (click)="acceptSearchResult(candidate)"
+                          [disabled]="isSubmittingFriendAction()"
+                          [style.opacity]="isSubmittingFriendAction() ? '0.6' : '1'"
+                          [style.background-color]="'#16a34a'"
+                          class="friends-list-component__s8">
+                          {{ candidateActionLabel(candidate) }}
+                        </button>
+                      } @else {
+                        <button
+                          (click)="sendFriendRequest(candidate)"
+                          [disabled]="candidate.relationship === 'friends' || candidate.relationship === 'request_sent' || isSubmittingFriendAction()"
+                          [style.opacity]="candidate.relationship === 'friends' || candidate.relationship === 'request_sent' || isSubmittingFriendAction() ? '0.5' : '1'"
+                          [style.background-color]="theme.colors().primary"
+                         class="friends-list-component__s8">
+                          {{ candidateActionLabel(candidate) }}
+                        </button>
+                      }
+                    </div>
                   </div>
                 }
               </div>
             } @else if (didSearch()) {
-              <div>
-                <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s45">No users found.</p>
+              <div class="friends-list-search-empty" role="alert" aria-live="assertive">
+                <div class="friends-list-search-empty__icon" aria-hidden="true">⚠️</div>
+                <div class="friends-list-search-empty__content">
+                  <p class="friends-list-search-empty__title">No matching user found</p>
+                  <p class="friends-list-search-empty__message">
+                    @if (searchQuery().trim()) {
+                      No Dexii user matched “{{ searchQuery().trim() }}”. You can invite them to connect instead.
+                    } @else {
+                      No Dexii user matched your search. Try another term, or invite them to connect instead.
+                    }
+                  </p>
+                </div>
                 @if (searchQuery().trim()) {
                   <button (click)="openAddFriendModal({ username: searchQuery().trim() })"
                           [style.background-color]="theme.colors().primary"
-                          class="friends-list-component__s8">
+                          class="friends-list-component__s8 friends-list-search-empty__invite">
                     Invite {{ searchQuery().trim() }}
                   </button>
                 }
@@ -228,13 +309,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent" class="friends-list-component__s36">
             <div class="friends-list-component__s46">
               <p class="friends-list-component__s47">Friend Requests</p>
-              <button (click)="simulateIncomingRequest()" [style.color]="theme.colors().accent" [style.border]="'1px solid ' + theme.colors().accent"
-                      class="friends-list-simulate-btn">
-                Simulate Request
-              </button>
             </div>
 
-            @if (incomingRequests().length > 0) {
+            @if (isLoadingIncoming()) {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading incoming requests…</p>
+            } @else if (incomingRequests().length > 0) {
               <div class="friends-list-component__s48">
                 @for (req of incomingRequests(); track req.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
@@ -247,7 +326,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 }
               </div>
             } @else {
-              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">No incoming requests yet. Tap “Simulate Request” to see the flow.</p>
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">No incoming requests yet.</p>
             }
           </div>
         }
@@ -258,7 +337,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <p class="friends-list-component__s47">Pending Sent Requests</p>
             </div>
 
-            @if (outgoingRequests().length > 0) {
+            @if (isLoadingOutgoing()) {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading sent requests…</p>
+            } @else if (outgoingRequests().length > 0) {
               <div class="friends-list-component__s48">
                 @for (req of outgoingRequests(); track req.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
@@ -270,12 +351,34 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           • Nudged {{ req.lastNudgedAt | date:'MMM d, h:mm a' }} ({{ req.nudgeCount || 1 }})
                         }
                       </div>
+                      @if (req.friendshipProfile) {
+                        <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem; margin-top: 6px;">
+                          {{ req.friendshipProfile.relationshipType || 'Friendship profile saved' }}
+                          @if (req.friendshipProfile.relationshipName) {
+                            • {{ req.friendshipProfile.relationshipName }}
+                          }
+                        </div>
+                      }
                     </div>
-                    <button (click)="nudgeRequest(req)"
-                            [style.background-color]="theme.colors().primary"
-                            class="friends-list-component__s50">
-                      Nudge
-                    </button>
+                    <div class="friends-list-component__s49">
+                      <button (click)="openFriendProfile(req)"
+                              [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().text"
+                              class="friends-list-component__s50">
+                        View Profile
+                      </button>
+                      <button (click)="cancelOutgoingRequest(req)"
+                              [style.border]="'1px solid ' + theme.colors().border"
+                              [style.color]="theme.colors().textSecondary"
+                              class="friends-list-component__s50">
+                        Delete Request
+                      </button>
+                      <button (click)="nudgeRequest(req)"
+                              [style.background-color]="theme.colors().primary"
+                              class="friends-list-component__s50">
+                        Nudge
+                      </button>
+                    </div>
                   </div>
                 }
               </div>
@@ -301,6 +404,17 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           </div>
 
           <div class="friends-list-component__s53">
+            @if (isLoadingFriends()) {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading your live friends…</p>
+            } @else if (friendsError()) {
+              <div class="friends-list-search-empty" role="alert" aria-live="assertive">
+                <div class="friends-list-search-empty__icon" aria-hidden="true">⚠️</div>
+                <div class="friends-list-search-empty__content">
+                  <p class="friends-list-search-empty__title">Could not load friends</p>
+                  <p class="friends-list-search-empty__message">{{ friendsError() }}</p>
+                </div>
+              </div>
+            } @else {
             @for (friend of friends(); track friend.id) {
               <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
                    class="friends-list-component__s54">
@@ -316,19 +430,20 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <div class="friends-list-component__s59">
                   <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-action-link">Profile</a>
-                  <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
-                     [queryParams]="{history: true}"
-                     class="friends-list-action-link">History</a>
-                  <a [routerLink]="['/friends', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                     class="friends-list-action-link">Bio</a>
+                  <button (click)="openFriendProfileFromFriend(friend)"
+                          [style.color]="theme.colors().primary"
+                          [style.border]="'1px solid ' + theme.colors().primary"
+                          class="friends-list-action-btn">
+                    View Friendship
+                  </button>
                   <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
                           class="friends-list-action-btn">Sharing</button>
                   <a routerLink="/chat"
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-action-link">Chat</a>
-                  <button (click)="removeFriend(friend.id)" [style.color]="'#ef4444'"
-                          class="friends-list-component__s60">Remove</button>
+                  <button (click)="archiveFriend(friend.id)" [style.color]="'#ef4444'"
+                          class="friends-list-component__s60">Archive</button>
                 </div>
               </div>
             } @empty {
@@ -336,9 +451,130 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">Your inner circle is currently empty.</p>
               </div>
             }
+            }
           </div>
         }
       </div>
+
+      @if (viewingFriendProfile()) {
+        <div class="friends-list-component__s9">
+          <div [style.background-color]="theme.colors().bg"
+               [style.border]="'1px solid ' + theme.colors().border"
+               class="friends-list-component__s10">
+            <button (click)="closeFriendProfile()"
+                    [style.color]="theme.colors().textSecondary"
+                    aria-label="Close friendship profile"
+                    class="friends-list-component__s11">✕</button>
+
+            <h3 class="friends-list-component__s12">Friendship Profile</h3>
+            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s13">
+              Fill this out for {{ viewingFriendUsername() || viewingFriendProfile()?.to }}
+            </p>
+
+            <div class="friends-list-add-modal-grid">
+              <label class="friends-list-add-modal-label">
+                Relationship Name
+                <input [value]="friendProfileDraft().relationshipName || ''"
+                       (input)="setFriendProfileRelationshipName($event)"
+                       [style.background-color]="theme.colors().bgSecondary"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       class="friends-list-add-modal-input"
+                       placeholder="How you label this friendship">
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                Relationship Type
+                <select [value]="friendProfileDraft().relationshipType || 'Close Friend'"
+                        (change)="setFriendProfileRelationshipType($event)"
+                        [style.background-color]="theme.colors().bgSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().text"
+                        class="friends-list-add-modal-input">
+                  <option value="Close Friend">Close Friend</option>
+                  <option value="Bestie">Bestie</option>
+                  <option value="Work Friend">Work Friend</option>
+                  <option value="Family Friend">Family Friend</option>
+                  <option value="New Friend">New Friend</option>
+                </select>
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                How You Met
+                <input [value]="friendProfileDraft().howMet || ''"
+                       (input)="setFriendProfileHowMet($event)"
+                       [style.background-color]="theme.colors().bgSecondary"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       class="friends-list-add-modal-input"
+                       placeholder="Work, school, app, mutuals...">
+              </label>
+
+              <label class="friends-list-add-modal-label">
+                Trust Level
+                <select [value]="friendProfileDraft().trustLevel || 'Medium'"
+                        (change)="setFriendProfileTrustLevel($event)"
+                        [style.background-color]="theme.colors().bgSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().text"
+                        class="friends-list-add-modal-input">
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </label>
+
+              <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
+                Notes
+                <textarea [value]="friendProfileDraft().notes || ''"
+                          (input)="setFriendProfileNotes($event)"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          class="friends-list-add-modal-textarea"
+                          placeholder="Anything you want to remember"></textarea>
+              </label>
+            </div>
+
+            <div class="friends-list-add-modal-actions">
+              <button (click)="saveFriendshipProfile()"
+                      [style.background-color]="theme.colors().primary"
+                      class="friends-list-component__s8">
+                Save Questionnaire
+              </button>
+            </div>
+
+            @if (viewingFriendProfile()?.invite; as invite) {
+              <div [style.border-top]="'1px solid ' + theme.colors().border" style="margin-top: 18px; padding-top: 18px;">
+                <p [style.color]="theme.colors().primary" style="margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Invite Details</p>
+                <div class="friends-list-profile-grid">
+                  <div class="friends-list-profile-row">
+                    <span class="friends-list-profile-label">Method</span>
+                    <span class="friends-list-profile-value">{{ invite.method || 'N/A' }}</span>
+                  </div>
+                  <div class="friends-list-profile-row">
+                    <span class="friends-list-profile-label">Contact</span>
+                    <span class="friends-list-profile-value">{{ invite.contact || 'N/A' }}</span>
+                  </div>
+                  <div class="friends-list-profile-row friends-list-profile-row--full">
+                    <span class="friends-list-profile-label">Message</span>
+                    <span class="friends-list-profile-value">{{ invite.message || 'N/A' }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap;">
+              <a [routerLink]="['/friends', viewingFriendUsername() || viewingFriendProfile()?.to]"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().text"
+                 class="friends-list-action-link">
+                Open Bio
+              </a>
+            </div>
+          </div>
+        </div>
+      }
 
       @if (addFriendCandidate()) {
         <div class="friends-list-component__s9">
@@ -467,7 +703,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <button (click)="addFriendAndInvite()"
                       [style.background-color]="theme.colors().primary"
                       class="friends-list-component__s8">
-                Add Friend & Invite
+                {{ addFriendCandidate()?.id ? 'Add Friend & Invite' : 'Send Invite' }}
               </button>
             </div>
           </div>
@@ -480,22 +716,33 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public modal = inject(ModalService);
+  public messaging = inject(MessagingService);
+  private friendsApi = inject(FriendsApiService);
   private dataService = inject(DataService);
 
-  private apiBase = `${getApiBaseUrl()}/demo/friends`;
-
-  private get currentUsername(): string {
-    return this.security.currentUser() || 'dexii_demo_user';
+  private get currentUserId(): string | null {
+    return this.security.currentUserId();
   }
 
-  selectedFriend = signal<User | null>(null);
+  private get currentUsername(): string {
+    return this.security.currentUser() || '';
+  }
+
+  selectedFriend = signal<FriendCardView | null>(null);
   activeTab = signal<'friends' | 'find' | 'incoming' | 'sent'>('friends');
-  friends = signal<User[]>([]);
+  friends = signal<FriendCardView[]>([]);
   searchQuery = signal('');
   searchResults = signal<FriendSearchResult[]>([]);
   incomingRequests = signal<FriendRequestItem[]>([]);
   outgoingRequests = signal<FriendRequestItem[]>([]);
   didSearch = signal(false);
+  isLoadingFriends = signal(false);
+  isLoadingIncoming = signal(false);
+  isLoadingOutgoing = signal(false);
+  isSearching = signal(false);
+  isSubmittingFriendAction = signal(false);
+  friendsError = signal('');
+  searchError = signal('');
   addFriendCandidate = signal<FriendSearchResult | null>(null);
   addFriendRelationshipName = signal('');
   addFriendRelationshipType = signal('Close Friend');
@@ -505,6 +752,15 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   addFriendInviteMethod = signal<InviteMethod>('email');
   addFriendInviteContact = signal('');
   addFriendInviteMessage = signal('');
+  viewingFriendProfile = signal<FriendRequestItem | null>(null);
+  viewingFriendUsername = signal('');
+  friendProfileDraft = signal<FriendshipProfile>({
+    relationshipName: '',
+    relationshipType: 'Close Friend',
+    howMet: '',
+    trustLevel: 'Medium',
+    notes: ''
+  });
   private hasInitializedIncoming = false;
   private incomingPollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -513,16 +769,19 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   constructor() {
     // React to user changes automatically
     effect(() => {
-      const user = this.security.currentUser();
-      if (user) {
+      const userId = this.security.currentUserId();
+      if (userId) {
         void this.loadFriends();
         void this.loadIncomingRequests();
         void this.loadOutgoingRequests();
         this.startIncomingRequestPolling();
       } else {
         this.friends.set([]);
+        this.searchResults.set([]);
         this.incomingRequests.set([]);
         this.outgoingRequests.set([]);
+        this.friendsError.set('');
+        this.searchError.set('');
         this.hasInitializedIncoming = false;
         this.stopIncomingRequestPolling();
       }
@@ -530,7 +789,9 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.startIncomingRequestPolling();
+    if (this.isAuthenticated()) {
+      this.startIncomingRequestPolling();
+    }
   }
 
   ngOnDestroy(): void {
@@ -557,6 +818,17 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return fullName || candidate.username;
   }
 
+  isAuthenticated(): boolean {
+    return this.friendsApi.isAuthenticated();
+  }
+
+  candidateActionLabel(candidate: FriendSearchResult): string {
+    if (candidate.relationship === 'friends') return 'Already friends';
+    if (candidate.relationship === 'request_sent') return 'Pending Sent';
+    if (candidate.relationship === 'request_received') return 'Accept';
+    return 'Add Friend';
+  }
+
   inviteContactPlaceholder(): string {
     const method = this.addFriendInviteMethod();
     if (method === 'email') return 'friend@email.com';
@@ -565,31 +837,95 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return 'Optional';
   }
 
-  private mapApiUser(friend: any): User {
+  private mapApiUser(friend: FriendSummary & { firstName?: string; lastName?: string; subscriptionTier?: SubscriptionTier | string }): FriendCardView {
+    const id = friend.id || friend.username;
     return {
-      id: friend.id || friend.username,
+      id,
       username: friend.username,
-      friends: [],
-      blockedUsers: [],
-      subscriptionTier: friend.subscriptionTier || SubscriptionTier.Free,
-      isVerified18: true,
+      firstName: friend.firstName || '',
+      lastName: friend.lastName || '',
       avatarUrl: friend.avatarUrl,
-      friendCategories: friend.friendCategories || ['Close Friends']
+      friendCategories: friend.friendCategories || ['Close Friends'],
+      subscriptionTier: (friend.subscriptionTier as SubscriptionTier) || SubscriptionTier.Free,
+      friendshipProfile: this.readFriendshipProfile(id) || null
     };
   }
 
-  private async demoFetch(path: string, init: RequestInit = {}): Promise<any | null> {
+  private mapRequest(request: any): FriendRequestItem {
+    const from = request.from || {};
+    const to = request.to || {};
+    const fromId = typeof from === 'object' ? from.id : undefined;
+    const toId = typeof to === 'object' ? to.id : undefined;
+    const fromUsername = typeof from === 'string' ? from : from.username || fromId || 'Unknown user';
+    const toUsername = typeof to === 'string' ? to : to.username || toId || 'Unknown user';
+    const profileTarget = this.currentUserId === fromId ? toId : fromId;
+
+    return {
+      id: request.id,
+      from: fromUsername,
+      to: toUsername,
+      fromId,
+      toId,
+      status: request.status || 'pending',
+      createdAt: request.createdAt || new Date().toISOString(),
+      nudgeCount: request.nudgeCount,
+      lastNudgedAt: request.lastNudgedAt,
+      friendshipProfile: request.friendshipProfile || (profileTarget ? this.readFriendshipProfile(profileTarget) : undefined),
+      invite: request.invite
+    };
+  }
+
+  private getUserStorageSuffix(): string {
+    return this.currentUserId || 'signed_out';
+  }
+
+  private getFriendshipProfilesStorageKey(): string {
+    return `dexii_friendship_profiles_${this.getUserStorageSuffix()}`;
+  }
+
+  private readFriendshipProfiles(): Record<string, FriendshipProfile> {
     try {
-      const response = await fetch(`${this.apiBase}${path}`, init);
-      if (!response.ok) return null;
-      return await response.json();
+      const raw = localStorage.getItem(this.getFriendshipProfilesStorageKey());
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
     } catch {
-      return null;
+      return {};
     }
   }
 
+  private readFriendshipProfile(friendId: string): FriendshipProfile | null {
+    return this.readFriendshipProfiles()[friendId] || null;
+  }
+
+  private writeFriendshipProfile(friendId: string, profile: FriendshipProfile): void {
+    const profiles = this.readFriendshipProfiles();
+    profiles[friendId] = profile;
+    localStorage.setItem(this.getFriendshipProfilesStorageKey(), JSON.stringify(profiles));
+  }
+
+  private getArchivedFriendsStorageKey(): string {
+    return `dexii_archived_friends_${this.getUserStorageSuffix()}`;
+  }
+
+  private readArchivedFriendIds(): Set<string> {
+    try {
+      const raw = localStorage.getItem(this.getArchivedFriendsStorageKey());
+      if (!raw) return new Set<string>();
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return new Set<string>();
+      return new Set(parsed.filter((id: unknown): id is string => typeof id === 'string'));
+    } catch {
+      return new Set<string>();
+    }
+  }
+
+  private writeArchivedFriendIds(ids: Set<string>): void {
+    localStorage.setItem(this.getArchivedFriendsStorageKey(), JSON.stringify(Array.from(ids)));
+  }
+
   private getSeenIncomingStorageKey(): string {
-    return `dexii_seen_incoming_requests_${this.currentUsername}`;
+    return `dexii_seen_incoming_requests_${this.getUserStorageSuffix()}`;
   }
 
   private readSeenIncomingRequestIds(): Set<string> {
@@ -673,37 +1009,88 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   async loadFriends() {
-    const encoded = encodeURIComponent(this.currentUsername);
-    const data = await this.demoFetch(`/list?username=${encoded}`);
-    if (!Array.isArray(data)) return;
-    this.friends.set(data.map((f) => this.mapApiUser(f)));
+    if (!this.isAuthenticated()) {
+      this.friends.set([]);
+      return;
+    }
+
+    this.isLoadingFriends.set(true);
+    this.friendsError.set('');
+    try {
+      const data = await this.friendsApi.listFriends();
+      const archivedIds = this.readArchivedFriendIds();
+      this.friends.set(data.map((f) => this.mapApiUser(f)).filter((friend) => !archivedIds.has(friend.id)));
+    } catch (error: any) {
+      const message = error?.message || 'Unable to load friends.';
+      this.friendsError.set(message);
+      this.modal.show(message);
+    } finally {
+      this.isLoadingFriends.set(false);
+    }
   }
 
   async loadIncomingRequests() {
-    const encoded = encodeURIComponent(this.currentUsername);
-    const data = await this.demoFetch(`/requests?username=${encoded}`);
-    if (!Array.isArray(data)) return;
-    await this.notifyForNewIncomingRequests(data as FriendRequestItem[]);
-    this.incomingRequests.set(data);
+    if (!this.isAuthenticated()) {
+      this.incomingRequests.set([]);
+      return;
+    }
+
+    this.isLoadingIncoming.set(true);
+    try {
+      const data = (await this.friendsApi.incomingRequests()).map((req) => this.mapRequest(req));
+      await this.notifyForNewIncomingRequests(data);
+      this.incomingRequests.set(data);
+    } catch (error: any) {
+      const message = error?.message || 'Unable to load incoming requests.';
+      this.modal.show(message);
+    } finally {
+      this.isLoadingIncoming.set(false);
+    }
   }
 
   async loadOutgoingRequests() {
-    const encoded = encodeURIComponent(this.currentUsername);
-    const data = await this.demoFetch(`/requests/sent?username=${encoded}`);
-    if (!Array.isArray(data)) return;
-    this.outgoingRequests.set(data);
+    if (!this.isAuthenticated()) {
+      this.outgoingRequests.set([]);
+      return;
+    }
+
+    this.isLoadingOutgoing.set(true);
+    try {
+      const data = (await this.friendsApi.outgoingRequests()).map((req) => this.mapRequest(req));
+      this.outgoingRequests.set(data);
+    } catch (error: any) {
+      const message = error?.message || 'Unable to load sent requests.';
+      this.modal.show(message);
+    } finally {
+      this.isLoadingOutgoing.set(false);
+    }
   }
 
   async searchUsers() {
     this.didSearch.set(true);
-    const query = encodeURIComponent(this.searchQuery().trim());
-    const owner = encodeURIComponent(this.currentUsername);
-    const data = await this.demoFetch(`/search?owner=${owner}&query=${query}`);
-    if (!Array.isArray(data)) {
+    this.searchError.set('');
+    const query = this.searchQuery().trim();
+    if (!this.isAuthenticated()) {
+      this.searchResults.set([]);
+      this.searchError.set('Sign in to search live Dexii users.');
+      return;
+    }
+    if (!query) {
       this.searchResults.set([]);
       return;
     }
-    this.searchResults.set(data);
+
+    this.isSearching.set(true);
+    try {
+      this.searchResults.set(await this.friendsApi.search(query));
+    } catch (error: any) {
+      const message = error?.message || 'Unable to search users right now.';
+      this.searchResults.set([]);
+      this.searchError.set(message);
+      this.modal.show(message);
+    } finally {
+      this.isSearching.set(false);
+    }
   }
 
   openAddFriendModal(candidate: FriendSearchResult) {
@@ -738,6 +1125,94 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.addFriendCandidate.set(null);
   }
 
+  openFriendProfile(request: FriendRequestItem) {
+    const target = request.fromId === this.currentUserId ? request.to : request.from;
+    const targetId = request.fromId === this.currentUserId ? request.toId : request.fromId;
+    const storedProfile = targetId ? this.readFriendshipProfile(targetId) : null;
+    this.viewingFriendUsername.set(target);
+    this.friendProfileDraft.set({
+      relationshipName: storedProfile?.relationshipName || request.friendshipProfile?.relationshipName || '',
+      relationshipType: storedProfile?.relationshipType || request.friendshipProfile?.relationshipType || 'Close Friend',
+      howMet: storedProfile?.howMet || request.friendshipProfile?.howMet || '',
+      trustLevel: storedProfile?.trustLevel || request.friendshipProfile?.trustLevel || 'Medium',
+      notes: storedProfile?.notes || request.friendshipProfile?.notes || ''
+    });
+    this.viewingFriendProfile.set({ ...request, friendshipProfile: storedProfile || request.friendshipProfile });
+  }
+
+  openFriendProfileFromFriend(friend: FriendCardView) {
+    this.viewingFriendUsername.set(friend.username);
+    this.friendProfileDraft.set({
+      relationshipName: friend.friendshipProfile?.relationshipName || friend.username,
+      relationshipType: friend.friendshipProfile?.relationshipType || 'Close Friend',
+      howMet: friend.friendshipProfile?.howMet || '',
+      trustLevel: friend.friendshipProfile?.trustLevel || 'Medium',
+      notes: friend.friendshipProfile?.notes || ''
+    });
+    this.viewingFriendProfile.set({
+      id: `friend-${friend.id}`,
+      from: this.currentUsername || this.currentUserId || '',
+      to: friend.username,
+      fromId: this.currentUserId || undefined,
+      toId: friend.id,
+      status: 'accepted',
+      createdAt: new Date().toISOString(),
+      friendshipProfile: friend.friendshipProfile || undefined
+    });
+  }
+
+  closeFriendProfile() {
+    this.viewingFriendProfile.set(null);
+    this.viewingFriendUsername.set('');
+  }
+
+  setFriendProfileRelationshipName(event: Event) {
+    this.friendProfileDraft.update((draft) => ({ ...draft, relationshipName: this.asInputValue(event) }));
+  }
+
+  setFriendProfileRelationshipType(event: Event) {
+    this.friendProfileDraft.update((draft) => ({ ...draft, relationshipType: this.asSelectValue(event) }));
+  }
+
+  setFriendProfileHowMet(event: Event) {
+    this.friendProfileDraft.update((draft) => ({ ...draft, howMet: this.asInputValue(event) }));
+  }
+
+  setFriendProfileTrustLevel(event: Event) {
+    this.friendProfileDraft.update((draft) => ({ ...draft, trustLevel: this.asSelectValue(event) }));
+  }
+
+  setFriendProfileNotes(event: Event) {
+    this.friendProfileDraft.update((draft) => ({ ...draft, notes: this.asTextAreaValue(event) }));
+  }
+
+  async saveFriendshipProfile() {
+    const profile = this.viewingFriendProfile();
+    const target = profile?.fromId === this.currentUserId
+      ? profile?.toId || this.viewingFriendUsername()
+      : profile?.fromId || this.viewingFriendUsername();
+    if (!target) {
+      this.modal.show('Missing friend.');
+      return;
+    }
+
+    const draft = this.friendProfileDraft();
+    const friendshipProfile = {
+      relationshipName: draft.relationshipName?.trim() || '',
+      relationshipType: draft.relationshipType?.trim() || 'Close Friend',
+      howMet: draft.howMet?.trim() || '',
+      trustLevel: draft.trustLevel?.trim() || 'Medium',
+      notes: draft.notes?.trim() || ''
+    };
+
+    this.writeFriendshipProfile(target, friendshipProfile);
+    this.friends.update((items) =>
+      items.map((friend) => friend.id === target || friend.username === target ? { ...friend, friendshipProfile } : friend)
+    );
+    this.viewingFriendProfile.update((profile) => profile ? { ...profile, friendshipProfile } : profile);
+    this.modal.show('Friendship profile saved.');
+  }
+
   setInviteMethod(value: string) {
     const allowed: InviteMethod[] = ['email', 'sms', 'whatsapp', 'copy', 'share'];
     const method: InviteMethod = allowed.includes(value as InviteMethod) ? (value as InviteMethod) : 'copy';
@@ -748,7 +1223,8 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     const custom = this.addFriendInviteMessage().trim();
     const base = custom || `Hey! I added you in my Dexii circle.`;
     const appUrl = typeof window !== 'undefined' ? `${window.location.origin}/signup-profile` : '/signup-profile';
-    return `${base}\n\nMake your own Dexii account: ${appUrl}\nThen search for me: @${this.currentUsername}`;
+    const from = this.currentUsername ? `@${this.currentUsername}` : 'me';
+    return `${base}\n\nMake your own Dexii account: ${appUrl}\nThen search for me: ${from}`;
   }
 
   private async dispatchInvite(method: InviteMethod, contact: string, message: string, launchUrl?: string): Promise<void> {
@@ -813,24 +1289,16 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   private async sendInvite(
     payload: { toUsername: string; method: InviteMethod; contact: string; message: string }
   ): Promise<{ ok: boolean; method: InviteMethod; delivery?: string; launchUrl?: string; message?: string } | null> {
-    const response = await this.demoFetch('/invite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: this.currentUsername,
-        toUsername: payload.toUsername,
-        method: payload.method,
-        contact: payload.contact,
-        message: payload.message
-      })
-    });
-
-    if (!response?.ok) {
-      this.modal.show(response?.message || 'Unable to send invite right now.');
-      return null;
+    if (payload.method === 'email' || payload.method === 'sms') {
+      try {
+        await this.friendsApi.invite(payload.contact, payload.method);
+      } catch (error: any) {
+        this.modal.show(error?.message || 'Unable to send invite right now.');
+        return null;
+      }
     }
 
-    return response as { ok: boolean; method: InviteMethod; delivery?: string; launchUrl?: string; message?: string };
+    return { ok: true, method: payload.method };
   }
 
   async addFriendAndInvite() {
@@ -850,26 +1318,19 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const result = await this.sendFriendRequest(
-      { ...candidate, username },
-      {
-        friendshipProfile: {
-          relationshipName: this.addFriendRelationshipName().trim(),
-          relationshipType: this.addFriendRelationshipType().trim(),
-          howMet: this.addFriendHowMet().trim(),
-          trustLevel: this.addFriendTrustLevel().trim(),
-          notes: this.addFriendNotes().trim()
-        },
-        invite: {
-          method: inviteMethod,
-          contact: inviteContact,
-          message: this.buildInviteMessage(username),
-          sentAt: new Date().toISOString()
-        }
-      }
-    );
+    const friendshipProfile = {
+      relationshipName: this.addFriendRelationshipName().trim(),
+      relationshipType: this.addFriendRelationshipType().trim(),
+      howMet: this.addFriendHowMet().trim(),
+      trustLevel: this.addFriendTrustLevel().trim(),
+      notes: this.addFriendNotes().trim()
+    };
 
-    if (!result) return;
+    if (candidate.id && (!candidate.relationship || candidate.relationship === 'none')) {
+      const result = await this.sendFriendRequest({ ...candidate, username }, { friendshipProfile });
+      if (!result) return;
+      this.writeFriendshipProfile(candidate.id, friendshipProfile);
+    }
 
     const inviteMessage = this.buildInviteMessage(username);
     const inviteResult = await this.sendInvite({
@@ -909,38 +1370,35 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       };
     }
   ) {
-    const result = await this.demoFetch('/request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: this.currentUsername,
-        to: candidate.username,
-        friendshipProfile: details?.friendshipProfile,
-        invite: details?.invite
-      })
-    });
-
-    if (!result) {
-      this.modal.show('Unable to send request right now.');
+    if (!this.isAuthenticated()) {
+      this.modal.show('Sign in to add friends.');
+      return null;
+    }
+    if (!candidate.id) {
+      this.modal.show('Search for a live Dexii user before sending a friend request, or invite them instead.');
       return null;
     }
 
-    this.searchResults.update((items) =>
-      items.map((u) =>
-        u.username === candidate.username ? { ...u, hasPendingRequest: true } : u
-      )
-    );
-    await this.loadOutgoingRequests();
-    if (result.status === 'already_friends') {
-      this.modal.show('Already friends.');
+    this.isSubmittingFriendAction.set(true);
+    try {
+      const result = await this.friendsApi.sendRequest(candidate.id, details?.invite?.message || '');
+      if (details?.friendshipProfile) {
+        this.writeFriendshipProfile(candidate.id, details.friendshipProfile);
+      }
+      this.searchResults.update((items) =>
+        items.map((u) =>
+          u.id === candidate.id ? { ...u, relationship: 'request_sent' } : u
+        )
+      );
+      await this.loadOutgoingRequests();
+      this.modal.show('Friend request sent.');
       return result;
+    } catch (error: any) {
+      this.modal.show(error?.message || 'Unable to send request right now.');
+      return null;
+    } finally {
+      this.isSubmittingFriendAction.set(false);
     }
-    if (result.status === 'already_pending') {
-      this.modal.show('Request already pending.');
-      return result;
-    }
-    this.modal.show('Friend request saved.');
-    return result;
   }
 
   async inviteTypedUsername() {
@@ -968,35 +1426,59 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   async respondToRequest(req: FriendRequestItem, action: 'accept' | 'decline') {
-    const updated = await this.demoFetch(`/requests/${req.id}/respond`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: this.currentUsername, action })
-    });
+    try {
+      await this.friendsApi.respondToRequest(req.id, action);
+      this.incomingRequests.update((list) => list.filter((r) => r.id !== req.id));
+      if (action === 'accept') {
+        await this.loadFriends();
+        this.searchResults.update((items) =>
+          items.map((candidate) => candidate.id === req.fromId ? { ...candidate, relationship: 'friends' } : candidate)
+        );
+      }
+      await this.loadOutgoingRequests();
+    } catch (error: any) {
+      this.modal.show(error?.message || 'Unable to update request.');
+    }
+  }
 
-    if (!updated) {
-      this.modal.show('Unable to update request.');
+  async acceptSearchResult(candidate: FriendSearchResult) {
+    const request = this.incomingRequests().find((req) =>
+      (candidate.id && req.fromId === candidate.id) || req.from === candidate.username
+    );
+    if (!request) {
+      this.modal.show('Unable to find that incoming request. Refreshing requests now.');
+      await this.loadIncomingRequests();
       return;
     }
-
-    this.incomingRequests.update((list) => list.filter((r) => r.id !== req.id));
-    if (action === 'accept') {
-      await this.loadFriends();
-    }
-    await this.loadOutgoingRequests();
+    await this.respondToRequest(request, 'accept');
   }
 
   async removeFriend(id: string) {
     this.modal.confirm('Are you sure you want to remove this friend from your inner circle? All shared tea will be revoked.', async () => {
-      await this.demoFetch(`/list/${encodeURIComponent(id)}?username=${encodeURIComponent(this.currentUsername)}`, {
-        method: 'DELETE'
-      });
-
-      await this.loadFriends();
+      try {
+        await this.friendsApi.removeFriend(id);
+        const archivedIds = this.readArchivedFriendIds();
+        archivedIds.delete(id);
+        this.writeArchivedFriendIds(archivedIds);
+        await this.loadFriends();
+        this.modal.show('Friend removed.');
+      } catch (error: any) {
+        this.modal.show(error?.message || 'Unable to remove friend right now.');
+      }
     });
   }
 
-  manageSharing(friend: User) {
+  async archiveFriend(id: string) {
+    this.modal.confirm('Archive this friend from your inner circle on this device? Your live friendship and shared access will stay active.', async () => {
+      const archivedIds = this.readArchivedFriendIds();
+      archivedIds.add(id);
+      this.writeArchivedFriendIds(archivedIds);
+      await this.loadFriends();
+      this.modal.show('Friend archived.');
+    });
+  }
+
+  manageSharing(friend: FriendCardView) {
     this.selectedFriend.set(friend);
   }
 
@@ -1004,42 +1486,27 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.selectedFriend.set(null);
   }
 
-  async simulateIncomingRequest() {
-    const candidates = ['Tea_Spiller_Mark', 'Work_Bri', 'Club_Ari'];
-    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    const result = await this.demoFetch('/request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: pick, to: this.currentUsername })
-    });
-
-    if (!result) {
-      this.modal.show('Unable to simulate a request right now.');
-      return;
-    }
-
-    await this.loadIncomingRequests();
-    if (result.status === 'already_pending') {
-      this.modal.show('A request is already pending from that friend.');
-    } else {
-      this.modal.show(`Incoming request from ${pick}.`);
+  async nudgeRequest(req: FriendRequestItem) {
+    try {
+      await this.friendsApi.nudgeRequest(req.id);
+      await this.loadOutgoingRequests();
+      this.modal.show(`Nudge sent to ${req.to}.`);
+    } catch (error: any) {
+      this.modal.show(error?.message || 'Unable to send nudge right now.');
     }
   }
 
-  async nudgeRequest(req: FriendRequestItem) {
-    const result = await this.demoFetch(`/requests/${encodeURIComponent(req.id)}/nudge`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: this.currentUsername })
+  async cancelOutgoingRequest(req: FriendRequestItem) {
+    this.modal.confirm(`Delete the pending request to ${req.to}?`, async () => {
+      try {
+        await this.friendsApi.cancelRequest(req.id);
+        await this.loadOutgoingRequests();
+        await this.searchUsers();
+        this.modal.show('Friend request deleted.');
+      } catch (error: any) {
+        this.modal.show(error?.message || 'Unable to delete request right now.');
+      }
     });
-
-    if (!result?.ok) {
-      this.modal.show('Unable to send nudge right now.');
-      return;
-    }
-
-    await this.loadOutgoingRequests();
-    this.modal.show(`Nudge sent to ${req.to}.`);
   }
 
   isCrushShared(crush: any): boolean {
@@ -1060,10 +1527,24 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleEntrySharing(entryId: string) {
+  toggleEntrySharing(entry: any) {
     const friend = this.selectedFriend();
-    if (friend) {
-      this.dataService.toggleEntryVisibility(entryId, friend.id);
+    if (!friend) return;
+
+    const wasShared = this.isEntryShared(entry);
+    this.dataService.toggleEntryVisibility(entry.id, friend.id);
+
+    if (!wasShared) {
+      const crush = this.allCrushes().find((current) => current.id === entry.crushId);
+      const preview = (entry.content || '').trim();
+      this.messaging.sendMessage({
+        senderId: this.currentUserId || this.currentUsername,
+        receiverId: friend.id,
+        content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${preview}`,
+        relatedCrushId: entry.crushId,
+        relatedEntryId: entry.id
+      });
+      this.modal.show(`Shared entry sent to ${friend.username}.`);
     }
   }
 

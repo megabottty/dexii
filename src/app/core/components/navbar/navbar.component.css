@@ -15,6 +15,12 @@
   gap: 16px;
 }
 
+.navbar-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .navbar-logo {
   width: 44px;
   height: 44px;
@@ -33,6 +39,12 @@
   font-weight: 200;
   letter-spacing: 4px;
   text-transform: uppercase;
+}
+
+.navbar-username {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .navbar-links {

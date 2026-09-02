@@ -8,4 +8,5 @@ export interface Message {
   relatedCrushId?: string; // Optional context: sharing tea about someone
   relatedEntryId?: string; // Link to specific entry/note
   isSelfDestruct?: boolean;
+  selfDestructDurationMs?: number;
 }

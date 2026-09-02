@@ -1,0 +1,132 @@
+import { Injectable, effect, inject, signal } from '@angular/core';
+import { SecurityService } from './security.service';
+import {
+  DEFAULT_USER_SETTINGS,
+  normalizeUserSettings,
+  readLegacyProfileSnapshot,
+  readPendingSettings,
+  readStoredSettings,
+  type UserSettings,
+  writeLegacyProfileSnapshot,
+  writePendingSettings
+} from './user-settings.storage';
+
+export type { UserSettings } from './user-settings.storage';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UserSettingsService {
+  private readonly storagePrefix = 'dexii_user_settings_';
+  private security = inject(SecurityService);
+  private activeUser = signal<string>('');
+  private _settings = signal<UserSettings>(DEFAULT_USER_SETTINGS);
+
+  public settings = this._settings.asReadonly();
+
+  constructor() {
+    effect(() => {
+      const username = this.security.currentUser() || localStorage.getItem('dexii_api_username') || '';
+      if (!username || username === this.activeUser()) {
+        return;
+      }
+      this.loadUserSettings(username);
+    }, { allowSignalWrites: true });
+  }
+
+  private getStorageKey(username: string): string {
+    return `${this.storagePrefix}${username}`;
+  }
+
+  private mergeWithDefaults(raw: Partial<UserSettings> | null | undefined): UserSettings {
+    return normalizeUserSettings(raw);
+  }
+
+  private buildSettingsFromStorage(username: string): UserSettings {
+    const parsed = readStoredSettings(username);
+    const legacy = readLegacyProfileSnapshot();
+    return this.mergeWithDefaults({
+      ...parsed,
+      username,
+      email: parsed?.email || legacy.email,
+      bio: parsed?.bio || legacy.bio,
+      avatarUrl: parsed?.avatarUrl || legacy.avatarUrl,
+      displayName: parsed?.displayName || legacy.displayName || username
+    });
+  }
+
+  private loadUserSettings(username: string): void {
+    this.activeUser.set(username);
+    this._settings.set(this.buildSettingsFromStorage(username));
+  }
+
+  private persist(settings: UserSettings): void {
+    const username = this.activeUser();
+    if (!username) {
+      return;
+    }
+    localStorage.setItem(this.getStorageKey(username), JSON.stringify(settings));
+    writeLegacyProfileSnapshot(settings);
+  }
+
+  updateSettings(patch: Partial<UserSettings>): void {
+    const next = this.mergeWithDefaults({ ...this._settings(), ...patch });
+    this._settings.set(next);
+    this.persist(next);
+  }
+
+  resetSettings(): void {
+    this._settings.set(DEFAULT_USER_SETTINGS);
+    this.persist(DEFAULT_USER_SETTINGS);
+  }
+
+  currentUsername(): string {
+    return this.activeUser() || this.security.currentUser() || localStorage.getItem('dexii_api_username') || '';
+  }
+
+  setProfileAvatar(file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.updateSettings({ avatarUrl: String(reader.result || '') });
+        resolve();
+      };
+      reader.onerror = () => reject(new Error('Could not read profile photo'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  getSignupDraft(): UserSettings {
+    return normalizeUserSettings({
+      ...readPendingSettings(),
+      ...readLegacyProfileSnapshot(),
+      username: localStorage.getItem('dexii_pending_username') || localStorage.getItem('dexii_api_username') || '',
+      displayName: localStorage.getItem('dexii_pending_username') || localStorage.getItem('dexii_profile_display_name') || ''
+    });
+  }
+
+  updateSignupDraft(patch: Partial<UserSettings>): void {
+    const next = normalizeUserSettings({ ...this.getSignupDraft(), ...patch });
+    writePendingSettings(next);
+    writeLegacyProfileSnapshot(next);
+  }
+
+  clearSignupDraft(): void {
+    localStorage.removeItem('dexii_pending_username');
+    localStorage.removeItem('dexii_pending_email');
+    localStorage.removeItem('dexii_pending_bio');
+    localStorage.removeItem('dexii_pending_relationshipStatus');
+    localStorage.removeItem('dexii_pending_lookingFor');
+    localStorage.removeItem('dexii_pending_interestedIn');
+    localStorage.removeItem('dexii_pending_loveLanguage');
+    localStorage.removeItem('dexii_pending_idealDate');
+  }
+
+  getSelectedFriendIds(): string[] {
+    return [...(this._settings().selectedFriendIds || [])];
+  }
+
+  setSelectedFriendIds(selectedFriendIds: string[]): void {
+    this.updateSettings({ selectedFriendIds });
+  }
+}

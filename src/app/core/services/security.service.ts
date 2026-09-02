@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ModalService } from './modal.service';
 import { getApiBaseUrl } from '../config/api-config';
+import { promotePendingSettings } from './user-settings.storage';
 
 @Injectable({
   providedIn: 'root'
@@ -22,6 +23,11 @@ export class SecurityService {
 
   private _currentUser = signal<string | null>(localStorage.getItem('dexii_api_username'));
   public currentUser = this._currentUser.asReadonly();
+
+  // The backend keys friends and messages off the Mongo user id, not the username,
+  // so it is stored alongside the token for those APIs to use.
+  private _currentUserId = signal<string | null>(localStorage.getItem('dexii_api_user_id'));
+  public currentUserId = this._currentUserId.asReadonly();
 
   // 1. The core state of the app's privacy
   private _isLocked = signal<boolean>(true);
@@ -71,6 +77,7 @@ export class SecurityService {
           const data = await response.json();
           localStorage.setItem('dexii_api_token', data.token);
           localStorage.setItem('dexii_api_username', username);
+          this.storeUserId(data?.user?.id);
           this._currentUser.set(username);
           this._isLoggedIn.set(true);
 
@@ -149,6 +156,7 @@ export class SecurityService {
     if (pendingUsername && !localStorage.getItem('dexii_api_username')) {
       // Move pending values to the active keys once registration is complete
       localStorage.setItem('dexii_api_username', pendingUsername);
+      promotePendingSettings(pendingUsername);
       localStorage.removeItem('dexii_pending_username');
       localStorage.removeItem('dexii_pending_email');
       localStorage.removeItem('dexii_pending_bio');
@@ -210,6 +218,7 @@ export class SecurityService {
 
     const data = await response.json();
     localStorage.setItem('dexii_api_token', data.token);
+    this.storeUserId(data?.user?.id);
 
     // We get the pin from pending since it wasn't saved to dexii_pin yet
     const pendingPin = localStorage.getItem('dexii_pending_pin');
@@ -238,11 +247,28 @@ export class SecurityService {
     this.setInitialPin('1111');
   }
 
+  /** Persists the backend user id when an auth response provides one. */
+  private storeUserId(id: unknown): void {
+    if (typeof id !== 'string' && typeof id !== 'number') return;
+    const value = String(id);
+    if (!value) return;
+    localStorage.setItem('dexii_api_user_id', value);
+    this._currentUserId.set(value);
+  }
+
+  /** Auth header for backend calls; the API expects the token as `x-auth-token`. */
+  authHeaders(): Record<string, string> {
+    const token = localStorage.getItem('dexii_api_token');
+    return token ? { 'x-auth-token': token } : {};
+  }
+
   resetPinSetup(): void {
     localStorage.removeItem('dexii_pin');
     localStorage.removeItem('dexii_api_token');
     localStorage.removeItem('dexii_api_username');
+    localStorage.removeItem('dexii_api_user_id');
     this._currentUser.set(null);
+    this._currentUserId.set(null);
     this._userPin.set(null);
     this._isLoggedIn.set(false);
     this._isLocked.set(true);

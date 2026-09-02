@@ -5,10 +5,11 @@ import { DataService } from './data.service';
 export interface AuditEntry {
   id: string;
   timestamp: Date;
-  type: 'share' | 'message';
+  type: 'share' | 'entry-share' | 'message';
   content: string;
   crushName?: string;
   crushId?: string;
+  entryId?: string;
   isFromMe: boolean;
   readAt?: Date;
   friendName: string;
@@ -23,12 +24,13 @@ export class AuditService {
   // We will pass DataService when needed or use another way if possible
   // Actually, we can just inject it and see if it fails, but DataService already injects AuditService.
 
-  logEvent(senderId: string, receiverId: string, content: string, relatedCrushId?: string) {
+  logEvent(senderId: string, receiverId: string, content: string, relatedCrushId?: string, relatedEntryId?: string) {
     this.messaging.sendMessage({
       senderId,
       receiverId,
       content,
-      relatedCrushId
+      relatedCrushId,
+      relatedEntryId
     });
   }
 
@@ -79,10 +81,11 @@ export class AuditService {
           const entry: AuditEntry = {
             id: m.id,
             timestamp: m.timestamp,
-            type: crushId ? 'share' : 'message',
+            type: m.relatedEntryId ? 'entry-share' : (crushId ? 'share' : 'message'),
             content: m.content,
             crushName: crush?.nickname || 'Unknown Crush',
             crushId: crushId,
+            entryId: m.relatedEntryId,
             isFromMe,
             readAt: m.readAt,
             friendName: isFromMe ? (dataService.isMe(friendId) ? myId : friendId) : m.senderId

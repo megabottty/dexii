@@ -38,6 +38,7 @@ const getCrushes = async (username) => {
 
 const addCrush = async (username, crushPayload) => {
   const all = await readAll();
+  const redFlags = Number.isFinite(crushPayload.redFlags) && crushPayload.redFlags > 0 ? 1 : 0;
 
   const newCrush = {
     _id: `demo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -52,7 +53,8 @@ const addCrush = async (username, crushPayload) => {
     sharedEntries: Array.isArray(crushPayload.sharedEntries) ? crushPayload.sharedEntries : [],
     lastInteraction: crushPayload.lastInteraction || new Date().toISOString(),
     rating: Number.isFinite(crushPayload.rating) ? crushPayload.rating : 3,
-    redFlags: Number.isFinite(crushPayload.redFlags) ? crushPayload.redFlags : 0,
+    redFlags,
+    redFlagReason: redFlags > 0 ? (crushPayload.redFlagReason || '') : '',
     vibeHistory: Array.isArray(crushPayload.vibeHistory) && crushPayload.vibeHistory.length > 0
       ? crushPayload.vibeHistory
       : [5],
@@ -103,7 +105,12 @@ const updateCrush = async (username, id, crushPayload) => {
     sharedEntries: Array.isArray(crushPayload.sharedEntries) ? crushPayload.sharedEntries : existing.sharedEntries,
     lastInteraction: crushPayload.lastInteraction || existing.lastInteraction,
     rating: Number.isFinite(crushPayload.rating) ? crushPayload.rating : existing.rating,
-    redFlags: Number.isFinite(crushPayload.redFlags) ? crushPayload.redFlags : existing.redFlags,
+    redFlags: Number.isFinite(crushPayload.redFlags)
+      ? (crushPayload.redFlags > 0 ? 1 : 0)
+      : existing.redFlags,
+    redFlagReason: crushPayload.redFlagReason !== undefined
+      ? crushPayload.redFlagReason
+      : existing.redFlagReason,
     vibeHistory: Array.isArray(crushPayload.vibeHistory) ? crushPayload.vibeHistory : existing.vibeHistory,
     category: crushPayload.category !== undefined ? crushPayload.category : existing.category,
     hair: Array.isArray(crushPayload.hair) ? crushPayload.hair : existing.hair,

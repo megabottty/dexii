@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, DestroyRef, computed } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, DestroyRef, computed } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -6,6 +6,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SecurityService } from './core/services/security.service';
 import { ThemeService } from './core/services/theme.service';
 import { AlertModalComponent } from './core/components/alert-modal.component';
+import { WalkthroughComponent } from './core/components/walkthrough/walkthrough.component';
+import { FriendsApiService } from './core/services/friends-api.service';
 
 interface WalkthroughStep {
   title: string;
@@ -15,7 +17,7 @@ interface WalkthroughStep {
 @Component({
   selector: 'app-root',
   styleUrl: './app.component.css',
-  imports: [RouterOutlet, AlertModalComponent],
+  imports: [RouterOutlet, AlertModalComponent, WalkthroughComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [class.is-chat-route]="currentPath().startsWith('/chat')"
@@ -122,25 +124,150 @@ interface WalkthroughStep {
         </div>
       }
 
+      @if (showNextSteps()) {
+        <div class="app-component__s8">
+          <div [style.background-color]="theme.colors().bg"
+               [style.border]="'1px solid ' + theme.colors().border"
+               tabindex="-1"
+               role="dialog"
+               aria-modal="true"
+               aria-labelledby="next-steps-title"
+               class="app-component__s9">
+            <button (click)="dismissNextSteps()"
+                    aria-label="Close next steps"
+                    [style.color]="theme.colors().textSecondary"
+                    class="app-component__s10">✕</button>
+
+            <h2 id="next-steps-title" class="app-component__s11">Next Steps</h2>
+            <p [style.color]="theme.colors().textSecondary" class="app-component__s12">
+              You’ve finished the first tour. Now build your circle and unlock the friend feature tour.
+            </p>
+
+            <div class="app-component__s13">
+              <div [style.border]="'1px solid ' + theme.colors().border"
+                   [style.background-color]="theme.colors().bgSecondary"
+                   class="app-component__s14">
+                <p [style.color]="theme.colors().primary" class="app-component__s15">1. Add friends</p>
+                <p class="app-component__s16">Go to Friends to invite people and create friendship profiles.</p>
+              </div>
+              <div [style.border]="'1px solid ' + theme.colors().border"
+                   [style.background-color]="theme.colors().bgSecondary"
+                   class="app-component__s14">
+                <p [style.color]="theme.colors().primary" class="app-component__s15">2. Learn sharing</p>
+                <p class="app-component__s16">Use Sharing Controls to choose exactly what each friend can see.</p>
+              </div>
+              <div [style.border]="'1px solid ' + theme.colors().border"
+                   [style.background-color]="theme.colors().bgSecondary"
+                   class="app-component__s14">
+                <p [style.color]="theme.colors().primary" class="app-component__s15">3. Unlock the friend tour</p>
+                <p class="app-component__s16">Once you’ve added at least one friend, Dexii can walk you through the friend tools.</p>
+              </div>
+            </div>
+
+            <div class="app-component__s17">
+              <button (click)="goToFriends()"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.background-color]="'transparent'"
+                      [style.color]="theme.colors().text"
+                      class="app-component__s19">
+                Go to Friends
+              </button>
+              <button (click)="startFriendFeatureTour()"
+                      [style.background-color]="theme.colors().primary"
+                      class="app-component__s18">
+                @if (friendCount() > 0) { Start Friend Tour } @else { Add Friends First }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (showFriendTour()) {
+        <div class="app-component__s8">
+          <div [style.background-color]="theme.colors().bg"
+               [style.border]="'1px solid ' + theme.colors().border"
+               tabindex="-1"
+               role="dialog"
+               aria-modal="true"
+               aria-labelledby="friend-tour-title"
+               aria-describedby="friend-tour-description"
+               class="app-component__s9">
+            <button (click)="dismissFriendTour()"
+                    aria-label="Close friend tour"
+                    [style.color]="theme.colors().textSecondary"
+                    class="app-component__s10">✕</button>
+
+            <h2 id="friend-tour-title" class="app-component__s11">Friend Feature Tour</h2>
+            <p id="friend-tour-description" [style.color]="theme.colors().textSecondary" class="app-component__s12">
+              Step {{ friendTourStepIndex() + 1 }} of {{ friendTourSteps.length }}
+            </p>
+
+            <div class="app-component__s13">
+              <div [style.border]="'1px solid ' + theme.colors().border"
+                   [style.background-color]="theme.colors().bgSecondary"
+                   class="app-component__s14">
+                <p [style.color]="theme.colors().primary" class="app-component__s15">
+                  {{ activeFriendTourStep().title }}
+                </p>
+                <p class="app-component__s16">{{ activeFriendTourStep().details }}</p>
+              </div>
+            </div>
+
+            <div class="app-component__s17">
+              <button (click)="previousFriendTourStep()"
+                      [disabled]="friendTourStepIndex() === 0"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.opacity]="friendTourStepIndex() === 0 ? '0.45' : '1'"
+                      class="app-component__s19">
+                Back
+              </button>
+              @if (isLastFriendTourStep()) {
+                <button (click)="completeFriendTour()"
+                        [style.background-color]="theme.colors().primary"
+                        class="app-component__s18">
+                  Done
+                </button>
+              } @else {
+                <button (click)="nextFriendTourStep()"
+                        [style.background-color]="theme.colors().primary"
+                        class="app-component__s18">
+                  Next
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
       <app-alert-modal></app-alert-modal>
+      <app-walkthrough></app-walkthrough>
     </div>
   `
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   protected security = inject(SecurityService);
   protected theme = inject(ThemeService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private friendsApi = inject(FriendsApiService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
+  private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   currentPath = signal(this.router.url || '/dashboard');
   activeHint = signal('');
   showRouteHint = signal(false);
   userWantsHint = signal(true);
   showWalkthrough = signal(false);
+  showNextSteps = signal(false);
+  showFriendTour = signal(false);
   walkthroughStepIndex = signal(0);
+  friendTourStepIndex = signal(0);
+  friendCount = signal(0);
+  onboardingMode = signal<'intro' | 'friends'>('intro');
   activeWalkthroughStep = computed(() => this.walkthroughSteps[this.walkthroughStepIndex()] || this.walkthroughSteps[0]);
   isLastWalkthroughStep = computed(() => this.walkthroughStepIndex() >= this.walkthroughSteps.length - 1);
+  activeFriendTourStep = computed(() => this.friendTourSteps[this.friendTourStepIndex()] || this.friendTourSteps[0]);
+  isLastFriendTourStep = computed(() => this.friendTourStepIndex() >= this.friendTourSteps.length - 1);
   walkthroughSteps: WalkthroughStep[] = [
     {
       title: '1. Dashboard = Your Tea Timeline',
@@ -171,6 +298,28 @@ export class AppComponent implements OnInit {
       details: 'Vault keeps sensitive content private. You can replay this walkthrough anytime with Help & Tips.'
     }
   ];
+  friendTourSteps: WalkthroughStep[] = [
+    {
+      title: '1. Add Friend Basics',
+      details: 'Use Friends > Add Friend to search, invite, and save a friendship profile before sharing anything.'
+    },
+    {
+      title: '2. Friendship Profiles',
+      details: 'Open View Friendship to keep notes about how you know them, trust level, and relationship context.'
+    },
+    {
+      title: '3. Sharing Controls',
+      details: 'On a friend profile, choose exactly which crushes and entries they can see, one person at a time.'
+    },
+    {
+      title: '4. Chat + Shared History',
+      details: 'Shared entries and notes show up in chat and audit history, so you can see what each friend received.'
+    },
+    {
+      title: '5. Privacy Tools',
+      details: 'Archive, unshare, delete requests, and toggle visibility whenever you want to trim your circle.'
+    }
+  ];
   protected readonly title = signal('dexii');
 
   ngOnInit() {
@@ -194,15 +343,28 @@ export class AppComponent implements OnInit {
         this.currentPath.set(event.urlAfterRedirects || event.url || '/dashboard');
         this.userWantsHint.set(false);
         this.refreshRouteHint();
-        this.maybeAutoShowWalkthrough();
+        void this.refreshOnboardingState();
       });
 
     this.refreshRouteHint();
-    this.maybeAutoShowWalkthrough();
+    void this.refreshOnboardingState();
+    this.onboardingRefreshTimer = setInterval(() => {
+      void this.refreshOnboardingState();
+    }, 15000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.onboardingRefreshTimer) {
+      clearInterval(this.onboardingRefreshTimer);
+      this.onboardingRefreshTimer = null;
+    }
   }
 
   openWalkthrough() {
+    this.onboardingMode.set('intro');
     this.walkthroughStepIndex.set(0);
+    this.showFriendTour.set(false);
+    this.showNextSteps.set(false);
     this.showWalkthrough.set(true);
   }
 
@@ -220,6 +382,51 @@ export class AppComponent implements OnInit {
     localStorage.setItem(this.getWalkthroughStorageKey(), '1');
     this.showWalkthrough.set(false);
     this.walkthroughStepIndex.set(0);
+    this.showNextSteps.set(true);
+  }
+
+  dismissNextSteps(): void {
+    localStorage.setItem(this.getNextStepsStorageKey(), '1');
+    this.showNextSteps.set(false);
+  }
+
+  goToFriends(): void {
+    this.dismissNextSteps();
+    this.router.navigate(['/friends']);
+  }
+
+  startFriendFeatureTour(): void {
+    if (this.friendCount() === 0) {
+      this.router.navigate(['/friends']);
+      return;
+    }
+
+    this.dismissNextSteps();
+    this.onboardingMode.set('friends');
+    this.friendTourStepIndex.set(0);
+    this.showWalkthrough.set(false);
+    this.showFriendTour.set(true);
+  }
+
+  nextFriendTourStep(): void {
+    const next = Math.min(this.friendTourStepIndex() + 1, this.friendTourSteps.length - 1);
+    this.friendTourStepIndex.set(next);
+  }
+
+  previousFriendTourStep(): void {
+    const previous = Math.max(this.friendTourStepIndex() - 1, 0);
+    this.friendTourStepIndex.set(previous);
+  }
+
+  completeFriendTour(): void {
+    localStorage.setItem(this.getFriendTourStorageKey(), '1');
+    this.showFriendTour.set(false);
+    this.friendTourStepIndex.set(0);
+  }
+
+  dismissFriendTour(): void {
+    this.showFriendTour.set(false);
+    this.friendTourStepIndex.set(0);
   }
 
   dismissHintForCurrentRoute() {
@@ -249,29 +456,70 @@ export class AppComponent implements OnInit {
       '/friends': 'Use Bio for friend notes and Sharing Controls to choose which crushes/entries each friend can view.',
       '/friends/:id': 'Save private notes for yourself or shared notes that get sent to this friend.',
       '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each crush.',
-      '/chat': 'Messages marked as shared notes are sent here. Type "secret" in a message to make it self-destruct and disappear.',
+      '/chat': 'Messages marked as shared notes are sent here. Type "secret" in a message to make it self-destruct after it is opened.',
       '/vault': 'Vault is your private zone for sensitive content and locked-down entries.',
       '/lock': 'Enter your PIN to unlock, then tap Help & Tips any time for the walkthrough.'
     };
     return map[normalized] || 'Tap Help & Tips for a quick walkthrough of the app.';
   }
 
+  private async refreshOnboardingState(): Promise<void> {
+    await this.loadFriendCount();
+    this.maybeAutoShowWalkthrough();
+  }
+
+  private async loadFriendCount(): Promise<void> {
+    if (!this.friendsApi.isAuthenticated()) {
+      this.friendCount.set(0);
+      return;
+    }
+    try {
+      const friends = await this.friendsApi.listFriends();
+      this.friendCount.set(Array.isArray(friends) ? friends.length : 0);
+    } catch {
+      this.friendCount.set(0);
+    }
+  }
+
   private maybeAutoShowWalkthrough(): void {
-    if (this.showWalkthrough()) return;
+    if (this.showWalkthrough() || this.showNextSteps() || this.showFriendTour()) return;
     if (!this.security.isLoggedIn() || this.security.isLocked()) return;
 
     const path = this.currentPath();
     if (path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/lock')) return;
 
-    if (localStorage.getItem(this.getWalkthroughStorageKey()) === '1') return;
+    if (localStorage.getItem(this.getWalkthroughStorageKey()) !== '1') {
+      this.onboardingMode.set('intro');
+      this.walkthroughStepIndex.set(0);
+      this.showWalkthrough.set(true);
+      return;
+    }
 
-    this.walkthroughStepIndex.set(0);
-    this.showWalkthrough.set(true);
+    if (localStorage.getItem(this.getNextStepsStorageKey()) !== '1') {
+      this.showNextSteps.set(true);
+      return;
+    }
+
+    if (this.friendCount() > 0 && localStorage.getItem(this.getFriendTourStorageKey()) !== '1') {
+      this.onboardingMode.set('friends');
+      this.friendTourStepIndex.set(0);
+      this.showFriendTour.set(true);
+    }
   }
 
   private getWalkthroughStorageKey(): string {
     const username = this.security.currentUser() || localStorage.getItem('dexii_api_username') || 'guest';
     return `dexii_walkthrough_seen_${username}`;
+  }
+
+  private getNextStepsStorageKey(): string {
+    const username = this.security.currentUser() || localStorage.getItem('dexii_api_username') || 'guest';
+    return `dexii_next_steps_seen_${username}`;
+  }
+
+  private getFriendTourStorageKey(): string {
+    const username = this.security.currentUser() || localStorage.getItem('dexii_api_username') || 'guest';
+    return `dexii_friend_tour_seen_${username}`;
   }
 
   private readDismissedHints(): Record<string, boolean> {

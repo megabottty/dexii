@@ -87,6 +87,58 @@
   opacity: 0.9;
 }
 
+.profile-relationship-status {
+  display: inline-flex;
+  margin: 10px 0 0 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.status-chip-button {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.status-chip-button--ghost {
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.red-flag-chip-button {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.red-flag-chip-button:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.status-quick-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-quick-select {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
 /* Action Buttons Grid */
 .action-buttons-grid {
   display: grid;
@@ -307,6 +359,16 @@
 /* Edit Form Styles */
 .edit-form {
   padding: 32px 40px;
+}
+
+.edit-actions-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
 }
 
 .edit-section {

@@ -29,4 +29,7 @@ export const getApiBaseUrl = (): string => {
   return 'http://localhost:5001/api';
 };
 
+/** Socket.io connects to the server origin, not the /api path. */
+export const getSocketUrl = (): string => trimTrailingSlash(getApiBaseUrl()).replace(/\/api$/, '');
+
 export {};

@@ -102,6 +102,14 @@
   padding-left: 56px; display: flex; flex-direction: column; gap: 12px;
 }
 
+.friends-list-specific-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+}
+
 .friends-list-component__s27 {
   font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;
 }
@@ -176,6 +184,46 @@
 
 .friends-list-component__s45 {
   margin: 0 0 10px 0; font-size: 12px; font-style: italic;
+}
+
+.friends-list-search-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 18px;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.friends-list-search-empty__icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.friends-list-search-empty__content {
+  flex: 1 1 240px;
+}
+
+.friends-list-search-empty__title {
+  margin: 0 0 4px 0;
+  font-size: 17px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.friends-list-search-empty__message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.friends-list-search-empty__invite {
+  flex: 0 0 auto;
 }
 
 .friends-list-component__s46 {
@@ -259,16 +307,6 @@
   padding-bottom: 20px;
 }
 
-.friends-list-simulate-btn {
-  background: none;
-  padding: 6px 10px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  cursor: pointer;
-}
-
 .header-actions {
   margin-bottom: 1.5rem;
   display: flex;
@@ -306,6 +344,29 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   cursor: pointer;
+}
+
+.friends-list-auth-state {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.friends-list-auth-state__title {
+  margin: 0 0 6px 0;
+  font-size: 17px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.friends-list-auth-state__message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .friends-list-empty {
@@ -350,6 +411,37 @@
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.friends-list-profile-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.friends-list-profile-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid currentColor;
+  border-color: rgba(255,255,255,0.08);
+  padding: 10px 12px;
+}
+
+.friends-list-profile-row--full {
+  flex-direction: column;
+}
+
+.friends-list-profile-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+
+.friends-list-profile-value {
+  font-size: 13px;
+  text-align: right;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 800px) {

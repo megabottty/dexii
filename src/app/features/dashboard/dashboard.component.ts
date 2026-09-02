@@ -1,6 +1,6 @@
 import { Component, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../core/services/data.service';
 import { SecurityService } from '../../core/services/security.service';
@@ -8,6 +8,13 @@ import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
+import { WalkthroughService } from '../../core/services/walkthrough.service';
+import {
+  FIRST_LOGIN_TOUR,
+  FIRST_LOGIN_TOUR_KEY,
+  FIRST_CRUSH_SHARE_TOUR,
+  FIRST_CRUSH_SHARE_TOUR_KEY
+} from '../../core/config/walkthrough-tours';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushStatus } from '../../core/models/crush-profile.model';
 import { SubscriptionTier } from '../../core/models/user.model';
@@ -128,6 +135,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <option [value]="statuses.Crushing">Crushing</option>
                   <option [value]="statuses.Dating">Dating</option>
                   <option [value]="statuses.Exclusive">Exclusive</option>
+                  <option [value]="statuses.BrokenUp">Broken Up</option>
+                  <option [value]="statuses.Heartbroken">Heartbroken</option>
                   <option [value]="statuses.Archived">Archived</option>
                   <option [value]="statuses.Friend">Friend</option>
                 </select>
@@ -379,12 +388,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             [style.color]="newCrush.initialRating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
                   }
                 </div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41" style="margin-top: 10px; display: block;">Current Vibe (1-5 Stars)</label>
+                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41" style="margin-top: 10px; display: block;">Current Vibe (Optional)</label>
                 <div class="dashboard-component__s42">
                   @for (star of [1,2,3,4,5]; track star) {
                     <button type="button" (click)="newCrush.currentRating = star" [attr.aria-label]="'Set current vibe to ' + star + ' stars'"
-                            [style.color]="newCrush.currentRating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
+                            [style.color]="(newCrush.currentRating ?? 0) >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
                   }
+                  <button type="button" (click)="newCrush.currentRating = null"
+                          [style.color]="theme.colors().textSecondary"
+                          class="dashboard-rating-star"
+                          aria-label="Skip current vibe">Skip</button>
                 </div>
               </div>
 
@@ -424,14 +437,44 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
 
                 <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Grade</label>
-                  <input [(ngModel)]="newCrush.grade" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Are they in school or working?</label>
+                  <div class="dashboard-component__s28">
+                    @for (option of schoolOrWorkOptions; track option.value) {
+                      <div (click)="selectSchoolOrWork(option.value)"
+                           role="button"
+                           tabindex="0"
+                           (keydown.enter)="selectSchoolOrWork(option.value)"
+                           (keydown.space)="selectSchoolOrWork(option.value); $event.preventDefault()"
+                           [attr.aria-pressed]="newCrush.schoolOrWork === option.value"
+                           [style.border]="newCrush.schoolOrWork === option.value ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                           [style.background-color]="newCrush.schoolOrWork === option.value ? theme.colors().primary + '10' : 'transparent'"
+                           class="dashboard-component__s29">
+                        <div [style.border]="'2px solid ' + (newCrush.schoolOrWork === option.value ? theme.colors().primary : theme.colors().textSecondary)"
+                             [style.background-color]="newCrush.schoolOrWork === option.value ? theme.colors().primary : 'transparent'"
+                             class="dashboard-component__s30">
+                           @if (newCrush.schoolOrWork === option.value) {
+                             <span class="dashboard-component__s31">✓</span>
+                           }
+                        </div>
+                        <span class="dashboard-component__s32">{{option.label}}</span>
+                      </div>
+                    }
+                  </div>
                 </div>
 
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Occupation</label>
-                  <input [(ngModel)]="newCrush.occupation" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                </div>
+                @if (shouldShowGrade()) {
+                  <div class="dashboard-component__s26">
+                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Grade</label>
+                    <input [(ngModel)]="newCrush.grade" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                  </div>
+                }
+
+                @if (shouldShowOccupation()) {
+                  <div class="dashboard-component__s26">
+                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Occupation</label>
+                    <input [(ngModel)]="newCrush.occupation" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                  </div>
+                }
 
                 <div class="dashboard-component__s26">
                   <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Family</label>
@@ -567,6 +610,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     class="dashboard-component__s77">
                Waiting for the Tea? {{ unreadTeaCount() > 0 ? '(' + unreadTeaCount() + ')' : '' }}
             </button>
+            <button (click)="goToFriends()"
+                    [style.border]="'1px solid ' + theme.colors().accent"
+                    [style.color]="theme.colors().accent"
+                    class="dashboard-component__s78">
+               + Add Friend
+            </button>
             <button (click)="openNewEntryModal()" [style.border]="'1px solid ' + theme.colors().primary"
                     [style.color]="theme.colors().primary"
                     class="dashboard-component__s78">
@@ -575,41 +624,43 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           </div>
         </div>
 
-        <div [style.background-color]="theme.colors().bgSecondary"
-             [style.border]="'1px solid ' + theme.colors().border"
-             style="border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-            <div>
-              <p style="margin: 0; font-weight: 600;">Crush Plan</p>
-              <p [style.color]="theme.colors().textSecondary" style="margin: 4px 0 0 0; font-size: 0.85rem;">
-                Friends are unlimited. Plans only change crush capacity.
-              </p>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button (click)="subscription.upgrade(freeTier)"
-                      [style.background-color]="subscription.tier() === freeTier ? theme.colors().primary : 'transparent'"
-                      [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
-                      [style.border]="'1px solid ' + (subscription.tier() === freeTier ? theme.colors().primary : theme.colors().border)"
-                      style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
-                Free (5)
-              </button>
-              <button (click)="subscription.upgrade(premiumTier)"
-                      [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
-                      [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
-                      [style.border]="'1px solid ' + (subscription.tier() === premiumTier ? theme.colors().primary : theme.colors().border)"
-                      style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
-                Premium (25)
-              </button>
-              <button (click)="subscription.upgrade(goldTier)"
-                      [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
-                      [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
-                      [style.border]="'1px solid ' + (subscription.tier() === goldTier ? theme.colors().primary : theme.colors().border)"
-                      style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
-                Gold (100)
-              </button>
+        @if (!subscription.isPremium()) {
+          <div [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               style="border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+              <div>
+                <p style="margin: 0; font-weight: 600;">Crush Plan</p>
+                <p [style.color]="theme.colors().textSecondary" style="margin: 4px 0 0 0; font-size: 0.85rem;">
+                  Friends are unlimited. Plans only change crush capacity.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button (click)="subscription.upgrade(freeTier)"
+                        [style.background-color]="subscription.tier() === freeTier ? theme.colors().primary : 'transparent'"
+                        [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
+                        [style.border]="'1px solid ' + (subscription.tier() === freeTier ? theme.colors().primary : theme.colors().border)"
+                        style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                  Free (5)
+                </button>
+                <button (click)="subscription.upgrade(premiumTier)"
+                        [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
+                        [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
+                        [style.border]="'1px solid ' + (subscription.tier() === premiumTier ? theme.colors().primary : theme.colors().border)"
+                        style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                  Premium (25)
+                </button>
+                <button (click)="subscription.upgrade(goldTier)"
+                        [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
+                        [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
+                        [style.border]="'1px solid ' + (subscription.tier() === goldTier ? theme.colors().primary : theme.colors().border)"
+                        style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                  Gold (100)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        }
 
         <!-- Filter Chips -->
         <div class="dashboard-component__s79">
@@ -661,9 +712,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                          class="dashboard-component__s91">
                      {{ crush.status }}
                    </span>
-                   <span *ngIf="crush.redFlags > 0" class="dashboard-red-flag-chip">
-                     {{ crush.redFlags }} Flags
-                   </span>
+                   @if ((crush.redFlags || 0) > 0) {
+                     <button type="button"
+                             (click)="$event.stopPropagation(); showRedFlagReason(crush)"
+                             class="dashboard-red-flag-chip dashboard-red-flag-chip-button">
+                       🚩 Flagged
+                     </button>
+                   }
                 </div>
               </div>
 
@@ -699,6 +754,8 @@ export class DashboardComponent implements OnInit {
   public messaging = inject(MessagingService);
   public modal = inject(ModalService);
   public subscription = inject(SubscriptionService);
+  private router = inject(Router);
+  private walkthrough = inject(WalkthroughService);
 
   isNotePassing = signal(false);
   currentTeaPreview = signal('');
@@ -728,6 +785,13 @@ export class DashboardComponent implements OnInit {
     {label: 'He/Him', value: 'he'},
     {label: 'She/Her', value: 'she'},
     {label: 'They/Them', value: 'they'}
+  ];
+
+  schoolOrWorkOptions: Array<{label: string, value: 'school' | 'working' | 'both' | 'neither'}> = [
+    {label: 'In school', value: 'school'},
+    {label: 'Working', value: 'working'},
+    {label: 'Both', value: 'both'},
+    {label: 'Neither', value: 'neither'}
   ];
 
   filteredCrushes = computed(() => {
@@ -764,7 +828,7 @@ export class DashboardComponent implements OnInit {
     firstName: '',
     status: CrushStatus.Crush,
     initialRating: 3,
-    currentRating: 3,
+    currentRating: null as number | null,
     note: '',
     noteVisibility: 'private' as 'private' | 'public',
     visibility: [] as string[],
@@ -792,6 +856,7 @@ export class DashboardComponent implements OnInit {
     age: undefined as number | undefined,
     howWeMet: '',
     whenWeMet: '',
+    schoolOrWork: '' as '' | 'school' | 'working' | 'both' | 'neither',
     grade: '',
     occupation: '',
     family: '',
@@ -802,6 +867,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.dataService.setViewer(null);
+    this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
   }
 
   getRelationshipStatusOptions(): string[] {
@@ -829,6 +895,20 @@ export class DashboardComponent implements OnInit {
 
   toggleArchived() {
     this.showArchived.update(v => !v);
+  }
+
+  goToFriends() {
+    this.router.navigate(['/friends']);
+  }
+
+  showRedFlagReason(crush: any) {
+    const reason = (crush.redFlagReason || '').trim();
+    if (!reason) {
+      this.modal.show('This crush has one red flag, but no reason was saved yet.');
+      return;
+    }
+
+    this.modal.show(`Red flag reason: ${reason}`);
   }
 
   simulateNote() {
@@ -871,6 +951,18 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  selectSchoolOrWork(value: 'school' | 'working' | 'both' | 'neither') {
+    this.newCrush.schoolOrWork = value;
+  }
+
+  shouldShowGrade(): boolean {
+    return !this.newCrush.schoolOrWork || this.newCrush.schoolOrWork === 'school' || this.newCrush.schoolOrWork === 'both';
+  }
+
+  shouldShowOccupation(): boolean {
+    return !this.newCrush.schoolOrWork || this.newCrush.schoolOrWork === 'working' || this.newCrush.schoolOrWork === 'both';
+  }
+
   saveCrush() {
     const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
@@ -902,7 +994,7 @@ export class DashboardComponent implements OnInit {
       nickname: this.newCrush.nickname,
       fullName: this.newCrush.firstName,
       status: this.newCrush.status,
-      rating: this.newCrush.currentRating,
+      rating: this.newCrush.currentRating ?? this.newCrush.initialRating,
       initialRating: this.newCrush.initialRating,
       bio: this.newCrush.bio,
       visibility: [],
@@ -940,6 +1032,11 @@ export class DashboardComponent implements OnInit {
     }
 
     this.closeModal();
+
+    // First crush ever: guide them through sharing it with a friend.
+    if (this.dataService.getAllCrushes()().length === 1) {
+      this.walkthrough.start(FIRST_CRUSH_SHARE_TOUR_KEY, FIRST_CRUSH_SHARE_TOUR);
+    }
   }
 
   onAvatarFileSelected(event: Event) {
@@ -1015,7 +1112,7 @@ export class DashboardComponent implements OnInit {
       firstName: '',
       status: CrushStatus.Crush,
       initialRating: 3,
-      currentRating: 3,
+      currentRating: null,
       note: '',
       noteVisibility: 'private',
       visibility: [],
@@ -1043,6 +1140,7 @@ export class DashboardComponent implements OnInit {
       age: undefined,
       howWeMet: '',
       whenWeMet: '',
+      schoolOrWork: '',
       grade: '',
       occupation: '',
       family: '',
