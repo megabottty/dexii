@@ -39,4 +39,4 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Feature Gating**: Limits on friends and advanced vault sections for the Free tier.
 
 ---
-*Note: This is a prototype. Data currently resides in a local signal state for demonstration purposes. PINs are stored in LocalStorage for testing.*
+*Note: This is still a prototype. Crushes, entries, friends, and messages can use the backend when MongoDB is available; local state remains a demo/offline fallback. PINs and some settings are stored locally for testing.*

@@ -112,9 +112,4 @@ UserSchema.pre('validate', function normalizeForSearch() {
   this.searchName = (parts.join(' ') || this.username).trim().toLowerCase();
 });
 
-UserSchema.index({ username: 1 }, { unique: true });
-UserSchema.index({ email: 1 }, { unique: true, sparse: true });
-UserSchema.index({ phoneE164: 1 }, { unique: true, sparse: true });
-UserSchema.index({ searchName: 1 });
-
 module.exports = mongoose.model('User', UserSchema);

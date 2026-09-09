@@ -196,11 +196,12 @@ export class VaultCenterComponent {
     this.modal.show('Journal entry secured. Permanently separate from all sharing.');
   }
 
-  onFileSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file) {
-      this.vault.uploadImage(file);
-      this.modal.show('Sensitive image uploaded and blurred in your vault.');
-    }
+  onFileSelected(event: Event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || !input.files?.length) return;
+
+    this.vault.uploadImage(input.files[0]);
+    this.modal.show('Sensitive image uploaded and blurred in your vault.');
+    input.value = '';
   }
 }

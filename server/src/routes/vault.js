@@ -2,12 +2,16 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
+
+const vaultDirectory = path.resolve(process.cwd(), 'uploads', 'vault');
+fs.mkdirSync(vaultDirectory, { recursive: true });
 
 // Configure Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/vault');
+    cb(null, vaultDirectory);
   },
   filename: (req, file, cb) => {
     cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
@@ -25,7 +29,7 @@ const upload = multer({
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb('Error: Images Only!');
+      cb(new Error('Images only.'));
     }
   }
 });
