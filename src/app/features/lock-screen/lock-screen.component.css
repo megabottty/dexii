@@ -92,9 +92,18 @@
 
 .lock-screen-pin-dot {
   width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@media (max-width: 480px) {
+  .lock-screen-component__s1 {
+    padding: 16px;
+  }
+
+  .lock-screen-component__s5 {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 22px;
+  }
 }
 
 .lock-screen-aux-btn {

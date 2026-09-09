@@ -173,3 +173,29 @@
   left: 8px;
   top: 8px;
 }
+
+@media (max-width: 760px) {
+  .app-component__s2 {
+    right: 8px;
+    bottom: 70px;
+    width: min(360px, calc(100vw - 16px));
+  }
+
+  .app-component__s7 {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .app-hint-toggle {
+    left: 8px;
+    bottom: 70px;
+  }
+
+  .app-component__s9 {
+    padding: 18px 14px;
+  }
+
+  .app-component__s11 {
+    font-size: 23px;
+  }
+}

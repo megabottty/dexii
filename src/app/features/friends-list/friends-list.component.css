@@ -449,3 +449,61 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 760px) {
+  .friends-list-component__s1 {
+    padding: 28px 12px 48px;
+  }
+
+  .friends-list-component__s2 {
+    margin-bottom: 18px;
+    padding: 12px;
+  }
+
+  .friends-list-component__s6,
+  .friends-list-component__s38,
+  .friends-list-component__s59 {
+    width: 100%;
+  }
+
+  .friends-list-component__s38 {
+    flex-direction: column;
+  }
+
+  .friends-list-component__s40,
+  .friends-list-component__s35,
+  .friends-list-action-link,
+  .friends-list-action-btn {
+    min-height: 44px;
+  }
+
+  .friends-list-component__s10 {
+    max-height: 92vh;
+    padding: 24px 16px;
+  }
+
+  .friends-list-component__s12,
+  .friends-list-title {
+    font-size: 25px;
+    letter-spacing: 2px;
+  }
+
+  .friends-list-component__s54 {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .friends-list-component__s55,
+  .friends-list-component__s59 {
+    gap: 12px;
+  }
+
+  .friends-list-profile-row {
+    flex-direction: column;
+  }
+
+  .friends-list-profile-value {
+    text-align: left;
+  }
+}

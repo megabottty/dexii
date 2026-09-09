@@ -148,6 +148,34 @@
 }
 
 @media (max-width: 760px) {
+  .messaging-component__s2 {
+    padding: 14px 16px;
+  }
+
+  .messaging-component__s7 {
+    padding: 20px 16px;
+    gap: 12px;
+  }
+
+  .messaging-component__s11 {
+    padding: 12px 16px 16px;
+    gap: 10px;
+  }
+
+  .messaging-composer__row {
+    flex-direction: column;
+  }
+
+  .messaging-component__s12,
+  .messaging-component__s13 {
+    min-height: 48px;
+    width: 100%;
+  }
+
+  .messaging-composer__options {
+    padding-left: 0;
+  }
+
   .chat-hub {
     grid-template-columns: 1fr;
   }

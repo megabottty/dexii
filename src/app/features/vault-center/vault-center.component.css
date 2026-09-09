@@ -287,4 +287,54 @@
   .vault-settings-toggles {
     grid-template-columns: 1fr;
   }
+
+  .vault-center-component__s1 {
+    padding: 28px 12px 48px;
+  }
+
+  .vault-center-component__s3 {
+    padding: 12px;
+  }
+
+  .vault-center-component__s8 {
+    width: 100%;
+  }
+
+  .vault-nav-link,
+  .vault-center-component__s8 button,
+  .vault-center-component__s9 {
+    min-height: 44px;
+  }
+
+  .vault-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .vault-center-component__s12 {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .vault-journal-box,
+  .vault-center-component__s19 {
+    padding: 18px;
+  }
+
+  .vault-center-component__s17,
+  .vault-center-component__s24 {
+    min-height: 48px;
+    width: 100%;
+    padding-inline: 16px;
+  }
+
+  .vault-center-component__s25 {
+    grid-template-columns: 1fr;
+  }
+
+  .vault-upgrade-box {
+    padding: 48px 18px;
+  }
 }

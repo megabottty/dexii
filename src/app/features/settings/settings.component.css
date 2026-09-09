@@ -358,4 +358,53 @@
   .settings-plan-options {
     grid-template-columns: 1fr;
   }
+
+  .settings-shell {
+    padding: 20px 12px 40px;
+  }
+
+  .settings-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .settings-title {
+    font-size: 28px;
+  }
+
+  .settings-profile-banner,
+  .settings-photo-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-photo-btn,
+  .settings-reset-btn {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .settings-footer-actions {
+    justify-content: stretch;
+  }
+
+  .settings-footer-actions > * {
+    width: 100%;
+  }
+
+  .settings-modal-backdrop {
+    align-items: flex-end;
+    padding: 8px;
+  }
+
+  .settings-modal-card {
+    max-height: 90vh;
+    padding: 18px 14px;
+    border-radius: 16px 16px 8px 8px;
+  }
+
+  .settings-modal-friend {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

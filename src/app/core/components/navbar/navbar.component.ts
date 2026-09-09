@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
@@ -28,13 +28,26 @@ import { FriendsApiService } from '../../services/friends-api.service';
         </div>
       </div>
 
-      <div class="navbar-links">
+      <button type="button"
+              class="navbar-menu-toggle"
+              [attr.aria-expanded]="mobileMenuOpen()"
+              aria-controls="primary-navigation-links"
+              aria-label="Toggle navigation menu"
+              (click)="toggleMobileMenu()">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div id="primary-navigation-links"
+           class="navbar-links"
+           [class.navbar-links-open]="mobileMenuOpen()">
         <a routerLink="/dashboard"
+           (click)="closeMobileMenu()"
            [style.color]="theme.colors().text"
            class="navbar-link">
           Dashboard
         </a>
         <a routerLink="/friends"
+           (click)="closeMobileMenu()"
            [style.color]="theme.colors().text"
            class="navbar-link">
           Friends
@@ -47,6 +60,7 @@ import { FriendsApiService } from '../../services/friends-api.service';
           }
         </a>
         <a routerLink="/chat"
+           (click)="closeMobileMenu()"
            [style.color]="theme.colors().text"
            class="navbar-link">
           Chat
@@ -59,16 +73,19 @@ import { FriendsApiService } from '../../services/friends-api.service';
           }
         </a>
         <a routerLink="/user/me"
+           (click)="closeMobileMenu()"
            [style.color]="theme.colors().text"
            class="navbar-link">
           Profile
         </a>
         <a routerLink="/settings"
+           (click)="closeMobileMenu()"
            [style.color]="theme.colors().text"
            class="navbar-link">
           Settings
         </a>
         <button (click)="theme.toggleTheme()"
+                (click)="closeMobileMenu()"
                 [style.background-color]="'transparent'"
                 [style.color]="theme.colors().text"
                 [style.border]="'1px solid ' + theme.colors().border"
@@ -76,11 +93,13 @@ import { FriendsApiService } from '../../services/friends-api.service';
           {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
         </button>
         <button (click)="security.lockApp()"
+                (click)="closeMobileMenu()"
                 [style.background-color]="theme.colors().primary"
                 class="navbar-btn-primary">
           Lock
         </button>
         <button (click)="security.logout()"
+                (click)="closeMobileMenu()"
                 [style.background-color]="'transparent'"
                 [style.color]="theme.colors().textSecondary"
                 [style.border]="'1px solid ' + theme.colors().border"
@@ -88,6 +107,7 @@ import { FriendsApiService } from '../../services/friends-api.service';
           Logout
         </button>
         <button (click)="security.resetPinSetup()"
+                (click)="closeMobileMenu()"
                 [style.background-color]="'transparent'"
                 [style.color]="theme.colors().textSecondary"
                 [style.border]="'1px solid ' + theme.colors().border"
@@ -95,6 +115,7 @@ import { FriendsApiService } from '../../services/friends-api.service';
           Switch Account
         </button>
         <a routerLink="/vault"
+           (click)="closeMobileMenu()"
            [style.background-color]="theme.colors().accent"
            class="navbar-link-vault">
           Vault
@@ -111,6 +132,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   messaging = inject(MessagingService);
   private friendsApi = inject(FriendsApiService);
   incomingFriendRequestCount = signal(0);
+  mobileMenuOpen = signal(false);
   private notificationRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
@@ -125,6 +147,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
       clearInterval(this.notificationRefreshTimer);
       this.notificationRefreshTimer = null;
     }
+  }
+
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen.update((open) => !open);
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeMobileMenu();
   }
 
   private async refreshNotificationBadges(): Promise<void> {

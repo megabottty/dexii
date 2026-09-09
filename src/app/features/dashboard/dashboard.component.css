@@ -388,3 +388,72 @@
 .dashboard-red-flag-chip-button:hover {
   background-color: #dc2626;
 }
+
+@media (max-width: 760px) {
+  .dashboard-component__s70 {
+    padding: 28px 16px 48px;
+  }
+
+  .dashboard-component__s71 {
+    align-items: stretch;
+    margin-bottom: 32px;
+    gap: 20px;
+  }
+
+  .dashboard-component__s73 {
+    font-size: clamp(30px, 10vw, 42px);
+    letter-spacing: 1px;
+  }
+
+  .dashboard-component__s76 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dashboard-component__s77,
+  .dashboard-component__s78 {
+    width: 100%;
+    min-height: 48px;
+    padding: 14px 16px;
+  }
+
+  .dashboard-component__s84 {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .dashboard-component__s92 {
+    padding: 24px 18px;
+  }
+
+  .dashboard-component__s93 {
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+
+  .dashboard-component__s95 {
+    height: auto;
+    min-height: 0;
+  }
+
+  .dashboard-component__s87 {
+    height: min(240px, 56vw);
+  }
+
+  .dashboard-component__s10,
+  .dashboard-component__s45,
+  .dashboard-component__s57 {
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-component__s70 {
+    padding-inline: 12px;
+  }
+
+  .dashboard-component__s79 {
+    gap: 14px;
+  }
+}

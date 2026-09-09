@@ -124,4 +124,12 @@
     width: 100%;
     justify-content: space-between;
   }
+
+  .shared-history-component__s1 {
+    padding: 20px 12px;
+  }
+
+  .shared-history-component__s2 {
+    padding: 16px;
+  }
 }

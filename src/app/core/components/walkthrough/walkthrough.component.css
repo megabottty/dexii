@@ -102,6 +102,7 @@
 
 @media (max-width: 480px) {
   .walkthrough-card {
+    width: calc(100vw - 24px);
     padding: 24px 18px 18px;
   }
 
@@ -116,5 +117,9 @@
 
   .walkthrough-step-count {
     text-align: center;
+  }
+
+  .walkthrough-actions button {
+    min-height: 44px;
   }
 }

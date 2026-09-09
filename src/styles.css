@@ -12,6 +12,15 @@ html, body {
 
 body {
   @apply bg-slate-950 text-white font-sans;
+  overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 :focus-visible {

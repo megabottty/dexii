@@ -757,6 +757,27 @@ select.edit-input-styled {
     width: 100%;
     justify-content: flex-start;
   }
+
+  .profile-detail-component__s1 {
+    padding-inline: 12px;
+  }
+
+  .vibe-log-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .vibe-log-label {
+    min-width: 0;
+  }
+
+  .profile-detail-modal,
+  .profile-detail-edit-modal {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+    padding: 16px;
+  }
 }
 .vibe-tracker-section {
   padding: 16px;
