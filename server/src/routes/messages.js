@@ -4,6 +4,9 @@ const auth = require('../middleware/auth');
 const moderate = require('../middleware/moderation');
 const messageController = require('../controllers/messageController');
 
+// @route   GET /api/messages/conversations
+router.get('/conversations', auth, messageController.getConversations);
+
 // @route   GET /api/messages/:friendId
 router.get('/:friendId', auth, messageController.getMessages);
 

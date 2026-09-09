@@ -19,9 +19,18 @@ const MessageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  readAt: Date,
   isSafetyAlert: {
     type: Boolean,
     default: false
+  },
+  isSelfDestruct: {
+    type: Boolean,
+    default: false
+  },
+  selfDestructDurationMs: {
+    type: Number,
+    min: 1000
   },
   safetyStatus: {
     type: String,

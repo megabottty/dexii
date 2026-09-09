@@ -1,9 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 import { SecurityService } from '../../services/security.service';
 import { UserSettingsService } from '../../services/user-settings.service';
+import { MessagingService } from '../../services/messaging.service';
+import { FriendsApiService } from '../../services/friends-api.service';
 
 @Component({
   selector: 'app-navbar',
@@ -36,6 +38,25 @@ import { UserSettingsService } from '../../services/user-settings.service';
            [style.color]="theme.colors().text"
            class="navbar-link">
           Friends
+          @if (incomingFriendRequestCount() > 0) {
+            <span [style.background-color]="theme.colors().primary"
+                  class="navbar-unread-badge"
+                  aria-label="Pending friend requests">
+              {{ incomingFriendRequestCount() }}
+            </span>
+          }
+        </a>
+        <a routerLink="/chat"
+           [style.color]="theme.colors().text"
+           class="navbar-link">
+          Chat
+          @if (messaging.totalUnreadCount() > 0) {
+            <span [style.background-color]="theme.colors().primary"
+                  class="navbar-unread-badge"
+                  aria-label="Unread chat messages">
+              {{ messaging.totalUnreadCount() }}
+            </span>
+          }
         </a>
         <a routerLink="/user/me"
            [style.color]="theme.colors().text"
@@ -59,6 +80,13 @@ import { UserSettingsService } from '../../services/user-settings.service';
                 class="navbar-btn-primary">
           Lock
         </button>
+        <button (click)="security.logout()"
+                [style.background-color]="'transparent'"
+                [style.color]="theme.colors().textSecondary"
+                [style.border]="'1px solid ' + theme.colors().border"
+                class="navbar-btn-primary navbar-btn-outline-secondary">
+          Logout
+        </button>
         <button (click)="security.resetPinSetup()"
                 [style.background-color]="'transparent'"
                 [style.color]="theme.colors().textSecondary"
@@ -76,8 +104,42 @@ import { UserSettingsService } from '../../services/user-settings.service';
   `,
   styleUrls: ['./navbar.component.css']
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit, OnDestroy {
   theme = inject(ThemeService);
   security = inject(SecurityService);
   settings = inject(UserSettingsService);
+  messaging = inject(MessagingService);
+  private friendsApi = inject(FriendsApiService);
+  incomingFriendRequestCount = signal(0);
+  private notificationRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+  ngOnInit(): void {
+    void this.refreshNotificationBadges();
+    this.notificationRefreshTimer = setInterval(() => {
+      void this.refreshNotificationBadges();
+    }, 10000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.notificationRefreshTimer) {
+      clearInterval(this.notificationRefreshTimer);
+      this.notificationRefreshTimer = null;
+    }
+  }
+
+  private async refreshNotificationBadges(): Promise<void> {
+    if (!this.security.isLoggedIn() || this.security.isLocked()) {
+      this.incomingFriendRequestCount.set(0);
+      return;
+    }
+
+    await this.messaging.loadConversationSummaries();
+
+    try {
+      const requests = await this.friendsApi.incomingRequests();
+      this.incomingFriendRequestCount.set(requests.length);
+    } catch {
+      this.incomingFriendRequestCount.set(0);
+    }
+  }
 }

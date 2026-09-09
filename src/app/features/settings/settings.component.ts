@@ -285,6 +285,35 @@ interface FriendChoice {
           <section class="settings-plan-section">
             <div class="settings-plan-header">
               <div>
+                <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
+                <h2 class="settings-section-title">Notification Settings</h2>
+                <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
+                  Choose which alerts Dexii shows while you are signed in.
+                </p>
+              </div>
+            </div>
+
+            <div class="settings-toggles">
+              <label class="settings-toggle">
+                <input type="checkbox"
+                       [checked]="settings.settings().notifyFriendRequests"
+                       (change)="update('notifyFriendRequests', checkedValue($event))">
+                Notify me about friend requests
+              </label>
+              <label class="settings-toggle">
+                <input type="checkbox"
+                       [checked]="settings.settings().notifyChatMessages"
+                       (change)="update('notifyChatMessages', checkedValue($event))">
+                Notify me about new chat messages
+              </label>
+            </div>
+          </section>
+
+          <div class="settings-divider"></div>
+
+          <section class="settings-plan-section">
+            <div class="settings-plan-header">
+              <div>
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Subscription</p>
                 <h2 class="settings-section-title">Crush Plan</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">

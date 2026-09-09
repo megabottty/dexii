@@ -1,6 +1,6 @@
 import { Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -719,6 +719,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   public messaging = inject(MessagingService);
   private friendsApi = inject(FriendsApiService);
   private dataService = inject(DataService);
+  private route = inject(ActivatedRoute);
 
   private get currentUserId(): string | null {
     return this.security.currentUserId();
@@ -789,6 +790,13 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab');
+      if (tab === 'friends' || tab === 'find' || tab === 'incoming' || tab === 'sent') {
+        this.activeTab.set(tab);
+      }
+    });
+
     if (this.isAuthenticated()) {
       this.startIncomingRequestPolling();
     }

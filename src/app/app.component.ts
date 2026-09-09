@@ -8,6 +8,8 @@ import { ThemeService } from './core/services/theme.service';
 import { AlertModalComponent } from './core/components/alert-modal.component';
 import { WalkthroughComponent } from './core/components/walkthrough/walkthrough.component';
 import { FriendsApiService } from './core/services/friends-api.service';
+import { MessagingService } from './core/services/messaging.service';
+import { UserSettingsService } from './core/services/user-settings.service';
 
 interface WalkthroughStep {
   title: string;
@@ -63,6 +65,48 @@ interface WalkthroughStep {
                 class="app-component__s7">
           Help & Tips
         </button>
+      }
+
+      @if (showFriendRequestNotification()) {
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.color]="theme.colors().text"
+             [style.border]="'1px solid ' + theme.colors().accent"
+             role="status"
+             aria-live="polite"
+             class="app-friend-request-notification">
+          <button (click)="dismissFriendRequestNotification()"
+                  aria-label="Dismiss friend request notification"
+                  [style.color]="theme.colors().textSecondary"
+                  class="app-component__s6 app-friend-request-notification__close">✕</button>
+          <p [style.color]="theme.colors().primary" class="app-component__s4">Friend Request</p>
+          <p class="app-component__s5">{{ friendRequestNotificationText() }}</p>
+          <button (click)="openIncomingRequests()"
+                  [style.background-color]="theme.colors().primary"
+                  class="app-friend-request-notification__action">
+            View Requests
+          </button>
+        </div>
+      }
+
+      @if (showChatNotification()) {
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.color]="theme.colors().text"
+             [style.border]="'1px solid ' + theme.colors().primary"
+             role="status"
+             aria-live="polite"
+             class="app-chat-notification">
+          <button (click)="dismissChatNotification()"
+                  aria-label="Dismiss chat notification"
+                  [style.color]="theme.colors().textSecondary"
+                  class="app-component__s6 app-friend-request-notification__close">✕</button>
+          <p [style.color]="theme.colors().primary" class="app-component__s4">New Message</p>
+          <p class="app-component__s5">{{ chatNotificationText() }}</p>
+          <button (click)="openChatNotification()"
+                  [style.background-color]="theme.colors().primary"
+                  class="app-friend-request-notification__action">
+            Open Chat
+          </button>
+        </div>
       }
 
       @if (showWalkthrough()) {
@@ -250,6 +294,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private friendsApi = inject(FriendsApiService);
+  private messaging = inject(MessagingService);
+  private userSettings = inject(UserSettingsService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -263,6 +309,11 @@ export class AppComponent implements OnInit, OnDestroy {
   walkthroughStepIndex = signal(0);
   friendTourStepIndex = signal(0);
   friendCount = signal(0);
+  incomingFriendRequestCount = signal(0);
+  incomingFriendRequestNames = signal('');
+  private incomingFriendRequestIds = signal<string[]>([]);
+  private dismissedIncomingFriendRequestIds = signal<Set<string>>(this.readDismissedIncomingFriendRequestIds());
+  dismissedChatMessageId = signal('');
   onboardingMode = signal<'intro' | 'friends'>('intro');
   activeWalkthroughStep = computed(() => this.walkthroughSteps[this.walkthroughStepIndex()] || this.walkthroughSteps[0]);
   isLastWalkthroughStep = computed(() => this.walkthroughStepIndex() >= this.walkthroughSteps.length - 1);
@@ -465,6 +516,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async refreshOnboardingState(): Promise<void> {
     await this.loadFriendCount();
+    await this.loadIncomingFriendRequestNotification();
+    await this.messaging.loadConversationSummaries();
     this.maybeAutoShowWalkthrough();
   }
 
@@ -482,29 +535,118 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private maybeAutoShowWalkthrough(): void {
-    if (this.showWalkthrough() || this.showNextSteps() || this.showFriendTour()) return;
-    if (!this.security.isLoggedIn() || this.security.isLocked()) return;
+    // Keep the walkthrough available from Help & Tips without interrupting users by default.
+  }
 
+  showFriendRequestNotification = computed(() => {
+    if (!this.security.isLoggedIn() || this.security.isLocked()) return false;
+    if (!this.userSettings.settings().notifyFriendRequests) return false;
+    if (this.currentPath().startsWith('/friends')) return false;
+    const dismissed = this.dismissedIncomingFriendRequestIds();
+    return this.incomingFriendRequestIds().some((id) => !dismissed.has(id));
+  });
+
+  friendRequestNotificationText = computed(() => {
+    const count = this.incomingFriendRequestCount();
+    if (count === 1) {
+      const name = this.incomingFriendRequestNames() || 'Someone';
+      return `${name} wants to connect with you.`;
+    }
+    const names = this.incomingFriendRequestNames();
+    return names
+      ? `${count} people want to connect: ${names}.`
+      : `You have ${count} friend requests.`;
+  });
+
+  openIncomingRequests(): void {
+    this.router.navigate(['/friends'], { queryParams: { tab: 'incoming' } });
+  }
+
+  dismissFriendRequestNotification(): void {
+    const next = new Set(this.dismissedIncomingFriendRequestIds());
+    this.incomingFriendRequestIds().forEach((id) => next.add(id));
+    this.dismissedIncomingFriendRequestIds.set(next);
+    this.writeDismissedIncomingFriendRequestIds(next);
+  }
+
+  showChatNotification = computed(() => {
+    if (!this.security.isLoggedIn() || this.security.isLocked()) return false;
+    if (!this.userSettings.settings().notifyChatMessages) return false;
+    const message = this.messaging.latestIncomingMessage();
+    if (!message || message.id === this.dismissedChatMessageId()) return false;
+    return this.activeChatFriendId() !== message.senderId;
+  });
+
+  chatNotificationText = computed(() => {
+    const message = this.messaging.latestIncomingMessage();
+    if (!message) return '';
+    const preview = message.content.length > 80 ? `${message.content.slice(0, 80)}…` : message.content;
+    return `You have a new message: ${preview}`;
+  });
+
+  openChatNotification(): void {
+    const message = this.messaging.latestIncomingMessage();
+    if (!message) return;
+    this.dismissedChatMessageId.set(message.id);
+    this.router.navigate(['/chat'], { queryParams: { friendId: message.senderId, friendName: message.senderId } });
+  }
+
+  private activeChatFriendId(): string {
     const path = this.currentPath();
-    if (path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/lock')) return;
+    if (!path.startsWith('/chat')) return '';
+    try {
+      const url = new URL(path, window.location.origin);
+      return url.searchParams.get('friendId') || url.searchParams.get('friend') || '';
+    } catch {
+      const query = path.split('?')[1] || '';
+      return new URLSearchParams(query).get('friendId') || new URLSearchParams(query).get('friend') || '';
+    }
+  }
 
-    if (localStorage.getItem(this.getWalkthroughStorageKey()) !== '1') {
-      this.onboardingMode.set('intro');
-      this.walkthroughStepIndex.set(0);
-      this.showWalkthrough.set(true);
+  dismissChatNotification(): void {
+    const message = this.messaging.latestIncomingMessage();
+    if (message) {
+      this.dismissedChatMessageId.set(message.id);
+    }
+  }
+
+  private async loadIncomingFriendRequestNotification(): Promise<void> {
+    if (!this.friendsApi.isAuthenticated() || this.security.isLocked()) {
+      this.incomingFriendRequestCount.set(0);
+      this.incomingFriendRequestNames.set('');
+      this.incomingFriendRequestIds.set([]);
       return;
     }
 
-    if (localStorage.getItem(this.getNextStepsStorageKey()) !== '1') {
-      this.showNextSteps.set(true);
-      return;
+    try {
+      const requests = await this.friendsApi.incomingRequests();
+      this.incomingFriendRequestCount.set(requests.length);
+      this.incomingFriendRequestIds.set(requests.map((request) => request.id));
+      this.incomingFriendRequestNames.set(
+        requests
+          .slice(0, 3)
+          .map((request) => request.from?.username || request.from?.id || 'Someone')
+          .join(', ')
+      );
+    } catch {
+      this.incomingFriendRequestCount.set(0);
+      this.incomingFriendRequestNames.set('');
+      this.incomingFriendRequestIds.set([]);
     }
+  }
 
-    if (this.friendCount() > 0 && localStorage.getItem(this.getFriendTourStorageKey()) !== '1') {
-      this.onboardingMode.set('friends');
-      this.friendTourStepIndex.set(0);
-      this.showFriendTour.set(true);
+  private readDismissedIncomingFriendRequestIds(): Set<string> {
+    try {
+      const raw = localStorage.getItem('dexii_dismissed_incoming_request_notifications');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
+    } catch {
+      return new Set<string>();
     }
+  }
+
+  private writeDismissedIncomingFriendRequestIds(ids: Set<string>): void {
+    localStorage.setItem('dexii_dismissed_incoming_request_notifications', JSON.stringify(Array.from(ids)));
   }
 
   private getWalkthroughStorageKey(): string {

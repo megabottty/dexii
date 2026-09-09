@@ -195,7 +195,7 @@ export class SecurityService {
       throw new Error(payload.message || 'Registration failed');
     }
 
-    if (!payload.emailSent) {
+    if (!payload.emailSent && !payload.debugMode) {
       throw new Error(payload.message || 'Verification email could not be sent. Please try again.');
     }
   }
@@ -273,6 +273,20 @@ export class SecurityService {
     this._isLoggedIn.set(false);
     this._isLocked.set(true);
     this._needsPinSetup.set(true);
+    this.router.navigate(['/login']);
+  }
+
+  logout(): void {
+    localStorage.removeItem('dexii_api_token');
+    localStorage.removeItem('dexii_api_username');
+    localStorage.removeItem('dexii_api_user_id');
+    localStorage.removeItem('dexii_pin');
+    this._currentUser.set(null);
+    this._currentUserId.set(null);
+    this._userPin.set(null);
+    this._isLoggedIn.set(false);
+    this._isLocked.set(true);
+    this._needsPinSetup.set(false);
     this.router.navigate(['/login']);
   }
 }

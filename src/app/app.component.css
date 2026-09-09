@@ -111,6 +111,53 @@
   transform: scale(1.1);
 }
 
+.is-chat-route .app-hint-toggle {
+  left: 40px;
+  bottom: 26px;
+  top: auto;
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}
+
+.app-friend-request-notification {
+  position: fixed;
+  right: 16px;
+  bottom: 72px;
+  z-index: 322;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+.app-chat-notification {
+  position: fixed;
+  right: 16px;
+  bottom: 210px;
+  z-index: 322;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+.app-friend-request-notification__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.app-friend-request-notification__action {
+  color: white;
+  border: none;
+  margin-top: 12px;
+  padding: 9px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
 .app-skip-link {
   position: absolute;
   left: -9999px;

@@ -11,6 +11,8 @@ export interface IncomingSocketMessage {
   crushId?: string;
   messageId?: string;
   timestamp?: string;
+  isSelfDestruct?: boolean;
+  selfDestructDurationMs?: number;
 }
 
 export interface SafetyUpdate {

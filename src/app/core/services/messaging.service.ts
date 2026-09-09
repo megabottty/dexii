@@ -1,8 +1,19 @@
-import { Injectable, signal, effect, inject } from '@angular/core';
+import { Injectable, signal, effect, inject, computed } from '@angular/core';
 import { Message } from '../models/message.model';
 import { SecurityService } from './security.service';
 import { RealtimeService, IncomingSocketMessage } from './realtime.service';
 import { getApiBaseUrl } from '../config/api-config';
+
+export interface ChatSummary {
+  friend: {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+    friendCategories?: string[];
+  };
+  latestMessage: Message;
+  unreadCount: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -17,6 +28,15 @@ export class MessagingService {
   private activeOwner = '';
   private selfDestructTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private realtimeBound = false;
+  private _lastSyncError = signal<string | null>(null);
+  public lastSyncError = this._lastSyncError.asReadonly();
+  private _latestIncomingMessage = signal<Message | null>(null);
+  public latestIncomingMessage = this._latestIncomingMessage.asReadonly();
+  private _conversationSummaries = signal<ChatSummary[]>([]);
+  public conversationSummaries = this._conversationSummaries.asReadonly();
+  public totalUnreadCount = computed(() =>
+    this._conversationSummaries().reduce((total, chat) => total + chat.unreadCount, 0)
+  );
 
   constructor() {
     effect(() => {
@@ -58,11 +78,16 @@ export class MessagingService {
       receiverId: String(incoming.recipientId),
       content: incoming.content,
       timestamp: incoming.timestamp ? new Date(incoming.timestamp) : new Date(),
-      relatedCrushId: incoming.crushId
+      relatedCrushId: incoming.crushId,
+      isSelfDestruct: Boolean(incoming.isSelfDestruct),
+      selfDestructDurationMs: incoming.selfDestructDurationMs
     };
 
     this._messages.update((msgs) => [...msgs, message]);
     this.persistMessages();
+    this._latestIncomingMessage.set(message);
+    this._conversationSummaries.set(this.localConversationSummaries());
+    void this.loadConversationSummaries();
   }
 
   private getStorageKey(owner: string): string {
@@ -184,6 +209,7 @@ export class MessagingService {
   private async pushToServer(message: Message): Promise<void> {
     const senderId = this.security.currentUserId();
     if (!senderId || !message.receiverId) return;
+    this._lastSyncError.set(null);
 
     try {
       const response = await fetch(`${this.apiBase}/messages`, {
@@ -195,11 +221,16 @@ export class MessagingService {
         body: JSON.stringify({
           recipientId: message.receiverId,
           content: message.content,
-          crushId: message.relatedCrushId
+          crushId: message.relatedCrushId,
+          isSelfDestruct: message.isSelfDestruct,
+          selfDestructDurationMs: message.selfDestructDurationMs
         })
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || errorBody?.msg || `Message sync failed (${response.status})`);
+      }
       const saved = await response.json();
 
       // Re-key the local copy to the server id so it dedupes against echoes.
@@ -214,10 +245,14 @@ export class MessagingService {
         recipientId: message.receiverId,
         content: message.content,
         crushId: message.relatedCrushId,
+        isSelfDestruct: message.isSelfDestruct,
+        selfDestructDurationMs: message.selfDestructDurationMs,
         messageId: saved?._id ? String(saved._id) : message.id,
         timestamp: message.timestamp.toISOString()
       });
+      void this.loadConversationSummaries();
     } catch (err) {
+      this._lastSyncError.set(err instanceof Error ? err.message : 'Message could not be synced to the server.');
       console.warn('Message could not be synced to the server:', err);
     }
   }
@@ -244,16 +279,100 @@ export class MessagingService {
           receiverId: String(row.recipient),
           content: row.content,
           timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
-          readAt: row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
-          relatedCrushId: row.crushId ? String(row.crushId) : undefined
+          readAt: row.readAt ? new Date(row.readAt) : row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
+          relatedCrushId: row.crushId ? String(row.crushId) : undefined,
+          isSelfDestruct: Boolean(row.isSelfDestruct),
+          selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined
         }));
 
       const serverIds = new Set(mapped.map((m) => m.id));
       this._messages.update((msgs) => [...msgs.filter((m) => !serverIds.has(m.id)), ...mapped]);
       this.persistMessages();
+      void this.loadConversationSummaries();
     } catch (err) {
       console.warn('Could not load conversation from the server:', err);
     }
+  }
+
+  async loadConversationSummaries(): Promise<void> {
+    const selfId = this.security.currentUserId();
+    if (!selfId) {
+      this._conversationSummaries.set(this.localConversationSummaries());
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.apiBase}/messages/conversations`, {
+        headers: this.security.authHeaders()
+      });
+      if (!response.ok) {
+        this._conversationSummaries.set(this.localConversationSummaries());
+        return;
+      }
+
+      const rows = await response.json();
+      if (!Array.isArray(rows)) {
+        this._conversationSummaries.set(this.localConversationSummaries());
+        return;
+      }
+
+      this._conversationSummaries.set(rows
+        .filter((row) => row?.friend?.id && row?.latestMessage?.content)
+        .map((row) => ({
+          friend: {
+            id: String(row.friend.id),
+            username: String(row.friend.username || row.friend.id),
+            avatarUrl: row.friend.avatarUrl,
+            friendCategories: Array.isArray(row.friend.friendCategories) ? row.friend.friendCategories : []
+          },
+          latestMessage: this.mapServerMessage(row.latestMessage),
+          unreadCount: Number.isFinite(row.unreadCount) ? row.unreadCount : 0
+        })));
+    } catch (err) {
+      console.warn('Could not load chat list from the server:', err);
+      this._conversationSummaries.set(this.localConversationSummaries());
+    }
+  }
+
+  private mapServerMessage(row: any): Message {
+    return {
+      id: String(row._id),
+      senderId: String(row.sender),
+      receiverId: String(row.recipient),
+      content: row.content,
+      timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
+      readAt: row.readAt ? new Date(row.readAt) : row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
+      relatedCrushId: row.crushId ? String(row.crushId) : undefined,
+      isSelfDestruct: Boolean(row.isSelfDestruct),
+      selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined
+    };
+  }
+
+  private localConversationSummaries(): ChatSummary[] {
+    const selfId = this.security.currentUserId() || 'me';
+    const latestByFriend = new Map<string, Message>();
+    const unreadByFriend = new Map<string, number>();
+
+    for (const message of this._messages()) {
+      const friendId = message.senderId === selfId ? message.receiverId : message.receiverId === selfId ? message.senderId : '';
+      if (!friendId) continue;
+
+      const current = latestByFriend.get(friendId);
+      if (!current || message.timestamp.getTime() > current.timestamp.getTime()) {
+        latestByFriend.set(friendId, message);
+      }
+      if (message.receiverId === selfId && !message.readAt) {
+        unreadByFriend.set(friendId, (unreadByFriend.get(friendId) || 0) + 1);
+      }
+    }
+
+    return Array.from(latestByFriend.entries())
+      .map(([friendId, latestMessage]) => ({
+        friend: { id: friendId, username: friendId },
+        latestMessage,
+        unreadCount: unreadByFriend.get(friendId) || 0
+      }))
+      .sort((a, b) => b.latestMessage.timestamp.getTime() - a.latestMessage.timestamp.getTime());
   }
 
   markAsRead(messageId: string): void {
@@ -316,5 +435,25 @@ export class MessagingService {
     );
     this.persistMessages();
     updatedMessages.filter((m) => m.isSelfDestruct).forEach((m) => this.scheduleSelfDestruct(m));
+    if (updatedMessages.length > 0) {
+      void this.markServerConversationAsRead(friendId);
+    }
+  }
+
+  private async markServerConversationAsRead(friendId: string): Promise<void> {
+    const selfId = this.security.currentUserId();
+    if (!selfId || !friendId) return;
+
+    try {
+      const response = await fetch(`${this.apiBase}/messages/read/${friendId}`, {
+        method: 'PUT',
+        headers: this.security.authHeaders()
+      });
+      if (!response.ok) {
+        throw new Error(`Read-state sync failed (${response.status})`);
+      }
+    } catch (err) {
+      console.warn('Could not sync read status to the server:', err);
+    }
   }
 }

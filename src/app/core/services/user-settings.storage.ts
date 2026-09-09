@@ -12,6 +12,8 @@ export interface UserSettings {
   showUsername: boolean;
   defaultSafetyCheck: boolean;
   allowInvites: boolean;
+  notifyFriendRequests: boolean;
+  notifyChatMessages: boolean;
   selectedFriendIds: string[];
   relationshipStatus: 'Single' | 'In a Relationship' | 'Married' | "It's Complicated" | 'Open Relationship' | 'Other' | '';
   lookingFor: 'Long-term' | 'Short-term' | 'Friendship' | 'Not Sure' | 'Other' | '';
@@ -35,6 +37,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   showUsername: true,
   defaultSafetyCheck: true,
   allowInvites: true,
+  notifyFriendRequests: true,
+  notifyChatMessages: true,
   selectedFriendIds: [],
   relationshipStatus: '',
   lookingFor: '',
