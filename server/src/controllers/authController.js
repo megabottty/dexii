@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const { ensureUser, readStore } = require('../utils/demoFriendStore');
+const loginAttempts = new Map();
 
 // Generate 6-digit code
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -20,6 +21,23 @@ const normalizePhoneE164 = (value) => {
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : '';
 };
+const isValidPassword = (value) => typeof value === 'string' && value.length >= 8;
+const attemptKey = (req, username) => `${req.ip}:${String(username || '').toLowerCase()}`;
+const isRateLimited = (key) => {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now - entry.startedAt > 15 * 60 * 1000) {
+    loginAttempts.set(key, { startedAt: now, failures: 0 });
+    return false;
+  }
+  return entry.failures >= 5;
+};
+const recordFailedLogin = (key) => {
+  const entry = loginAttempts.get(key) || { startedAt: Date.now(), failures: 0 };
+  entry.failures += 1;
+  loginAttempts.set(key, entry);
+};
+const clearLoginAttempts = (key) => loginAttempts.delete(key);
 
 // @desc    Register a new user / Set initial PIN
 // @route   POST /api/auth/register
@@ -37,7 +55,7 @@ exports.register = async (req, res) => {
     if (!normalizedEmail) {
       return res.status(400).json({ message: 'Email is required' });
     }
-    if (typeof password !== 'string' || password.length < 8) {
+    if (!isValidPassword(password)) {
       return res.status(400).json({ message: 'Password must be at least 8 characters.' });
     }
     if ((phoneNumber || phoneE164) && !normalizedPhone) {
@@ -61,6 +79,7 @@ exports.register = async (req, res) => {
       user.firstName = safeFirstName;
       user.lastName = safeLastName;
       user.phoneE164 = normalizedPhone || '';
+      user.passwordHash = await bcrypt.hash(password, 10);
 
       const verificationCode = generateCode();
       user.verificationCode = verificationCode;
@@ -416,6 +435,10 @@ exports.resendCode = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password, pin } = req.body;
+    const key = attemptKey(req, username);
+    if (isRateLimited(key)) {
+      return res.status(429).json({ message: 'Too many failed attempts. Try again in 15 minutes.' });
+    }
 
     // Support demo mode if database is not connected
     if (mongoose.connection.readyState !== 1) {
@@ -424,8 +447,21 @@ exports.login = async (req, res) => {
        const user = state.users.find(u => u.username === username);
 
        if (!user) {
+         recordFailedLogin(key);
          return res.status(400).json({ message: 'User not found in demo mode' });
        }
+       const isLegacyDemo = !user.passwordHash;
+       if (user.passwordHash) {
+         const matches = await bcrypt.compare(password || '', user.passwordHash);
+         if (!matches) {
+           recordFailedLogin(key);
+           return res.status(400).json({ message: 'Invalid credentials' });
+         }
+       } else if (!user.pin || !(await bcrypt.compare(pin || '', user.pin))) {
+         recordFailedLogin(key);
+         return res.status(400).json({ message: 'Legacy accounts must sign in with their PIN once.' });
+       }
+       clearLoginAttempts(key);
 
        // In demo mode, we'll allow any PIN to facilitate testing when DB is down
        const token = jwt.sign({ id: user.username, isDemo: true }, process.env.JWT_SECRET, {
@@ -442,7 +478,8 @@ exports.login = async (req, res) => {
            lastName: user.lastName || '',
            phoneE164: user.phoneE164 || '',
            bio: user.bio || '',
-           subscriptionTier: user.subscriptionTier || 'Free'
+           subscriptionTier: user.subscriptionTier || 'Free',
+           needsPasswordSetup: isLegacyDemo
          }
        });
     }
@@ -456,12 +493,15 @@ exports.login = async (req, res) => {
        return res.status(401).json({ message: 'Please verify your email first', needsVerification: true });
     }
 
-    const isMatch = user.passwordHash
-      ? await bcrypt.compare(password || '', user.passwordHash)
-      : await bcrypt.compare(password || '', user.pin);
+    const isLegacy = !user.passwordHash;
+    const isMatch = isLegacy
+      ? await bcrypt.compare(pin || '', user.pin)
+      : await bcrypt.compare(password || '', user.passwordHash);
     if (!isMatch) {
+      recordFailedLogin(key);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+    clearLoginAttempts(key);
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '30d'
@@ -478,11 +518,97 @@ exports.login = async (req, res) => {
         email: user.email,
         bio: user.bio,
         subscriptionTier: user.subscriptionTier,
-        avatarUrl: user.avatarUrl
+        avatarUrl: user.avatarUrl,
+        needsPasswordSetup: isLegacy
       }
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const identifier = typeof req.body.usernameOrEmail === 'string'
+      ? req.body.usernameOrEmail.trim()
+      : '';
+    if (!identifier) return res.status(400).json({ message: 'Username or email is required.' });
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({ message: 'If that account exists, a reset code has been sent.' });
+    }
+
+    const user = await User.findOne({
+      $or: [{ username: identifier }, { email: normalizeEmail(identifier) }]
+    });
+    if (user?.email) {
+      const code = generateCode();
+      user.passwordResetCode = code;
+      user.passwordResetCodeExpires = Date.now() + 10 * 60 * 1000;
+      await user.save();
+      await sendEmail({
+        email: user.email,
+        subject: 'Dexii Password Reset Code',
+        message: `Your password reset code is: ${code}. It expires in 10 minutes.`,
+        html: `<p>Your password reset code is: <strong>${code}</strong></p>`
+      });
+    }
+    return res.json({ message: 'If that account exists, a reset code has been sent.' });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ message: 'Unable to request password reset.' });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { usernameOrEmail, code, password } = req.body;
+    if (!usernameOrEmail || !code || !isValidPassword(password)) {
+      return res.status(400).json({ message: 'Account, reset code, and an 8+ character password are required.' });
+    }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(400).json({ message: 'Password reset is unavailable in demo mode.' });
+    }
+    const user = await User.findOne({
+      $or: [{ username: usernameOrEmail }, { email: normalizeEmail(usernameOrEmail) }],
+      passwordResetCode: code,
+      passwordResetCodeExpires: { $gt: Date.now() }
+    });
+    if (!user) return res.status(400).json({ message: 'Invalid or expired reset code.' });
+    user.passwordHash = await bcrypt.hash(password, 12);
+    user.passwordResetCode = undefined;
+    user.passwordResetCodeExpires = undefined;
+    await user.save();
+    return res.json({ message: 'Password reset successfully.' });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ message: 'Unable to reset password.' });
+  }
+};
+
+exports.setPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+    if (mongoose.connection.readyState !== 1) {
+      const state = await readStore();
+      const user = state.users.find((entry) => entry.username === req.user.id);
+      if (!user) return res.status(404).json({ message: 'User not found in demo mode.' });
+      user.passwordHash = await bcrypt.hash(password, 12);
+      const fs = require('fs/promises');
+      const path = require('path');
+      await fs.writeFile(path.join(__dirname, '..', '..', 'data', 'demo-friends.json'), JSON.stringify(state, null, 2), 'utf8');
+      return res.json({ message: 'Password created successfully.' });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    user.passwordHash = await bcrypt.hash(password, 12);
+    await user.save();
+    return res.json({ message: 'Password created successfully.' });
+  } catch (err) {
+    return res.status(500).json({ message: 'Unable to create password.' });
   }
 };
 

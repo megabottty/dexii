@@ -94,6 +94,8 @@ const UserSchema = new mongoose.Schema({
   },
   verificationCode: String,
   verificationCodeExpires: Date,
+  passwordResetCode: String,
+  passwordResetCodeExpires: Date,
   isEmailVerified: {
     type: Boolean,
     default: false

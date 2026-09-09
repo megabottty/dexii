@@ -83,6 +83,42 @@ export class SecurityService {
     }
   }
 
+  async verifyLegacyPin(username: string, pin: string): Promise<boolean> {
+      try {
+        const response = await fetch(`${this.apiBase}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, pin })
+        });
+        if (!response.ok) return false;
+        const data = await response.json();
+        localStorage.setItem('dexii_api_token', data.token);
+        localStorage.setItem('dexii_api_username', username);
+        this.storeUserId(data?.user?.id);
+        this._currentUser.set(username);
+        this._isLoggedIn.set(true);
+        return Boolean(data?.user?.needsPasswordSetup);
+      } catch (err) {
+        console.error('Legacy auth API error:', err);
+        return false;
+      }
+    }
+
+  async setPassword(password: string): Promise<boolean> {
+      const token = localStorage.getItem('dexii_api_token');
+      try {
+        const response = await fetch(`${this.apiBase}/auth/set-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': token || '' },
+          body: JSON.stringify({ password })
+        });
+        return response.ok;
+      } catch (err) {
+        console.error('Password setup API error:', err);
+        return false;
+    }
+  }
+
   async verifyPin(input: string, shouldNavigate: boolean = true): Promise<boolean> {
     const username = localStorage.getItem('dexii_api_username');
 
