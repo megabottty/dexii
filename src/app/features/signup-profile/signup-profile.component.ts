@@ -43,7 +43,6 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         @if (errorMessage()) {
           <p class="error-message">{{ errorMessage() }}</p>
         }
-
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
              class="signup-form">
@@ -62,6 +61,17 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  [style.color]="theme.colors().text"
                  autocomplete="off"
                  class="form-input" placeholder="email@example.com">
+
+          <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
+          <input [ngModel]="password()" (ngModelChange)="password.set($event)"
+                 type="password" autocomplete="new-password" minlength="8"
+                 [style.background-color]="theme.colors().bg"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().text"
+                 class="form-input" placeholder="At least 8 characters">
+          <p class="password-hint" [style.color]="theme.colors().textSecondary">
+            Use at least 8 characters. This password is for account login; your Vault PIN comes next.
+          </p>
 
           <label [style.color]="theme.colors().textSecondary" class="form-label">Bio (Optional)</label>
           <textarea [ngModel]="bio()" (ngModelChange)="bio.set($event)"
@@ -228,6 +238,11 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       box-sizing: border-box;
       font-family: inherit;
     }
+    .password-hint {
+      margin: -8px 0 0;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
     .love-life-section {
       display: flex;
       flex-direction: column;
@@ -267,6 +282,7 @@ export class SignupProfileComponent {
 
   username = signal<string>(this.settings.getSignupDraft().username || '');
   email = signal<string>(this.settings.getSignupDraft().email || '');
+  password = signal<string>('');
   bio = signal<string>(this.settings.getSignupDraft().bio || '');
   relationshipStatus = signal<string>(this.settings.getSignupDraft().relationshipStatus || '');
   lookingFor = signal<string>(this.settings.getSignupDraft().lookingFor || '');
@@ -279,6 +295,10 @@ export class SignupProfileComponent {
     const usernameValue = this.username().trim();
     if (!usernameValue) {
       this.errorMessage.set('Username is required.');
+      return;
+    }
+    if (this.password().length < 8) {
+      this.errorMessage.set('Password must be at least 8 characters.');
       return;
     }
     if (!/^[a-zA-Z0-9_]{3,24}$/.test(usernameValue)) {
@@ -310,6 +330,7 @@ export class SignupProfileComponent {
 
     localStorage.setItem('dexii_pending_username', usernameValue);
     localStorage.setItem('dexii_pending_email', emailValue);
+    sessionStorage.setItem('dexii_pending_password', this.password());
     localStorage.setItem('dexii_pending_bio', this.bio().trim());
     localStorage.setItem('dexii_pending_relationshipStatus', this.relationshipStatus());
     localStorage.setItem('dexii_pending_lookingFor', this.lookingFor());

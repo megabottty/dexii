@@ -47,6 +47,10 @@ const UserSchema = new mongoose.Schema({
     type: String, // Hashed PIN
     required: true
   },
+  passwordHash: {
+    type: String,
+    default: ''
+  },
   email: {
     type: String,
     unique: true,

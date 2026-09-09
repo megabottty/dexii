@@ -16,7 +16,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         <app-page-hint
           hintKey="login_screen"
           title="Login"
-          message="Enter your username and PIN to access your private vault.">
+          message="Use your account password to sign in. Your Vault PIN unlocks the app afterward.">
         </app-page-hint>
 
         <div class="login-header">
@@ -55,14 +55,14 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  [style.color]="theme.colors().text"
                  class="form-input" placeholder="Enter your username">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">4-Digit PIN</label>
-          <input [ngModel]="pin()" (ngModelChange)="handlePinInput($event)"
+          <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
+          <input [ngModel]="password()" (ngModelChange)="password.set($event)"
                  type="password"
-                 maxlength="4"
+                 autocomplete="current-password"
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
-                 class="form-input" placeholder="****">
+                 class="form-input" placeholder="Your account password">
 
           <button (click)="login()"
                   [disabled]="isLoading()"
@@ -198,19 +198,13 @@ export class LoginComponent {
   private router = inject(Router);
 
   username = signal<string>('');
-  pin = signal<string>('');
+  password = signal<string>('');
   errorMessage = signal<string>('');
   isLoading = signal<boolean>(false);
 
-  handlePinInput(val: string) {
-    // Only allow numbers
-    const clean = val.replace(/\D/g, '');
-    this.pin.set(clean);
-  }
-
   async login() {
-    if (!this.username() || this.pin().length !== 4) {
-      this.errorMessage.set('Please enter a username and a 4-digit PIN.');
+    if (!this.username() || !this.password()) {
+      this.errorMessage.set('Please enter a username and your password.');
       return;
     }
 
@@ -221,7 +215,7 @@ export class LoginComponent {
       // Temporarily store username for verifyPin to use
       localStorage.setItem('dexii_api_username', this.username());
 
-      const success = await this.security.verifyPin(this.pin(), false);
+      const success = await this.security.verifyPassword(this.username(), this.password());
 
       if (success) {
         this.router.navigate(['/lock']);

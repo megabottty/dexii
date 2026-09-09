@@ -25,7 +25,7 @@ const normalizePhoneE164 = (value) => {
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { username, pin, email, bio, firstName, lastName, phoneNumber, phoneE164 } = req.body;
+    const { username, password, pin, email, bio, firstName, lastName, phoneNumber, phoneE164 } = req.body;
     const safeUsername = typeof username === 'string' ? username.trim() : '';
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhone = normalizePhoneE164(phoneE164 || phoneNumber);
@@ -36,6 +36,9 @@ exports.register = async (req, res) => {
     }
     if (!normalizedEmail) {
       return res.status(400).json({ message: 'Email is required' });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
     }
     if ((phoneNumber || phoneE164) && !normalizedPhone) {
       return res.status(400).json({ message: 'Invalid phone number format' });
@@ -130,12 +133,14 @@ exports.register = async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashedPin = await bcrypt.hash(pin, salt);
+        const passwordHash = await bcrypt.hash(password, salt);
         const verificationCode = generateCode();
 
         user.username = safeUsername;
         user.firstName = safeFirstName;
         user.lastName = safeLastName;
         user.pin = hashedPin;
+        user.passwordHash = passwordHash;
         user.email = normalizedEmail || undefined;
         user.phoneE164 = normalizedPhone || undefined;
         user.bio = typeof bio === 'string' ? bio.trim().slice(0, 500) : '';
@@ -180,6 +185,7 @@ exports.register = async (req, res) => {
     // Hash PIN
     const salt = await bcrypt.genSalt(10);
     const hashedPin = await bcrypt.hash(pin, salt);
+    const passwordHash = await bcrypt.hash(password, salt);
 
     const verificationCode = generateCode();
     const verificationCodeExpires = Date.now() + 10 * 60 * 1000; // 10 mins
@@ -189,6 +195,7 @@ exports.register = async (req, res) => {
       firstName: safeFirstName,
       lastName: safeLastName,
       pin: hashedPin,
+      passwordHash,
       email: normalizedEmail,
       phoneE164: normalizedPhone || undefined,
       bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : '',
@@ -408,7 +415,7 @@ exports.resendCode = async (req, res) => {
 // @route   POST /api/auth/login
 exports.login = async (req, res) => {
   try {
-    const { username, pin } = req.body;
+    const { username, password, pin } = req.body;
 
     // Support demo mode if database is not connected
     if (mongoose.connection.readyState !== 1) {
@@ -449,7 +456,9 @@ exports.login = async (req, res) => {
        return res.status(401).json({ message: 'Please verify your email first', needsVerification: true });
     }
 
-    const isMatch = await bcrypt.compare(pin, user.pin);
+    const isMatch = user.passwordHash
+      ? await bcrypt.compare(password || '', user.passwordHash)
+      : await bcrypt.compare(password || '', user.pin);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }

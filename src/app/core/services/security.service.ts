@@ -62,6 +62,27 @@ export class SecurityService {
   }
 
   // 3. Logic to unlock the app
+  async verifyPassword(username: string, password: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.apiBase}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!response.ok) return false;
+      const data = await response.json();
+      localStorage.setItem('dexii_api_token', data.token);
+      localStorage.setItem('dexii_api_username', username);
+      this.storeUserId(data?.user?.id);
+      this._currentUser.set(username);
+      this._isLoggedIn.set(true);
+      return true;
+    } catch (err) {
+      console.error('Auth API error:', err);
+      return false;
+    }
+  }
+
   async verifyPin(input: string, shouldNavigate: boolean = true): Promise<boolean> {
     const username = localStorage.getItem('dexii_api_username');
 
@@ -143,7 +164,9 @@ export class SecurityService {
     localStorage.setItem('dexii_pending_pin', newPin);
 
     try {
-      await this.registerUser(newPin);
+      const password = sessionStorage.getItem('dexii_pending_password');
+      if (!password) throw new Error('Password is missing. Please return to signup.');
+      await this.registerUser(password, newPin);
       this.router.navigate(['/signup-email-confirmation']);
     } catch (err: any) {
       this.modal.show("Error: " + err.message);
@@ -175,7 +198,7 @@ export class SecurityService {
     this.router.navigate(['/lock']);
   }
 
-  async registerUser(pin: string): Promise<void> {
+  async registerUser(password: string, pin: string): Promise<void> {
     const username = localStorage.getItem('dexii_pending_username');
     const email = localStorage.getItem('dexii_pending_email');
     const bio = localStorage.getItem('dexii_pending_bio');
@@ -186,7 +209,7 @@ export class SecurityService {
     const response = await fetch(`${this.apiBase}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, pin, email, bio })
+      body: JSON.stringify({ username, password, pin, email, bio })
     });
 
     const payload = await response.json();
