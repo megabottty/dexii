@@ -1,0 +1,26 @@
+name: Keep Render Service Awake
+
+on:
+  schedule:
+    # Runs every 14 minutes (Render sleeps after 15 minutes of inactivity)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Dexii Render Service
+        env:
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || 'https://dexii.onrender.com' }}
+        run: |
+          ENDPOINT="${RENDER_APP_URL%/}/api/status"
+          echo "Pinging $ENDPOINT at $(date)..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -m 30 "$ENDPOINT" || true)
+          echo "$RESPONSE"
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d':' -f2)
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "Service is awake and healthy (HTTP 200)."
+          else
+            echo "Warning: Response code was $HTTP_STATUS"
+          fi
