@@ -275,6 +275,53 @@
   transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.dashboard-component__s77--tea-alert {
+  box-shadow: 0 0 14px rgba(168, 129, 175, 0.35);
+}
+
+.dashboard-component__s77--flame-alert {
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+  animation: flame-button-glow 2.5s infinite ease-in-out;
+}
+
+.dashboard-tea-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  animation: tea-badge-pulse 2s infinite ease-in-out;
+}
+
+.dashboard-tea-badge--flame {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes tea-badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes flame-button-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.65), 0 0 6px rgba(245, 158, 11, 0.5);
+  }
+}
+
 .dashboard-component__s78 {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: transparent; padding: 11px 24px; border-radius: 9999px; font-weight: 700; cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; transition: all 0.25s ease; line-height: 1; box-sizing: border-box;
 }

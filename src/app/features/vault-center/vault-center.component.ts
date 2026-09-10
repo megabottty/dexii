@@ -48,7 +48,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             <button (click)="theme.toggleTheme()" [style.color]="theme.colors().text"
                     [style.border]="'1px solid ' + theme.colors().border"
                     class="vault-center-component__s8">
-              {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
+              {{ theme.isOnyx() ? 'Pearl' : 'Onyx' }}
             </button>
             <button (click)="security.lockApp()" [style.background-color]="theme.colors().primary"
                     class="vault-center-component__s9">

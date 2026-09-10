@@ -1,6 +1,6 @@
 <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="lock-screen-component__s1">
 
-  @if (theme.mode() === 'light') {
+  @if (theme.isPearl()) {
     <div class="lock-screen-component__s2"></div>
     <div class="lock-screen-component__s3"></div>
   }
@@ -13,14 +13,14 @@
     </app-page-hint>
 
     <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
-         [style.box-shadow]="theme.mode() === 'light' ? '0 15px 30px rgba(219, 39, 119, 0.2)' : '0 10px 15px rgba(0,0,0,0.5)'"
+         [style.box-shadow]="theme.isPearl() ? '0 15px 30px rgba(219, 39, 119, 0.2)' : '0 10px 15px rgba(0,0,0,0.5)'"
          class="lock-screen-component__s5">
       <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="none" viewBox="0 0 24 24" stroke="white">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
       </svg>
     </div>
 
-    <h2 [style.letter-spacing]="theme.mode() === 'light' ? '4px' : '1px'"
+    <h2 [style.letter-spacing]="theme.isPearl() ? '4px' : '1px'"
         class="lock-screen-component__s6">Dexii</h2>
     <p [style.color]="theme.colors().textSecondary" [style.letter-spacing]="'4px'" class="lock-screen-component__s7">
       The Private Vault
@@ -57,7 +57,7 @@
       }
 
       <button (click)="theme.toggleTheme()" [style.color]="theme.colors().textSecondary" class="lock-screen-component__s18">
-        {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
+        {{ theme.isOnyx() ? 'Pearl' : 'Onyx' }}
       </button>
       <button (click)="handleInput('0')"
               [style.border]="'1px solid ' + (activeKey() === '0' ? theme.colors().primary : theme.colors().border)"

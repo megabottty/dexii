@@ -37,6 +37,14 @@ export class MessagingService {
   public totalUnreadCount = computed(() =>
     this._conversationSummaries().reduce((total, chat) => total + chat.unreadCount, 0)
   );
+  public unreadSelfDestructCount = computed(() => {
+    return this.getUnreadSelfDestructForCurrentUser().length;
+  });
+  public unreadTeaCount = computed(() => {
+    const localCount = this.getAllUnreadForCurrentUser().length;
+    const serverCount = this.totalUnreadCount();
+    return Math.max(localCount, serverCount);
+  });
 
   constructor() {
     effect(() => {
@@ -385,6 +393,45 @@ export class MessagingService {
       return updated;
     }));
     this.persistMessages();
+  }
+
+  getAllUnreadForCurrentUser(): Message[] {
+    const currentId = this.security.currentUserId() || '';
+    const currentUsername = this.security.currentUser() || '';
+    const ids = new Set([currentId, currentUsername, 'me'].filter(Boolean));
+
+    return this._messages()
+      .filter((m) => ids.has(m.receiverId) && !m.readAt)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  getUnreadSelfDestructForCurrentUser(): Message[] {
+    return this.getAllUnreadForCurrentUser().filter((m) => m.isSelfDestruct);
+  }
+
+  getLatestUnreadForCurrentUser(): Message | null {
+    const unread = this.getAllUnreadForCurrentUser();
+    return unread.length > 0 ? unread[0] : null;
+  }
+
+  markAllUnreadForCurrentUserAsRead(): void {
+    const currentId = this.security.currentUserId() || '';
+    const currentUsername = this.security.currentUser() || '';
+    const ids = new Set([currentId, currentUsername, 'me'].filter(Boolean));
+
+    const updatedMessages: Message[] = [];
+    this._messages.update(msgs =>
+      msgs.map(m => {
+        if (ids.has(m.receiverId) && !m.readAt) {
+          const updated = { ...m, readAt: new Date() };
+          updatedMessages.push(updated);
+          return updated;
+        }
+        return m;
+      })
+    );
+    this.persistMessages();
+    updatedMessages.filter((m) => m.isSelfDestruct).forEach((m) => this.scheduleSelfDestruct(m));
   }
 
   getConversation(userId1: string, userId2: string): Message[] {

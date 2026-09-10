@@ -90,7 +90,7 @@ import { FriendsApiService } from '../../services/friends-api.service';
                 [style.color]="theme.colors().text"
                 [style.border]="'1px solid ' + theme.colors().border"
                 class="navbar-btn-outline">
-          {{ theme.mode() === 'dark' ? 'Pearl' : 'Onyx' }}
+          {{ theme.isOnyx() ? 'Pearl' : 'Onyx' }}
         </button>
         <button (click)="security.lockApp()"
                 (click)="closeMobileMenu()"

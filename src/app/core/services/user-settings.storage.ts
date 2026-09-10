@@ -21,6 +21,7 @@ export interface UserSettings {
   loveLanguage: 'Words of Affirmation' | 'Acts of Service' | 'Receiving Gifts' | 'Quality Time' | 'Physical Touch' | '';
   idealDate: string;
   profileVisibility: 'Friends only' | 'Selected friends' | 'Private';
+  themeMode?: 'pearl' | 'onyx';
 }
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
@@ -45,7 +46,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   interestedIn: '',
   loveLanguage: '',
   idealDate: '',
-  profileVisibility: 'Friends only'
+  profileVisibility: 'Friends only',
+  themeMode: 'pearl'
 };
 
 export const ACTIVE_SETTINGS_PREFIX = 'dexii_user_settings_';

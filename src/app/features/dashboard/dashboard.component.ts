@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, OnInit } from '@angular/core';
+import { Component, signal, inject, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -559,23 +559,38 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
       <!-- Digital Note Passing Overlay (Simulation) -->
       @if (isNotePassing()) {
-        <div class="dashboard-component__s56">
-          <div (click)="closeNote()"
-               role="button"
-               tabindex="0"
-               (keydown.enter)="closeNote()"
-               (keydown.space)="closeNote(); $event.preventDefault()"
-                [style.background-color]="theme.colors().bgSecondary"
-                [style.border]="'2px solid ' + theme.colors().primary"
-                class="dashboard-component__s57">
-             <span [style.color]="theme.colors().primary" class="dashboard-component__s58">Private Note Received</span>
+        <div class="dashboard-component__s56" (click)="closeNote()">
+          <div (click)="$event.stopPropagation()"
+               [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'2px solid ' + (currentTeaIsSelfDestruct() ? '#ef4444' : theme.colors().primary)"
+               class="dashboard-component__s57">
+             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+               <span [style.color]="currentTeaIsSelfDestruct() ? '#ef4444' : theme.colors().primary" class="dashboard-component__s58" style="margin-bottom: 0;">
+                 {{ currentTeaIsSelfDestruct() ? '🔥 Self-Destructing Tea' : 'Private Tea Received' }}
+               </span>
+               <button (click)="closeNote()" [style.color]="theme.colors().textSecondary" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px;">✕</button>
+             </div>
              <p class="dashboard-component__s59">"{{ currentTeaPreview() || 'No new tea right now.' }}"</p>
+             <div style="margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+               <button (click)="closeNote()"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().textSecondary"
+                       style="background: transparent; padding: 8px 16px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer;">
+                 Close
+               </button>
+               <a routerLink="/chat" (click)="closeNote()"
+                  [style.background-color]="theme.colors().primary"
+                  [style.color]="'#ffffff'"
+                  style="text-decoration: none; padding: 8px 18px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;">
+                 Go to Chat →
+               </a>
+             </div>
            </div>
         </div>
       }
 
       <!-- Glamour Decorative Elements -->
-      @if (theme.mode() === 'light') {
+      @if (theme.isPearl()) {
         <div class="dashboard-component__s60"></div>
       }
 
@@ -605,11 +620,22 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           </div>
           <div class="dashboard-component__s76">
             <button (click)="simulateNote()"
-                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.border]="hasUnreadTea() ? (hasSelfDestructTea() ? '1px solid #ef4444' : '1px solid ' + theme.colors().primary) : '1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
                     [style.background-color]="theme.colors().bgSecondary"
-                    class="dashboard-component__s77">
-               Waiting for the Tea? {{ unreadTeaCount() > 0 ? '(' + unreadTeaCount() + ')' : '' }}
+                    class="dashboard-component__s77"
+                    [class.dashboard-component__s77--tea-alert]="hasUnreadTea()"
+                    [class.dashboard-component__s77--flame-alert]="hasSelfDestructTea()">
+               <span>Waiting for the Tea?</span>
+               @if (hasSelfDestructTea()) {
+                 <span class="dashboard-tea-badge dashboard-tea-badge--flame" title="Self-destructing secret tea waiting!">
+                   🔥 {{ unreadSelfDestructCount() }}
+                 </span>
+               } @else if (hasUnreadTea()) {
+                 <span [style.background-color]="theme.colors().primary" class="dashboard-tea-badge">
+                   {{ unreadTeaCount() }}
+                 </span>
+               }
             </button>
             <button (click)="goToFriends()"
                     [style.border]="'1px solid ' + theme.colors().accent"
@@ -699,7 +725,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  class="dashboard-component__s85">
 
               <!-- Shimmer Effect on Card (Light Mode) -->
-              @if (theme.mode() === 'light') {
+              @if (theme.isPearl()) {
                 <div class="dashboard-component__s86"></div>
               }
 
@@ -824,7 +850,12 @@ export class DashboardComponent implements OnInit {
     this.dataService.getAllCrushes()().filter((c: any) => c.status === CrushStatus.Archived).length
   );
 
-  unreadTeaCount = computed(() => this.messaging.getUnreadForUser('me').length);
+  unreadTeaCount = computed(() => this.messaging.unreadTeaCount());
+  unreadSelfDestructCount = computed(() => this.messaging.unreadSelfDestructCount());
+  hasSelfDestructTea = computed(() => this.messaging.unreadSelfDestructCount() > 0);
+  hasUnreadTea = computed(() => this.messaging.unreadTeaCount() > 0);
+  currentTeaIsSelfDestruct = signal(false);
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   newCrush = {
     nickname: '',
@@ -870,9 +901,20 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.dataService.setViewer(null);
+    void this.messaging.loadConversationSummaries();
+    this.refreshTimer = setInterval(() => {
+      void this.messaging.loadConversationSummaries();
+    }, 10000);
     setTimeout(() => {
       this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
     }, 150);
+  }
+
+  ngOnDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
   }
 
   getRelationshipStatusOptions(): string[] {
@@ -917,12 +959,25 @@ export class DashboardComponent implements OnInit {
   }
 
   simulateNote() {
-    const latestUnread = this.messaging.getLatestUnreadForUser('me');
-    if (latestUnread) {
-      this.currentTeaPreview.set(latestUnread.content);
-      this.messaging.markUnreadForUserAsRead('me');
+    const unreadMessages = this.messaging.getAllUnreadForCurrentUser();
+    if (unreadMessages.length > 0) {
+      const latest = unreadMessages[0];
+      this.currentTeaPreview.set(latest.content);
+      this.currentTeaIsSelfDestruct.set(Boolean(latest.isSelfDestruct));
+      this.messaging.markAsRead(latest.id);
     } else {
-      this.currentTeaPreview.set('No unread private tea at the moment.');
+      const summaries = this.messaging.conversationSummaries();
+      const unreadChat = summaries.find(c => c.unreadCount > 0);
+      if (unreadChat) {
+        this.currentTeaPreview.set(unreadChat.latestMessage.content);
+        this.currentTeaIsSelfDestruct.set(Boolean(unreadChat.latestMessage.isSelfDestruct));
+        if (unreadChat.latestMessage.id) {
+          this.messaging.markAsRead(unreadChat.latestMessage.id);
+        }
+      } else {
+        this.currentTeaPreview.set('No unread tea right now. Check back soon or message a friend!');
+        this.currentTeaIsSelfDestruct.set(false);
+      }
     }
     this.isNotePassing.set(true);
   }
@@ -930,6 +985,7 @@ export class DashboardComponent implements OnInit {
   closeNote() {
     this.isNotePassing.set(false);
     this.currentTeaPreview.set('');
+    this.currentTeaIsSelfDestruct.set(false);
   }
 
   openNewEntryModal() {

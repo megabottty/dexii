@@ -285,6 +285,70 @@ interface FriendChoice {
           <section class="settings-plan-section">
             <div class="settings-plan-header">
               <div>
+                <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Appearance</p>
+                <h2 class="settings-section-title">Theme Mode</h2>
+                <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
+                  Choose your Dexii aesthetic: Pearl (Classic Glamour Light) or Onyx (Midnight Slate Dark).
+                </p>
+              </div>
+            </div>
+
+            <div class="settings-theme-options">
+              <button (click)="selectTheme('pearl')"
+                      [attr.aria-pressed]="theme.isPearl()"
+                      [style.background-color]="theme.isPearl() ? (theme.isPearl() ? 'rgba(168, 129, 175, 0.08)' : theme.colors().bgSecondary) : 'transparent'"
+                      [style.border]="theme.isPearl() ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                      class="settings-theme-card"
+                      type="button">
+                <div class="settings-theme-preview settings-theme-preview--pearl">
+                  <span class="settings-theme-swatch" style="background-color: #fffafa; border: 1px solid #e2d1e2;"></span>
+                  <span class="settings-theme-swatch" style="background-color: #a881af;"></span>
+                  <span class="settings-theme-swatch" style="background-color: #d4af37;"></span>
+                </div>
+                <div class="settings-theme-info">
+                  <div class="settings-theme-title-row">
+                    <span class="settings-theme-name" [style.color]="theme.colors().text">Pearl Mode</span>
+                    @if (theme.isPearl()) {
+                      <span class="settings-theme-active-tag" [style.background-color]="theme.colors().primary">Active</span>
+                    }
+                  </div>
+                  <span class="settings-theme-desc" [style.color]="theme.colors().textSecondary">
+                    Classic Glamour Light with Soft Mauve Silk & Polished Gold
+                  </span>
+                </div>
+              </button>
+
+              <button (click)="selectTheme('onyx')"
+                      [attr.aria-pressed]="theme.isOnyx()"
+                      [style.background-color]="theme.isOnyx() ? 'rgba(79, 70, 229, 0.12)' : 'transparent'"
+                      [style.border]="theme.isOnyx() ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                      class="settings-theme-card"
+                      type="button">
+                <div class="settings-theme-preview settings-theme-preview--onyx">
+                  <span class="settings-theme-swatch" style="background-color: #020617; border: 1px solid #1e293b;"></span>
+                  <span class="settings-theme-swatch" style="background-color: #4f46e5;"></span>
+                  <span class="settings-theme-swatch" style="background-color: #6366f1;"></span>
+                </div>
+                <div class="settings-theme-info">
+                  <div class="settings-theme-title-row">
+                    <span class="settings-theme-name" [style.color]="theme.colors().text">Onyx Mode</span>
+                    @if (theme.isOnyx()) {
+                      <span class="settings-theme-active-tag" [style.background-color]="theme.colors().primary">Active</span>
+                    }
+                  </div>
+                  <span class="settings-theme-desc" [style.color]="theme.colors().textSecondary">
+                    Midnight Slate Dark with Electric Indigo accents
+                  </span>
+                </div>
+              </button>
+            </div>
+          </section>
+
+          <div class="settings-divider"></div>
+
+          <section class="settings-plan-section">
+            <div class="settings-plan-header">
+              <div>
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
                 <h2 class="settings-section-title">Notification Settings</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
@@ -491,6 +555,11 @@ export class SettingsComponent {
 
   selectRelationshipStatus(value: UserSettings['relationshipStatus']) {
     this.update('relationshipStatus', value);
+  }
+
+  selectTheme(mode: 'pearl' | 'onyx') {
+    this.theme.setTheme(mode);
+    this.update('themeMode', mode);
   }
 
   crushLimitFor(tier: SubscriptionTier): number {

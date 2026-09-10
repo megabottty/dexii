@@ -1,5 +1,6 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { SecurityService } from './security.service';
+import { ThemeService } from './theme.service';
 import {
   DEFAULT_USER_SETTINGS,
   normalizeUserSettings,
@@ -19,6 +20,7 @@ export type { UserSettings } from './user-settings.storage';
 export class UserSettingsService {
   private readonly storagePrefix = 'dexii_user_settings_';
   private security = inject(SecurityService);
+  private themeService = inject(ThemeService);
   private activeUser = signal<string>('');
   private _settings = signal<UserSettings>(DEFAULT_USER_SETTINGS);
 
@@ -57,7 +59,11 @@ export class UserSettingsService {
 
   private loadUserSettings(username: string): void {
     this.activeUser.set(username);
-    this._settings.set(this.buildSettingsFromStorage(username));
+    const loaded = this.buildSettingsFromStorage(username);
+    this._settings.set(loaded);
+    if (loaded.themeMode) {
+      this.themeService.setTheme(loaded.themeMode);
+    }
   }
 
   private persist(settings: UserSettings): void {
@@ -73,11 +79,17 @@ export class UserSettingsService {
     const next = this.mergeWithDefaults({ ...this._settings(), ...patch });
     this._settings.set(next);
     this.persist(next);
+    if (patch.themeMode) {
+      this.themeService.setTheme(patch.themeMode);
+    }
   }
 
   resetSettings(): void {
     this._settings.set(DEFAULT_USER_SETTINGS);
     this.persist(DEFAULT_USER_SETTINGS);
+    if (DEFAULT_USER_SETTINGS.themeMode) {
+      this.themeService.setTheme(DEFAULT_USER_SETTINGS.themeMode);
+    }
   }
 
   currentUsername(): string {

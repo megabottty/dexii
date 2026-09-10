@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 
-export type ThemeMode = 'dark' | 'light';
+export type ThemeMode = 'pearl' | 'onyx' | 'light' | 'dark';
 
 export interface ThemePalette {
   bg: string;
@@ -18,11 +18,22 @@ export interface ThemePalette {
   providedIn: 'root'
 })
 export class ThemeService {
-  private _mode = signal<ThemeMode>('light');
+  private readonly storageKey = 'dexii_theme';
+  private _mode = signal<ThemeMode>(this.getInitialMode());
   public mode = this._mode.asReadonly();
+  public isPearl = computed(() => this._mode() === 'pearl' || this._mode() === 'light');
+  public isOnyx = computed(() => this._mode() === 'onyx' || this._mode() === 'dark');
+
+  private getInitialMode(): ThemeMode {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(this.storageKey) : null;
+    if (saved === 'onyx' || saved === 'dark') {
+      return 'onyx';
+    }
+    return 'pearl';
+  }
 
   public colors = computed<ThemePalette>(() => {
-    if (this._mode() === 'dark') {
+    if (this._mode() === 'dark' || this._mode() === 'onyx') {
       return {
         bg: '#020617', // Slate 950
         bgSecondary: '#0f172a', // Slate 900
@@ -49,7 +60,20 @@ export class ThemeService {
     }
   });
 
+  setTheme(mode: ThemeMode) {
+    const normalized: ThemeMode = (mode === 'onyx' || mode === 'dark') ? 'onyx' : 'pearl';
+    this._mode.set(normalized);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(this.storageKey, normalized);
+    }
+  }
+
+  setMode(mode: ThemeMode) {
+    this.setTheme(mode);
+  }
+
   toggleTheme() {
-    this._mode.update(m => m === 'dark' ? 'light' : 'dark');
+    const next: ThemeMode = this.isOnyx() ? 'pearl' : 'onyx';
+    this.setTheme(next);
   }
 }
