@@ -51,10 +51,13 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           <p class="error-message">{{ errorMessage() }}</p>
         }
 
-        <div class="code-inputs">
+        <div class="code-inputs" (paste)="onPaste($event, 0)">
           @for (box of [0,1,2,3,4,5]; track $index) {
             <input
               type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="one-time-code"
               maxlength="1"
               class="code-box"
               [value]="codeDigits()[$index]"
@@ -64,6 +67,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               [style.box-shadow]="codeDigits()[$index] ? '0 0 10px ' + theme.colors().primary : 'none'"
               (input)="onInput($event, $index)"
               (keydown)="onKeyDown($event, $index)"
+              (paste)="onPaste($event, $index)"
               #codeBox
             >
           }
@@ -206,16 +210,64 @@ export class SignupEmailConfirmationComponent {
     return this.codeDigits().join('');
   }
 
+  onPaste(event: ClipboardEvent, startIndex: number = 0) {
+    event.preventDefault();
+    const pastedData = event.clipboardData?.getData('text') || '';
+    const digits = pastedData.replace(/\D/g, '');
+    if (!digits) return;
+
+    this.codeDigits.update((current) => {
+      const next = [...current];
+      for (let i = 0; i < 6; i++) {
+        if (i >= startIndex && (i - startIndex) < digits.length) {
+          next[i] = digits[i - startIndex];
+        } else if (startIndex === 0 && i < digits.length) {
+          next[i] = digits[i];
+        }
+      }
+      return next;
+    });
+
+    setTimeout(() => {
+      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.code-box'));
+      const nextEmptyIndex = this.codeDigits().findIndex(d => !d);
+      if (nextEmptyIndex !== -1 && inputs[nextEmptyIndex]) {
+        inputs[nextEmptyIndex].focus();
+      } else if (inputs[5]) {
+        inputs[5].focus();
+      }
+    });
+
+    if (this.codeDigits().every(d => d.length === 1)) {
+      this.verifyCode();
+    }
+  }
+
   onInput(event: any, index: number) {
     const raw = String(event.target.value || '');
-    const val = raw.slice(-1);
-    if (!/^\d?$/.test(val)) {
-      event.target.value = '';
+    const digits = raw.replace(/\D/g, '');
+
+    if (digits.length > 1) {
+      this.codeDigits.update((current) => {
+        const next = [...current];
+        for (let i = 0; i < digits.length && (index + i) < 6; i++) {
+          next[index + i] = digits[i];
+        }
+        return next;
+      });
+      const targetIndex = Math.min(index + digits.length, 5);
+      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.code-box'));
+      if (inputs[targetIndex]) inputs[targetIndex].focus();
+
+      if (this.codeDigits().every(d => d.length === 1)) {
+        this.verifyCode();
+      }
       return;
     }
 
-    this.codeDigits.update((digits) => {
-      const next = [...digits];
+    const val = digits.slice(-1);
+    this.codeDigits.update((digitsList) => {
+      const next = [...digitsList];
       next[index] = val;
       return next;
     });
@@ -224,26 +276,41 @@ export class SignupEmailConfirmationComponent {
       const nextInput = event.target.nextElementSibling;
       if (nextInput) nextInput.focus();
     }
+
+    if (this.codeDigits().every(d => d.length === 1)) {
+      this.verifyCode();
+    }
   }
 
   onKeyDown(event: any, index: number) {
-    if (event.key === 'Backspace' && event.target.value) {
-      this.codeDigits.update((digits) => {
-        const next = [...digits];
-        next[index] = '';
-        return next;
-      });
+    if (event.key === 'ArrowLeft' && index > 0) {
+      const prevInput = event.target.previousElementSibling;
+      if (prevInput) prevInput.focus();
       return;
     }
 
-    if (event.key === 'Backspace' && !event.target.value && index > 0) {
-      this.codeDigits.update((digits) => {
-        const next = [...digits];
-        next[index - 1] = '';
-        return next;
-      });
-      const prevInput = event.target.previousElementSibling;
-      if (prevInput) prevInput.focus();
+    if (event.key === 'ArrowRight' && index < 5) {
+      const nextInput = event.target.nextElementSibling;
+      if (nextInput) nextInput.focus();
+      return;
+    }
+
+    if (event.key === 'Backspace') {
+      if (event.target.value) {
+        this.codeDigits.update((digits) => {
+          const next = [...digits];
+          next[index] = '';
+          return next;
+        });
+      } else if (index > 0) {
+        this.codeDigits.update((digits) => {
+          const next = [...digits];
+          next[index - 1] = '';
+          return next;
+        });
+        const prevInput = event.target.previousElementSibling;
+        if (prevInput) prevInput.focus();
+      }
     }
   }
 

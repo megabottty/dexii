@@ -49,12 +49,13 @@ import { getApiBaseUrl } from '../../core/config/api-config';
              [style.border]="'1px solid ' + theme.colors().border"
              class="login-form">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Username</label>
+          <label [style.color]="theme.colors().textSecondary" class="form-label">Username or Email</label>
           <input [ngModel]="username()" (ngModelChange)="username.set($event)"
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
-                 class="form-input" placeholder="Enter your username">
+                 autocomplete="username"
+                 class="form-input" placeholder="Enter your username or email">
 
           <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
           <input [ngModel]="password()" (ngModelChange)="password.set($event)"

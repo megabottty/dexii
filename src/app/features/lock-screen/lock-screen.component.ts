@@ -21,11 +21,20 @@ export class LockScreenComponent {
 
   enteredPin = signal<string>('');
   errorMessage = signal<string>('');
+  activeKey = signal<string | null>(null);
+  isShaking = signal<boolean>(false);
 
   async handleInput(val: string) {
     if (this.enteredPin().length >= 4) {
       return;
     }
+
+    this.activeKey.set(val);
+    setTimeout(() => {
+      if (this.activeKey() === val) {
+        this.activeKey.set(null);
+      }
+    }, 150);
 
     const nextPin = `${this.enteredPin()}${val}`;
     this.enteredPin.set(nextPin);
@@ -37,6 +46,8 @@ export class LockScreenComponent {
     const success = await this.security.verifyPin(nextPin);
     if (!success) {
       this.errorMessage.set('Incorrect PIN.');
+      this.isShaking.set(true);
+      setTimeout(() => this.isShaking.set(false), 500);
       this.clear();
     }
   }

@@ -64,43 +64,49 @@ export class SecurityService {
   // 3. Logic to unlock the app
   async verifyPassword(username: string, password: string): Promise<boolean> {
     try {
+      const trimmedUser = username.trim();
       const response = await fetch(`${this.apiBase}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: trimmedUser, password })
       });
-      if (!response.ok) return false;
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid username or password.');
+      }
       localStorage.setItem('dexii_api_token', data.token);
-      localStorage.setItem('dexii_api_username', username);
+      localStorage.setItem('dexii_api_username', data.user?.username || trimmedUser);
       this.storeUserId(data?.user?.id);
-      this._currentUser.set(username);
+      this._currentUser.set(data.user?.username || trimmedUser);
       this._isLoggedIn.set(true);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Auth API error:', err);
-      return false;
+      throw err;
     }
   }
 
   async verifyLegacyPin(username: string, pin: string): Promise<boolean> {
       try {
+        const trimmedUser = username.trim();
         const response = await fetch(`${this.apiBase}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, pin })
+          body: JSON.stringify({ username: trimmedUser, pin })
         });
-        if (!response.ok) return false;
         const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || 'Invalid PIN.');
+        }
         localStorage.setItem('dexii_api_token', data.token);
-        localStorage.setItem('dexii_api_username', username);
+        localStorage.setItem('dexii_api_username', data.user?.username || trimmedUser);
         this.storeUserId(data?.user?.id);
-        this._currentUser.set(username);
+        this._currentUser.set(data.user?.username || trimmedUser);
         this._isLoggedIn.set(true);
         return Boolean(data?.user?.needsPasswordSetup);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Legacy auth API error:', err);
-        return false;
+        throw err;
       }
     }
 
@@ -121,21 +127,23 @@ export class SecurityService {
 
   async verifyPin(input: string, shouldNavigate: boolean = true): Promise<boolean> {
     const username = localStorage.getItem('dexii_api_username');
+    const token = localStorage.getItem('dexii_api_token');
 
-    if (username) {
+    // 1. Try verifying against backend endpoint
+    if (token || username) {
       try {
-        const response = await fetch(`${this.apiBase}/auth/login`, {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['x-auth-token'] = token;
+
+        const response = await fetch(`${this.apiBase}/auth/verify-pin`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, pin: input })
+          headers,
+          body: JSON.stringify({ pin: input, username: username || undefined })
         });
 
         if (response.ok) {
-          const data = await response.json();
-          localStorage.setItem('dexii_api_token', data.token);
-          localStorage.setItem('dexii_api_username', username);
-          this.storeUserId(data?.user?.id);
-          this._currentUser.set(username);
+          localStorage.setItem('dexii_pin', input);
+          this._userPin.set(input);
           this._isLoggedIn.set(true);
 
           if (shouldNavigate) {
@@ -145,12 +153,15 @@ export class SecurityService {
           return true;
         }
       } catch (err) {
-        console.error('Auth API error, falling back to local:', err);
+        console.error('Verify PIN API error, checking local fallback:', err);
       }
     }
 
-    // Fallback to local pin if offline or not registered yet
-    if (input === this._userPin()) {
+    // 2. Fallback to local pin if offline or stored locally
+    const savedPin = this._userPin() || localStorage.getItem('dexii_pin');
+    if (savedPin && input === savedPin) {
+      this._userPin.set(savedPin);
+      this._isLoggedIn.set(true);
       if (shouldNavigate) {
         this._isLocked.set(false);
         this.router.navigate(['/dashboard']);

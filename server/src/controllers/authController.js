@@ -71,8 +71,7 @@ exports.register = async (req, res) => {
         return res.status(400).json({ message: 'Username already taken in demo mode' });
       }
 
-      // In demo mode, we don't strictly hash/save pins in the JSON store for this simple implementation,
-      // but we'll allow the user to proceed as a "demo user".
+      // In demo mode, save password and pin hashes in the JSON store
       const user = ensureUser(state, safeUsername);
       user.bio = bio;
       user.email = normalizedEmail;
@@ -80,6 +79,10 @@ exports.register = async (req, res) => {
       user.lastName = safeLastName;
       user.phoneE164 = normalizedPhone || '';
       user.passwordHash = await bcrypt.hash(password, 10);
+      if (pin) {
+        user.pin = await bcrypt.hash(pin, 10);
+      }
+      user.isEmailVerified = false;
 
       const verificationCode = generateCode();
       user.verificationCode = verificationCode;
@@ -264,12 +267,17 @@ exports.register = async (req, res) => {
 exports.verifyEmail = async (req, res) => {
   try {
     const { username, code } = req.body;
+    const safeUsername = typeof username === 'string' ? username.trim() : '';
+    const safeCode = typeof code === 'string' ? code.trim() : '';
 
     // Support demo mode
     if (mongoose.connection.readyState !== 1) {
-      console.warn(`Database not ready. Verifying ${username} in demo mode.`);
+      console.warn(`Database not ready. Verifying ${safeUsername} in demo mode.`);
       const state = await readStore();
-      const user = state.users.find(u => u.username === username);
+      const user = state.users.find(u =>
+        u.username.toLowerCase() === safeUsername.toLowerCase() ||
+        (u.email && u.email.toLowerCase() === safeUsername.toLowerCase())
+      );
 
       if (!user) {
         return res.status(400).json({ message: 'User not found in demo mode' });
@@ -278,9 +286,15 @@ exports.verifyEmail = async (req, res) => {
       // In demo mode, we previously auto-verified, but to simulate real behavior,
       // we'll require the code that was logged to the console during registration.
       // If the user is stuck, we'll allow '000000' as a backdoor for demo mode ONLY.
-      if (code !== '000000' && code !== user.verificationCode) {
+      if (safeCode !== '000000' && safeCode !== user.verificationCode) {
         return res.status(400).json({ message: 'Invalid demo verification code. Use 000000 or see server console.' });
       }
+
+      user.isEmailVerified = true;
+      user.verificationCode = undefined;
+      const fs = require('fs/promises');
+      const path = require('path');
+      await fs.writeFile(path.join(__dirname, '..', '..', 'data', 'demo-friends.json'), JSON.stringify(state, null, 2), 'utf8');
 
       const token = jwt.sign({ id: user.username, isDemo: true }, process.env.JWT_SECRET, {
         expiresIn: '30d'
@@ -301,9 +315,19 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
+    const escapedIdentifier = safeUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const normalizedEmail = normalizeEmail(safeUsername);
+    const lookupQueries = [
+      { username: safeUsername },
+      { username: { $regex: new RegExp(`^${escapedIdentifier}$`, 'i') } }
+    ];
+    if (normalizedEmail) {
+      lookupQueries.push({ email: normalizedEmail });
+    }
+
     const user = await User.findOne({
-      username,
-      verificationCode: code,
+      $or: lookupQueries,
+      verificationCode: safeCode,
       verificationCodeExpires: { $gt: Date.now() }
     });
 
@@ -430,32 +454,39 @@ exports.resendCode = async (req, res) => {
   }
 };
 
-// @desc    Authenticate user / Verify PIN
+// @desc    Authenticate user / Verify credentials
 // @route   POST /api/auth/login
 exports.login = async (req, res) => {
   try {
     const { username, password, pin } = req.body;
-    const key = attemptKey(req, username);
+    const safeIdentifier = typeof username === 'string' ? username.trim() : '';
+    if (!safeIdentifier) {
+      return res.status(400).json({ message: 'Username or email is required' });
+    }
+    const key = attemptKey(req, safeIdentifier);
     if (isRateLimited(key)) {
       return res.status(429).json({ message: 'Too many failed attempts. Try again in 15 minutes.' });
     }
 
     // Support demo mode if database is not connected
     if (mongoose.connection.readyState !== 1) {
-       console.warn(`Database not ready. Logging in ${username} in demo mode.`);
+       console.warn(`Database not ready. Logging in ${safeIdentifier} in demo mode.`);
        const state = await readStore();
-       const user = state.users.find(u => u.username === username);
+       const user = state.users.find(u =>
+         u.username.toLowerCase() === safeIdentifier.toLowerCase() ||
+         (u.email && u.email.toLowerCase() === safeIdentifier.toLowerCase())
+       );
 
        if (!user) {
          recordFailedLogin(key);
-         return res.status(400).json({ message: 'User not found in demo mode' });
+         return res.status(400).json({ message: 'Invalid username or password' });
        }
        const isLegacyDemo = !user.passwordHash;
        if (user.passwordHash) {
          const matches = await bcrypt.compare(password || '', user.passwordHash);
          if (!matches) {
            recordFailedLogin(key);
-           return res.status(400).json({ message: 'Invalid credentials' });
+           return res.status(400).json({ message: 'Invalid username or password' });
          }
        } else if (!user.pin || !(await bcrypt.compare(pin || '', user.pin))) {
          recordFailedLogin(key);
@@ -463,7 +494,6 @@ exports.login = async (req, res) => {
        }
        clearLoginAttempts(key);
 
-       // In demo mode, we'll allow any PIN to facilitate testing when DB is down
        const token = jwt.sign({ id: user.username, isDemo: true }, process.env.JWT_SECRET, {
          expiresIn: '30d'
        });
@@ -477,6 +507,7 @@ exports.login = async (req, res) => {
            firstName: user.firstName || '',
            lastName: user.lastName || '',
            phoneE164: user.phoneE164 || '',
+           email: user.email || '',
            bio: user.bio || '',
            subscriptionTier: user.subscriptionTier || 'Free',
            needsPasswordSetup: isLegacyDemo
@@ -484,9 +515,20 @@ exports.login = async (req, res) => {
        });
     }
 
-    const user = await User.findOne({ username });
+    const escapedIdentifier = safeIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const normalizedEmail = normalizeEmail(safeIdentifier);
+    const lookupQueries = [
+      { username: safeIdentifier },
+      { username: { $regex: new RegExp(`^${escapedIdentifier}$`, 'i') } }
+    ];
+    if (normalizedEmail) {
+      lookupQueries.push({ email: normalizedEmail });
+    }
+
+    const user = await User.findOne({ $or: lookupQueries });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      recordFailedLogin(key);
+      return res.status(400).json({ message: 'Invalid username or password' });
     }
 
     if (!user.isEmailVerified) {
@@ -499,7 +541,7 @@ exports.login = async (req, res) => {
       : await bcrypt.compare(password || '', user.passwordHash);
     if (!isMatch) {
       recordFailedLogin(key);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Invalid username or password' });
     }
     clearLoginAttempts(key);
 
@@ -522,6 +564,76 @@ exports.login = async (req, res) => {
         needsPasswordSetup: isLegacy
       }
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Verify 4-digit Vault PIN
+// @route   POST /api/auth/verify-pin
+exports.verifyPin = async (req, res) => {
+  try {
+    const { pin, username } = req.body;
+    const safePin = typeof pin === 'string' ? pin.trim() : '';
+    if (!safePin || safePin.length !== 4) {
+      return res.status(400).json({ message: 'Valid 4-digit PIN is required' });
+    }
+
+    let userIdentifier = req.user?.id || username;
+    if (typeof userIdentifier === 'string') userIdentifier = userIdentifier.trim();
+
+    if (!userIdentifier) {
+      return res.status(400).json({ message: 'User identifier or token is required' });
+    }
+
+    // Support demo mode
+    if (mongoose.connection.readyState !== 1 || req.user?.isDemo) {
+      const state = await readStore();
+      const user = state.users.find(u =>
+        u.username.toLowerCase() === userIdentifier.toLowerCase() ||
+        (u.email && u.email.toLowerCase() === userIdentifier.toLowerCase())
+      );
+
+      if (!user) {
+        return res.status(400).json({ message: 'User not found in demo mode' });
+      }
+
+      if (user.pin) {
+        const isMatch = await bcrypt.compare(safePin, user.pin);
+        if (!isMatch) {
+          return res.status(400).json({ message: 'Incorrect PIN' });
+        }
+      }
+      return res.json({ success: true, message: 'PIN verified successfully' });
+    }
+
+    let user = null;
+    if (mongoose.Types.ObjectId.isValid(userIdentifier)) {
+      user = await User.findById(userIdentifier);
+    }
+    if (!user) {
+      const escapedIdentifier = userIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const normalizedEmail = normalizeEmail(userIdentifier);
+      const lookupQueries = [
+        { username: userIdentifier },
+        { username: { $regex: new RegExp(`^${escapedIdentifier}$`, 'i') } }
+      ];
+      if (normalizedEmail) {
+        lookupQueries.push({ email: normalizedEmail });
+      }
+      user = await User.findOne({ $or: lookupQueries });
+    }
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(safePin, user.pin);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect PIN' });
+    }
+
+    res.json({ success: true, message: 'PIN verified successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
