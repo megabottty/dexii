@@ -63,12 +63,62 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                  class="form-input" placeholder="email@example.com">
 
           <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
-          <input [ngModel]="password()" (ngModelChange)="password.set($event)"
-                 type="password" autocomplete="new-password" minlength="8"
-                 [style.background-color]="theme.colors().bg"
-                 [style.border]="'1px solid ' + theme.colors().border"
-                 [style.color]="theme.colors().text"
-                 class="form-input" placeholder="At least 8 characters">
+          <div class="password-input-wrapper">
+            <input [ngModel]="password()" (ngModelChange)="password.set($event)"
+                   [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8"
+                   [style.background-color]="theme.colors().bg"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   [style.color]="theme.colors().text"
+                   class="form-input form-input--password" placeholder="At least 8 characters">
+            <button type="button"
+                    (click)="showPassword.set(!showPassword())"
+                    [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                    class="password-toggle-btn"
+                    [style.color]="theme.colors().textSecondary">
+              @if (showPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              }
+            </button>
+          </div>
+
+          <label [style.color]="theme.colors().textSecondary" class="form-label">Confirm Password</label>
+          <div class="password-input-wrapper">
+            <input [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
+                   [type]="showConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8"
+                   [style.background-color]="theme.colors().bg"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   [style.color]="theme.colors().text"
+                   class="form-input form-input--password" placeholder="Re-enter your password">
+            <button type="button"
+                    (click)="showConfirmPassword.set(!showConfirmPassword())"
+                    [attr.aria-label]="showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'"
+                    class="password-toggle-btn"
+                    [style.color]="theme.colors().textSecondary">
+              @if (showConfirmPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              }
+            </button>
+          </div>
           <p class="password-hint" [style.color]="theme.colors().textSecondary">
             Use at least 8 characters. This password is for account login; your Vault PIN comes next.
           </p>
@@ -238,6 +288,31 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       box-sizing: border-box;
       font-family: inherit;
     }
+    .password-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .form-input--password {
+      padding-right: 48px;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 6px;
+      transition: opacity 0.2s;
+    }
+    .password-toggle-btn:hover {
+      opacity: 0.8;
+    }
     .password-hint {
       margin: -8px 0 0;
       font-size: 0.75rem;
@@ -283,6 +358,9 @@ export class SignupProfileComponent {
   username = signal<string>(this.settings.getSignupDraft().username || '');
   email = signal<string>(this.settings.getSignupDraft().email || '');
   password = signal<string>('');
+  confirmPassword = signal<string>('');
+  showPassword = signal<boolean>(false);
+  showConfirmPassword = signal<boolean>(false);
   bio = signal<string>(this.settings.getSignupDraft().bio || '');
   relationshipStatus = signal<string>(this.settings.getSignupDraft().relationshipStatus || '');
   lookingFor = signal<string>(this.settings.getSignupDraft().lookingFor || '');
@@ -297,10 +375,6 @@ export class SignupProfileComponent {
       this.errorMessage.set('Username is required.');
       return;
     }
-    if (this.password().length < 8) {
-      this.errorMessage.set('Password must be at least 8 characters.');
-      return;
-    }
     if (!/^[a-zA-Z0-9_]{3,24}$/.test(usernameValue)) {
       this.errorMessage.set('Username: 3-24 chars, letters/numbers/underscore.');
       return;
@@ -313,6 +387,16 @@ export class SignupProfileComponent {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
       this.errorMessage.set('Enter a valid email address.');
+      return;
+    }
+
+    if (this.password().length < 8) {
+      this.errorMessage.set('Password must be at least 8 characters.');
+      return;
+    }
+
+    if (this.password() !== this.confirmPassword()) {
+      this.errorMessage.set('Passwords do not match.');
       return;
     }
 

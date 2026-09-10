@@ -58,13 +58,36 @@ import { getApiBaseUrl } from '../../core/config/api-config';
                  class="form-input" placeholder="Enter your username or email">
 
           <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
-          <input [ngModel]="password()" (ngModelChange)="password.set($event)"
-                 type="password"
-                 autocomplete="current-password"
-                 [style.background-color]="theme.colors().bg"
-                 [style.border]="'1px solid ' + theme.colors().border"
-                 [style.color]="theme.colors().text"
-                 class="form-input" placeholder="Your account password">
+          <div class="password-input-wrapper">
+            <input [ngModel]="password()" (ngModelChange)="password.set($event)"
+                   [type]="showPassword() ? 'text' : 'password'"
+                   autocomplete="current-password"
+                   [style.background-color]="theme.colors().bg"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   [style.color]="theme.colors().text"
+                   class="form-input form-input--password" placeholder="Your account password">
+            <button type="button"
+                    (click)="showPassword.set(!showPassword())"
+                    [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                    class="password-toggle-btn"
+                    [style.color]="theme.colors().textSecondary">
+              @if (showPassword()) {
+                <!-- Eye Open Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              } @else {
+                <!-- Eye Off / Closed Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              }
+            </button>
+          </div>
 
           <button (click)="login()"
                   [disabled]="isLoading()"
@@ -75,34 +98,39 @@ import { getApiBaseUrl } from '../../core/config/api-config';
           <button type="button" (click)="requestReset()" class="forgot-link">
             Forgot password?
           </button>
-          <button type="button" (click)="legacyMode.set(!legacyMode())" class="forgot-link">
-            {{ legacyMode() ? 'Use password login' : 'Legacy account? Use PIN once' }}
-          </button>
-          @if (legacyMode()) {
-            <input [ngModel]="legacyPin()" (ngModelChange)="legacyPin.set($event)"
-                   class="form-input" inputmode="numeric" maxlength="4" placeholder="Legacy 4-digit PIN">
-            <button type="button" (click)="loginWithLegacyPin()" class="submit-button"
-                    [style.background-color]="theme.colors().accent">
-              Continue with PIN
-            </button>
-          }
-          @if (migrationRequired()) {
-            <p class="reset-message">Create a password now. Your PIN will remain for Vault unlocks.</p>
-            <input [ngModel]="migrationPassword()" (ngModelChange)="migrationPassword.set($event)"
-                   class="form-input" type="password" autocomplete="new-password"
-                   placeholder="New password (8+ characters)">
-            <button type="button" (click)="completeMigration()" class="submit-button"
-                    [style.background-color]="theme.colors().accent">
-              Create Password
-            </button>
-          }
+
           @if (resetMessage()) {
             <p class="reset-message">{{ resetMessage() }}</p>
             <input [ngModel]="resetCode()" (ngModelChange)="resetCode.set($event)"
                    class="form-input" inputmode="numeric" maxlength="6" placeholder="Reset code">
-            <input [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
-                   class="form-input" type="password" autocomplete="new-password"
-                   placeholder="New password (8+ characters)">
+            <div class="password-input-wrapper">
+              <input [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
+                     [type]="showNewPassword() ? 'text' : 'password'" autocomplete="new-password"
+                     [style.background-color]="theme.colors().bg"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     [style.color]="theme.colors().text"
+                     class="form-input form-input--password"
+                     placeholder="New password (8+ characters)">
+              <button type="button"
+                      (click)="showNewPassword.set(!showNewPassword())"
+                      [attr.aria-label]="showNewPassword() ? 'Hide password' : 'Show password'"
+                      class="password-toggle-btn"
+                      [style.color]="theme.colors().textSecondary">
+                @if (showNewPassword()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
+                }
+              </button>
+            </div>
             <button type="button" (click)="resetPassword()" class="submit-button reset-button"
                     [style.background-color]="theme.colors().accent">
               Reset Password
@@ -199,6 +227,31 @@ import { getApiBaseUrl } from '../../core/config/api-config';
     .form-input:focus {
       border-color: var(--primary-color) !important;
     }
+    .password-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .form-input--password {
+      padding-right: 48px;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 6px;
+      transition: opacity 0.2s;
+    }
+    .password-toggle-btn:hover {
+      opacity: 0.8;
+    }
     .submit-button {
       padding: 16px;
       border-radius: 10px;
@@ -254,15 +307,13 @@ export class LoginComponent {
 
   username = signal<string>('');
   password = signal<string>('');
+  showPassword = signal<boolean>(false);
   errorMessage = signal<string>('');
   isLoading = signal<boolean>(false);
   resetMessage = signal<string>('');
   resetCode = signal<string>('');
   newPassword = signal<string>('');
-  legacyMode = signal(false);
-  legacyPin = signal('');
-  migrationRequired = signal(false);
-  migrationPassword = signal('');
+  showNewPassword = signal<boolean>(false);
 
   async login() {
     if (!this.username() || !this.password()) {
@@ -288,35 +339,6 @@ export class LoginComponent {
     } catch (err: any) {
       this.errorMessage.set(err.message || 'Login failed. Please try again.');
       this.isLoading.set(false);
-    }
-  }
-
-  async loginWithLegacyPin(): Promise<void> {
-    if (this.legacyPin().length !== 4) {
-      this.errorMessage.set('Enter your 4-digit PIN.');
-      return;
-    }
-    const needsMigration = await this.security.verifyLegacyPin(this.username(), this.legacyPin());
-    if (needsMigration) {
-      this.migrationRequired.set(true);
-      this.errorMessage.set('');
-    } else {
-      this.router.navigate(['/lock']);
-    }
-  }
-
-  async completeMigration(): Promise<void> {
-    if (this.migrationPassword().length < 8) {
-      this.errorMessage.set('Password must be at least 8 characters.');
-      return;
-    }
-    if (await this.security.setPassword(this.migrationPassword())) {
-      this.migrationRequired.set(false);
-      this.legacyMode.set(false);
-      this.password.set(this.migrationPassword());
-      this.router.navigate(['/lock']);
-    } else {
-      this.errorMessage.set('Unable to create your password. Please try again.');
     }
   }
 

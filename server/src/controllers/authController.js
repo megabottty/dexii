@@ -481,16 +481,14 @@ exports.login = async (req, res) => {
          recordFailedLogin(key);
          return res.status(400).json({ message: 'Invalid username or password' });
        }
-       const isLegacyDemo = !user.passwordHash;
-       if (user.passwordHash) {
-         const matches = await bcrypt.compare(password || '', user.passwordHash);
-         if (!matches) {
-           recordFailedLogin(key);
-           return res.status(400).json({ message: 'Invalid username or password' });
-         }
-       } else if (!user.pin || !(await bcrypt.compare(pin || '', user.pin))) {
+       if (!user.passwordHash) {
          recordFailedLogin(key);
-         return res.status(400).json({ message: 'Legacy accounts must sign in with their PIN once.' });
+         return res.status(400).json({ message: 'Invalid username or password' });
+       }
+       const matches = await bcrypt.compare(password || '', user.passwordHash);
+       if (!matches) {
+         recordFailedLogin(key);
+         return res.status(400).json({ message: 'Invalid username or password' });
        }
        clearLoginAttempts(key);
 
@@ -509,8 +507,7 @@ exports.login = async (req, res) => {
            phoneE164: user.phoneE164 || '',
            email: user.email || '',
            bio: user.bio || '',
-           subscriptionTier: user.subscriptionTier || 'Free',
-           needsPasswordSetup: isLegacyDemo
+           subscriptionTier: user.subscriptionTier || 'Free'
          }
        });
     }
@@ -526,7 +523,7 @@ exports.login = async (req, res) => {
     }
 
     const user = await User.findOne({ $or: lookupQueries });
-    if (!user) {
+    if (!user || !user.passwordHash) {
       recordFailedLogin(key);
       return res.status(400).json({ message: 'Invalid username or password' });
     }
@@ -535,10 +532,7 @@ exports.login = async (req, res) => {
        return res.status(401).json({ message: 'Please verify your email first', needsVerification: true });
     }
 
-    const isLegacy = !user.passwordHash;
-    const isMatch = isLegacy
-      ? await bcrypt.compare(pin || '', user.pin)
-      : await bcrypt.compare(password || '', user.passwordHash);
+    const isMatch = await bcrypt.compare(password || '', user.passwordHash);
     if (!isMatch) {
       recordFailedLogin(key);
       return res.status(400).json({ message: 'Invalid username or password' });
@@ -560,8 +554,7 @@ exports.login = async (req, res) => {
         email: user.email,
         bio: user.bio,
         subscriptionTier: user.subscriptionTier,
-        avatarUrl: user.avatarUrl,
-        needsPasswordSetup: isLegacy
+        avatarUrl: user.avatarUrl
       }
     });
   } catch (err) {

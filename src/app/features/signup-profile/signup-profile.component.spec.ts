@@ -46,12 +46,35 @@ describe('SignupProfileComponent', () => {
     expect(component.errorMessage()).toContain('3-24 chars');
 
     component.username.set('valid_user_123');
+    component.email.set('valid@example.com');
+    component.password.set('password123');
+    component.confirmPassword.set('password123');
+    component.continue();
+    expect(component.errorMessage()).toBe('');
+  });
+
+  it('should validate password requirements and match', () => {
+    component.username.set('validuser');
+    component.email.set('valid@example.com');
+    component.password.set('short');
+    component.confirmPassword.set('short');
+    component.continue();
+    expect(component.errorMessage()).toContain('at least 8 characters');
+
+    component.password.set('password123');
+    component.confirmPassword.set('password456');
+    component.continue();
+    expect(component.errorMessage()).toContain('do not match');
+
+    component.confirmPassword.set('password123');
     component.continue();
     expect(component.errorMessage()).toBe('');
   });
 
   it('should require an email and validate email format', () => {
     component.username.set('validuser');
+    component.password.set('password123');
+    component.confirmPassword.set('password123');
     component.email.set('');
     component.continue();
     expect(component.errorMessage()).toContain('Email is required');
@@ -68,6 +91,8 @@ describe('SignupProfileComponent', () => {
   it('should navigate to PIN setup on valid form submission', () => {
     component.username.set('testuser');
     component.email.set('test@example.com');
+    component.password.set('password123');
+    component.confirmPassword.set('password123');
     component.bio.set('Test bio');
     component.continue();
 
