@@ -20,6 +20,7 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
 import { SubscriptionTier } from '../../core/models/user.model';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -570,20 +571,55 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                </span>
                <button (click)="closeNote()" [style.color]="theme.colors().textSecondary" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px;">✕</button>
              </div>
+
+             @if (currentTeaSenderName()) {
+               <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="dashboard-tea-sender">
+                 <img [src]="currentTeaSenderAvatar() || 'https://i.pravatar.cc/150?u=' + currentTeaSenderId()"
+                      [alt]="currentTeaSenderName() + ' avatar'"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      class="dashboard-tea-sender__avatar">
+                 <div class="dashboard-tea-sender__copy">
+                   <span [style.color]="theme.colors().textSecondary" class="dashboard-tea-sender__label">From</span>
+                   <span class="dashboard-tea-sender__name">{{ currentTeaSenderName() }}</span>
+                   @if (currentTeaTimestamp()) {
+                     <span [style.color]="theme.colors().textSecondary" class="dashboard-tea-sender__time">
+                       {{ currentTeaTimestamp() | date:'EEEE, MMM d • h:mm a' }}
+                     </span>
+                   }
+                   @if (currentTeaUnreadFromSender() > 1) {
+                     <span [style.color]="theme.colors().primary" class="dashboard-tea-sender__time">
+                       {{ currentTeaUnreadFromSender() - 1 }} more unread from them
+                     </span>
+                   }
+                 </div>
+               </div>
+             }
+
              <p class="dashboard-component__s59">"{{ currentTeaPreview() || 'No new tea right now.' }}"</p>
-             <div style="margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+             <div style="margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
                <button (click)="closeNote()"
                        [style.border]="'1px solid ' + theme.colors().border"
                        [style.color]="theme.colors().textSecondary"
                        style="background: transparent; padding: 8px 16px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer;">
                  Close
                </button>
-               <a routerLink="/chat" (click)="closeNote()"
-                  [style.background-color]="theme.colors().primary"
-                  [style.color]="'#ffffff'"
-                  style="text-decoration: none; padding: 8px 18px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;">
-                 Go to Chat →
-               </a>
+               @if (currentTeaSenderId()) {
+                 <a routerLink="/chat"
+                    [queryParams]="{ friendId: currentTeaSenderId(), friendName: currentTeaSenderName() }"
+                    (click)="closeNote()"
+                    [style.background-color]="theme.colors().primary"
+                    [style.color]="'#ffffff'"
+                    style="text-decoration: none; padding: 8px 18px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;">
+                   Reply to {{ currentTeaSenderName() }} →
+                 </a>
+               } @else {
+                 <a routerLink="/chat" (click)="closeNote()"
+                    [style.background-color]="theme.colors().primary"
+                    [style.color]="'#ffffff'"
+                    style="text-decoration: none; padding: 8px 18px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;">
+                   Go to Chat →
+                 </a>
+               }
              </div>
            </div>
         </div>
@@ -785,6 +821,7 @@ export class DashboardComponent implements OnInit {
   public subscription = inject(SubscriptionService);
   private router = inject(Router);
   private walkthrough = inject(WalkthroughService);
+  private friendsApi = inject(FriendsApiService);
 
   isNotePassing = signal(false);
   currentTeaPreview = signal('');
@@ -855,6 +892,12 @@ export class DashboardComponent implements OnInit {
   hasSelfDestructTea = computed(() => this.messaging.unreadSelfDestructCount() > 0);
   hasUnreadTea = computed(() => this.messaging.unreadTeaCount() > 0);
   currentTeaIsSelfDestruct = signal(false);
+  currentTeaSenderId = signal('');
+  currentTeaSenderName = signal('');
+  currentTeaSenderAvatar = signal('');
+  currentTeaTimestamp = signal<Date | null>(null);
+  currentTeaUnreadFromSender = signal(0);
+  friends = signal<FriendSummary[]>([]);
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   newCrush = {
@@ -902,12 +945,25 @@ export class DashboardComponent implements OnInit {
   ngOnInit() {
     this.dataService.setViewer(null);
     void this.messaging.loadConversationSummaries();
+    void this.loadFriends();
     this.refreshTimer = setInterval(() => {
       void this.messaging.loadConversationSummaries();
     }, 10000);
     setTimeout(() => {
       this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
     }, 150);
+  }
+
+  private async loadFriends(): Promise<void> {
+    if (!this.security.currentUserId()) {
+      this.friends.set([]);
+      return;
+    }
+    try {
+      this.friends.set(await this.friendsApi.listFriends());
+    } catch {
+      this.friends.set([]);
+    }
   }
 
   ngOnDestroy() {
@@ -962,30 +1018,92 @@ export class DashboardComponent implements OnInit {
     const unreadMessages = this.messaging.getAllUnreadForCurrentUser();
     if (unreadMessages.length > 0) {
       const latest = unreadMessages[0];
-      this.currentTeaPreview.set(latest.content);
-      this.currentTeaIsSelfDestruct.set(Boolean(latest.isSelfDestruct));
+      this.showTea(latest.content, Boolean(latest.isSelfDestruct), latest.senderId, latest.timestamp);
       this.messaging.markAsRead(latest.id);
-    } else {
-      const summaries = this.messaging.conversationSummaries();
-      const unreadChat = summaries.find(c => c.unreadCount > 0);
-      if (unreadChat) {
-        this.currentTeaPreview.set(unreadChat.latestMessage.content);
-        this.currentTeaIsSelfDestruct.set(Boolean(unreadChat.latestMessage.isSelfDestruct));
-        if (unreadChat.latestMessage.id) {
-          this.messaging.markAsRead(unreadChat.latestMessage.id);
-        }
-      } else {
-        this.currentTeaPreview.set('No unread tea right now. Check back soon or message a friend!');
-        this.currentTeaIsSelfDestruct.set(false);
-      }
+      return;
     }
+
+    const summaries = this.messaging.conversationSummaries();
+    const unreadChat = summaries.find(c => c.unreadCount > 0);
+    if (unreadChat) {
+      const latest = unreadChat.latestMessage;
+      this.showTea(
+        latest.content,
+        Boolean(latest.isSelfDestruct),
+        unreadChat.friend.id,
+        latest.timestamp,
+        unreadChat.friend.username,
+        unreadChat.friend.avatarUrl,
+        unreadChat.unreadCount
+      );
+      if (latest.id) {
+        this.messaging.markAsRead(latest.id);
+      }
+      return;
+    }
+
+    this.showTea('No unread tea right now. Check back soon or message a friend!', false, '', null);
+  }
+
+  private showTea(
+    content: string,
+    isSelfDestruct: boolean,
+    senderId: string,
+    timestamp: Date | null,
+    senderName?: string,
+    senderAvatar?: string,
+    unreadFromSender?: number
+  ) {
+    this.currentTeaPreview.set(content);
+    this.currentTeaIsSelfDestruct.set(isSelfDestruct);
+    this.currentTeaSenderId.set(senderId || '');
+    this.currentTeaTimestamp.set(timestamp);
+
+    if (senderId) {
+      this.currentTeaSenderName.set(senderName || this.resolveSenderName(senderId));
+      this.currentTeaSenderAvatar.set(senderAvatar || this.resolveSenderAvatar(senderId));
+      this.currentTeaUnreadFromSender.set(
+        unreadFromSender ?? this.messaging.getAllUnreadForCurrentUser().filter((m) => m.senderId === senderId).length
+      );
+    } else {
+      this.currentTeaSenderName.set('');
+      this.currentTeaSenderAvatar.set('');
+      this.currentTeaUnreadFromSender.set(0);
+    }
+
     this.isNotePassing.set(true);
+  }
+
+  /** Turns a raw sender id into a friendly display name using friends and chat data. */
+  private resolveSenderName(senderId: string): string {
+    const friend = this.friends().find((f) => f.id === senderId || f.username === senderId);
+    if (friend?.username) return friend.username;
+
+    const chat = this.messaging.conversationSummaries()
+      .find((c) => c.friend.id === senderId || c.friend.username === senderId);
+    if (chat?.friend.username && !/^[a-f\d]{24}$/i.test(chat.friend.username)) return chat.friend.username;
+
+    return /^[a-f\d]{24}$/i.test(senderId) ? 'A friend' : senderId;
+  }
+
+  private resolveSenderAvatar(senderId: string): string {
+    const friend = this.friends().find((f) => f.id === senderId || f.username === senderId);
+    if (friend?.avatarUrl) return friend.avatarUrl;
+
+    const chat = this.messaging.conversationSummaries()
+      .find((c) => c.friend.id === senderId || c.friend.username === senderId);
+    return chat?.friend.avatarUrl || '';
   }
 
   closeNote() {
     this.isNotePassing.set(false);
     this.currentTeaPreview.set('');
     this.currentTeaIsSelfDestruct.set(false);
+    this.currentTeaSenderId.set('');
+    this.currentTeaSenderName.set('');
+    this.currentTeaSenderAvatar.set('');
+    this.currentTeaTimestamp.set(null);
+    this.currentTeaUnreadFromSender.set(0);
   }
 
   openNewEntryModal() {

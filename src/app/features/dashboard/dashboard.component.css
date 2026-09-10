@@ -529,3 +529,46 @@
     gap: 14px;
   }
 }
+
+.dashboard-tea-sender {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.dashboard-tea-sender__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.dashboard-tea-sender__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-tea-sender__label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.dashboard-tea-sender__name {
+  font-size: 17px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-tea-sender__time {
+  font-size: 11px;
+  letter-spacing: 1px;
+}

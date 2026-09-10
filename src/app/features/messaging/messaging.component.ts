@@ -80,66 +80,140 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           }
         } @else {
           <section class="chat-hub">
-            <div>
-              <p [style.color]="theme.colors().primary" class="messaging-component__s6">Existing chats</p>
-              <div class="chat-hub__list">
-                @for (chat of messaging.conversationSummaries(); track chat.friend.id) {
-                  <button (click)="openChat(chat.friend.id, chatDisplayName(chat.friend))"
-                          [style.background-color]="theme.colors().bgSecondary"
-                          [style.border]="'1px solid ' + theme.colors().border"
-                          [style.color]="theme.colors().text"
-                          class="chat-hub__card">
-                    <img [src]="chat.friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + chat.friend.id"
-                         [alt]="chatDisplayName(chat.friend) + ' avatar'"
-                         class="chat-hub__avatar">
-                    <span class="chat-hub__content">
-                      <span class="chat-hub__title">{{ chatDisplayName(chat.friend) }}</span>
-                      <span [style.color]="theme.colors().textSecondary" class="chat-hub__preview">
-                        {{ chat.latestMessage.content }}
-                      </span>
-                    </span>
-                    @if (chat.unreadCount > 0) {
-                      <span [style.background-color]="theme.colors().primary" class="chat-hub__badge">
-                        {{ chat.unreadCount }}
-                      </span>
-                    }
-                  </button>
-                } @empty {
-                  <div [style.border]="'1px dashed ' + theme.colors().border"
-                       class="messaging-empty-state">
-                    <p [style.color]="theme.colors().textSecondary">No chats started yet.</p>
-                  </div>
-                }
+            <div class="chat-hub__toolbar">
+              <div class="chat-hub__toolbar-copy">
+                <p [style.color]="theme.colors().primary" class="messaging-component__s6">Your chats</p>
+                <span [style.color]="theme.colors().textSecondary" class="chat-hub__meta">
+                  {{ conversationList().length }} conversation{{ conversationList().length === 1 ? '' : 's' }}
+                  @if (messaging.unreadTeaCount() > 0) {
+                    • {{ messaging.unreadTeaCount() }} unread
+                  }
+                </span>
               </div>
+              <button type="button"
+                      (click)="toggleNewChat()"
+                      [style.background-color]="showNewChat() ? 'transparent' : theme.colors().primary"
+                      [style.color]="showNewChat() ? theme.colors().primary : '#ffffff'"
+                      [style.border]="'1px solid ' + theme.colors().primary"
+                      class="chat-hub__new-btn">
+                {{ showNewChat() ? 'Cancel' : '+ New Chat' }}
+              </button>
             </div>
 
-            <div>
-              <p [style.color]="theme.colors().primary" class="messaging-component__s6">Start a new chat</p>
-              <div class="chat-hub__list">
-                @for (friend of friends(); track friend.id) {
-                  <button (click)="openChat(friend.id, friend.username)"
-                          [style.background-color]="theme.colors().bgSecondary"
-                          [style.border]="'1px solid ' + theme.colors().border"
-                          [style.color]="theme.colors().text"
-                          class="chat-hub__card">
-                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
-                         [alt]="friend.username + ' avatar'"
-                         class="chat-hub__avatar">
-                    <span class="chat-hub__content">
-                      <span class="chat-hub__title">{{ friend.username }}</span>
-                      <span [style.color]="theme.colors().textSecondary" class="chat-hub__preview">
-                        Tap to start messaging
+            @if (showNewChat()) {
+              <div [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().primary"
+                   class="chat-hub__panel">
+                <label [style.color]="theme.colors().textSecondary" class="chat-hub__panel-label">
+                  Pick a friend to message
+                </label>
+                <input [ngModel]="friendSearch()"
+                       (ngModelChange)="friendSearch.set($event)"
+                       [style.background-color]="theme.colors().bg"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       placeholder="Search friends..."
+                       aria-label="Search friends to start a new chat"
+                       class="chat-hub__search">
+                <div class="chat-hub__list chat-hub__list--scroll">
+                  @for (friend of newChatCandidates(); track friend.id) {
+                    <button (click)="startChat(friend)"
+                            [style.background-color]="theme.colors().bg"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.color]="theme.colors().text"
+                            class="chat-hub__card">
+                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
+                           [alt]="friend.username + ' avatar'"
+                           class="chat-hub__avatar">
+                      <span class="chat-hub__content">
+                        <span class="chat-hub__title">{{ friend.username }}</span>
+                        <span [style.color]="theme.colors().textSecondary" class="chat-hub__preview">
+                          Tap to start messaging
+                        </span>
+                      </span>
+                    </button>
+                  } @empty {
+                    <div [style.border]="'1px dashed ' + theme.colors().border"
+                         class="messaging-empty-state">
+                      @if (friends().length === 0) {
+                        <p [style.color]="theme.colors().textSecondary">Add a friend first to start a new chat.</p>
+                        <a routerLink="/friends" [style.color]="theme.colors().primary">Go to Friends</a>
+                      } @else if (friendSearch().trim()) {
+                        <p [style.color]="theme.colors().textSecondary">No friends match “{{ friendSearch() }}”.</p>
+                      } @else {
+                        <p [style.color]="theme.colors().textSecondary">You already have a chat open with every friend.</p>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (conversationList().length > 3) {
+              <input [ngModel]="chatSearch()"
+                     (ngModelChange)="chatSearch.set($event)"
+                     [style.background-color]="theme.colors().bgSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     [style.color]="theme.colors().text"
+                     placeholder="Search conversations..."
+                     aria-label="Search conversations"
+                     class="chat-hub__search">
+            }
+
+            <div class="chat-hub__list">
+              @for (chat of filteredConversations(); track chat.friend.id) {
+                <button (click)="openChat(chat.friend.id, chatDisplayName(chat.friend))"
+                        [style.background-color]="theme.colors().bgSecondary"
+                        [style.border]="chat.unreadCount > 0 ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().text"
+                        class="chat-hub__card"
+                        [class.chat-hub__card--unread]="chat.unreadCount > 0">
+                  <img [src]="chat.friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + chat.friend.id"
+                       [alt]="chatDisplayName(chat.friend) + ' avatar'"
+                       class="chat-hub__avatar">
+                  <span class="chat-hub__content">
+                    <span class="chat-hub__row">
+                      <span class="chat-hub__title">{{ chatDisplayName(chat.friend) }}</span>
+                      <span [style.color]="theme.colors().textSecondary" class="chat-hub__time">
+                        {{ chat.latestMessage.timestamp | date:'MMM d, h:mm a' }}
                       </span>
                     </span>
-                  </button>
-                } @empty {
-                  <div [style.border]="'1px dashed ' + theme.colors().border"
-                       class="messaging-empty-state">
-                    <p [style.color]="theme.colors().textSecondary">Add a friend first to start a new chat.</p>
-                    <a routerLink="/friends" [style.color]="theme.colors().primary">Go to Friends</a>
-                  </div>
-                }
-              </div>
+                    <span [style.color]="chat.unreadCount > 0 ? theme.colors().text : theme.colors().textSecondary"
+                          class="chat-hub__preview">
+                      @if (chat.latestMessage.senderId === selfId()) { <span [style.color]="theme.colors().textSecondary">You: </span> }
+                      @if (chat.latestMessage.isSelfDestruct) { 🔥 }
+                      {{ chat.latestMessage.content }}
+                    </span>
+                  </span>
+                  @if ((chat.unreadSelfDestructCount || 0) > 0) {
+                    <span class="chat-hub__badge chat-hub__badge--flame">🔥 {{ chat.unreadCount }}</span>
+                  } @else if (chat.unreadCount > 0) {
+                    <span [style.background-color]="theme.colors().primary" class="chat-hub__badge">
+                      {{ chat.unreadCount }}
+                    </span>
+                  }
+                </button>
+              } @empty {
+                <div [style.border]="'1px dashed ' + theme.colors().border"
+                     class="messaging-empty-state">
+                  @if (chatSearch().trim() && conversationList().length > 0) {
+                    <p [style.color]="theme.colors().textSecondary">No conversations match “{{ chatSearch() }}”.</p>
+                  } @else {
+                    <p [style.color]="theme.colors().textSecondary">No chats yet. Start one to spill some tea.</p>
+                    @if (!showNewChat()) {
+                      <button type="button"
+                              (click)="toggleNewChat()"
+                              [style.background-color]="theme.colors().primary"
+                              [style.border]="'1px solid ' + theme.colors().primary"
+                              [style.color]="'#ffffff'"
+                              class="chat-hub__new-btn"
+                              style="margin-top: 12px;">
+                        + New Chat
+                      </button>
+                    }
+                  }
+                </div>
+              }
             </div>
           </section>
         }
@@ -197,6 +271,9 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   private chatPartnerId = signal<string>('');
   private chatPartnerName = signal<string>('');
   friends = signal<FriendSummary[]>([]);
+  showNewChat = signal(false);
+  friendSearch = signal('');
+  chatSearch = signal('');
   selfDestructDurationMs = signal(30000);
   selfDestructOptions = [
     { label: '10 seconds', ms: 10000 },
@@ -294,6 +371,51 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   openChat(friendId: string, friendName: string): void {
     this.router.navigate(['/chat'], { queryParams: { friendId, friendName } });
   }
+
+  toggleNewChat(): void {
+    this.showNewChat.update((open) => !open);
+    this.friendSearch.set('');
+  }
+
+  startChat(friend: FriendSummary): void {
+    this.showNewChat.set(false);
+    this.friendSearch.set('');
+    this.openChat(friend.id, friend.username);
+  }
+
+  /** Conversations sorted so unread tea floats to the top, then most recent. */
+  conversationList = computed(() => {
+    return [...this.messaging.conversationSummaries()].sort((a, b) => {
+      const aUnread = a.unreadCount > 0 ? 1 : 0;
+      const bUnread = b.unreadCount > 0 ? 1 : 0;
+      if (aUnread !== bUnread) return bUnread - aUnread;
+      return b.latestMessage.timestamp.getTime() - a.latestMessage.timestamp.getTime();
+    });
+  });
+
+  filteredConversations = computed(() => {
+    const term = this.chatSearch().trim().toLowerCase();
+    if (!term) return this.conversationList();
+    return this.conversationList().filter((chat) =>
+      this.chatDisplayName(chat.friend).toLowerCase().includes(term) ||
+      (chat.latestMessage.content || '').toLowerCase().includes(term)
+    );
+  });
+
+  /** Friends you have not started a conversation with yet, filtered by the search box. */
+  newChatCandidates = computed(() => {
+    const existing = new Set<string>();
+    for (const chat of this.messaging.conversationSummaries()) {
+      existing.add(chat.friend.id);
+      existing.add(chat.friend.username);
+    }
+
+    const term = this.friendSearch().trim().toLowerCase();
+    return this.friends()
+      .filter((friend) => !existing.has(friend.id) && !existing.has(friend.username))
+      .filter((friend) => !term || friend.username.toLowerCase().includes(term))
+      .sort((a, b) => a.username.localeCompare(b.username));
+  });
 
   chatDisplayName(friend: { id: string; username: string }): string {
     const match = this.friends().find((item) => item.id === friend.id || item.username === friend.username);
