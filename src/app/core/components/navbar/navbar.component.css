@@ -95,6 +95,22 @@
   font-size: 10px;
   line-height: 1;
   letter-spacing: 0;
+  font-weight: 700;
+}
+
+.navbar-unread-badge--flame {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.65);
+  animation: flame-pulse 1.8s infinite ease-in-out;
+}
+
+.navbar-unread-badge-icon {
+  font-size: 9px;
+  margin-right: 2px;
+}
+
+@keyframes flame-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+  50% { transform: scale(1.08); box-shadow: 0 0 14px rgba(245, 158, 11, 0.85); }
 }
 
 .navbar-btn-outline {

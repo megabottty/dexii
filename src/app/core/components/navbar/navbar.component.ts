@@ -64,11 +64,15 @@ import { FriendsApiService } from '../../services/friends-api.service';
            [style.color]="theme.colors().text"
            class="navbar-link">
           Chat
-          @if (messaging.totalUnreadCount() > 0) {
-            <span [style.background-color]="theme.colors().primary"
+          @if (messaging.unreadTeaCount() > 0) {
+            <span [style.background]="messaging.unreadSelfDestructCount() > 0 ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : theme.colors().primary"
                   class="navbar-unread-badge"
+                  [class.navbar-unread-badge--flame]="messaging.unreadSelfDestructCount() > 0"
                   aria-label="Unread chat messages">
-              {{ messaging.totalUnreadCount() }}
+              @if (messaging.unreadSelfDestructCount() > 0) {
+                <span class="navbar-unread-badge-icon">🔥</span>
+              }
+              {{ messaging.unreadTeaCount() }}
             </span>
           }
         </a>

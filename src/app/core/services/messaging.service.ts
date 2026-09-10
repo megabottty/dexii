@@ -13,6 +13,7 @@ export interface ChatSummary {
   };
   latestMessage: Message;
   unreadCount: number;
+  unreadSelfDestructCount?: number;
 }
 
 @Injectable({
@@ -38,7 +39,9 @@ export class MessagingService {
     this._conversationSummaries().reduce((total, chat) => total + chat.unreadCount, 0)
   );
   public unreadSelfDestructCount = computed(() => {
-    return this.getUnreadSelfDestructForCurrentUser().length;
+    const local = this.getUnreadSelfDestructForCurrentUser().length;
+    const server = this._conversationSummaries().reduce((total, chat) => total + (chat.unreadSelfDestructCount || 0), 0);
+    return Math.max(local, server);
   });
   public unreadTeaCount = computed(() => {
     const localCount = this.getAllUnreadForCurrentUser().length;
@@ -334,7 +337,8 @@ export class MessagingService {
             friendCategories: Array.isArray(row.friend.friendCategories) ? row.friend.friendCategories : []
           },
           latestMessage: this.mapServerMessage(row.latestMessage),
-          unreadCount: Number.isFinite(row.unreadCount) ? row.unreadCount : 0
+          unreadCount: Number.isFinite(row.unreadCount) ? row.unreadCount : 0,
+          unreadSelfDestructCount: Number.isFinite(row.unreadSelfDestructCount) ? row.unreadSelfDestructCount : 0
         })));
     } catch (err) {
       console.warn('Could not load chat list from the server:', err);
@@ -360,6 +364,7 @@ export class MessagingService {
     const selfId = this.security.currentUserId() || 'me';
     const latestByFriend = new Map<string, Message>();
     const unreadByFriend = new Map<string, number>();
+    const unreadSelfDestructByFriend = new Map<string, number>();
 
     for (const message of this._messages()) {
       const friendId = message.senderId === selfId ? message.receiverId : message.receiverId === selfId ? message.senderId : '';
@@ -371,6 +376,9 @@ export class MessagingService {
       }
       if (message.receiverId === selfId && !message.readAt) {
         unreadByFriend.set(friendId, (unreadByFriend.get(friendId) || 0) + 1);
+        if (message.isSelfDestruct) {
+          unreadSelfDestructByFriend.set(friendId, (unreadSelfDestructByFriend.get(friendId) || 0) + 1);
+        }
       }
     }
 
@@ -378,7 +386,8 @@ export class MessagingService {
       .map(([friendId, latestMessage]) => ({
         friend: { id: friendId, username: friendId },
         latestMessage,
-        unreadCount: unreadByFriend.get(friendId) || 0
+        unreadCount: unreadByFriend.get(friendId) || 0,
+        unreadSelfDestructCount: unreadSelfDestructByFriend.get(friendId) || 0
       }))
       .sort((a, b) => b.latestMessage.timestamp.getTime() - a.latestMessage.timestamp.getTime());
   }
