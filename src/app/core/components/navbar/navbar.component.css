@@ -135,6 +135,11 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 @media (max-width: 760px) {
@@ -197,7 +202,11 @@
   .navbar-link-vault {
     min-height: 44px;
     width: 100%;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    text-align: center;
     padding: 12px 16px;
+    box-sizing: border-box;
   }
 }

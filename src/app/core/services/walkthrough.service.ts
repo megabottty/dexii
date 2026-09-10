@@ -25,25 +25,28 @@ export class WalkthroughService {
   public isLastStep = computed(() => this._index() >= this._steps().length - 1);
 
   private storageKey(key: string): string {
-    return `${this.storagePrefix}${key}`;
+    const user = (localStorage.getItem('dexii_api_username') || 'global').trim().toLowerCase();
+    return `${this.storagePrefix}${user}_${key}`;
   }
 
   hasCompleted(key: string): boolean {
     try {
-      return localStorage.getItem(this.storageKey(key)) === '1';
+      const userKey = this.storageKey(key);
+      const isCompleted = localStorage.getItem(userKey) === '1';
+      return isCompleted;
     } catch {
       return false;
     }
   }
 
   /**
-   * Opens the walkthrough unless the user has already seen it. Returns whether it opened,
-   * so callers can chain a follow-up tour without stacking two modals.
+   * Opens the walkthrough unless the user has already seen it (or force=true).
+   * Returns whether it opened, so callers can chain a follow-up tour without stacking two modals.
    */
-  start(key: string, steps: WalkthroughStep[]): boolean {
+  start(key: string, steps: WalkthroughStep[], force: boolean = false): boolean {
     if (!key || steps.length === 0) return false;
-    if (this.hasCompleted(key)) return false;
-    if (this.isOpen()) return false;
+    if (!force && this.hasCompleted(key)) return false;
+    if (this.isOpen() && !force) return false;
 
     this._key.set(key);
     this._steps.set(steps);

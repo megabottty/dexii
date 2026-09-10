@@ -58,7 +58,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               inputmode="numeric"
               pattern="[0-9]*"
               autocomplete="one-time-code"
-              maxlength="1"
+              maxlength="6"
               class="code-box"
               [value]="codeDigits()[$index]"
               [style.background]="'transparent'"
@@ -212,25 +212,27 @@ export class SignupEmailConfirmationComponent {
 
   onPaste(event: ClipboardEvent, startIndex: number = 0) {
     event.preventDefault();
-    const pastedData = event.clipboardData?.getData('text') || '';
-    const digits = pastedData.replace(/\D/g, '');
+    event.stopPropagation();
+    const pastedData = event.clipboardData?.getData('text') || (window as any).clipboardData?.getData('text') || '';
+    const digits = pastedData.replace(/\D/g, '').slice(0, 6);
     if (!digits) return;
 
-    this.codeDigits.update((current) => {
-      const next = [...current];
-      for (let i = 0; i < 6; i++) {
-        if (i >= startIndex && (i - startIndex) < digits.length) {
-          next[i] = digits[i - startIndex];
-        } else if (startIndex === 0 && i < digits.length) {
-          next[i] = digits[i];
-        }
+    const next = [...this.codeDigits()];
+    const pasteStart = digits.length >= 6 ? 0 : startIndex;
+
+    for (let i = 0; i < 6; i++) {
+      if (i >= pasteStart && (i - pasteStart) < digits.length) {
+        next[i] = digits[i - pasteStart];
       }
-      return next;
-    });
+    }
+    this.codeDigits.set(next);
 
     setTimeout(() => {
       const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.code-box'));
-      const nextEmptyIndex = this.codeDigits().findIndex(d => !d);
+      inputs.forEach((input, idx) => {
+        if (input) input.value = next[idx] || '';
+      });
+      const nextEmptyIndex = next.findIndex(d => !d);
       if (nextEmptyIndex !== -1 && inputs[nextEmptyIndex]) {
         inputs[nextEmptyIndex].focus();
       } else if (inputs[5]) {
@@ -238,7 +240,7 @@ export class SignupEmailConfirmationComponent {
       }
     });
 
-    if (this.codeDigits().every(d => d.length === 1)) {
+    if (next.every(d => d.length === 1)) {
       this.verifyCode();
     }
   }
@@ -248,36 +250,42 @@ export class SignupEmailConfirmationComponent {
     const digits = raw.replace(/\D/g, '');
 
     if (digits.length > 1) {
-      this.codeDigits.update((current) => {
-        const next = [...current];
-        for (let i = 0; i < digits.length && (index + i) < 6; i++) {
-          next[index + i] = digits[i];
+      const next = [...this.codeDigits()];
+      const pasteStart = digits.length >= 6 ? 0 : index;
+      for (let i = 0; i < 6; i++) {
+        if (i >= pasteStart && (i - pasteStart) < digits.length) {
+          next[i] = digits[i - pasteStart];
         }
-        return next;
-      });
-      const targetIndex = Math.min(index + digits.length, 5);
-      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.code-box'));
-      if (inputs[targetIndex]) inputs[targetIndex].focus();
+      }
+      this.codeDigits.set(next);
 
-      if (this.codeDigits().every(d => d.length === 1)) {
+      setTimeout(() => {
+        const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.code-box'));
+        inputs.forEach((input, idx) => {
+          if (input) input.value = next[idx] || '';
+        });
+        const targetIndex = Math.min(pasteStart + digits.length, 5);
+        if (inputs[targetIndex]) inputs[targetIndex].focus();
+      });
+
+      if (next.every(d => d.length === 1)) {
         this.verifyCode();
       }
       return;
     }
 
     const val = digits.slice(-1);
-    this.codeDigits.update((digitsList) => {
-      const next = [...digitsList];
-      next[index] = val;
-      return next;
-    });
+    const next = [...this.codeDigits()];
+    next[index] = val;
+    this.codeDigits.set(next);
+    event.target.value = val;
 
     if (val && index < 5) {
       const nextInput = event.target.nextElementSibling;
       if (nextInput) nextInput.focus();
     }
 
-    if (this.codeDigits().every(d => d.length === 1)) {
+    if (next.every(d => d.length === 1)) {
       this.verifyCode();
     }
   }

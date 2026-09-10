@@ -607,18 +607,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             <button (click)="simulateNote()"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
+                    [style.background-color]="theme.colors().bgSecondary"
                     class="dashboard-component__s77">
                Waiting for the Tea? {{ unreadTeaCount() > 0 ? '(' + unreadTeaCount() + ')' : '' }}
             </button>
             <button (click)="goToFriends()"
                     [style.border]="'1px solid ' + theme.colors().accent"
                     [style.color]="theme.colors().accent"
-                    class="dashboard-component__s78">
+                    class="dashboard-component__s78 dashboard-component__s78--friend">
                + Add Friend
             </button>
-            <button (click)="openNewEntryModal()" [style.border]="'1px solid ' + theme.colors().primary"
-                    [style.color]="theme.colors().primary"
-                    class="dashboard-component__s78">
+            <button (click)="openNewEntryModal()"
+                    [style.background-color]="theme.colors().primary"
+                    [style.border]="'1px solid ' + theme.colors().primary"
+                    [style.color]="'#ffffff'"
+                    class="dashboard-component__s78 dashboard-component__s78--primary">
                + New Entry
             </button>
           </div>
@@ -867,7 +870,9 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.dataService.setViewer(null);
-    this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
+    setTimeout(() => {
+      this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
+    }, 150);
   }
 
   getRelationshipStatusOptions(): string[] {

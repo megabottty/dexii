@@ -10,6 +10,8 @@ import { WalkthroughComponent } from './core/components/walkthrough/walkthrough.
 import { FriendsApiService } from './core/services/friends-api.service';
 import { MessagingService } from './core/services/messaging.service';
 import { UserSettingsService } from './core/services/user-settings.service';
+import { WalkthroughService } from './core/services/walkthrough.service';
+import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from './core/config/walkthrough-tours';
 
 interface WalkthroughStep {
   title: string;
@@ -296,6 +298,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private friendsApi = inject(FriendsApiService);
   private messaging = inject(MessagingService);
   private userSettings = inject(UserSettingsService);
+  private walkthroughService = inject(WalkthroughService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -412,11 +415,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openWalkthrough() {
-    this.onboardingMode.set('intro');
-    this.walkthroughStepIndex.set(0);
-    this.showFriendTour.set(false);
-    this.showNextSteps.set(false);
-    this.showWalkthrough.set(true);
+    this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR, true);
   }
 
   nextWalkthroughStep() {
