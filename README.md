@@ -62,6 +62,7 @@ Dexii is a "digital little black book" designed for high-security, high-glamour 
 
 ## 🗄️ Local Mongo + Deployment
 
+- Render setup, env vars, and Twilio SMS: `docs/deployment-and-integrations.md`
 - Local Mongo + hosting steps: `docs/local-mongo-and-hosting.md`
 - Docker Mongo helper: `docker-compose.yml`
 - Render config: `render.yaml`
