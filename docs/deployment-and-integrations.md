@@ -24,12 +24,35 @@ integration for friend invites.
 
 ## Render
 
-### 1. Resume a suspended service
+### 1. Finding your way around the dashboard
+
+| What you want | Where it lives |
+| --- | --- |
+| Is the service up? | https://dashboard.render.com → status pill beside **dexii** in the Services list |
+| Suspension / failure banner | Click **dexii** — banner sits at the top, above the tabs |
+| Why it stopped, and when | **Events** tab — timeline of "Service suspended", "Service resumed", "Deploy live", each with a reason |
+| Runtime output and crashes | **Logs** tab |
+| Environment variables | **Environment** tab → **Add Environment Variable** |
+| Instance type / plan | **Settings → Instance Type** |
+| Cards and invoices | **Profile avatar (top right) → Billing** — account level, not inside the service |
+
+Billing is deliberately account-level: if payment is the problem, it will not
+appear anywhere under the service itself.
+
+### 2. Resume a suspended service
 
 If `https://dexii.onrender.com` returns **503** with the header
 `x-render-routing: suspend`, the service is suspended and no deploy will go
 out until it is resumed. This is an account action; it cannot be fixed from
 the codebase.
+
+Check it from the terminal at any time with:
+
+```bash
+curl -s -o /dev/null -D - https://dexii.onrender.com/api/health | grep -i "HTTP/\|x-render-routing"
+```
+
+`x-render-routing: suspend` means still suspended. A `200` means live.
 
 1. Open https://dashboard.render.com and select the **dexii** service.
 2. Read the suspension banner:
@@ -43,7 +66,7 @@ the codebase.
 > leaving almost no headroom for real traffic. `.github/workflows/keep-alive.yml`
 > is now limited to waking hours.
 
-### 2. Configure environment
+### 3. Configure environment
 
 **Environment** in the sidebar → confirm every **Required** row above is
 present. Pay particular attention to `RESEND_API_KEY`, which fails silently.
@@ -69,12 +92,12 @@ codes and invite emails. It looks like `re_` followed by a random string.
 To send from your own domain rather than Resend's sandbox sender, verify the
 domain in Resend under **Domains**, then set `EMAIL_FROM`.
 
-### 3. Deploy
+### 4. Deploy
 
 `autoDeploy: true` is set, so pushes to `main` deploy automatically. To force
 one: **Manual Deploy → Deploy latest commit**.
 
-### 4. Verify
+### 5. Verify
 
 ```bash
 curl https://dexii.onrender.com/api/health
