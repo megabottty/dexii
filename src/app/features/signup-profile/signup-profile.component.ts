@@ -1,9 +1,10 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
 import { UserSettingsService } from '../../core/services/user-settings.service';
+import { FriendsApiService } from '../../core/services/friends-api.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
@@ -38,6 +39,13 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
              </div>
            </div>
            <p [style.color]="theme.colors().textSecondary" class="signup-subtitle">Create Your Profile</p>
+           @if (inviterName()) {
+             <p [style.color]="theme.colors().primary"
+                [style.border]="'1px solid ' + theme.colors().primary"
+                class="signup-invite-banner">
+               ✦ {{ inviterName() }} invited you — you'll be friends automatically
+             </p>
+           }
         </div>
 
         @if (errorMessage()) {
@@ -213,6 +221,14 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     </div>
   `,
   styles: [`
+    .signup-invite-banner {
+      margin: 12px 0 0 0;
+      padding: 10px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-align: center;
+    }
     .signup-page {
       min-height: 100vh;
       display: flex;
@@ -350,11 +366,14 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
   `]
 })
-export class SignupProfileComponent {
+export class SignupProfileComponent implements OnInit {
   public theme = inject(ThemeService);
   private router = inject(Router);
   private settings = inject(UserSettingsService);
+  private route = inject(ActivatedRoute);
+  private friendsApi = inject(FriendsApiService);
 
+  inviterName = signal<string>('');
   username = signal<string>(this.settings.getSignupDraft().username || '');
   email = signal<string>(this.settings.getSignupDraft().email || '');
   password = signal<string>('');
@@ -368,6 +387,21 @@ export class SignupProfileComponent {
   loveLanguage = signal<string>(this.settings.getSignupDraft().loveLanguage || '');
   idealDate = signal<string>(this.settings.getSignupDraft().idealDate || '');
   errorMessage = signal<string>('');
+
+  ngOnInit(): void {
+    const token = (this.route.snapshot.queryParamMap.get('invite') || '').trim();
+    if (!token) return;
+
+    localStorage.setItem('dexii_invite_token', token);
+    void this.friendsApi.lookupInvite(token).then((invite) => {
+      if (invite?.inviterName) {
+        this.inviterName.set(invite.inviterName);
+      } else {
+        // Expired or already-used links shouldn't silently attach to the signup.
+        localStorage.removeItem('dexii_invite_token');
+      }
+    });
+  }
 
   continue() {
     const usernameValue = this.username().trim();

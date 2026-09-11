@@ -210,6 +210,7 @@ export class SecurityService {
     const username = localStorage.getItem('dexii_pending_username');
     const email = localStorage.getItem('dexii_pending_email');
     const bio = localStorage.getItem('dexii_pending_bio');
+    const inviteToken = localStorage.getItem('dexii_invite_token') || '';
 
     if (!username) throw new Error('Username missing');
     if (!email) throw new Error('Email is required');
@@ -217,7 +218,7 @@ export class SecurityService {
     const response = await fetch(`${this.apiBase}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, pin, email, bio })
+      body: JSON.stringify({ username, password, pin, email, bio, inviteToken })
     });
 
     const payload = await response.json();
@@ -250,6 +251,12 @@ export class SecurityService {
     const data = await response.json();
     localStorage.setItem('dexii_api_token', data.token);
     this.storeUserId(data?.user?.id);
+
+    // The invite is consumed server-side on verification; clear it either way.
+    localStorage.removeItem('dexii_invite_token');
+    if (data?.invitedBy) {
+      localStorage.setItem('dexii_invited_by', String(data.invitedBy));
+    }
 
     // We get the pin from pending since it wasn't saved to dexii_pin yet
     const pendingPin = localStorage.getItem('dexii_pending_pin');

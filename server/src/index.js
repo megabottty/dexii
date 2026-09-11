@@ -58,6 +58,13 @@ app.use('/api/vault', require('./routes/vault'));
 const distPath = path.resolve(__dirname, '..', '..', 'dist', 'dexii', 'browser');
 app.use(express.static(distPath));
 
+// Lightweight liveness probe for keep-alive pings. Deliberately does no
+// database work so scheduled pings stay fast and cheap.
+app.get('/api/health', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ status: 'ok', uptime: Math.round(process.uptime()) });
+});
+
 // Basic Route
 app.get('/api/status', (req, res) => {
   res.json({

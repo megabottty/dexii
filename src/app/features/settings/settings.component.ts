@@ -11,6 +11,7 @@ import { FriendsApiService } from '../../core/services/friends-api.service';
 import { WalkthroughService } from '../../core/services/walkthrough.service';
 import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from '../../core/config/walkthrough-tours';
 import { UserSettings, UserSettingsService } from '../../core/services/user-settings.service';
+import { InstallPromptService } from '../../core/services/install-prompt.service';
 
 interface FriendChoice {
   id: string;
@@ -344,6 +345,52 @@ interface FriendChoice {
             </div>
           </section>
 
+          @if (install.shouldOffer()) {
+            <div class="settings-divider"></div>
+
+            <section class="settings-plan-section">
+              <div class="settings-plan-header">
+                <div>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Install</p>
+                  <h2 class="settings-section-title">Get the App</h2>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
+                    Install Dexii on this device for a full-screen app, a home screen icon, and faster launches.
+                  </p>
+                </div>
+              </div>
+
+              @if (install.isIos()) {
+                <ol [style.color]="theme.colors().textSecondary"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    class="settings-install-steps">
+                  <li>Tap the <strong>Share</strong> button at the bottom of Safari.</li>
+                  <li>Scroll and choose <strong>Add to Home Screen</strong>.</li>
+                  <li>Tap <strong>Add</strong> — Dexii will appear on your home screen.</li>
+                </ol>
+              } @else {
+                <button type="button"
+                        (click)="installApp()"
+                        [style.background-color]="theme.colors().primary"
+                        class="settings-install-btn">
+                  Install Dexii
+                </button>
+              }
+            </section>
+          } @else if (install.isInstalled()) {
+            <div class="settings-divider"></div>
+
+            <section class="settings-plan-section">
+              <div class="settings-plan-header">
+                <div>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Install</p>
+                  <h2 class="settings-section-title">App Installed</h2>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
+                    You're running Dexii as an installed app. Enjoy the tea.
+                  </p>
+                </div>
+              </div>
+            </section>
+          }
           <div class="settings-divider"></div>
 
           <section class="settings-plan-section">
@@ -503,6 +550,7 @@ interface FriendChoice {
 })
 export class SettingsComponent {
   theme = inject(ThemeService);
+  install = inject(InstallPromptService);
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
   subscription = inject(SubscriptionService);
@@ -560,6 +608,10 @@ export class SettingsComponent {
   selectTheme(mode: 'pearl' | 'onyx') {
     this.theme.setTheme(mode);
     this.update('themeMode', mode);
+  }
+
+  async installApp() {
+    await this.install.promptInstall();
   }
 
   crushLimitFor(tier: SubscriptionTier): number {

@@ -43,7 +43,8 @@ const clearLoginAttempts = (key) => loginAttempts.delete(key);
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { username, password, pin, email, bio, firstName, lastName, phoneNumber, phoneE164 } = req.body;
+    const { username, password, pin, email, bio, firstName, lastName, phoneNumber, phoneE164, inviteToken } = req.body;
+    const safeInviteToken = typeof inviteToken === 'string' ? inviteToken.trim().slice(0, 120) : '';
     const safeUsername = typeof username === 'string' ? username.trim() : '';
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhone = normalizePhoneE164(phoneE164 || phoneNumber);
@@ -169,6 +170,7 @@ exports.register = async (req, res) => {
         user.verificationCode = verificationCode;
         user.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
         user.isEmailVerified = false;
+        if (safeInviteToken) user.pendingInviteToken = safeInviteToken;
         await user.save();
 
         let emailStatus = 'sent';
@@ -223,7 +225,8 @@ exports.register = async (req, res) => {
       bio: typeof bio === 'string' ? bio.trim().slice(0, 500) : '',
       verificationCode,
       verificationCodeExpires,
-      isEmailVerified: false
+      isEmailVerified: false,
+      pendingInviteToken: safeInviteToken || undefined
     });
 
     await user.save();
@@ -338,7 +341,28 @@ exports.verifyEmail = async (req, res) => {
     user.isEmailVerified = true;
     user.verificationCode = undefined;
     user.verificationCodeExpires = undefined;
+
+    // Redeem any invite only once the email is confirmed, so an unverified
+    // signup cannot claim a friendship it was never entitled to.
+    let invitedBy = null;
+    const pendingInvite = user.pendingInviteToken;
+    if (pendingInvite) {
+      user.pendingInviteToken = undefined;
+    }
     await user.save();
+
+    if (pendingInvite) {
+      try {
+        const { acceptInviteForUser } = require('./friendController');
+        const invite = await acceptInviteForUser(pendingInvite, user._id);
+        if (invite) {
+          const inviter = await User.findById(invite.invitedBy).select('username');
+          invitedBy = inviter ? inviter.username : null;
+        }
+      } catch (err) {
+        console.warn('Invite redemption failed:', err.message);
+      }
+    }
 
     // Create Token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -347,6 +371,7 @@ exports.verifyEmail = async (req, res) => {
 
     res.json({
       token,
+      invitedBy,
       user: {
         id: user._id,
         username: user.username,

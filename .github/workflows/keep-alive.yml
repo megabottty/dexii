@@ -2,8 +2,13 @@ name: Keep Render Service Awake
 
 on:
   schedule:
-    # Runs every 14 minutes (Render sleeps after 15 minutes of inactivity)
-    - cron: '*/14 * * * *'
+    # Render's free tier allows 750 instance-hours/month. Pinging every 14
+    # minutes around the clock keeps the service awake ~730h, which leaves no
+    # headroom and can exhaust the quota (suspending the service).
+    # Ping only during realistic waking hours (13:00-05:00 UTC = 7am-11pm MT)
+    # so usage stays around ~500h and real visitors still get a warm server.
+    - cron: '*/14 13-23 * * *'
+    - cron: '*/14 0-4 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:
@@ -14,7 +19,7 @@ jobs:
         env:
           RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || 'https://dexii.onrender.com' }}
         run: |
-          ENDPOINT="${RENDER_APP_URL%/}/api/status"
+          ENDPOINT="${RENDER_APP_URL%/}/api/health"
           echo "Pinging $ENDPOINT at $(date)..."
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -m 30 "$ENDPOINT" || true)
           echo "$RESPONSE"

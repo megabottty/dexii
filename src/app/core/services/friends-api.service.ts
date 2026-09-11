@@ -31,6 +31,28 @@ export interface FriendRequestSummary {
   to?: FriendSummary;
 }
 
+export interface InviteResponse {
+  status: string;
+  /** 'sent' = delivered by the server, 'handoff' = client must open the SMS app, 'debug' = no provider configured. */
+  delivery: 'sent' | 'handoff' | 'debug';
+  smsUrl?: string;
+  inviteUrl: string;
+  contact: string;
+  method: 'email' | 'sms';
+  message: string;
+  alreadyRegistered?: boolean;
+  user?: FriendSummary;
+}
+
+export interface InviteLookup {
+  token: string;
+  method: 'email' | 'sms';
+  message?: string;
+  invitedBy?: FriendSummary;
+  inviterName: string;
+  expiresAt?: string;
+}
+
 /**
  * Client for the real, Mongo-backed friends API (`/api/friends/*`).
  * Replaces the demo JSON-file store used previously.
@@ -54,13 +76,21 @@ export class FriendsApiService {
 
     if (!response.ok) {
       let message = `Request failed (${response.status})`;
+      let body: any = null;
       try {
-        const body = await response.json();
+        body = await response.json();
         message = body?.message || body?.msg || message;
       } catch {
         // Non-JSON error body; keep the status-based message.
       }
-      throw new Error(message);
+      const error = new Error(message) as Error & { status?: number; body?: any; alreadyRegistered?: boolean; user?: FriendSummary };
+      error.status = response.status;
+      error.body = body;
+      if (body?.alreadyRegistered) {
+        error.alreadyRegistered = true;
+        error.user = body.user;
+      }
+      throw error;
     }
 
     if (response.status === 204) return undefined as T;
@@ -113,10 +143,21 @@ export class FriendsApiService {
     return this.request(`/${friendId}`, { method: 'DELETE' });
   }
 
-  invite(contact: string, method: 'email' | 'sms'): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/invite', {
+  invite(contact: string, method: 'email' | 'sms', message = ''): Promise<InviteResponse> {
+    return this.request<InviteResponse>('/invite', {
       method: 'POST',
-      body: JSON.stringify({ contact, method })
+      body: JSON.stringify({ contact, method, message })
     });
+  }
+
+  /** Public lookup so signup can show who invited you. */
+  async lookupInvite(token: string): Promise<InviteLookup | null> {
+    try {
+      const response = await fetch(`${this.apiBase}/friends/invite/${encodeURIComponent(token)}`);
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
   }
 }

@@ -1299,8 +1299,20 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   ): Promise<{ ok: boolean; method: InviteMethod; delivery?: string; launchUrl?: string; message?: string } | null> {
     if (payload.method === 'email' || payload.method === 'sms') {
       try {
-        await this.friendsApi.invite(payload.contact, payload.method);
+        const result = await this.friendsApi.invite(payload.contact, payload.method, payload.message);
+        return {
+          ok: true,
+          method: payload.method,
+          delivery: result.delivery,
+          launchUrl: result.smsUrl,
+          message: result.message
+        };
       } catch (error: any) {
+        // The server returns their profile when the contact already has an account.
+        if (error?.alreadyRegistered && error?.user?.username) {
+          this.modal.show(`${error.user.username} is already on Dexii. Search for them to send a friend request instead.`);
+          return null;
+        }
         this.modal.show(error?.message || 'Unable to send invite right now.');
         return null;
       }
@@ -1345,16 +1357,19 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       toUsername: username,
       method: inviteMethod,
       contact: inviteContact,
-      message: inviteMessage
+      message: this.addFriendInviteMessage().trim()
     });
     if (!inviteResult) return;
 
-    if (inviteMethod === 'email') {
-      this.modal.show('Invite email sent.');
+    // Only claim delivery when the server actually sent it.
+    if (inviteResult.delivery === 'sent') {
+      this.modal.show(inviteResult.message || `Invite sent to ${inviteContact}.`);
+    } else if (inviteResult.delivery === 'debug') {
+      this.modal.show(inviteResult.message || 'Invite created, but email delivery is not configured on the server.');
     } else {
       await this.dispatchInvite(inviteMethod, inviteContact, inviteMessage, inviteResult.launchUrl);
       if (inviteMethod === 'sms' || inviteMethod === 'whatsapp') {
-        this.modal.show('Invite prepared. Finish sending in your messaging app.');
+        this.modal.show('Invite ready. Finish sending it in your messaging app.');
       }
     }
     this.closeAddFriendModal();

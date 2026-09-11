@@ -96,6 +96,7 @@ const UserSchema = new mongoose.Schema({
   verificationCodeExpires: Date,
   passwordResetCode: String,
   passwordResetCodeExpires: Date,
+  pendingInviteToken: String,
   isEmailVerified: {
     type: Boolean,
     default: false

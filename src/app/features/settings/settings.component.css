@@ -480,3 +480,34 @@
     flex-direction: column;
   }
 }
+
+.settings-install-btn {
+  border: none;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.85rem 1.8rem;
+  transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+}
+
+.settings-install-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.settings-install-btn:active {
+  transform: translateY(0);
+}
+
+.settings-install-steps {
+  border-radius: 14px;
+  display: grid;
+  font-size: 0.9rem;
+  gap: 0.6rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 1rem 1rem 1rem 2.2rem;
+}

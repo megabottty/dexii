@@ -540,5 +540,6 @@ module.exports = {
   unarchiveFriend,
   removeFriend,
   ensureUser,
-  readStore
+  readStore,
+  writeStore
 };

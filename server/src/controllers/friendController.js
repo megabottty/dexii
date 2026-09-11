@@ -1,6 +1,36 @@
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
+const Invite = require('../models/Invite');
 const mongoose = require('mongoose');
+const sendEmail = require('../utils/sendEmail');
+const sendSms = require('../utils/sendSms');
+const { buildInviteEmail } = require('../utils/inviteEmail');
+
+const INVITE_DAILY_LIMIT = 20;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Prefers a real name, falling back to the username. */
+const buildDisplayName = (user) => {
+  if (!user) return 'A friend';
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  return name || user.username || 'A friend';
+};
+
+/** Public origin for invite links, honoring proxies and an explicit override. */
+const buildInviteUrl = (req, token) => {
+  const configured = (process.env.PUBLIC_APP_URL || '').trim().replace(/\/$/, '');
+  if (configured) return `${configured}/signup-profile?invite=${token}`;
+
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  const host = (req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+  return `${proto}://${host}/signup-profile?invite=${token}`;
+};
+
+/** SMS bodies must stay short, so the personal note is trimmed hard. */
+const buildInviteSmsBody = ({ inviterName, inviteUrl, personalMessage }) => {
+  const note = personalMessage ? `"${personalMessage.slice(0, 120)}" ` : '';
+  return `${inviterName} invited you to Dexii. ${note}Join here: ${inviteUrl}`;
+};
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -187,25 +217,198 @@ exports.searchUsers = async (req, res) => {
 };
 
 // @route   POST /api/friends/invite
-// @desc    Send invite to user via phone or email
+// @desc    Invite someone who is not on Dexii yet, via email or SMS
 // @access  Private
 exports.inviteUser = async (req, res) => {
   try {
-    const { contact, method } = req.body; // contact can be phone number or email, method is 'sms' or 'email'
+    if (!requireDb(res)) return;
 
-    // TODO: Integrate SMS service (Twilio) or Email service
-    // For now, we'll just log the invite and return success
+    const method = String(req.body.method || '').trim().toLowerCase();
+    const rawContact = String(req.body.contact || '').trim();
+    const personalMessage = String(req.body.message || '').trim().slice(0, 500);
 
-    console.log(`Invite sent via ${method} to ${contact}`);
+    if (method !== 'email' && method !== 'sms') {
+      return res.status(400).json({ message: 'Invite method must be email or sms.' });
+    }
+    if (!rawContact) {
+      return res.status(400).json({ message: 'Enter an email address or phone number to invite.' });
+    }
+
+    const contact = method === 'email' ? normalizeEmail(rawContact) : normalizePhoneE164(rawContact);
+    if (!contact) {
+      return res.status(400).json({
+        message: method === 'email' ? 'That email address looks invalid.' : 'That phone number looks invalid.'
+      });
+    }
+    if (method === 'email' && !EMAIL_PATTERN.test(contact)) {
+      return res.status(400).json({ message: 'That email address looks invalid.' });
+    }
+
+    const inviter = await User.findById(req.user.id).select('username firstName lastName email phoneE164');
+    if (!inviter) {
+      return res.status(404).json({ message: 'Your account could not be found.' });
+    }
+
+    // Don't let people invite themselves.
+    if (contact === normalizeEmail(inviter.email || '') || contact === normalizePhoneE164(inviter.phoneE164 || '')) {
+      return res.status(400).json({ message: 'That is your own contact info.' });
+    }
+
+    // If they already have an account, a friend request is the right action instead.
+    const existingUser = await User.findOne(
+      method === 'email' ? { email: contact } : { phoneE164: contact }
+    ).select(PUBLIC_USER_FIELDS);
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: `${existingUser.username} is already on Dexii. Send them a friend request instead.`,
+        alreadyRegistered: true,
+        user: shapeUser(existingUser)
+      });
+    }
+
+    // Rate limit so the invite endpoint cannot be used as a spam relay.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentCount = await Invite.countDocuments({ invitedBy: inviter._id, sentAt: { $gte: since } });
+    if (recentCount >= INVITE_DAILY_LIMIT) {
+      return res.status(429).json({
+        message: `You have hit the limit of ${INVITE_DAILY_LIMIT} invites per day. Try again tomorrow.`
+      });
+    }
+
+    // Reuse a live invite for the same contact so repeat sends don't pile up tokens.
+    let invite = await Invite.findOne({
+      invitedBy: inviter._id,
+      contact,
+      status: 'pending',
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (invite) {
+      invite.method = method;
+      invite.message = personalMessage;
+      invite.sentAt = new Date();
+    } else {
+      invite = new Invite({
+        token: Invite.generateToken(),
+        invitedBy: inviter._id,
+        contact,
+        method,
+        message: personalMessage,
+        expiresAt: Invite.defaultExpiry()
+      });
+    }
+
+    const inviterName = buildDisplayName(inviter);
+    const inviteUrl = buildInviteUrl(req, invite.token);
+
+    let delivery = 'handoff';
+    let smsUrl;
+
+    if (method === 'email') {
+      const { subject, message, html } = buildInviteEmail({
+        inviterName,
+        inviteUrl,
+        personalMessage
+      });
+
+      try {
+        const result = await sendEmail({ email: contact, subject, message, html });
+        delivery = result?.debug ? 'debug' : 'sent';
+      } catch (err) {
+        console.error('Invite email failed:', err.message);
+        return res.status(502).json({ message: 'We could not send that invite email. Please try again.' });
+      }
+    } else {
+      const smsBody = buildInviteSmsBody({ inviterName, inviteUrl, personalMessage });
+      const result = await sendSms({ phone: contact, message: smsBody });
+      delivery = result.delivery;
+      smsUrl = result.smsUrl;
+    }
+
+    invite.delivery = delivery;
+    await invite.save();
 
     res.json({
-      message: `Invite sent successfully via ${method}`,
+      status: 'ok',
+      delivery,
+      smsUrl,
+      inviteUrl,
       contact,
-      method
+      method,
+      message: delivery === 'sent'
+        ? `Invite sent to ${contact}.`
+        : delivery === 'debug'
+        ? `Invite created for ${contact}. Email delivery is not configured on this server.`
+        : 'Invite ready to send from your messaging app.'
     });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+    console.error('Invite error:', err.message);
+    res.status(500).json({ message: 'Server error while creating that invite.' });
+  }
+};
+
+// @route   GET /api/friends/invite/:token
+// @desc    Look up who sent an invite so signup can show it
+// @access  Public
+exports.getInvite = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ message: 'Invites need a live database connection.' });
+    }
+
+    const invite = await Invite.findOne({ token: String(req.params.token || '') })
+      .populate('invitedBy', PUBLIC_USER_FIELDS);
+
+    if (!invite) {
+      return res.status(404).json({ message: 'That invite link is not valid.' });
+    }
+    if (!invite.isUsable()) {
+      return res.status(410).json({
+        message: invite.status === 'accepted'
+          ? 'That invite has already been used.'
+          : 'That invite link has expired.',
+        status: invite.status
+      });
+    }
+
+    res.json({
+      token: invite.token,
+      method: invite.method,
+      message: invite.message,
+      invitedBy: shapeUser(invite.invitedBy),
+      inviterName: buildDisplayName(invite.invitedBy),
+      expiresAt: invite.expiresAt
+    });
+  } catch (err) {
+    console.error('Invite lookup error:', err.message);
+    res.status(500).json({ message: 'Server error while loading that invite.' });
+  }
+};
+
+/**
+ * Marks an invite accepted and links the new user to whoever invited them.
+ * Safe to call with a missing/invalid token - it simply does nothing.
+ */
+exports.acceptInviteForUser = async function acceptInviteForUser(token, newUserId) {
+  if (!token || !newUserId) return null;
+  if (mongoose.connection.readyState !== 1) return null;
+
+  try {
+    const invite = await Invite.findOne({ token: String(token) });
+    if (!invite || !invite.isUsable()) return null;
+    if (String(invite.invitedBy) === String(newUserId)) return null;
+
+    invite.status = 'accepted';
+    invite.acceptedAt = new Date();
+    invite.acceptedBy = newUserId;
+    await invite.save();
+
+    await linkFriends(invite.invitedBy, newUserId);
+    return invite;
+  } catch (err) {
+    console.warn('Could not accept invite:', err.message);
+    return null;
   }
 };
 
