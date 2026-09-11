@@ -1,7 +1,20 @@
 const { Resend } = require('resend');
 
+/**
+ * A key that is present but obviously a placeholder (the value shipped in
+ * .env.example) is treated as unconfigured. Otherwise it takes the real send
+ * path, fails against Resend, and in production throws - which would break
+ * signup verification with a confusing error instead of an obvious warning.
+ */
+const isPlaceholderKey = (key) => /^re_x+$/i.test(key.trim());
+
 const sendEmail = async (options) => {
-  if (!process.env.RESEND_API_KEY) {
+  const apiKey = (process.env.RESEND_API_KEY || '').trim();
+
+  if (!apiKey || isPlaceholderKey(apiKey)) {
+    if (apiKey) {
+      console.warn('RESEND_API_KEY is still the placeholder from .env.example - no email will be sent.');
+    }
     console.warn('--- EMAIL DEBUG (no RESEND_API_KEY set) ---');
     console.warn(`To: ${options.email}`);
     console.warn(`Subject: ${options.subject}`);
@@ -11,7 +24,7 @@ const sendEmail = async (options) => {
   }
 
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const resend = new Resend(apiKey);
     const from = process.env.EMAIL_FROM || 'Dexii Admin <onboarding@resend.dev>';
 
     const { data, error } = await resend.emails.send({
