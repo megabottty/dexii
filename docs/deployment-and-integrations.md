@@ -61,10 +61,38 @@ curl -s -o /dev/null -D - https://dexii.onrender.com/api/health | grep -i "HTTP/
    - **Failed payment** — update the card under **Billing**.
 3. Click **Resume Service** if offered.
 
-> **Cause:** the free tier allows 750 instance-hours/month. The original
-> keep-alive pinged every 14 minutes, 24/7, consuming roughly 730 hours and
-> leaving almost no headroom for real traffic. `.github/workflows/keep-alive.yml`
-> is now limited to waking hours.
+> **Cause:** the free tier allows 750 instance-hours/month, **shared across
+> every free service in the workspace** — not per service. One service running
+> around the clock uses ~720h of that on its own, so a second or third free
+> service exhausts the pool within days and suspends all of them.
+> `.github/workflows/keep-alive.yml` is now limited to waking hours.
+
+> **The upgrade/downgrade trap:** upgrading to a paid instance lifts the
+> suspension immediately, because paid plans have no hour limit. Downgrading
+> back to Free **re-applies the exhausted quota and re-suspends the service at
+> once**. A successful deploy does not change this — suspension happens at
+> Render's routing layer, in front of your app, so the app can be built and
+> running perfectly and still serve 503. Once free hours are gone, the only
+> ways back are to stay on a paid instance or wait for the 1st of the month.
+
+### Free vs. paid, concretely
+
+| | Free | Starter ($7/mo) |
+| --- | --- | --- |
+| Monthly hour limit | 750, shared workspace-wide | None |
+| Spins down when idle | Yes, after ~15 min | No |
+| Cold start | ~50 s | None |
+| Can be suspended for quota | Yes | No |
+| Keep-alive workflow needed | Yes | **No — disable it** |
+
+On a Hobby workspace ($0) a single Starter service is **$7/mo total**. Quoted
+figures like "$13" assume you also add a Render Postgres database; Dexii uses
+MongoDB Atlas, so that does not apply.
+
+**If you move to a paid instance,** set the repository variable
+`KEEP_ALIVE_ENABLED` to `false` (GitHub → Settings → Secrets and variables →
+Actions → Variables). Paid services never sleep, so the workflow would only
+burn Actions minutes.
 
 ### 3. Configure environment
 

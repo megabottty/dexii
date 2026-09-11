@@ -2,11 +2,16 @@ name: Keep Render Service Awake
 
 on:
   schedule:
-    # Render's free tier allows 750 instance-hours/month. Pinging every 14
-    # minutes around the clock keeps the service awake ~730h, which leaves no
-    # headroom and can exhaust the quota (suspending the service).
-    # Ping only during realistic waking hours (13:00-05:00 UTC = 7am-11pm MT)
-    # so usage stays around ~500h and real visitors still get a warm server.
+    # Render's free tier gives 750 instance-hours/month shared across ALL free
+    # services in the workspace - not per service. Pinging around the clock
+    # keeps one service awake ~720h, leaving no headroom, and any additional
+    # free service pushes the workspace over and suspends everything.
+    # Ping only during realistic waking hours (13:00-05:00 UTC = 7am-11pm MT).
+    #
+    # NOT NEEDED ON PAID PLANS: Starter and above never spin down and have no
+    # hour limit. Set the repository variable KEEP_ALIVE_ENABLED to 'false'
+    # (Settings -> Secrets and variables -> Actions -> Variables) to turn this
+    # off without deleting the workflow.
     - cron: '*/14 13-23 * * *'
     - cron: '*/14 0-4 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
@@ -18,14 +23,32 @@ jobs:
       - name: Ping Dexii Render Service
         env:
           RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || 'https://dexii.onrender.com' }}
+          KEEP_ALIVE_ENABLED: ${{ vars.KEEP_ALIVE_ENABLED }}
         run: |
+          if [ "$KEEP_ALIVE_ENABLED" = "false" ]; then
+            echo "KEEP_ALIVE_ENABLED is false - skipping (expected on paid plans)."
+            exit 0
+          fi
+
           ENDPOINT="${RENDER_APP_URL%/}/api/health"
           echo "Pinging $ENDPOINT at $(date)..."
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -m 30 "$ENDPOINT" || true)
+          RESPONSE=$(curl -s -D /tmp/headers -w "\nHTTP_STATUS:%{http_code}" -m 30 "$ENDPOINT" || true)
           echo "$RESPONSE"
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d':' -f2)
+
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "Service is awake and healthy (HTTP 200)."
-          else
-            echo "Warning: Response code was $HTTP_STATUS"
+            exit 0
           fi
+
+          # A suspended service is an account/quota state, not a cold start, so
+          # say so plainly instead of leaving a bare status code to interpret.
+          if grep -qi 'x-render-routing: *suspend' /tmp/headers 2>/dev/null; then
+            echo "::warning::Service is SUSPENDED (x-render-routing: suspend)."
+            echo "Free instance hours for this workspace are exhausted. The service"
+            echo "stays suspended until free hours reset on the 1st of next month."
+            echo "To restore it now, upgrade the service to Starter in the Render dashboard."
+            exit 0
+          fi
+
+          echo "::warning::Unexpected response code: $HTTP_STATUS"
