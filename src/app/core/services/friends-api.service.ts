@@ -48,7 +48,6 @@ export interface InviteLookup {
   token: string;
   method: 'email' | 'sms';
   message?: string;
-  invitedBy?: FriendSummary;
   inviterName: string;
   expiresAt?: string;
 }

@@ -390,7 +390,10 @@ export class SignupProfileComponent implements OnInit {
 
   ngOnInit(): void {
     const token = (this.route.snapshot.queryParamMap.get('invite') || '').trim();
-    if (!token) return;
+    if (!token) {
+      localStorage.removeItem('dexii_invite_token');
+      return;
+    }
 
     localStorage.setItem('dexii_invite_token', token);
     void this.friendsApi.lookupInvite(token).then((invite) => {

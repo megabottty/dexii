@@ -109,11 +109,18 @@ export class UserSettingsService {
   }
 
   getSignupDraft(): UserSettings {
+    const pending = readPendingSettings();
     return normalizeUserSettings({
-      ...readPendingSettings(),
-      ...readLegacyProfileSnapshot(),
-      username: localStorage.getItem('dexii_pending_username') || localStorage.getItem('dexii_api_username') || '',
-      displayName: localStorage.getItem('dexii_pending_username') || localStorage.getItem('dexii_profile_display_name') || ''
+      ...pending,
+      username: localStorage.getItem('dexii_pending_username') || pending?.username || '',
+      email: localStorage.getItem('dexii_pending_email') || pending?.email || '',
+      bio: localStorage.getItem('dexii_pending_bio') || pending?.bio || '',
+      relationshipStatus: (localStorage.getItem('dexii_pending_relationshipStatus') || pending?.relationshipStatus || '') as UserSettings['relationshipStatus'],
+      lookingFor: (localStorage.getItem('dexii_pending_lookingFor') || pending?.lookingFor || '') as UserSettings['lookingFor'],
+      interestedIn: (localStorage.getItem('dexii_pending_interestedIn') || pending?.interestedIn || '') as UserSettings['interestedIn'],
+      loveLanguage: (localStorage.getItem('dexii_pending_loveLanguage') || pending?.loveLanguage || '') as UserSettings['loveLanguage'],
+      idealDate: localStorage.getItem('dexii_pending_idealDate') || pending?.idealDate || '',
+      displayName: localStorage.getItem('dexii_pending_username') || pending?.displayName || ''
     });
   }
 

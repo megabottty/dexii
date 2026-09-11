@@ -59,6 +59,11 @@ const InviteSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+InviteSchema.index(
+  { invitedBy: 1, contact: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: 'pending' } }
+);
+
 InviteSchema.statics.generateToken = function generateToken() {
   return crypto.randomBytes(24).toString('base64url');
 };

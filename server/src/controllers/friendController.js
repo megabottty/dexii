@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
 const Invite = require('../models/Invite');
+const InviteQuota = require('../models/InviteQuota');
 const mongoose = require('mongoose');
 const sendEmail = require('../utils/sendEmail');
 const sendSms = require('../utils/sendSms');
@@ -41,12 +42,44 @@ const requireDb = (res) => {
 };
 
 const PUBLIC_USER_FIELDS = 'username firstName lastName avatarUrl subscriptionTier friendCategories';
+const PUBLIC_INVITER_FIELDS = 'username firstName lastName';
 
 const shapeUser = (user) => {
   if (!user) return null;
   const plain = typeof user.toObject === 'function' ? user.toObject() : user;
   return { ...plain, id: String(plain._id || plain.id) };
 };
+
+const dayKeyUtc = (date = new Date()) => date.toISOString().slice(0, 10);
+const inviteQuotaId = (inviterId, dayKey) => `${String(inviterId)}:${dayKey}`;
+const quotaExpiry = (date = new Date()) => new Date(date.getTime() + 32 * 24 * 60 * 60 * 1000);
+
+async function reserveInviteQuota(inviterId, now = new Date()) {
+  const dayKey = dayKeyUtc(now);
+  const quota = await InviteQuota.findOneAndUpdate(
+    { _id: inviteQuotaId(inviterId, dayKey) },
+    {
+      $inc: { count: 1 },
+      $setOnInsert: { invitedBy: inviterId, dayKey, expiresAt: quotaExpiry(now) }
+    },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+  ).lean();
+
+  if ((quota?.count || 0) <= INVITE_DAILY_LIMIT) return true;
+  await releaseInviteQuota(inviterId, dayKey);
+  return false;
+}
+
+async function releaseInviteQuota(inviterId, dayKey = dayKeyUtc()) {
+  try {
+    await InviteQuota.updateOne(
+      { _id: inviteQuotaId(inviterId, dayKey), count: { $gt: 0 } },
+      { $inc: { count: -1 } }
+    );
+  } catch (err) {
+    console.error('Invite quota release failed:', err.message);
+  }
+}
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 const normalizePhoneE164 = (value) => {
@@ -267,27 +300,33 @@ exports.inviteUser = async (req, res) => {
       });
     }
 
-    // Rate limit so the invite endpoint cannot be used as a spam relay.
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentCount = await Invite.countDocuments({ invitedBy: inviter._id, sentAt: { $gte: since } });
-    if (recentCount >= INVITE_DAILY_LIMIT) {
+    const now = new Date();
+    const quotaDayKey = dayKeyUtc(now);
+    const reservedQuota = await reserveInviteQuota(inviter._id, now);
+    if (!reservedQuota) {
       return res.status(429).json({
         message: `You have hit the limit of ${INVITE_DAILY_LIMIT} invites per day. Try again tomorrow.`
       });
     }
 
     // Reuse a live invite for the same contact so repeat sends don't pile up tokens.
+    await Invite.updateMany(
+      { invitedBy: inviter._id, contact, status: 'pending', expiresAt: { $lte: now } },
+      { $set: { status: 'expired' } }
+    );
+
     let invite = await Invite.findOne({
       invitedBy: inviter._id,
       contact,
       status: 'pending',
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: now }
     });
 
+    let createdInvite = false;
     if (invite) {
       invite.method = method;
       invite.message = personalMessage;
-      invite.sentAt = new Date();
+      invite.sentAt = now;
     } else {
       invite = new Invite({
         token: Invite.generateToken(),
@@ -297,6 +336,17 @@ exports.inviteUser = async (req, res) => {
         message: personalMessage,
         expiresAt: Invite.defaultExpiry()
       });
+
+      try {
+        await invite.save();
+        createdInvite = true;
+      } catch (err) {
+        if (err?.code === 11000) {
+          await releaseInviteQuota(inviter._id, quotaDayKey);
+          return res.status(409).json({ message: 'An invite to that contact is already pending.' });
+        }
+        throw err;
+      }
     }
 
     const inviterName = buildDisplayName(inviter);
@@ -317,13 +367,26 @@ exports.inviteUser = async (req, res) => {
         delivery = result?.debug ? 'debug' : 'sent';
       } catch (err) {
         console.error('Invite email failed:', err.message);
+        if (createdInvite) {
+          await Invite.deleteOne({ _id: invite._id, status: 'pending' });
+        }
+        await releaseInviteQuota(inviter._id, quotaDayKey);
         return res.status(502).json({ message: 'We could not send that invite email. Please try again.' });
       }
     } else {
-      const smsBody = buildInviteSmsBody({ inviterName, inviteUrl, personalMessage });
-      const result = await sendSms({ phone: contact, message: smsBody });
-      delivery = result.delivery;
-      smsUrl = result.smsUrl;
+      try {
+        const smsBody = buildInviteSmsBody({ inviterName, inviteUrl, personalMessage });
+        const result = await sendSms({ phone: contact, message: smsBody });
+        delivery = result.delivery;
+        smsUrl = result.smsUrl;
+      } catch (err) {
+        console.error('Invite SMS failed:', err.message);
+        if (createdInvite) {
+          await Invite.deleteOne({ _id: invite._id, status: 'pending' });
+        }
+        await releaseInviteQuota(inviter._id, quotaDayKey);
+        return res.status(502).json({ message: 'We could not prepare that invite text. Please try again.' });
+      }
     }
 
     invite.delivery = delivery;
@@ -358,7 +421,7 @@ exports.getInvite = async (req, res) => {
     }
 
     const invite = await Invite.findOne({ token: String(req.params.token || '') })
-      .populate('invitedBy', PUBLIC_USER_FIELDS);
+      .populate('invitedBy', PUBLIC_INVITER_FIELDS);
 
     if (!invite) {
       return res.status(404).json({ message: 'That invite link is not valid.' });
@@ -376,7 +439,6 @@ exports.getInvite = async (req, res) => {
       token: invite.token,
       method: invite.method,
       message: invite.message,
-      invitedBy: shapeUser(invite.invitedBy),
       inviterName: buildDisplayName(invite.invitedBy),
       expiresAt: invite.expiresAt
     });
@@ -395,19 +457,53 @@ exports.acceptInviteForUser = async function acceptInviteForUser(token, newUserI
   if (mongoose.connection.readyState !== 1) return null;
 
   try {
-    const invite = await Invite.findOne({ token: String(token) });
-    if (!invite || !invite.isUsable()) return null;
-    if (String(invite.invitedBy) === String(newUserId)) return null;
+    const now = new Date();
+    const invite = await Invite.findOneAndUpdate(
+      {
+        token: String(token),
+        status: 'pending',
+        expiresAt: { $gt: now },
+        invitedBy: { $ne: newUserId }
+      },
+      {
+        $set: {
+          status: 'accepted',
+          acceptedAt: now,
+          acceptedBy: newUserId
+        }
+      },
+      { returnDocument: 'after' }
+    );
+    if (!invite) return null;
+    if (String(invite.invitedBy) === String(newUserId)) {
+      await Invite.findOneAndUpdate(
+        { _id: invite._id, status: 'accepted', acceptedBy: newUserId },
+        { $set: { status: 'pending' }, $unset: { acceptedAt: '', acceptedBy: '' } }
+      );
+      return null;
+    }
 
-    invite.status = 'accepted';
-    invite.acceptedAt = new Date();
-    invite.acceptedBy = newUserId;
-    await invite.save();
+    try {
+      await linkFriends(invite.invitedBy, newUserId);
+    } catch (err) {
+      console.error(
+        `Invite ${invite._id} was claimed but friendship linking failed for inviter ${invite.invitedBy} and user ${newUserId}:`,
+        err.message
+      );
+      try {
+        await Invite.findOneAndUpdate(
+          { _id: invite._id, status: 'accepted', acceptedBy: newUserId },
+          { $set: { status: 'pending' }, $unset: { acceptedAt: '', acceptedBy: '' } }
+        );
+      } catch (releaseErr) {
+        console.error(`Invite ${invite._id} claim release failed:`, releaseErr.message);
+      }
+      return null;
+    }
 
-    await linkFriends(invite.invitedBy, newUserId);
     return invite;
   } catch (err) {
-    console.warn('Could not accept invite:', err.message);
+    console.error('Could not accept invite:', err.message);
     return null;
   }
 };
@@ -614,8 +710,31 @@ exports.nudgeRequest = async (req, res) => {
 
 // Adds both sides of the friendship. $addToSet keeps repeat accepts idempotent.
 async function linkFriends(userA, userB) {
-  await Promise.all([
-    User.updateOne({ _id: userA }, { $addToSet: { friends: userB } }),
-    User.updateOne({ _id: userB }, { $addToSet: { friends: userA } })
-  ]);
+  const ensureLinked = async () => {
+    await Promise.all([
+      User.updateOne({ _id: userA }, { $addToSet: { friends: userB } }),
+      User.updateOne({ _id: userB }, { $addToSet: { friends: userA } })
+    ]);
+  };
+
+  const hasMutualEdges = async () => {
+    const [a, b] = await Promise.all([
+      User.findById(userA).select('friends').lean(),
+      User.findById(userB).select('friends').lean()
+    ]);
+    return Boolean(
+      a &&
+      b &&
+      (a.friends || []).some((id) => String(id) === String(userB)) &&
+      (b.friends || []).some((id) => String(id) === String(userA))
+    );
+  };
+
+  await ensureLinked();
+  if (await hasMutualEdges()) return;
+
+  await ensureLinked();
+  if (!(await hasMutualEdges())) {
+    throw new Error('Friendship link verification failed.');
+  }
 }

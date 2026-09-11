@@ -1,24 +1,51 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { SignupProfileComponent } from './signup-profile.component';
-import { ThemeService } from '../../core/services/theme.service';
+import { FriendsApiService } from '../../core/services/friends-api.service';
+
+type RouterMock = {
+  navigate: MockedFunction<Router['navigate']>;
+};
+
+type FriendsApiServiceMock = {
+  lookupInvite: MockedFunction<FriendsApiService['lookupInvite']>;
+};
 
 describe('SignupProfileComponent', () => {
   let component: SignupProfileComponent;
   let fixture: ComponentFixture<SignupProfileComponent>;
-  let router: jasmine.SpyObj<Router>;
+  let router: RouterMock;
 
   beforeEach(async () => {
-    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    localStorage.clear();
+    sessionStorage.clear();
+
+    const routerSpy: RouterMock = {
+      navigate: vi.fn<Router['navigate']>().mockResolvedValue(true)
+    };
+    const friendsApiSpy: FriendsApiServiceMock = {
+      lookupInvite: vi.fn<FriendsApiService['lookupInvite']>().mockResolvedValue(null)
+    };
 
     await TestBed.configureTestingModule({
       imports: [SignupProfileComponent],
       providers: [
-        { provide: Router, useValue: routerSpy }
+        { provide: Router, useValue: routerSpy },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({})
+            }
+          }
+        },
+        { provide: FriendsApiService, useValue: friendsApiSpy }
       ]
     }).compileComponents();
-
-    router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    router = TestBed.inject(Router) as unknown as RouterMock;
+    router = TestBed.inject(Router) as unknown as RouterMock;
     fixture = TestBed.createComponent(SignupProfileComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

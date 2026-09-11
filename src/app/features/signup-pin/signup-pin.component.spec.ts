@@ -1,29 +1,48 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { SignupPinComponent } from './signup-pin.component';
 import { SecurityService } from '../../core/services/security.service';
-import { ThemeService } from '../../core/services/theme.service';
+
+type SecurityServiceMock = {
+  setInitialPin: MockedFunction<SecurityService['setInitialPin']>;
+};
+
+type RouterMock = {
+  navigate: MockedFunction<Router['navigate']>;
+};
 
 describe('SignupPinComponent', () => {
   let component: SignupPinComponent;
   let fixture: ComponentFixture<SignupPinComponent>;
-  let securityService: jasmine.SpyObj<SecurityService>;
-  let router: jasmine.SpyObj<Router>;
+  let securityService: SecurityServiceMock;
 
   beforeEach(async () => {
-    const securitySpy = jasmine.createSpyObj('SecurityService', ['setInitialPin']);
-    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    const securitySpy: SecurityServiceMock = {
+      setInitialPin: vi.fn<SecurityService['setInitialPin']>().mockResolvedValue(undefined)
+    };
+    const routerSpy: RouterMock = {
+      navigate: vi.fn<Router['navigate']>().mockResolvedValue(true)
+    };
 
     await TestBed.configureTestingModule({
       imports: [SignupPinComponent],
       providers: [
         { provide: SecurityService, useValue: securitySpy },
-        { provide: Router, useValue: routerSpy }
+        { provide: Router, useValue: routerSpy },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({})
+            }
+          }
+        }
       ]
     }).compileComponents();
-
-    securityService = TestBed.inject(SecurityService) as jasmine.SpyObj<SecurityService>;
-    router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    securityService = TestBed.inject(SecurityService) as unknown as SecurityServiceMock;
+    securityService = TestBed.inject(SecurityService) as unknown as SecurityServiceMock;
     fixture = TestBed.createComponent(SignupPinComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -113,7 +132,7 @@ describe('SignupPinComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const createButton = compiled.querySelector('button');
+    const createButton = compiled.querySelector('.submit-button');
     expect(createButton?.textContent).toContain('Create My Account');
   });
 
