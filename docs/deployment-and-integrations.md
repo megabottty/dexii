@@ -61,6 +61,13 @@ curl -s -o /dev/null -D - https://dexii.onrender.com/api/health | grep -i "HTTP/
    - **Failed payment** — update the card under **Billing**.
 3. Click **Resume Service** if offered.
 
+> **Upgrading alone may not lift an existing suspension.** The new plan
+> applies, but the service can stay in its suspended state until it is
+> explicitly restarted. After upgrading, click **Resume Service**, or use
+> **Manual Deploy → Deploy latest commit** — a fresh boot under the new plan
+> reliably clears it. Also confirm the upgrade landed on the right service:
+> **Settings → Instance Type** should read *Starter*, not *Free*.
+
 > **Cause:** the free tier allows 750 instance-hours/month, **shared across
 > every free service in the workspace** — not per service. One service running
 > around the clock uses ~720h of that on its own, so a second or third free
@@ -126,6 +133,19 @@ domain in Resend under **Domains**, then set `EMAIL_FROM`.
 one: **Manual Deploy → Deploy latest commit**.
 
 ### 5. Verify
+
+```bash
+npm run smoke
+```
+
+Checks the health endpoint, app shell, PWA manifest, service worker, that
+`/api/**` is excluded from the service-worker cache, and that invite lookup
+rejects bogus tokens. Exit code `2` specifically means *suspended*, which is an
+account state rather than an app failure.
+
+Point it at any host with `npm run smoke -- https://your-host.example.com`.
+
+Or check just the health endpoint:
 
 ```bash
 curl https://dexii.onrender.com/api/health
