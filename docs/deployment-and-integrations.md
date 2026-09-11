@@ -14,7 +14,7 @@ integration for friend invites.
 | `NODE_ENV` | Yes | `render.yaml` | `production` |
 | `ENABLE_MONGO` | Yes | `render.yaml` | `true` |
 | `PUBLIC_APP_URL` | Yes | `render.yaml` | Canonical origin for invite links. |
-| `RESEND_API_KEY` | Yes | **Render dashboard** | **Not in `render.yaml`.** Without it, emails are only logged to the console — no error is raised and nothing is delivered. |
+| `RESEND_API_KEY` | Yes | **Render dashboard** | Declared `sync: false` in `render.yaml`, so Render prompts for the value and it is never committed. Without it, emails are only logged to the console — no error is raised and nothing is delivered. |
 | `EMAIL_FROM` | No | Render dashboard | Defaults to Resend's sandbox sender. |
 | `TWILIO_ACCOUNT_SID` | No | Render dashboard | See Twilio section. |
 | `TWILIO_AUTH_TOKEN` | No | Render dashboard | |
@@ -47,6 +47,27 @@ the codebase.
 
 **Environment** in the sidebar → confirm every **Required** row above is
 present. Pay particular attention to `RESEND_API_KEY`, which fails silently.
+
+#### Getting a `RESEND_API_KEY`
+
+This is a secret issued by Resend, the email provider used for verification
+codes and invite emails. It looks like `re_` followed by a random string.
+
+1. Sign in at https://resend.com (the account that already sends Dexii's
+   verification emails).
+2. Go to **API Keys** in the sidebar.
+3. Either copy an existing key, or **Create API Key** — name it `dexii-render`,
+   permission **Sending access**. The value is shown **once**; copy it then.
+4. In Render → **Environment → Add Environment Variable**, key
+   `RESEND_API_KEY`, value the `re_...` string. Save.
+
+> **Never paste the key into `render.yaml`.** That file is committed to git, so
+> the secret would end up in the repository. It is declared there as
+> `sync: false`, which tells Render to prompt for the value and keep it in the
+> dashboard only. The same applies to `MONGO_URI`.
+
+To send from your own domain rather than Resend's sandbox sender, verify the
+domain in Resend under **Domains**, then set `EMAIL_FROM`.
 
 ### 3. Deploy
 
