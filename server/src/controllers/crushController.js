@@ -39,6 +39,40 @@ exports.getCrushes = async (req, res) => {
   }
 };
 
+// @desc    Get a friend's crush profiles that they've shared with the requesting user
+// @route   GET /api/crushes/friend/:friendId
+exports.getFriendSharedCrushes = async (req, res) => {
+  try {
+    const { friendId } = req.params;
+    if (!mongoose.isValidObjectId(friendId)) {
+      return res.status(400).json({ message: 'Invalid friend id.' });
+    }
+
+    const me = await User.findById(req.user.id).select('friends username').lean();
+    if (!me) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const isFriend = (me.friends || []).some((id) => String(id) === String(friendId));
+    if (!isFriend) {
+      return res.status(403).json({ message: 'You can only view crushes shared by your friends.' });
+    }
+
+    const myId = String(req.user.id);
+    const myUsername = typeof me.username === 'string' ? me.username : '';
+
+    const crushes = await CrushProfile.find({ userId: friendId });
+    const shared = crushes.filter((crush) => {
+      const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
+      return visibility.includes(myId) || (myUsername && visibility.includes(myUsername));
+    });
+
+    res.json(shared);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // @desc    Create a new crush profile
 // @route   POST /api/crushes
 exports.createCrush = async (req, res) => {
