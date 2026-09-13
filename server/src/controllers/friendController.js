@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const sendEmail = require('../utils/sendEmail');
 const sendSms = require('../utils/sendSms');
 const { buildInviteEmail } = require('../utils/inviteEmail');
+const { createNotification } = require('./notificationController');
 
 const INVITE_DAILY_LIMIT = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -700,6 +701,17 @@ exports.nudgeRequest = async (req, res) => {
     request.nudgeCount = (request.nudgeCount || 0) + 1;
     request.lastNudgedAt = new Date();
     await request.save();
+
+    try {
+      await createNotification({
+        recipient: request.to,
+        actor: req.user.id,
+        type: 'friend_request_nudge',
+        payload: { friendRequestId: String(request._id) }
+      });
+    } catch (notificationErr) {
+      console.error('Friend request nudge notification failed:', notificationErr.message);
+    }
 
     res.json(request);
   } catch (err) {

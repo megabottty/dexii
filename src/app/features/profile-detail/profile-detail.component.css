@@ -641,6 +641,110 @@ select.edit-input-styled {
   font-size: 14px;
 }
 
+.status-visibility-card {
+  max-width: 520px;
+}
+
+.status-visibility-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.status-visibility-description {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.status-visibility-options {
+  display: grid;
+  gap: 12px;
+}
+
+.status-visibility-option {
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  padding: 16px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-visibility-option__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.status-visibility-option__copy {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.status-visibility-info {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  cursor: help;
+}
+
+.status-visibility-private {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-visibility-private__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.status-visibility-private__title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.status-visibility-private__friends {
+  max-height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.status-visibility-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.status-visibility-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px 24px;
+  flex-wrap: wrap;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

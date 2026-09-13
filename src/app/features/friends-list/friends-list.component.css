@@ -279,7 +279,7 @@
 }
 
 .friends-list-component__s59 {
-  display: flex; gap: 12px;
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end;
 }
 
 .friends-list-component__s60 {

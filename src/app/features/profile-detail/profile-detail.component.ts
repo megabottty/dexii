@@ -105,7 +105,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap;">
                   @if (!statusQuickEditOpen()) {
                     <button type="button"
-                            (click)="statusQuickEditOpen.set(true)"
+                            (click)="openQuickStatusEditor(c)"
                             [style.color]="theme.colors().primary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="status-chip-button">
@@ -113,8 +113,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     </button>
                   } @else {
                     <div class="status-quick-edit">
-                      <select [value]="c.status || statuses.Crushing"
-                              (change)="setQuickStatus(c.id, asSelectValue($event))"
+                      <select [value]="quickStatusDraft() || c.status || statuses.Crushing"
+                              (change)="beginQuickStatusChange(c.id, asSelectValue($event))"
                               [style.background-color]="theme.colors().bg"
                               [style.border]="'1px solid ' + theme.colors().border"
                               [style.color]="theme.colors().text"
@@ -129,7 +129,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         <option [value]="statuses.Friend">Friend</option>
                       </select>
                       <button type="button"
-                              (click)="statusQuickEditOpen.set(false)"
+                              (click)="closeQuickStatusEditor()"
                               [style.border]="'1px solid ' + theme.colors().border"
                               [style.color]="theme.colors().textSecondary"
                               class="status-chip-button status-chip-button--ghost">
@@ -298,6 +298,106 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     </button>
                   </div>
                 }
+              </div>
+            </div>
+          }
+
+          @if (showStatusVisibilityModal()) {
+            <div class="selector-overlay" (click)="cancelQuickStatusChange()">
+              <div class="selector-card status-visibility-card"
+                   [style.background-color]="theme.colors().bg"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   (click)="$event.stopPropagation()">
+                <div class="selector-header">
+                  <h3>Who can see this status?</h3>
+                  <button class="close-btn" (click)="cancelQuickStatusChange()">✕</button>
+                </div>
+
+                <div class="status-visibility-body">
+                  <p [style.color]="theme.colors().textSecondary" class="status-visibility-description">
+                    Choose visibility for the new <strong>{{ pendingStatusValue() || quickStatusDraft() }}</strong> update.
+                  </p>
+
+                  <div class="status-visibility-options">
+                    <button type="button"
+                            (click)="setStatusVisibilityMode('private')"
+                            [style.border]="'1px solid ' + (statusVisibilityMode() === 'private' ? theme.colors().primary : theme.colors().border)"
+                            [style.background-color]="statusVisibilityMode() === 'private' ? theme.colors().primary + '14' : theme.colors().bgSecondary"
+                            class="status-visibility-option">
+                      <span class="status-visibility-option__title">
+                        Private
+                        <span class="status-visibility-info"
+                              title="Only the friends you specifically select can see this update."
+                              aria-label="Only the friends you specifically select can see this update.">ℹ</span>
+                      </span>
+                      <span [style.color]="theme.colors().textSecondary" class="status-visibility-option__copy">
+                        Only selected friends can see it.
+                      </span>
+                    </button>
+
+                    <button type="button"
+                            (click)="setStatusVisibilityMode('public')"
+                            [style.border]="'1px solid ' + (statusVisibilityMode() === 'public' ? theme.colors().primary : theme.colors().border)"
+                            [style.background-color]="statusVisibilityMode() === 'public' ? theme.colors().primary + '14' : theme.colors().bgSecondary"
+                            class="status-visibility-option">
+                      <span class="status-visibility-option__title">
+                        Public
+                        <span class="status-visibility-info"
+                              title="Everyone in your friends list can see this status update."
+                              aria-label="Everyone in your friends list can see this status update.">ℹ</span>
+                      </span>
+                      <span [style.color]="theme.colors().textSecondary" class="status-visibility-option__copy">
+                        Everyone in your friends list can see it.
+                      </span>
+                    </button>
+                  </div>
+
+                  @if (statusVisibilityMode() === 'private') {
+                    <div class="status-visibility-private">
+                      <div class="status-visibility-private__header">
+                        <p class="status-visibility-private__title">Choose specific friends</p>
+                        @if (friends().length > 0) {
+                          <button class="action-btn-styled secondary"
+                                  style="padding: 6px 10px; font-size: 10px;"
+                                  (click)="toggleAllPendingVisibilityFriends()">
+                            {{ areAllPendingVisibilityFriendsSelected() ? 'Deselect All' : 'Select All' }}
+                          </button>
+                        }
+                      </div>
+
+                      @if (friends().length > 0) {
+                        <div class="friend-list-scroll status-visibility-private__friends">
+                          @for (friend of friends(); track friend.id) {
+                            <div class="friend-item"
+                                 (click)="togglePendingVisibilityFriend(friend.id)"
+                                 [style.border-bottom]="'1px solid ' + theme.colors().border">
+                              <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
+                                   [alt]="friend.username"
+                                   class="friend-avatar">
+                              <div class="friend-info">
+                                <span class="friend-name">{{ friend.username }}</span>
+                                <span class="friend-status"
+                                      [style.color]="isPendingVisibilityFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary">
+                                  {{ isPendingVisibilityFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
+                                </span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <p [style.color]="theme.colors().textSecondary" class="status-visibility-empty">
+                          No friends yet. Private will keep this update visible only to your current selected list.
+                        </p>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="status-visibility-actions"
+                     [style.border-top]="'1px solid ' + theme.colors().border">
+                  <button class="action-btn-styled secondary" (click)="cancelQuickStatusChange()">Cancel</button>
+                  <button class="action-btn-styled primary" (click)="confirmQuickStatusChange()">Save Status</button>
+                </div>
               </div>
             </div>
           }
@@ -602,30 +702,30 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <span class="info-label">Hair</span>
                   <span class="info-value">{{ c.hair?.join(', ') || 'N/A' }}</span>
                 </div>
-                @if (c.customNotes?.includes('Hair:')) {
+                @if (getOtherNoteDetail(c.customNotes, 'Hair')) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Hair Notes</span>
-                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Hair:') }}</span>
+                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Hair') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
                   <span class="info-label">Eyes</span>
                   <span class="info-value">{{ c.eyes?.join(', ') || 'N/A' }}</span>
                 </div>
-                @if (c.customNotes?.includes('Eyes:')) {
+                @if (getOtherNoteDetail(c.customNotes, 'Eyes')) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Eye Notes</span>
-                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Eyes:') }}</span>
+                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Eyes') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
                   <span class="info-label">Build</span>
                   <span class="info-value">{{ c.build?.join(', ') || 'N/A' }}</span>
                 </div>
-                @if (c.customNotes?.includes('Build:')) {
+                @if (getOtherNoteDetail(c.customNotes, 'Build')) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Build Notes</span>
-                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Build:') }}</span>
+                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Build') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -636,10 +736,10 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <span class="info-label">Crush Status</span>
                   <span class="info-value">{{ c.status }}</span>
                 </div>
-                @if (c.customNotes?.includes('Relationship:')) {
+                @if (getOtherNoteDetail(c.customNotes, 'Relationship')) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Relationship Notes</span>
-                     <span class="info-value note-text">{{ getNoteDetail(c.customNotes, 'Relationship:') }}</span>
+                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Relationship') }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -847,16 +947,21 @@ export class ProfileDetailComponent implements OnDestroy {
   statuses = CrushStatus;
   isEditMode = signal(false);
   showShareSelector = signal(false);
+  showStatusVisibilityModal = signal(false);
   shareSelectorMode = signal<'crush' | 'dating'>('crush');
   showVibeBanner = signal(true);
   showSafetySetup = signal(false);
   statusQuickEditOpen = signal(false);
+  quickStatusDraft = signal<CrushStatus | null>(null);
+  pendingStatusValue = signal<CrushStatus | null>(null);
+  statusVisibilityMode = signal<'private' | 'public'>('private');
   vibePromptFrequencyHours = signal(24);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
   pendingShareEntryId = signal<string | null>(null);
   shareFriendIds = signal<string[]>([]);
   datingShareFriendIds = signal<string[]>([]);
+  pendingVisibilityFriendIds = signal<string[]>([]);
   safetyDurationMinutes = signal<number>(60);
   safetyContactIds = signal<string[]>([]);
   safetyDurationOptions = [30, 60, 90, 120, 150, 180, 210, 240];
@@ -965,6 +1070,78 @@ export class ProfileDetailComponent implements OnDestroy {
   asSelectValue(event: Event): string {
     const target = event.target as HTMLSelectElement | null;
     return target?.value ?? '';
+  }
+
+  openQuickStatusEditor(crush: CrushProfile): void {
+    this.quickStatusDraft.set(crush.status || this.statuses.Crushing);
+    this.statusQuickEditOpen.set(true);
+  }
+
+  closeQuickStatusEditor(): void {
+    this.statusQuickEditOpen.set(false);
+    this.quickStatusDraft.set(null);
+    this.cancelQuickStatusChange();
+  }
+
+  beginQuickStatusChange(crushId: string, statusValue: string): void {
+    const crush = this.crush();
+    if (!crush || crush.id !== crushId) return;
+
+    const nextStatus = statusValue as CrushStatus;
+    this.quickStatusDraft.set(nextStatus);
+
+    if (nextStatus === crush.status) {
+      return;
+    }
+
+    const sharedFriendIds = this.friends()
+      .filter((friend) => this.isShared(crush, friend.id))
+      .map((friend) => friend.id);
+    const allFriendIds = this.friends().map((friend) => friend.id);
+    const isPublic = allFriendIds.length > 0 && sharedFriendIds.length === allFriendIds.length;
+
+    this.pendingStatusValue.set(nextStatus);
+    this.pendingVisibilityFriendIds.set(sharedFriendIds);
+    this.statusVisibilityMode.set(isPublic ? 'public' : 'private');
+    this.showStatusVisibilityModal.set(true);
+  }
+
+  setStatusVisibilityMode(mode: 'private' | 'public'): void {
+    this.statusVisibilityMode.set(mode);
+  }
+
+  isPendingVisibilityFriendSelected(friendId: string): boolean {
+    return this.pendingVisibilityFriendIds().includes(friendId);
+  }
+
+  togglePendingVisibilityFriend(friendId: string): void {
+    this.pendingVisibilityFriendIds.update((ids) =>
+      ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
+    );
+  }
+
+  areAllPendingVisibilityFriendsSelected(): boolean {
+    const allFriendIds = this.friends().map((friend) => friend.id);
+    return allFriendIds.length > 0 && this.pendingVisibilityFriendIds().length === allFriendIds.length;
+  }
+
+  toggleAllPendingVisibilityFriends(): void {
+    const allFriendIds = this.friends().map((friend) => friend.id);
+    if (allFriendIds.length === 0) return;
+    if (this.areAllPendingVisibilityFriendsSelected()) {
+      this.pendingVisibilityFriendIds.set([]);
+      return;
+    }
+    this.pendingVisibilityFriendIds.set(allFriendIds);
+  }
+
+  cancelQuickStatusChange(): void {
+    const crush = this.crush();
+    this.showStatusVisibilityModal.set(false);
+    this.pendingStatusValue.set(null);
+    this.statusVisibilityMode.set('private');
+    this.pendingVisibilityFriendIds.set([]);
+    this.quickStatusDraft.set(crush?.status || this.statuses.Crushing);
   }
 
   ngOnDestroy(): void {
@@ -1385,9 +1562,18 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   toggleArchive(crush: CrushProfile) {
-    const newStatus = crush.status === CrushStatus.Archived ? CrushStatus.Crush : CrushStatus.Archived;
-    const updatedCrush = { ...crush, status: newStatus };
-    this.dataService.updateCrush(updatedCrush);
+    const isRestoring = crush.status === CrushStatus.Archived;
+    this.modal.confirm(
+      isRestoring
+        ? 'Restore this crush from the archive?'
+        : 'Archive this crush? You can restore it later from the Archive view.',
+      () => {
+        const newStatus = isRestoring ? CrushStatus.Crush : CrushStatus.Archived;
+        const updatedCrush = { ...crush, status: newStatus };
+        this.dataService.updateCrush(updatedCrush);
+        this.modal.show(isRestoring ? 'Crush restored from archive.' : 'Crush archived.');
+      }
+    );
   }
 
   openDatingStatusShareSelector(): void {
@@ -1555,17 +1741,23 @@ export class ProfileDetailComponent implements OnDestroy {
       return;
     }
 
-    const currentSet = new Set(this.friends().filter((friend) => this.isShared(crush, friend.id)).map((friend) => friend.id));
-    this.friends().forEach((friend) => {
-      const shouldBeSelected = selectedSet.has(friend.id);
-      const isSelected = currentSet.has(friend.id);
-      if (shouldBeSelected !== isSelected) {
-        this.dataService.toggleCrushVisibility(crushId, friend.id);
-      }
-    });
+    const friendLabel = this.describeFriendsForShare(selectedFriends);
+    this.modal.confirm(
+      `Share this crush with ${friendLabel}? They'll be able to see what you've shared.`,
+      () => {
+        const currentSet = new Set(this.friends().filter((friend) => this.isShared(crush, friend.id)).map((friend) => friend.id));
+        this.friends().forEach((friend) => {
+          const shouldBeSelected = selectedSet.has(friend.id);
+          const isSelected = currentSet.has(friend.id);
+          if (shouldBeSelected !== isSelected) {
+            this.dataService.toggleCrushVisibility(crushId, friend.id);
+          }
+        });
 
-    this.closeShareSelector();
-    this.modal.show(`Crush shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
+        this.closeShareSelector();
+        this.modal.show(`Crush shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
+      }
+    );
   }
 
   shareWithFriend(crushId: string, friendId: string, friendName?: string): void {
@@ -1601,7 +1793,7 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   deleteCrush(crushId: string): void {
-    this.modal.confirm('Are you sure you want to delete this crush? This cannot be undone.', () => {
+    this.modal.confirm('Delete this crush profile? This cannot be undone.', () => {
       this.dataService.deleteCrush(crushId);
       this.router.navigate(['/dashboard']);
     });
@@ -1630,16 +1822,16 @@ export class ProfileDetailComponent implements OnDestroy {
           relationshipStatus: c.relationshipStatus || '',
           heartbreakSong: c.heartbreakSong || '',
           heartbreakRecovery: c.heartbreakRecovery || '',
-          relationshipNotes: this.getNoteDetail(c.customNotes, 'Relationship:'),
+          relationshipNotes: this.getOtherNoteDetail(c.customNotes, 'Relationship'),
           customNotes: this.getFilteredNotes(c.customNotes),
           location: c.location || '',
           age: c.age || null,
           hair: c.hair ? [...c.hair] : [],
           eyes: c.eyes ? [...c.eyes] : [],
           build: c.build ? [...c.build] : [],
-          hairNotes: this.getNoteDetail(c.customNotes, 'Hair:'),
-          eyeNotes: this.getNoteDetail(c.customNotes, 'Eyes:'),
-          buildNotes: this.getNoteDetail(c.customNotes, 'Build:'),
+          hairNotes: this.getOtherNoteDetail(c.customNotes, 'Hair'),
+          eyeNotes: this.getOtherNoteDetail(c.customNotes, 'Eyes'),
+          buildNotes: this.getOtherNoteDetail(c.customNotes, 'Build'),
           howWeMet: c.howWeMet || '',
           whenWeMet: c.whenWeMet || '',
           grade: c.grade || '',
@@ -1670,22 +1862,49 @@ export class ProfileDetailComponent implements OnDestroy {
     this.showSafetySetup.update((open) => !open);
   }
 
-  setQuickStatus(crushId: string, statusValue: string): void {
+  confirmQuickStatusChange(): void {
     const crush = this.crush();
-    if (!crush) return;
+    const nextStatus = this.pendingStatusValue();
+    if (!crush || !nextStatus) {
+      this.cancelQuickStatusChange();
+      return;
+    }
 
-    const nextStatus = statusValue as CrushStatus;
-    this.dataService.updateCrush({ ...crush, status: nextStatus });
+    const currentFriendIds = this.friends().map((friend) => friend.id);
+    const preservedVisibility = (crush.visibility || []).filter((id) => !currentFriendIds.includes(id));
+    const nextVisibility = this.statusVisibilityMode() === 'public'
+      ? [...new Set([...preservedVisibility, ...currentFriendIds])]
+      : [...new Set([...preservedVisibility, ...this.pendingVisibilityFriendIds()])];
+
+    this.dataService.updateCrush({
+      ...crush,
+      status: nextStatus,
+      visibility: nextVisibility
+    });
+    this.showStatusVisibilityModal.set(false);
+    this.pendingStatusValue.set(null);
+    this.pendingVisibilityFriendIds.set([]);
+    this.statusVisibilityMode.set('private');
     this.statusQuickEditOpen.set(false);
+    this.quickStatusDraft.set(nextStatus);
     this.modal.show(`Status updated to ${nextStatus}.`);
+  }
+
+  private describeFriendsForShare(selectedFriends: User[]): string {
+    if (selectedFriends.length === 0) return 'your selected friends';
+    if (selectedFriends.length === 1) return selectedFriends[0].username;
+    if (selectedFriends.length === 2) {
+      return `${selectedFriends[0].username} and ${selectedFriends[1].username}`;
+    }
+    return `${selectedFriends[0].username}, ${selectedFriends[1].username}, and ${selectedFriends.length - 2} others`;
   }
 
   saveEdit(crushId: string) {
     let customNotes = '';
-    if (this.editForm.hairNotes) customNotes += `Hair: ${this.editForm.hairNotes}\n`;
-    if (this.editForm.eyeNotes) customNotes += `Eyes: ${this.editForm.eyeNotes}\n`;
-    if (this.editForm.buildNotes) customNotes += `Build: ${this.editForm.buildNotes}\n`;
-    if (this.editForm.relationshipNotes) customNotes += `Relationship: ${this.editForm.relationshipNotes}\n`;
+    if (this.editForm.hairNotes) customNotes += `Other: Hair - ${this.editForm.hairNotes}\n`;
+    if (this.editForm.eyeNotes) customNotes += `Other: Eyes - ${this.editForm.eyeNotes}\n`;
+    if (this.editForm.buildNotes) customNotes += `Other: Build - ${this.editForm.buildNotes}\n`;
+    if (this.editForm.relationshipNotes) customNotes += `Other: Relationship - ${this.editForm.relationshipNotes}\n`;
     if (this.editForm.customNotes) customNotes += this.editForm.customNotes;
 
     const updatedCrush = {
@@ -1725,11 +1944,25 @@ export class ProfileDetailComponent implements OnDestroy {
     return detailPart ? detailPart.trim() : '';
   }
 
+  getOtherNoteDetail(notes: string | undefined, label: 'Hair' | 'Eyes' | 'Build' | 'Relationship'): string {
+    if (!notes) return '';
+
+    const prefixedLine = notes
+      .split('\n')
+      .find((line) => line.startsWith(`Other: ${label} - `));
+    if (prefixedLine) {
+      return prefixedLine.slice(`Other: ${label} - `.length).trim();
+    }
+
+    return this.getNoteDetail(notes, `${label}:`);
+  }
+
   getFilteredNotes(notes: string | undefined): string {
     if (!notes) return '';
     const keys = ['Hair:', 'Eyes:', 'Build:', 'Relationship:'];
+    const otherKeys = ['Hair', 'Eyes', 'Build', 'Relationship'].map((label) => `Other: ${label} - `);
     return notes.split('\n')
-      .filter(line => !keys.some(key => line.startsWith(key)))
+      .filter(line => !keys.some(key => line.startsWith(key)) && !otherKeys.some(key => line.startsWith(key)))
       .join('\n')
       .trim();
   }

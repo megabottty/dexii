@@ -51,6 +51,7 @@ app.use('/api/crushes', require('./routes/crushes'));
 app.use('/api/demo/crushes', require('./routes/demoCrushes'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/friends', require('./routes/friends'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/entries', require('./routes/entries'));
 app.use('/api/vault', require('./routes/vault'));
 

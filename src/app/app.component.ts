@@ -325,7 +325,7 @@ export class AppComponent implements OnInit, OnDestroy {
   walkthroughSteps: WalkthroughStep[] = [
     {
       title: '1. Dashboard = Your Tea Timeline',
-      details: 'Start on Dashboard. Tap New Entry to add a crush, then log notes, vibes, and updates over time.'
+      details: 'Start on Dashboard. Tap New Crush to add a crush, then log notes, vibes, and updates over time.'
     },
     {
       title: '2. Crush Status vs Relationship Label',
@@ -502,7 +502,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private getHintForPath(path: string): string {
     const normalized = this.routeHintKey(path);
     const map: Record<string, string> = {
-      '/dashboard': 'Use New Entry to add a crush. Add a Crush Note and set it Private/Public.',
+      '/dashboard': 'Use New Crush to add a crush. Add a Crush Note and set it Private/Public.',
       '/friends': 'Use Bio for friend notes and Sharing Controls to choose which crushes/entries each friend can view.',
       '/friends/:id': 'Save private notes for yourself or shared notes that get sent to this friend.',
       '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each crush.',

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DataService } from '../../core/services/data.service';
@@ -6,6 +6,8 @@ import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import { AuditService } from '../../core/services/audit.service';
 import { UserSettingsService } from '../../core/services/user-settings.service';
+import { CrushProfile } from '../../core/models/crush-profile.model';
+import { FriendSummary, FriendsApiService } from '../../core/services/friends-api.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -36,7 +38,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  [alt]="profileDisplayName()"
                  class="user-profile-component__s7">
             <div>
-              <h1 class="user-profile-component__s8">{{ profileDisplayName() }}</h1>
+              <h1 class="user-profile-component__s8">
+                {{ profileDisplayName() }}
+                @if (!isSelf()) {
+                  <span [style.color]="theme.colors().textSecondary"
+                        class="user-profile-component__s24">({{ crushes().length }})</span>
+                }
+              </h1>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem;">
                 <p [style.color]="theme.colors().primary"
                    class="user-profile-component__s9" style="font-style: italic; margin: 0;">
@@ -71,7 +79,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             }
           </div>
 
-          @if (crushes().length > 0) {
+          @if (!isSelf() && friendSharedCrushesLoading()) {
+            <div [style.border]="'1px dashed ' + theme.colors().border"
+                 class="user-profile-component__s22">
+              <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">Loading shared crushes...</p>
+            </div>
+          } @else if (crushes().length > 0) {
             <div class="user-profile-component__s15">
               @for (crush of crushes(); track crush.id) {
                 <a [routerLink]="['/profile', crush.id]"
@@ -289,13 +302,18 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 export class UserProfileComponent {
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
+  private friendsApi = inject(FriendsApiService);
   private messaging = inject(MessagingService);
   private audit = inject(AuditService);
   private settings = inject(UserSettingsService);
   public theme = inject(ThemeService);
 
   private routeUserId = signal('');
+  private friendSummaries = signal<FriendSummary[]>([]);
+  private friendSharedCrushes = signal<CrushProfile[]>([]);
+  protected friendSharedCrushesLoading = signal(false);
   protected auditLogView = signal(false);
+  private friendLoadRequestId = 0;
 
   constructor() {
     this.route.paramMap.subscribe(params => {
@@ -306,6 +324,19 @@ export class UserProfileComponent {
         this.auditLogView.set(true);
       }
     });
+
+    effect(() => {
+      const routeUserId = this.routeUserId();
+
+      if (!routeUserId || this.isSelf() || !this.friendsApi.isAuthenticated()) {
+        this.friendLoadRequestId++;
+        this.friendSharedCrushesLoading.set(false);
+        this.friendSharedCrushes.set([]);
+        return;
+      }
+
+      void this.loadFriendContext(routeUserId);
+    }, { allowSignalWrites: true });
   }
 
   isSelf = computed(() => {
@@ -315,7 +346,11 @@ export class UserProfileComponent {
   profileDisplayName = computed(() => {
     const id = this.routeUserId();
     if (this.isSelf()) return this.settings.settings().displayName || this.dataService.getUserId();
-    return id === 'me' ? this.dataService.getUserId() : id;
+    const friend = this.friendSummaries().find((item) => item.id === id || item.username === id);
+    if (!friend) return id === 'me' ? this.dataService.getUserId() : id;
+
+    const name = [friend.firstName, friend.lastName].filter(Boolean).join(' ').trim();
+    return name || friend.username || id;
   });
   profileBio = computed(() => (this.isSelf() ? this.settings.settings().bio : ''));
 
@@ -327,22 +362,8 @@ export class UserProfileComponent {
   });
 
   crushes = computed(() => {
-    const all = this.dataService.getAllCrushes()();
-    const friendId = this.routeUserId();
-
-    if (this.isSelf()) return all;
-
-    const myId = this.dataService.getUserId();
-
-    // For others, only show what they explicitly shared with me
-    return all.filter((c) => {
-      const isSharedWithMe = c.visibility.some(id =>
-        id === 'me' ||
-        id === myId ||
-        (id.toLowerCase().replace(/\s+/g, '_') === myId.toLowerCase().replace(/\s+/g, '_'))
-      );
-      return isSharedWithMe;
-    });
+    if (this.isSelf()) return this.dataService.getAllCrushes()();
+    return this.friendSharedCrushes();
   });
 
   sharedWithThem = computed(() => {
@@ -377,5 +398,33 @@ export class UserProfileComponent {
     let friendId = this.routeUserId();
     if (this.dataService.isMe(friendId)) friendId = this.dataService.getUserId();
     this.dataService.toggleCrushVisibility(crushId, friendId);
+  }
+
+  private async loadFriendContext(friendId: string): Promise<void> {
+    const requestId = ++this.friendLoadRequestId;
+    this.friendSharedCrushesLoading.set(true);
+
+    const [friendsResult, sharedCrushesResult] = await Promise.allSettled([
+      this.friendsApi.listFriends(),
+      this.friendsApi.getFriendSharedCrushes(friendId)
+    ]);
+
+    if (requestId !== this.friendLoadRequestId) return;
+
+    if (friendsResult.status === 'fulfilled') {
+      this.friendSummaries.set(friendsResult.value);
+    } else {
+      console.error('Failed to load friends for user profile.', friendsResult.reason);
+      this.friendSummaries.set([]);
+    }
+
+    if (sharedCrushesResult.status === 'fulfilled') {
+      this.friendSharedCrushes.set(sharedCrushesResult.value);
+    } else {
+      console.error('Failed to load shared crushes for user profile.', sharedCrushesResult.reason);
+      this.friendSharedCrushes.set([]);
+    }
+
+    this.friendSharedCrushesLoading.set(false);
   }
 }

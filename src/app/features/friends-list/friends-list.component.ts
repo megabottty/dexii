@@ -444,6 +444,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                      class="friends-list-action-link">Chat</a>
                   <button (click)="archiveFriend(friend.id)" [style.color]="'#ef4444'"
                           class="friends-list-component__s60">Archive</button>
+                  <button (click)="removeFriend(friend)"
+                          [style.color]="'#ef4444'"
+                          class="friends-list-component__s60">Remove Friend</button>
                 </div>
               </div>
             } @empty {
@@ -1476,15 +1479,19 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     await this.respondToRequest(request, 'accept');
   }
 
-  async removeFriend(id: string) {
-    this.modal.confirm('Are you sure you want to remove this friend from your inner circle? All shared tea will be revoked.', async () => {
+  async removeFriend(friend: FriendCardView) {
+    this.modal.confirm(`Are you sure you want to remove ${friend.username} as a friend? This cannot be undone.`, async () => {
       try {
-        await this.friendsApi.removeFriend(id);
+        await this.friendsApi.removeFriend(friend.id);
         const archivedIds = this.readArchivedFriendIds();
-        archivedIds.delete(id);
+        archivedIds.delete(friend.id);
         this.writeArchivedFriendIds(archivedIds);
+        this.friends.update((items) => items.filter((item) => item.id !== friend.id));
+        if (this.selectedFriend()?.id === friend.id) {
+          this.closeSharing();
+        }
         await this.loadFriends();
-        this.modal.show('Friend removed.');
+        this.modal.show(`${friend.username} removed from your friends.`);
       } catch (error: any) {
         this.modal.show(error?.message || 'Unable to remove friend right now.');
       }

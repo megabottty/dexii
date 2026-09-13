@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { SecurityService } from './security.service';
 
 export interface WalkthroughStep {
   title: string;
@@ -11,6 +12,7 @@ export interface WalkthroughStep {
 })
 export class WalkthroughService {
   private readonly storagePrefix = 'dexii_walkthrough_';
+  private security = inject(SecurityService);
 
   private _key = signal<string | null>(null);
   private _steps = signal<WalkthroughStep[]>([]);
@@ -25,8 +27,23 @@ export class WalkthroughService {
   public isLastStep = computed(() => this._index() >= this._steps().length - 1);
 
   private storageKey(key: string): string {
-    const user = (localStorage.getItem('dexii_api_username') || 'global').trim().toLowerCase();
-    return `${this.storagePrefix}${user}_${key}`;
+    return `${this.storagePrefix}${this.storageOwner()}_${key}`;
+  }
+
+  private storageOwner(): string {
+    const userId = (
+      this.security.currentUserId() ||
+      localStorage.getItem('dexii_api_user_id') ||
+      ''
+    ).trim().toLowerCase();
+    if (userId) return `id_${userId}`;
+
+    const username = (
+      this.security.currentUser() ||
+      localStorage.getItem('dexii_api_username') ||
+      ''
+    ).trim().toLowerCase();
+    return username || 'global';
   }
 
   hasCompleted(key: string): boolean {

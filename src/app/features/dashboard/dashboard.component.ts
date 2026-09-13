@@ -637,7 +637,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
         <app-page-hint
           hintKey="dashboard_inline"
           title="Dashboard Hint"
-          message="Use New Entry to add a crush. Keep notes private/public, then control who sees what from Friends > Sharing Controls.">
+          message="Use New Crush to add a crush. Keep notes private/public, then control who sees what from Friends > Sharing Controls.">
         </app-page-hint>
 
         <!-- Hero Section -->
@@ -684,7 +684,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                     [style.border]="'1px solid ' + theme.colors().primary"
                     [style.color]="'#ffffff'"
                     class="dashboard-component__s78 dashboard-component__s78--primary">
-               + New Entry
+               + New Crush
             </button>
           </div>
         </div>
@@ -1163,10 +1163,10 @@ export class DashboardComponent implements OnInit {
 
     // Combine all "Other" notes into customNotes
     let customNotes = '';
-    if (this.newCrush.hairNotes) customNotes += `Hair: ${this.newCrush.hairNotes}\n`;
-    if (this.newCrush.eyeNotes) customNotes += `Eyes: ${this.newCrush.eyeNotes}\n`;
-    if (this.newCrush.buildNotes) customNotes += `Build: ${this.newCrush.buildNotes}\n`;
-    if (this.newCrush.relationshipNotes) customNotes += `Relationship: ${this.newCrush.relationshipNotes}\n`;
+    if (this.newCrush.hairNotes) customNotes += `Other: Hair - ${this.newCrush.hairNotes}\n`;
+    if (this.newCrush.eyeNotes) customNotes += `Other: Eyes - ${this.newCrush.eyeNotes}\n`;
+    if (this.newCrush.buildNotes) customNotes += `Other: Build - ${this.newCrush.buildNotes}\n`;
+    if (this.newCrush.relationshipNotes) customNotes += `Other: Relationship - ${this.newCrush.relationshipNotes}\n`;
     if (this.newCrush.privateNotes) customNotes += this.newCrush.privateNotes;
 
     const createdCrush = this.dataService.addCrush({
