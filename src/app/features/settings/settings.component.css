@@ -481,6 +481,79 @@
   }
 }
 
+@media (max-width: 420px) {
+  .settings-shell {
+    padding: 16px 10px 32px;
+  }
+
+  .settings-card {
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .settings-title {
+    font-size: 24px;
+  }
+
+  .settings-section-title,
+  .settings-modal-title {
+    font-size: 22px;
+  }
+
+  .settings-profile-banner {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .settings-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .settings-photo-actions,
+  .settings-footer-actions,
+  .settings-modal-actions {
+    flex-direction: column;
+  }
+
+  .settings-photo-btn,
+  .settings-reset-btn,
+  .settings-modal-actions > *,
+  .settings-footer-actions > * {
+    width: 100%;
+  }
+
+  .settings-header,
+  .settings-plan-header,
+  .settings-modal-header {
+    gap: 12px;
+  }
+
+  .settings-plan-option,
+  .settings-theme-card,
+  .settings-toggle {
+    padding: 12px;
+  }
+
+  .settings-modal-backdrop {
+    padding: 0;
+  }
+
+  .settings-modal-card {
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+    padding: 16px 12px;
+  }
+
+  .settings-modal-friend {
+    padding: 12px;
+  }
+
+  .settings-modal-friend-main {
+    min-width: 0;
+  }
+}
+
 .settings-install-btn {
   border: none;
   border-radius: 999px;

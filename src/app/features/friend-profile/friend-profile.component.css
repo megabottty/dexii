@@ -120,3 +120,88 @@
 .friend-profile-component__s23 {
   margin: 0;
 }
+
+@media (max-width: 760px) {
+  .friend-profile-component__s1 {
+    padding: 32px 14px 44px;
+  }
+
+  .friend-profile-component__s2 > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .friend-profile-component__s4,
+  .friend-profile-component__s15 {
+    padding: 18px;
+  }
+
+  .friend-profile-component__s5 {
+    align-items: flex-start;
+  }
+
+  .friend-profile-component__s7 {
+    font-size: clamp(28px, 7vw, 32px);
+    letter-spacing: 1px;
+  }
+
+  .friend-profile-component__s12 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .friend-profile-component__s13,
+  .friend-profile-component__s14 {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .friend-profile-friendship-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .friend-profile-friendship-value {
+    text-align: left;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .friend-profile-component__s1 {
+    padding: 24px 10px 36px;
+  }
+
+  .friend-profile-component__s4,
+  .friend-profile-component__s15 {
+    padding: 16px 14px;
+  }
+
+  .friend-profile-component__s5 {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .friend-profile-component__s6 {
+    width: 76px;
+    height: 76px;
+  }
+
+  .friend-profile-component__s7 {
+    font-size: 26px;
+  }
+
+  .friend-profile-component__s8,
+  .friend-profile-component__s19 {
+    font-size: 10px;
+  }
+
+  .friend-profile-component__s10 {
+    letter-spacing: 2px;
+  }
+
+  .friend-profile-component__s18 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

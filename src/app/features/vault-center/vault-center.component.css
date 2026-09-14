@@ -338,3 +338,60 @@
     padding: 48px 18px;
   }
 }
+
+@media (max-width: 420px) {
+  .vault-center-component__s1 {
+    padding: 24px 10px 40px;
+  }
+
+  .vault-center-component__s3,
+  .vault-settings-box,
+  .vault-journal-box,
+  .vault-center-component__s19 {
+    padding: 14px;
+  }
+
+  .logo-text {
+    font-size: 2rem;
+  }
+
+  .logo-icon {
+    width: 1.4rem;
+    height: 2rem;
+  }
+
+  .vault-center-component__s12 {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .vault-center-component__s13,
+  .vault-nav-link,
+  .vault-center-component__s9 {
+    width: 100%;
+  }
+
+  .vault-settings-header {
+    gap: 12px;
+  }
+
+  .vault-settings-title,
+  .vault-center-component__s22 {
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .vault-center-component__s25 {
+    gap: 12px;
+  }
+
+  .vault-center-component__s26,
+  .vault-photo-card {
+    height: 170px;
+  }
+
+  .vault-upgrade-box {
+    padding: 32px 14px;
+  }
+}

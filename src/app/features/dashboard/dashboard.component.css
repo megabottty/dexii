@@ -1,5 +1,5 @@
 .dashboard-component__s1 {
-  min-height: 100vh; font-family: 'Times New Roman', serif; padding-bottom: 60px; transition: all 0.8s ease; position: relative; overflow-x: hidden;
+  min-height: 100vh; font-family: 'Times New Roman', serif; padding-bottom: 60px; transition: background-color 0.4s ease, color 0.4s ease; position: relative; overflow-x: hidden;
 }
 
 .dashboard-component__s2 {
@@ -351,7 +351,7 @@
 }
 
 .dashboard-component__s83 {
-  background: none; border: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+  background: none; border: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; padding: 10px 4px; min-height: 44px;
 }
 
 .dashboard-component__s84 {

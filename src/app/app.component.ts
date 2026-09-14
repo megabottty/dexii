@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, OnDestroy, DestroyRef, computed } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, DestroyRef, computed, HostListener } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -54,20 +54,43 @@ interface WalkthroughStep {
         </div>
       }
 
-      <button (click)="showRouteHint.set(!showRouteHint())"
-              aria-label="Toggle route hint"
-              [style.background-color]="theme.colors().primary"
-              [style.color]="'#fff'"
-              class="app-hint-toggle">💡</button>
+      <div class="app-support-actions"
+           [class.app-support-actions--hidden]="mobileNavOpen()">
+        @if (supportMenuOpen()) {
+          <div [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               id="app-support-menu"
+               class="app-support-menu">
+            <button (click)="toggleRouteHint()"
+                    type="button"
+                    [style.color]="theme.colors().text"
+                    class="app-support-menu__item app-hint-toggle">
+              <span aria-hidden="true">💡</span>
+              {{ showRouteHint() ? 'Hide Quick Hint' : 'Show Quick Hint' }}
+            </button>
 
-      @if (!currentPath().startsWith('/chat')) {
-        <button (click)="openWalkthrough()"
-                aria-label="Open help and tips walkthrough"
+            @if (!currentPath().startsWith('/chat')) {
+              <button (click)="openWalkthroughFromMenu()"
+                      type="button"
+                      [style.background-color]="theme.colors().primary"
+                      class="app-component__s7 app-support-menu__item">
+                Help & Tips Walkthrough
+              </button>
+            }
+          </div>
+        }
+
+        <button (click)="toggleSupportMenu()"
+                type="button"
+                aria-label="Open help tools"
+                [attr.aria-expanded]="supportMenuOpen()"
+                aria-controls="app-support-menu"
                 [style.background-color]="theme.colors().primary"
-                class="app-component__s7">
-          Help & Tips
+                class="app-support-fab">
+          <span aria-hidden="true">?</span>
+          Help
         </button>
-      }
+      </div>
 
       @if (showFriendRequestNotification()) {
         <div [style.background-color]="theme.colors().bgSecondary"
@@ -301,10 +324,13 @@ export class AppComponent implements OnInit, OnDestroy {
   private walkthroughService = inject(WalkthroughService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private navMenuObserver: MutationObserver | null = null;
 
   currentPath = signal(this.router.url || '/dashboard');
   activeHint = signal('');
   showRouteHint = signal(false);
+  supportMenuOpen = signal(false);
+  mobileNavOpen = signal(false);
   userWantsHint = signal(true);
   showWalkthrough = signal(false);
   showNextSteps = signal(false);
@@ -395,12 +421,16 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe((event) => {
         this.currentPath.set(event.urlAfterRedirects || event.url || '/dashboard');
+        this.supportMenuOpen.set(false);
         this.userWantsHint.set(false);
         this.refreshRouteHint();
+        this.syncMobileNavState();
         void this.refreshOnboardingState();
       });
 
     this.refreshRouteHint();
+    this.syncMobileNavState();
+    this.observeMobileNavState();
     void this.refreshOnboardingState();
     this.onboardingRefreshTimer = setInterval(() => {
       void this.refreshOnboardingState();
@@ -412,10 +442,29 @@ export class AppComponent implements OnInit, OnDestroy {
       clearInterval(this.onboardingRefreshTimer);
       this.onboardingRefreshTimer = null;
     }
+
+    if (this.navMenuObserver) {
+      this.navMenuObserver.disconnect();
+      this.navMenuObserver = null;
+    }
   }
 
   openWalkthrough() {
     this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR, true);
+  }
+
+  toggleSupportMenu(): void {
+    this.supportMenuOpen.update((open) => !open);
+  }
+
+  toggleRouteHint(): void {
+    this.showRouteHint.set(!this.showRouteHint());
+    this.supportMenuOpen.set(false);
+  }
+
+  openWalkthroughFromMenu(): void {
+    this.supportMenuOpen.set(false);
+    this.openWalkthrough();
   }
 
   nextWalkthroughStep() {
@@ -493,6 +542,19 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showRouteHint.set(false);
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.app-support-actions')) {
+      this.supportMenuOpen.set(false);
+    }
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.syncMobileNavState();
+  }
+
   private routeHintKey(path: string): string {
     if (path.startsWith('/friends/')) return '/friends/:id';
     if (path.startsWith('/profile/')) return '/profile/:id';
@@ -518,6 +580,32 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.loadIncomingFriendRequestNotification();
     await this.messaging.loadConversationSummaries();
     this.maybeAutoShowWalkthrough();
+  }
+
+  private observeMobileNavState(): void {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+
+    this.navMenuObserver = new MutationObserver(() => {
+      this.syncMobileNavState();
+    });
+
+    this.navMenuObserver.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private syncMobileNavState(): void {
+    if (typeof document === 'undefined') return;
+
+    const isOpen = !!document.querySelector('.navbar-links-open');
+    this.mobileNavOpen.set(isOpen);
+
+    if (isOpen) {
+      this.supportMenuOpen.set(false);
+    }
   }
 
   private async loadFriendCount(): Promise<void> {

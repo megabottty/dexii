@@ -36,3 +36,41 @@
 .page-hint-toggle:hover {
   transform: scale(1.1);
 }
+
+@media (max-width: 760px) {
+  .page-hint-component__s1 {
+    padding: 10px 12px;
+  }
+
+  .page-hint-component__s2 {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-hint-component__s1 {
+    margin-bottom: 12px;
+    padding: 10px;
+  }
+
+  .page-hint-component__s2 {
+    flex-direction: column;
+  }
+
+  .page-hint-component__s2 > div:last-child {
+    align-self: flex-end;
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+
+  .page-hint-component__s4 {
+    font-size: 11px;
+  }
+
+  .page-hint-toggle {
+    margin-bottom: 10px;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}

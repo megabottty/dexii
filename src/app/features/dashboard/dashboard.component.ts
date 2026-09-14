@@ -745,7 +745,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
         <!-- Grid -->
           <div class="dashboard-component__s82">
-             <h2 [style.color]="theme.colors().primary" class="dashboard-rolodex-mini-title">The Rolodex</h2>
+             <h2 [style.color]="theme.colors().primary" class="dashboard-rolodex-mini-title">
+               {{ showArchived() ? 'Archived' : 'Active Crushes' }}
+             </h2>
              <button (click)="toggleArchived()"
                      [style.color]="theme.colors().textSecondary"
                      class="dashboard-component__s83">
