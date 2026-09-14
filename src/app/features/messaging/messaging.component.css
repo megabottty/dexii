@@ -83,6 +83,14 @@
   text-align: center;
 }
 
+.messaging-not-friends-banner {
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .chat-hub {
   display: flex;
   flex-direction: column;

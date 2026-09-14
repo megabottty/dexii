@@ -19,11 +19,13 @@ const areFriends = async (userId, otherId) => {
   if (mongoose.connection.readyState !== 1) {
     try {
       const state = await readStore();
-      const user = state.users.find(u => u.username === userId || u.id === userId);
+      const user = state.users.find(u => u.username === userId);
       const friendnames = state.friendships?.[user?.username] || [];
       return friendnames.includes(otherId);
-    } catch {
-      return true;
+    } catch (err) {
+      // Fail closed: if we can't verify the friendship, don't allow messaging.
+      console.warn('areFriends (demo mode) lookup failed, denying by default:', err.message);
+      return false;
     }
   }
 

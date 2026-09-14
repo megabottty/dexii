@@ -50,6 +50,15 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
         </app-page-hint>
 
         @if (hasActiveChat()) {
+          @if (!isChatPartnerFriend()) {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().textSecondary"
+                 class="messaging-not-friends-banner">
+              You're no longer friends with {{ currentChatPartner().username }}, so you can't send new messages here.
+              Your past conversation is still shown below.
+            </div>
+          }
           @for (msg of activeMessages(); track msg.id) {
             <div [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'"
                  [style.max-width]="'70%'"
@@ -220,7 +229,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
       </div>
 
       <!-- Input Area -->
-      @if (hasActiveChat()) {
+      @if (hasActiveChat() && isChatPartnerFriend()) {
         <div [style.background-color]="theme.colors().bgSecondary" [style.border-top]="'1px solid ' + theme.colors().border"
              class="messaging-component__s11">
           <div class="messaging-composer">
@@ -253,6 +262,13 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               </span>
             </div>
           </div>
+        </div>
+      } @else if (hasActiveChat()) {
+        <div [style.background-color]="theme.colors().bgSecondary" [style.border-top]="'1px solid ' + theme.colors().border"
+             [style.color]="theme.colors().textSecondary"
+             class="messaging-component__s11"
+             style="text-align: center; padding: 16px; font-size: 13px;">
+          Messaging is disabled because you're no longer friends with {{ currentChatPartner().username }}.
         </div>
       }
     </div>
@@ -289,6 +305,17 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     };
   });
   hasActiveChat = computed(() => Boolean(this.currentChatPartner().id));
+  /**
+   * False when the current chat partner is no longer a mutual friend (e.g. the
+   * friendship ended after the conversation started, or a stale link/notification
+   * points at someone you're not friends with). `messaging.isCurrentFriend()`
+   * defaults to true while the friend list hasn't loaded yet, so this won't
+   * falsely flag a chat before the check has had a chance to run.
+   */
+  isChatPartnerFriend = computed(() => {
+    if (!this.hasActiveChat()) return true;
+    return this.messaging.isCurrentFriend(this.currentChatPartner());
+  });
   newMessage = '';
 
   // Falls back to the legacy local-only 'me' marker when signed out, so existing
@@ -351,6 +378,10 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   send() {
     if (!this.hasActiveChat() || !this.newMessage.trim()) return;
+    if (!this.isChatPartnerFriend()) {
+      this.modal.show(`You're no longer friends with ${this.currentChatPartner().username}, so this message can't be sent.`);
+      return;
+    }
 
     if (!this.security.moderateContent(this.newMessage)) {
       this.modal.show('Message flagged by AI moderation for safety.');

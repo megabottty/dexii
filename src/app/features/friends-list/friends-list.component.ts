@@ -204,6 +204,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   [style.color]="activeTab() === 'sent' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'sent' ? theme.colors().primary : theme.colors().border)"
                   style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Pending Sent ({{ outgoingRequests().length }})</button>
+          <button (click)="activeTab.set('archived'); loadArchivedFriendsView()"
+                  [style.background-color]="activeTab() === 'archived' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'archived' ? 'white' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'archived' ? theme.colors().primary : theme.colors().border)"
+                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Archived ({{ archivedFriendIdsCount() }})</button>
         </div>
 
         @if (activeTab() === 'find') {
@@ -454,6 +459,46 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">Your inner circle is currently empty.</p>
               </div>
             }
+            }
+          </div>
+        }
+
+        @if (activeTab() === 'archived') {
+          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
+               class="friends-list-component__s52">
+            <p class="friends-list-component__s47">
+              Archived friends stay hidden from your main list, but your friendship and sharing stay active. Unarchive anytime to bring them back into view.
+            </p>
+          </div>
+
+          <div class="friends-list-component__s53">
+            @if (isLoadingArchived()) {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading archived friends…</p>
+            } @else {
+              @for (friend of archivedFriends(); track friend.id) {
+                <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
+                     class="friends-list-component__s54">
+                  <div class="friends-list-component__s55">
+                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                    <div>
+                      <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
+                      <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">Archived</span>
+                    </div>
+                  </div>
+                  <div class="friends-list-component__s59">
+                    <button (click)="unarchiveFriend(friend)"
+                            [style.color]="theme.colors().primary"
+                            [style.border]="'1px solid ' + theme.colors().primary"
+                            class="friends-list-action-btn">
+                      Unarchive
+                    </button>
+                  </div>
+                </div>
+              } @empty {
+                <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
+                   <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">You haven't archived any friends.</p>
+                </div>
+              }
             }
           </div>
         }
@@ -733,8 +778,10 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   selectedFriend = signal<FriendCardView | null>(null);
-  activeTab = signal<'friends' | 'find' | 'incoming' | 'sent'>('friends');
+  activeTab = signal<'friends' | 'find' | 'incoming' | 'sent' | 'archived'>('friends');
   friends = signal<FriendCardView[]>([]);
+  archivedFriends = signal<FriendCardView[]>([]);
+  isLoadingArchived = signal(false);
   searchQuery = signal('');
   searchResults = signal<FriendSearchResult[]>([]);
   incomingRequests = signal<FriendRequestItem[]>([]);
@@ -1487,6 +1534,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         archivedIds.delete(friend.id);
         this.writeArchivedFriendIds(archivedIds);
         this.friends.update((items) => items.filter((item) => item.id !== friend.id));
+        this.messaging.pruneConversation(friend.id, friend.username);
         if (this.selectedFriend()?.id === friend.id) {
           this.closeSharing();
         }
@@ -1506,6 +1554,37 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       await this.loadFriends();
       this.modal.show('Friend archived.');
     });
+  }
+
+  /** Loads the full friend list (unfiltered) so archived friends can be resolved back into cards. */
+  async loadArchivedFriendsView() {
+    if (!this.isAuthenticated()) {
+      this.archivedFriends.set([]);
+      return;
+    }
+    this.isLoadingArchived.set(true);
+    try {
+      const data = await this.friendsApi.listFriends();
+      const archivedIds = this.readArchivedFriendIds();
+      this.archivedFriends.set(data.map((f) => this.mapApiUser(f)).filter((friend) => archivedIds.has(friend.id)));
+    } catch (error: any) {
+      this.modal.show(error?.message || 'Unable to load archived friends.');
+    } finally {
+      this.isLoadingArchived.set(false);
+    }
+  }
+
+  async unarchiveFriend(friend: FriendCardView) {
+    const archivedIds = this.readArchivedFriendIds();
+    archivedIds.delete(friend.id);
+    this.writeArchivedFriendIds(archivedIds);
+    this.archivedFriends.update((list) => list.filter((f) => f.id !== friend.id));
+    await this.loadFriends();
+    this.modal.show(`${friend.username} is back in your friends list.`);
+  }
+
+  archivedFriendIdsCount(): number {
+    return this.readArchivedFriendIds().size;
   }
 
   manageSharing(friend: FriendCardView) {

@@ -2,6 +2,7 @@ import { Injectable, signal, effect, inject, computed } from '@angular/core';
 import { Message } from '../models/message.model';
 import { SecurityService } from './security.service';
 import { RealtimeService, IncomingSocketMessage } from './realtime.service';
+import { FriendsApiService } from './friends-api.service';
 import { getApiBaseUrl } from '../config/api-config';
 
 export interface ChatSummary {
@@ -23,6 +24,7 @@ export class MessagingService {
   private readonly storageKeyPrefix = 'dexii_messages';
   private security = inject(SecurityService);
   private realtime = inject(RealtimeService);
+  private friendsApi = inject(FriendsApiService);
   private apiBase = getApiBaseUrl();
   private _messages = signal<Message[]>([]);
   public messages = this._messages.asReadonly();
@@ -35,6 +37,12 @@ export class MessagingService {
   public latestIncomingMessage = this._latestIncomingMessage.asReadonly();
   private _conversationSummaries = signal<ChatSummary[]>([]);
   public conversationSummaries = this._conversationSummaries.asReadonly();
+  /**
+   * Current friend ids/usernames, used to keep the chat hub honest: a former
+   * friend's cached thread must never resurface once the friendship ends.
+   * `null` means "not loaded yet" so we don't blank the chat list on first paint.
+   */
+  private _knownFriendKeys = signal<Set<string> | null>(null);
   public totalUnreadCount = computed(() =>
     this._conversationSummaries().reduce((total, chat) => total + chat.unreadCount, 0)
   );
@@ -67,6 +75,64 @@ export class MessagingService {
       this.realtime.connect(userId);
       this.bindRealtime();
     });
+
+    // Keep the known-friends set current so former friends never resurface in chat.
+    effect(() => {
+      const userId = this.security.currentUserId();
+      if (!userId) {
+        this._knownFriendKeys.set(null);
+        return;
+      }
+      void this.refreshKnownFriendKeys();
+    });
+  }
+
+  /** Refetches the current friends list and re-applies the friend filter to whatever is cached. */
+  async refreshKnownFriendKeys(): Promise<void> {
+    try {
+      const friends = await this.friendsApi.listFriends();
+      const keys = new Set<string>();
+      for (const friend of friends) {
+        if (friend.id) keys.add(String(friend.id));
+        if (friend.username) keys.add(String(friend.username));
+      }
+      this._knownFriendKeys.set(keys);
+      this._conversationSummaries.update((rows) => this.filterToCurrentFriends(rows));
+    } catch (err) {
+      console.warn('Could not refresh known friends for chat filtering:', err);
+    }
+  }
+
+  /** Returns true if we have no confirmed friend list yet, or the id/username is a current friend. */
+  isCurrentFriend(friend: { id: string; username?: string }): boolean {
+    const known = this._knownFriendKeys();
+    if (known === null) return true; // not loaded yet; don't blank the hub on first paint
+    return known.has(String(friend.id)) || (!!friend.username && known.has(String(friend.username)));
+  }
+
+  private filterToCurrentFriends(rows: ChatSummary[]): ChatSummary[] {
+    return rows.filter((row) => this.isCurrentFriend(row.friend));
+  }
+
+  /**
+   * Removes a friend's cached thread entirely (called right after unfriending) so a
+   * stale local-storage copy can never resurface in the chat hub, even transiently.
+   */
+  pruneConversation(friendId: string, friendUsername?: string): void {
+    this._conversationSummaries.update((rows) =>
+      rows.filter((row) => row.friend.id !== friendId && (!friendUsername || row.friend.username !== friendUsername))
+    );
+    this._messages.update((msgs) =>
+      msgs.filter((m) => m.senderId !== friendId && m.receiverId !== friendId)
+    );
+    this.persistMessages();
+    this._knownFriendKeys.update((known) => {
+      if (!known) return known;
+      const next = new Set(known);
+      next.delete(friendId);
+      if (friendUsername) next.delete(friendUsername);
+      return next;
+    });
   }
 
   /** Registers the inbound message listener exactly once. */
@@ -97,7 +163,7 @@ export class MessagingService {
     this._messages.update((msgs) => [...msgs, message]);
     this.persistMessages();
     this._latestIncomingMessage.set(message);
-    this._conversationSummaries.set(this.localConversationSummaries());
+    this._conversationSummaries.set(this.filterToCurrentFriends(this.localConversationSummaries()));
     void this.loadConversationSummaries();
   }
 
@@ -308,7 +374,7 @@ export class MessagingService {
   async loadConversationSummaries(): Promise<void> {
     const selfId = this.security.currentUserId();
     if (!selfId) {
-      this._conversationSummaries.set(this.localConversationSummaries());
+      this._conversationSummaries.set(this.filterToCurrentFriends(this.localConversationSummaries()));
       return;
     }
 
@@ -317,17 +383,17 @@ export class MessagingService {
         headers: this.security.authHeaders()
       });
       if (!response.ok) {
-        this._conversationSummaries.set(this.localConversationSummaries());
+        this._conversationSummaries.set(this.filterToCurrentFriends(this.localConversationSummaries()));
         return;
       }
 
       const rows = await response.json();
       if (!Array.isArray(rows)) {
-        this._conversationSummaries.set(this.localConversationSummaries());
+        this._conversationSummaries.set(this.filterToCurrentFriends(this.localConversationSummaries()));
         return;
       }
 
-      this._conversationSummaries.set(rows
+      this._conversationSummaries.set(this.filterToCurrentFriends(rows
         .filter((row) => row?.friend?.id && row?.latestMessage?.content)
         .map((row) => ({
           friend: {
@@ -339,10 +405,10 @@ export class MessagingService {
           latestMessage: this.mapServerMessage(row.latestMessage),
           unreadCount: Number.isFinite(row.unreadCount) ? row.unreadCount : 0,
           unreadSelfDestructCount: Number.isFinite(row.unreadSelfDestructCount) ? row.unreadSelfDestructCount : 0
-        })));
+        }))));
     } catch (err) {
       console.warn('Could not load chat list from the server:', err);
-      this._conversationSummaries.set(this.localConversationSummaries());
+      this._conversationSummaries.set(this.filterToCurrentFriends(this.localConversationSummaries()));
     }
   }
 

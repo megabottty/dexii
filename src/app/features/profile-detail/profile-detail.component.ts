@@ -137,7 +137,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     {{ c.relationshipStatus }}
                   </p>
                 }
-                <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap;">
+                <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                   @if (!statusQuickEditOpen()) {
                     <button type="button"
                             (click)="openQuickStatusEditor(c)"
@@ -146,6 +146,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             class="status-chip-button">
                       Status: {{ c.status || 'Crushing' }}
                     </button>
+                    <span class="status-visibility-info"
+                          title="Status tracks where things stand: Crush → Crushing → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
+                          aria-label="What does changing status do?">ℹ</span>
                   } @else {
                     <div class="status-quick-edit">
                       <select [value]="quickStatusDraft() || c.status || statuses.Crushing"
