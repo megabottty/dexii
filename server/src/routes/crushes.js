@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { getCrushes, getFriendSharedCrushes, createCrush, updateCrush } = require('../controllers/crushController');
+const { getCrushes, getFriendSharedCrushes, getSharedCrushById, createCrush, updateCrush } = require('../controllers/crushController');
 
 // All routes here require auth
 router.use(auth);
@@ -11,6 +11,9 @@ router.get('/', getCrushes);
 
 // @route   GET /api/crushes/friend/:friendId
 router.get('/friend/:friendId', getFriendSharedCrushes);
+
+// @route   GET /api/crushes/shared/:crushId
+router.get('/shared/:crushId', getSharedCrushById);
 
 // @route   POST /api/crushes
 router.post('/', createCrush);

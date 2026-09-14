@@ -73,6 +73,59 @@ exports.getFriendSharedCrushes = async (req, res) => {
   }
 };
 
+// @desc    Get a single crush profile that a friend has shared with the requesting user
+//          (used by notification deep-links / friend "Boys" list clicks, since the
+//          viewer's own crush list won't contain a friend's crush)
+// @route   GET /api/crushes/shared/:crushId
+exports.getSharedCrushById = async (req, res) => {
+  try {
+    const { crushId } = req.params;
+    if (!mongoose.isValidObjectId(crushId)) {
+      return res.status(404).json({ message: 'Crush not found' });
+    }
+
+    const crush = await CrushProfile.findById(crushId);
+    if (!crush) {
+      return res.status(404).json({ message: 'Crush not found' });
+    }
+
+    const myId = String(req.user.id);
+
+    // If the requester actually owns this crush, just return it as-is.
+    if (String(crush.userId) === myId) {
+      return res.json({ crush, owner: null });
+    }
+
+    const me = await User.findById(req.user.id).select('friends username').lean();
+    if (!me) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const isFriend = (me.friends || []).some((id) => String(id) === String(crush.userId));
+    if (!isFriend) {
+      return res.status(403).json({ message: 'You are not friends with this user.' });
+    }
+
+    const myUsername = typeof me.username === 'string' ? me.username : '';
+    const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
+    const isShared = visibility.includes(myId) || (myUsername && visibility.includes(myUsername));
+    if (!isShared) {
+      return res.status(403).json({ message: 'This crush has not been shared with you.' });
+    }
+
+    const owner = await User.findById(crush.userId).select('username firstName lastName').lean();
+
+    res.json({
+      crush,
+      owner: owner
+        ? { id: String(owner._id), username: owner.username, firstName: owner.firstName, lastName: owner.lastName }
+        : null
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // @desc    Create a new crush profile
 // @route   POST /api/crushes
 exports.createCrush = async (req, res) => {

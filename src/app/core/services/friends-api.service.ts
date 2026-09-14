@@ -244,6 +244,29 @@ export class FriendsApiService {
     return Array.isArray(crushes) ? crushes.map((crush) => this.mapCrush(crush)) : [];
   }
 
+  /**
+   * Fetches a single crush that belongs to a friend and has been shared with the
+   * current user (e.g. via a "friend shared a new crush" notification deep-link).
+   * Returns null if the crush doesn't exist, isn't shared with the caller, or the
+   * caller isn't friends with its owner.
+   */
+  async getSharedCrush(crushId: string): Promise<{ crush: CrushProfile; ownerName: string | null } | null> {
+    try {
+      const result = await this.request<{ crush: BackendCrushProfile; owner: { id: string; username: string; firstName?: string; lastName?: string } | null }>(
+        `/shared/${encodeURIComponent(crushId)}`,
+        {},
+        'crushes'
+      );
+      if (!result?.crush) return null;
+      const ownerName = result.owner
+        ? ([result.owner.firstName, result.owner.lastName].filter(Boolean).join(' ') || result.owner.username || null)
+        : null;
+      return { crush: this.mapCrush(result.crush), ownerName };
+    } catch {
+      return null;
+    }
+  }
+
   invite(contact: string, method: 'email' | 'sms', message = ''): Promise<InviteResponse> {
     return this.request<InviteResponse>('/invite', {
       method: 'POST',

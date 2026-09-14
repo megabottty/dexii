@@ -35,7 +35,42 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <a routerLink="/dashboard" [style.color]="theme.colors().text" class="back-link">← Back to Dashboard</a>
       </div>
 
-      @if (crush(); as c) {
+      @if (isReadOnlyFriendView() && crush(); as c) {
+        <div class="profile-main-content">
+          <div [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               style="border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;"
+               [style.color]="theme.colors().primary">
+            @if (friendCrushOwnerName()) {
+              Shared by {{ friendCrushOwnerName() }} · Read-only
+            } @else {
+              Shared crush · Read-only
+            }
+          </div>
+          <div [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               style="border-radius: 16px; padding: 24px; display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <img [src]="c.avatarUrl || 'https://i.pravatar.cc/150?u=' + c.nickname"
+                 [alt]="c.nickname"
+                 style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;">
+            <div style="flex: 1; min-width: 200px;">
+              <h2 style="margin: 0 0 4px 0; font-size: 22px;">{{ c.nickname }}</h2>
+              @if (c.fullName) {
+                <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
+              }
+              <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
+                {{ c.status }}
+              </span>
+              @if (c.bio) {
+                <p style="margin-top: 12px; line-height: 1.6;">{{ c.bio }}</p>
+              }
+              @if (c.customNotes) {
+                <p [style.color]="theme.colors().textSecondary" style="margin-top: 12px; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
+              }
+            </div>
+          </div>
+        </div>
+      } @else if (crush(); as c) {
         <div class="profile-main-content">
           @if (safetyState() !== 'Draft') {
             <div [style.background-color]="theme.colors().bgSecondary"
@@ -926,6 +961,17 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             </div>
           }
         </div>
+      } @else if (friendCrushLoading()) {
+        <div style="padding: 48px; text-align: center;">
+          <p [style.color]="theme.colors().textSecondary">Loading shared crush…</p>
+        </div>
+      } @else if (friendCrushNotFound()) {
+        <div style="padding: 48px; text-align: center;">
+          <p [style.color]="theme.colors().text" style="font-weight: 700; margin-bottom: 8px;">This crush isn't available.</p>
+          <p [style.color]="theme.colors().textSecondary">
+            It may have been removed, or it's no longer shared with you.
+          </p>
+        </div>
       }
     </div>
   `
@@ -942,6 +988,10 @@ export class ProfileDetailComponent implements OnDestroy {
   private router = inject(Router);
 
   crushId = signal<string | null>(null);
+  friendCrush = signal<CrushProfile | null>(null);
+  friendCrushOwnerName = signal<string | null>(null);
+  friendCrushLoading = signal(false);
+  friendCrushNotFound = signal(false);
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
   onDateMode = signal(false);
   statuses = CrushStatus;
@@ -1029,7 +1079,17 @@ export class ProfileDetailComponent implements OnDestroy {
   crush = computed(() => {
     const id = this.crushId();
     if (!id) return null;
-    return this.dataService.visibleCrushes().find(c => c.id === id) || null;
+    const own = this.dataService.visibleCrushes().find(c => c.id === id);
+    if (own) return own;
+    return this.friendCrush();
+  });
+
+  /** True when the crush being viewed belongs to a friend (read-only view, no edit/share/archive controls). */
+  isReadOnlyFriendView = computed(() => {
+    const id = this.crushId();
+    if (!id) return false;
+    const own = this.dataService.visibleCrushes().find(c => c.id === id);
+    return !own && !!this.friendCrush();
   });
 
   entries = computed(() => {
@@ -1065,6 +1125,33 @@ export class ProfileDetailComponent implements OnDestroy {
     this.loadFriends();
     this.loadVibePromptFrequency();
     this.refreshVibePromptVisibility();
+    this.loadFriendCrushIfNeeded();
+  }
+
+  /**
+   * If the requested crush isn't in the viewer's own list (e.g. they arrived via a
+   * "friend shared a new crush" notification, or a link from a friend's profile page),
+   * fetch it as a read-only shared crush instead of showing a blank page.
+   */
+  private async loadFriendCrushIfNeeded(): Promise<void> {
+    const id = this.crushId();
+    if (!id) return;
+    if (this.dataService.visibleCrushes().find(c => c.id === id)) return;
+
+    this.friendCrushLoading.set(true);
+    try {
+      const result = await this.friendsApi.getSharedCrush(id);
+      if (result) {
+        this.friendCrush.set(result.crush);
+        this.friendCrushOwnerName.set(result.ownerName);
+      } else {
+        this.friendCrushNotFound.set(true);
+      }
+    } catch {
+      this.friendCrushNotFound.set(true);
+    } finally {
+      this.friendCrushLoading.set(false);
+    }
   }
 
   asSelectValue(event: Event): string {
