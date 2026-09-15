@@ -486,6 +486,16 @@ exports.acceptInviteForUser = async function acceptInviteForUser(token, newUserI
 
     try {
       await linkFriends(invite.invitedBy, newUserId);
+      try {
+        await createNotification({
+          recipient: invite.invitedBy,
+          actor: newUserId,
+          type: 'invite_accepted',
+          payload: { inviteId: String(invite._id) }
+        });
+      } catch (notifyErr) {
+        console.error('Invite accepted notification failed:', notifyErr.message);
+      }
     } catch (err) {
       console.error(
         `Invite ${invite._id} was claimed but friendship linking failed for inviter ${invite.invitedBy} and user ${newUserId}:`,
@@ -543,6 +553,16 @@ exports.sendFriendRequest = async (req, res) => {
       reverse.respondedAt = new Date();
       await reverse.save();
       await linkFriends(req.user.id, toUserId);
+      try {
+        await createNotification({
+          recipient: toUserId,
+          actor: req.user.id,
+          type: 'friend_request_accepted',
+          payload: { friendRequestId: String(reverse._id) }
+        });
+      } catch (notifyErr) {
+        console.error('Friend request auto-accept notification failed:', notifyErr.message);
+      }
       return res.json({ status: 'accepted', message: 'You are now friends.', request: reverse });
     }
 
@@ -552,6 +572,16 @@ exports.sendFriendRequest = async (req, res) => {
     }
 
     const request = await FriendRequest.create({ from: req.user.id, to: toUserId, message });
+    try {
+      await createNotification({
+        recipient: toUserId,
+        actor: req.user.id,
+        type: 'friend_request_received',
+        payload: { friendRequestId: String(request._id) }
+      });
+    } catch (notifyErr) {
+      console.error('Friend request received notification failed:', notifyErr.message);
+    }
     res.status(201).json(request);
   } catch (err) {
     console.error(err.message);
@@ -632,6 +662,16 @@ exports.respondToRequest = async (req, res) => {
 
     if (action === 'accept') {
       await linkFriends(request.from, request.to);
+      try {
+        await createNotification({
+          recipient: request.from,
+          actor: req.user.id,
+          type: 'friend_request_accepted',
+          payload: { friendRequestId: String(request._id) }
+        });
+      } catch (notifyErr) {
+        console.error('Friend request accepted notification failed:', notifyErr.message);
+      }
     }
 
     res.json(request);

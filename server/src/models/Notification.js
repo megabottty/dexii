@@ -13,7 +13,13 @@ const NotificationSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['friend_request_nudge', 'crush_shared']
+    enum: [
+      'friend_request_nudge',
+      'crush_shared',
+      'invite_accepted',
+      'friend_request_received',
+      'friend_request_accepted'
+    ]
   },
   payload: {
     type: mongoose.Schema.Types.Mixed,

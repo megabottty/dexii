@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
 import { UserSettingsService } from '../../core/services/user-settings.service';
 import { FriendsApiService } from '../../core/services/friends-api.service';
+import { SecurityService } from '../../core/services/security.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
@@ -372,6 +373,7 @@ export class SignupProfileComponent implements OnInit {
   private settings = inject(UserSettingsService);
   private route = inject(ActivatedRoute);
   private friendsApi = inject(FriendsApiService);
+  private security = inject(SecurityService);
 
   inviterName = signal<string>('');
   username = signal<string>(this.settings.getSignupDraft().username || '');
@@ -393,6 +395,13 @@ export class SignupProfileComponent implements OnInit {
     if (!token) {
       localStorage.removeItem('dexii_invite_token');
       return;
+    }
+
+    // A fresh invite link is always for setting up a brand-new account, so
+    // any leftover session in this browser (logged in as someone else, or
+    // locked) must not carry over into this signup.
+    if (this.security.isLoggedIn()) {
+      this.security.clearSession();
     }
 
     localStorage.setItem('dexii_invite_token', token);

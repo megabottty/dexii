@@ -405,8 +405,14 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit() {
     console.log('AppComponent initialized, isLocked:', this.security.isLocked(), 'isLoggedIn:', this.security.isLoggedIn());
 
-    // Initial routing logic based on auth/lock status
-    if (this.router.url === '/' || this.router.url === '/dashboard') {
+    // Initial routing logic based on auth/lock status.
+    // Uses window.location.pathname (not this.router.url) because with
+    // provideRouter's non-blocking initial navigation, ngOnInit can run
+    // before the Router has committed the first URL - this.router.url would
+    // still read '/' even on a direct deep link like /signup-profile?invite=...,
+    // wrongly forcing a redirect to /login and losing the invite token.
+    const initialPath = typeof window !== 'undefined' ? window.location.pathname : this.router.url;
+    if (initialPath === '/' || initialPath === '/dashboard') {
        if (!this.security.isLoggedIn()) {
          this.router.navigate(['/login']);
        } else if (this.security.isLocked()) {

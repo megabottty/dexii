@@ -4,7 +4,13 @@ import { firstValueFrom } from 'rxjs';
 import { getApiBaseUrl } from '../config/api-config';
 import { SecurityService } from './security.service';
 
-export type NotificationType = 'friend_request_nudge' | 'crush_shared' | string;
+export type NotificationType =
+  | 'friend_request_nudge'
+  | 'crush_shared'
+  | 'invite_accepted'
+  | 'friend_request_received'
+  | 'friend_request_accepted'
+  | string;
 
 export interface NotificationActor {
   id: string;

@@ -329,6 +329,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
         return `${actorName} sent you a nudge on their friend request`;
       case 'crush_shared':
         return `${actorName} shared a new crush with you`;
+      case 'invite_accepted':
+        return `${actorName} accepted your invite and joined Dexii!`;
+      case 'friend_request_received':
+        return `${actorName} sent you a friend request`;
+      case 'friend_request_accepted':
+        return `${actorName} accepted your friend request`;
       default:
         return `${actorName} sent you an update`;
     }

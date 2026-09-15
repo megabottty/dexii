@@ -315,6 +315,17 @@ export class SecurityService {
   }
 
   logout(): void {
+    this.clearSession();
+    this.router.navigate(['/login']);
+  }
+
+  /**
+   * Clears all local session state (token, PIN, lock) without navigating.
+   * Used when landing on a public route like a fresh invite signup link,
+   * so a stale logged-in session in the same browser can't interfere with
+   * starting a brand-new account.
+   */
+  clearSession(): void {
     localStorage.removeItem('dexii_api_token');
     localStorage.removeItem('dexii_api_username');
     localStorage.removeItem('dexii_api_user_id');
@@ -325,6 +336,5 @@ export class SecurityService {
     this._isLoggedIn.set(false);
     this._isLocked.set(true);
     this._needsPinSetup.set(false);
-    this.router.navigate(['/login']);
   }
 }
