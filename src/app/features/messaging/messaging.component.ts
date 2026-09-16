@@ -66,8 +66,16 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               <div [style.background-color]="isMine(msg) ? theme.colors().primary : theme.colors().bgSecondary"
                    [style.color]="isMine(msg) ? 'white' : theme.colors().text"
                    [style.border]="isMine(msg) ? 'none' : '1px solid ' + theme.colors().border"
+                   [style.cursor]="msg.relatedCrushId ? 'pointer' : 'default'"
+                   [attr.role]="msg.relatedCrushId ? 'button' : null"
+                   [attr.tabindex]="msg.relatedCrushId ? 0 : null"
+                   (click)="openRelatedCrush(msg)"
+                   (keydown.enter)="openRelatedCrush(msg)"
                    class="messaging-component__s9">
                 {{ msg.content }}
+                @if (msg.relatedCrushId) {
+                  <span class="messaging-related-crush-hint">Tap to view crush ↗</span>
+                }
                 @if (msg.isSelfDestruct) {
                   <span class="messaging-component__s10">
                     🔥 Self-Destructing
@@ -299,9 +307,11 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   ];
 
   currentChatPartner = computed(() => {
+    const id = this.chatPartnerId();
+    const fallbackName = this.chatPartnerName() || id;
     return {
-      id: this.chatPartnerId(),
-      username: this.chatPartnerName() || this.chatPartnerId()
+      id,
+      username: this.chatDisplayName({ id, username: fallbackName })
     };
   });
   hasActiveChat = computed(() => Boolean(this.currentChatPartner().id));
@@ -452,6 +462,11 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     const match = this.friends().find((item) => item.id === friend.id || item.username === friend.username);
     if (match?.username) return match.username;
     return this.looksLikeObjectId(friend.username) ? 'Unknown friend' : friend.username;
+  }
+
+  openRelatedCrush(msg: { relatedCrushId?: string }): void {
+    if (!msg.relatedCrushId) return;
+    void this.router.navigate(['/profile', msg.relatedCrushId]);
   }
 
   private looksLikeObjectId(value: string): boolean {

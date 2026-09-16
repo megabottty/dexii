@@ -1,5 +1,6 @@
 import { Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { DataService } from '../../core/services/data.service';
@@ -78,7 +79,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, RouterModule, SlicePipe, PageHintComponent, NavbarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SlicePipe, PageHintComponent, NavbarComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
@@ -134,7 +135,17 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
                   @if (isCrushShared(crush)) {
                     <div class="friends-list-component__s26">
-                      <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s27">Specific Entries</p>
+                      <div style="display:flex; align-items:center; gap:6px;">
+                        <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s27">Specific Entries</p>
+                        <button (click)="showShareDestinationInfo()"
+                                [style.color]="theme.colors().textSecondary"
+                                title="This goes to the chat window between you two."
+                                aria-label="Where do shared notes go?"
+                                type="button"
+                                style="background:none; border:none; cursor:pointer; font-size:14px; line-height:1; padding:0;">
+                          ⓘ
+                        </button>
+                      </div>
                       <div
                         [style.max-height]="getEntries(crush.id).length > 3 ? '260px' : 'none'"
                         [style.overflow-y]="getEntries(crush.id).length > 3 ? 'auto' : 'visible'"
@@ -153,6 +164,23 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         } @empty {
                           <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s31">No specific entries to share.</p>
                         }
+                      </div>
+                      <div style="display:flex; gap:6px; margin-top:8px;">
+                        <input [ngModel]="quickEntryDraft(crush.id)"
+                               (ngModelChange)="setQuickEntryDraft(crush.id, $event)"
+                               (keydown.enter)="addAndShareQuickEntry(crush.id)"
+                               [style.background-color]="theme.colors().bgSecondary"
+                               [style.border]="'1px solid ' + theme.colors().border"
+                               [style.color]="theme.colors().text"
+                               placeholder="Type a quick note to share..."
+                               [attr.aria-label]="'Quick note to share about ' + crush.nickname"
+                               style="flex:1; border-radius:6px; padding:6px 8px; font-size:13px;">
+                        <button (click)="addAndShareQuickEntry(crush.id)"
+                                [disabled]="!quickEntryDraft(crush.id).trim()"
+                                [style.background-color]="theme.colors().primary"
+                                style="color:white; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">
+                          Share
+                        </button>
                       </div>
                     </div>
                   }
@@ -1631,9 +1659,26 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   toggleCrushSharing(crushId: string) {
     const friend = this.selectedFriend();
-    if (friend) {
-      this.dataService.toggleCrushVisibility(crushId, friend.id);
+    if (!friend) return;
+
+    const wasShared = this.isCrushSharedBefore(crushId, friend.id);
+    this.dataService.toggleCrushVisibility(crushId, friend.id);
+
+    if (!wasShared) {
+      const crush = this.allCrushes().find((current) => current.id === crushId);
+      this.messaging.sendMessage({
+        senderId: this.currentUserId || this.currentUsername,
+        receiverId: friend.id,
+        content: `Shared a crush: ${crush?.nickname || 'a crush'}`,
+        relatedCrushId: crushId
+      });
+      this.modal.show(`Shared crush sent to ${friend.username}.`);
     }
+  }
+
+  private isCrushSharedBefore(crushId: string, friendId: string): boolean {
+    const crush = this.allCrushes().find((current) => current.id === crushId);
+    return crush ? this.dataService.isCrushSharedWith(crush, friendId) : false;
   }
 
   toggleEntrySharing(entry: any) {
@@ -1659,6 +1704,53 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   getEntries(crushId: string) {
     return this.dataService.getEntriesForCrush(crushId)();
+  }
+
+  /** Draft text for the quick-add note input, keyed by crush id. */
+  quickEntryDrafts: Record<string, string> = {};
+
+  quickEntryDraft(crushId: string): string {
+    return this.quickEntryDrafts[crushId] || '';
+  }
+
+  setQuickEntryDraft(crushId: string, value: string): void {
+    this.quickEntryDrafts[crushId] = value;
+  }
+
+  /** Types a quick note about a crush and shares it immediately with the selected friend. */
+  addAndShareQuickEntry(crushId: string): void {
+    const friend = this.selectedFriend();
+    if (!friend) return;
+
+    const content = (this.quickEntryDrafts[crushId] || '').trim();
+    if (!content) return;
+
+    const crush = this.allCrushes().find((current) => current.id === crushId);
+
+    this.dataService.addEntry({
+      crushId,
+      type: 'Note',
+      content,
+      visibility: [friend.id],
+      isSensitive: false
+    });
+
+    const newEntry = this.getEntries(crushId).find((entry) => entry.content === content);
+
+    this.messaging.sendMessage({
+      senderId: this.currentUserId || this.currentUsername,
+      receiverId: friend.id,
+      content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${content}`,
+      relatedCrushId: crushId,
+      relatedEntryId: newEntry?.id
+    });
+
+    this.quickEntryDrafts[crushId] = '';
+    this.modal.show(`Shared note sent to ${friend.username}.`);
+  }
+
+  showShareDestinationInfo(): void {
+    this.modal.show('This goes to the chat window between you two.');
   }
 
   lockApp() {
