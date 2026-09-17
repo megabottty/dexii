@@ -161,6 +161,9 @@
 
 .is-chat-route .app-support-actions {
   bottom: calc(16px + env(safe-area-inset-bottom));
+  left: auto;
+  right: calc(16px + env(safe-area-inset-right));
+  align-items: flex-end;
 }
 
 .app-component__s8 {

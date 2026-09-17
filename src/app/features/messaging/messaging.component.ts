@@ -9,7 +9,6 @@ import { ModalService } from '../../core/services/modal.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
 import { DataService } from '../../core/services/data.service';
-import { CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
   selector: 'app-messaging',
@@ -58,41 +57,37 @@ import { CrushStatus } from '../../core/models/crush-profile.model';
              [style.border-bottom]="'1px solid ' + theme.colors().border"
              class="messaging-add-crush-panel">
           <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__label">
-            New crush to share with {{ currentChatPartner().username }}
+            Share one of your crushes with {{ currentChatPartner().username }}
           </p>
-          <input [(ngModel)]="newCrushDraft.nickname"
-                 [style.background-color]="theme.colors().bg"
-                 [style.border]="'1px solid ' + theme.colors().border"
-                 [style.color]="theme.colors().text"
-                 placeholder="Name / nickname"
-                 aria-label="Crush name"
-                 class="chat-hub__search">
-          <select [(ngModel)]="newCrushDraft.status"
-                  [style.background-color]="theme.colors().bg"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  [style.color]="theme.colors().text"
-                  style="padding: 8px 10px; border-radius: 6px; font-family: 'Times New Roman', serif;">
-            @for (status of crushStatusOptions; track status) {
-              <option [ngValue]="status">{{ status }}</option>
+          <div class="messaging-crush-picker-grid">
+            @for (crush of myCrushesForSharing(); track crush.id) {
+              <div [style.background-color]="theme.colors().cardBg"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   class="messaging-crush-picker-card">
+                <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
+                     [alt]="crush.nickname + ' photo'"
+                     class="messaging-crush-picker-avatar">
+                <div class="messaging-crush-picker-info">
+                  <h4 class="messaging-crush-picker-name">{{ crush.nickname }}</h4>
+                  <span [style.color]="theme.colors().primary" class="messaging-crush-picker-status">{{ crush.status }}</span>
+                </div>
+                <button type="button"
+                        (click)="toggleShareCrushWithChatPartner(crush)"
+                        [style.background-color]="isCrushSharedWithChatPartner(crush) ? theme.colors().primary : 'transparent'"
+                        [style.color]="isCrushSharedWithChatPartner(crush) ? 'white' : theme.colors().text"
+                        [style.border]="'1px solid ' + (isCrushSharedWithChatPartner(crush) ? theme.colors().primary : theme.colors().border)"
+                        [attr.aria-pressed]="isCrushSharedWithChatPartner(crush)"
+                        class="messaging-crush-picker-toggle">
+                  {{ isCrushSharedWithChatPartner(crush) ? 'Unshare' : 'Share' }}
+                </button>
+              </div>
+            } @empty {
+              <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__empty">
+                You don't have any crushes yet.
+                <a routerLink="/dashboard" [style.color]="theme.colors().primary">Add one from your Dashboard</a>, then come back here to share it.
+              </p>
             }
-          </select>
-          <textarea [(ngModel)]="newCrushDraft.bio"
-                    [style.background-color]="theme.colors().bg"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    rows="2"
-                    placeholder="Quick bio / notes (optional)"
-                    aria-label="Crush bio"
-                    class="chat-hub__search"
-                    style="height: auto;"></textarea>
-          <button type="button"
-                  (click)="createAndShareCrush()"
-                  [disabled]="!newCrushDraft.nickname.trim()"
-                  [style.background-color]="theme.colors().primary"
-                  [style.opacity]="newCrushDraft.nickname.trim() ? 1 : 0.5"
-                  style="padding: 10px; border-radius: 6px; border: none; color: #fff; font-weight: 600; cursor: pointer;">
-            Create &amp; Share
-          </button>
+          </div>
         </div>
       }
 
@@ -475,37 +470,38 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   }
 
   // --- Add & share a new crush directly from the chat ---
-  crushStatusOptions = Object.values(CrushStatus).filter((s) => s !== CrushStatus.Archived);
   showAddCrush = signal(false);
-  newCrushDraft = { nickname: '', status: CrushStatus.Crush as CrushStatus, bio: '' };
+
+  /** Same underlying crush list shown on the Dashboard, used here so you can
+   * share an existing crush with the current chat partner instead of having
+   * to fill out a separate "create a new crush" form. */
+  myCrushesForSharing = computed(() => this.dataService.getAllCrushes()());
 
   toggleAddCrush(): void {
     this.showAddCrush.update((open) => !open);
-    this.newCrushDraft = { nickname: '', status: CrushStatus.Crush, bio: '' };
   }
 
-  createAndShareCrush(): void {
+  isCrushSharedWithChatPartner(crush: any): boolean {
     const friend = this.currentChatPartner();
-    const nickname = this.newCrushDraft.nickname.trim();
-    if (!friend.id || !nickname) return;
+    if (!friend?.id) return false;
+    return this.dataService.isCrushSharedWith(crush, friend.id);
+  }
 
-    const crush = this.dataService.addCrush({
-      nickname,
-      status: this.newCrushDraft.status,
-      bio: this.newCrushDraft.bio.trim(),
-      visibility: [friend.id]
-    } as any);
+  toggleShareCrushWithChatPartner(crush: any): void {
+    const friend = this.currentChatPartner();
+    if (!friend?.id) return;
 
-    this.messaging.sendMessage({
-      senderId: this.selfId(),
-      receiverId: friend.id,
-      content: `Shared a crush: ${nickname}`,
-      relatedCrushId: crush.id
-    });
+    const wasShared = this.isCrushSharedWithChatPartner(crush);
+    this.dataService.toggleCrushVisibility(crush.id, friend.id);
 
-    this.showAddCrush.set(false);
-    this.newCrushDraft = { nickname: '', status: CrushStatus.Crush, bio: '' };
-    this.modal.show(`${nickname} was added and shared with ${friend.username}.`);
+    if (!wasShared) {
+      this.messaging.sendMessage({
+        senderId: this.selfId(),
+        receiverId: friend.id,
+        content: `Shared a crush: ${crush.nickname}`,
+        relatedCrushId: crush.id
+      });
+    }
   }
 
   startChat(friend: FriendSummary): void {

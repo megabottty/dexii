@@ -140,8 +140,21 @@ const updateCrush = async (username, id, crushPayload) => {
   return updated;
 };
 
+const deleteCrush = async (username, id) => {
+  const all = await readAll();
+  const index = all.findIndex((item) => item._id === id && item.owner === username);
+
+  if (index === -1) return false;
+
+  all.splice(index, 1);
+  await writeAll(all);
+
+  return true;
+};
+
 module.exports = {
   getCrushes,
   addCrush,
-  updateCrush
+  updateCrush,
+  deleteCrush
 };

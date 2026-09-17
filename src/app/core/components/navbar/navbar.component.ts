@@ -30,7 +30,17 @@ import { AppNotification, NotificationsService } from '../../services/notificati
         </div>
       </div>
 
-      <button type="button"
+      <div class="navbar-right">
+        <a routerLink="/user/me"
+           aria-label="View your profile"
+           [style.border]="'2px solid ' + theme.colors().border"
+           class="navbar-profile-avatar">
+          <img [src]="settings.settings().avatarUrl || ('https://i.pravatar.cc/150?u=' + (security.currentUser() || 'guest'))"
+               alt="Your profile photo"
+               class="navbar-profile-avatar-img">
+        </a>
+
+        <button type="button"
               class="navbar-menu-toggle"
               [class.navbar-menu-toggle-open]="mobileMenuOpen()"
               [style.color]="mobileMenuOpen() ? theme.colors().primary : theme.colors().text"
@@ -222,6 +232,7 @@ import { AppNotification, NotificationsService } from '../../services/notificati
             Vault
           </a>
         </div>
+      </div>
       </div>
     </nav>
 

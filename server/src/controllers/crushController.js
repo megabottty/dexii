@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const CrushProfile = require('../models/CrushProfile');
+const Entry = require('../models/Entry');
 const User = require('../models/User');
 const { createNotification } = require('./notificationController');
 
@@ -184,6 +185,31 @@ exports.updateCrush = async (req, res) => {
     }
 
     res.json(crush);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Delete a crush profile (and its associated journal entries)
+// @route   DELETE /api/crushes/:id
+exports.deleteCrush = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Crush not found' });
+    }
+
+    const crush = await CrushProfile.findById(req.params.id);
+    if (!crush) return res.status(404).json({ message: 'Crush not found' });
+
+    // Check ownership
+    if (crush.userId.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    await CrushProfile.findByIdAndDelete(req.params.id);
+    await Entry.deleteMany({ crushId: req.params.id });
+
+    res.json({ message: 'Crush deleted', id: req.params.id });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

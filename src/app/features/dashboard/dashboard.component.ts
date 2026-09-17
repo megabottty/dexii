@@ -558,72 +558,6 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
         </div>
       }
 
-      <!-- Digital Note Passing Overlay (Simulation) -->
-      @if (isNotePassing()) {
-        <div class="dashboard-component__s56" (click)="closeNote()">
-          <div (click)="$event.stopPropagation()"
-               [style.background-color]="theme.colors().bgSecondary"
-               [style.border]="'2px solid ' + (currentTeaIsSelfDestruct() ? '#ef4444' : theme.colors().primary)"
-               class="dashboard-component__s57">
-             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-               <span [style.color]="currentTeaIsSelfDestruct() ? '#ef4444' : theme.colors().primary" class="dashboard-component__s58" style="margin-bottom: 0;">
-                 {{ currentTeaIsSelfDestruct() ? '🔥 Self-Destructing Tea' : 'Private Tea Received' }}
-               </span>
-               <button (click)="closeNote()" [style.color]="theme.colors().textSecondary" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px;">✕</button>
-             </div>
-
-             @if (currentTeaSenderName()) {
-               <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="dashboard-tea-sender">
-                 <img [src]="currentTeaSenderAvatar() || 'https://i.pravatar.cc/150?u=' + currentTeaSenderId()"
-                      [alt]="currentTeaSenderName() + ' avatar'"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      class="dashboard-tea-sender__avatar">
-                 <div class="dashboard-tea-sender__copy">
-                   <span [style.color]="theme.colors().textSecondary" class="dashboard-tea-sender__label">From</span>
-                   <span class="dashboard-tea-sender__name">{{ currentTeaSenderName() }}</span>
-                   @if (currentTeaTimestamp()) {
-                     <span [style.color]="theme.colors().textSecondary" class="dashboard-tea-sender__time">
-                       {{ currentTeaTimestamp() | date:'EEEE, MMM d • h:mm a' }}
-                     </span>
-                   }
-                   @if (currentTeaUnreadFromSender() > 1) {
-                     <span [style.color]="theme.colors().primary" class="dashboard-tea-sender__time">
-                       {{ currentTeaUnreadFromSender() - 1 }} more unread from them
-                     </span>
-                   }
-                 </div>
-               </div>
-             }
-
-             <p class="dashboard-component__s59">"{{ currentTeaPreview() || 'No new tea right now.' }}"</p>
-             <div style="margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
-               <button (click)="closeNote()"
-                       [style.border]="'1px solid ' + theme.colors().border"
-                       [style.color]="theme.colors().textSecondary"
-                       style="background: transparent; padding: 8px 16px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer;">
-                 Close
-               </button>
-               @if (currentTeaSenderId()) {
-                 <a routerLink="/chat"
-                    [queryParams]="{ friendId: currentTeaSenderId(), friendName: currentTeaSenderName() }"
-                    (click)="closeNote()"
-                    [style.background-color]="theme.colors().primary"
-                    [style.color]="'#ffffff'"
-                    style="text-decoration: none; padding: 8px 18px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;">
-                   Reply to {{ currentTeaSenderName() }} →
-                 </a>
-               } @else {
-                 <a routerLink="/chat" (click)="closeNote()"
-                    [style.background-color]="theme.colors().primary"
-                    [style.color]="'#ffffff'"
-                    style="text-decoration: none; padding: 8px 18px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;">
-                   Go to Chat →
-                 </a>
-               }
-             </div>
-           </div>
-        </div>
-      }
 
       <!-- Glamour Decorative Elements -->
       @if (theme.isPearl()) {
@@ -655,24 +589,6 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
             </p>
           </div>
           <div class="dashboard-component__s76">
-            <button (click)="simulateNote()"
-                    [style.border]="hasUnreadTea() ? (hasSelfDestructTea() ? '1px solid #ef4444' : '1px solid ' + theme.colors().primary) : '1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    [style.background-color]="theme.colors().bgSecondary"
-                    class="dashboard-component__s77"
-                    [class.dashboard-component__s77--tea-alert]="hasUnreadTea()"
-                    [class.dashboard-component__s77--flame-alert]="hasSelfDestructTea()">
-               <span>Waiting for the Tea?</span>
-               @if (hasSelfDestructTea()) {
-                 <span class="dashboard-tea-badge dashboard-tea-badge--flame" title="Self-destructing secret tea waiting!">
-                   🔥 {{ unreadSelfDestructCount() }}
-                 </span>
-               } @else if (hasUnreadTea()) {
-                 <span [style.background-color]="theme.colors().primary" class="dashboard-tea-badge">
-                   {{ unreadTeaCount() }}
-                 </span>
-               }
-            </button>
             <button (click)="goToFriends()"
                     [style.border]="'1px solid ' + theme.colors().accent"
                     [style.color]="theme.colors().accent"
@@ -821,6 +737,37 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               </div>
             </div>
           }
+
+          @if (!showArchived() && displayCrushes().length > 0) {
+            <button type="button"
+                    (click)="openNewEntryModal()"
+                    [style.border]="'2px dashed ' + theme.colors().border"
+                    [style.color]="theme.colors().textSecondary"
+                    class="dashboard-add-crush-ghost-card">
+              <span class="dashboard-add-crush-ghost-icon" [style.color]="theme.colors().primary">✦ +</span>
+              <span class="dashboard-add-crush-ghost-label">Add another crush</span>
+            </button>
+          }
+
+          @if (displayCrushes().length === 0) {
+            <div class="dashboard-empty-crushes">
+              <span class="dashboard-empty-crushes-icon">💌</span>
+              <h3 [style.color]="theme.colors().text" class="dashboard-empty-crushes-title">
+                {{ showArchived() ? 'Nothing archived yet' : 'Your love life starts here' }}
+              </h3>
+              <p [style.color]="theme.colors().textSecondary" class="dashboard-empty-crushes-copy">
+                {{ showArchived() ? 'Archived crushes will show up here.' : 'Add your first crush and start building your own little black book.' }}
+              </p>
+              @if (!showArchived()) {
+                <button type="button"
+                        (click)="openNewEntryModal()"
+                        [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
+                        class="dashboard-empty-crushes-cta">
+                  ✦ Add Your First Crush
+                </button>
+              }
+            </div>
+          }
         </div>
       </main>
     </div>
@@ -837,8 +784,6 @@ export class DashboardComponent implements OnInit {
   private walkthrough = inject(WalkthroughService);
   private friendsApi = inject(FriendsApiService);
 
-  isNotePassing = signal(false);
-  currentTeaPreview = signal('');
   showNewEntryModal = signal(false);
   showCropModal = signal(false);
   statuses = CrushStatus;
@@ -998,16 +943,6 @@ export class DashboardComponent implements OnInit {
     this.dataService.getAllCrushes()().filter((c: any) => c.status === CrushStatus.Archived).length
   );
 
-  unreadTeaCount = computed(() => this.messaging.unreadTeaCount());
-  unreadSelfDestructCount = computed(() => this.messaging.unreadSelfDestructCount());
-  hasSelfDestructTea = computed(() => this.messaging.unreadSelfDestructCount() > 0);
-  hasUnreadTea = computed(() => this.messaging.unreadTeaCount() > 0);
-  currentTeaIsSelfDestruct = signal(false);
-  currentTeaSenderId = signal('');
-  currentTeaSenderName = signal('');
-  currentTeaSenderAvatar = signal('');
-  currentTeaTimestamp = signal<Date | null>(null);
-  currentTeaUnreadFromSender = signal(0);
   friends = signal<FriendSummary[]>([]);
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -1113,7 +1048,7 @@ export class DashboardComponent implements OnInit {
   }
 
   goToFriends() {
-    this.router.navigate(['/friends']);
+    this.router.navigate(['/friends'], { queryParams: { tab: 'find' } });
   }
 
   showRedFlagReason(crush: any) {
@@ -1124,98 +1059,6 @@ export class DashboardComponent implements OnInit {
     }
 
     this.modal.show(`Red flag reason: ${reason}`);
-  }
-
-  simulateNote() {
-    const unreadMessages = this.messaging.getAllUnreadForCurrentUser();
-    if (unreadMessages.length > 0) {
-      const latest = unreadMessages[0];
-      this.showTea(latest.content, Boolean(latest.isSelfDestruct), latest.senderId, latest.timestamp);
-      this.messaging.markAsRead(latest.id);
-      return;
-    }
-
-    const summaries = this.messaging.conversationSummaries();
-    const unreadChat = summaries.find(c => c.unreadCount > 0);
-    if (unreadChat) {
-      const latest = unreadChat.latestMessage;
-      this.showTea(
-        latest.content,
-        Boolean(latest.isSelfDestruct),
-        unreadChat.friend.id,
-        latest.timestamp,
-        unreadChat.friend.username,
-        unreadChat.friend.avatarUrl,
-        unreadChat.unreadCount
-      );
-      if (latest.id) {
-        this.messaging.markAsRead(latest.id);
-      }
-      return;
-    }
-
-    this.showTea('No unread tea right now. Check back soon or message a friend!', false, '', null);
-  }
-
-  private showTea(
-    content: string,
-    isSelfDestruct: boolean,
-    senderId: string,
-    timestamp: Date | null,
-    senderName?: string,
-    senderAvatar?: string,
-    unreadFromSender?: number
-  ) {
-    this.currentTeaPreview.set(content);
-    this.currentTeaIsSelfDestruct.set(isSelfDestruct);
-    this.currentTeaSenderId.set(senderId || '');
-    this.currentTeaTimestamp.set(timestamp);
-
-    if (senderId) {
-      this.currentTeaSenderName.set(senderName || this.resolveSenderName(senderId));
-      this.currentTeaSenderAvatar.set(senderAvatar || this.resolveSenderAvatar(senderId));
-      this.currentTeaUnreadFromSender.set(
-        unreadFromSender ?? this.messaging.getAllUnreadForCurrentUser().filter((m) => m.senderId === senderId).length
-      );
-    } else {
-      this.currentTeaSenderName.set('');
-      this.currentTeaSenderAvatar.set('');
-      this.currentTeaUnreadFromSender.set(0);
-    }
-
-    this.isNotePassing.set(true);
-  }
-
-  /** Turns a raw sender id into a friendly display name using friends and chat data. */
-  private resolveSenderName(senderId: string): string {
-    const friend = this.friends().find((f) => f.id === senderId || f.username === senderId);
-    if (friend?.username) return friend.username;
-
-    const chat = this.messaging.conversationSummaries()
-      .find((c) => c.friend.id === senderId || c.friend.username === senderId);
-    if (chat?.friend.username && !/^[a-f\d]{24}$/i.test(chat.friend.username)) return chat.friend.username;
-
-    return /^[a-f\d]{24}$/i.test(senderId) ? 'A friend' : senderId;
-  }
-
-  private resolveSenderAvatar(senderId: string): string {
-    const friend = this.friends().find((f) => f.id === senderId || f.username === senderId);
-    if (friend?.avatarUrl) return friend.avatarUrl;
-
-    const chat = this.messaging.conversationSummaries()
-      .find((c) => c.friend.id === senderId || c.friend.username === senderId);
-    return chat?.friend.avatarUrl || '';
-  }
-
-  closeNote() {
-    this.isNotePassing.set(false);
-    this.currentTeaPreview.set('');
-    this.currentTeaIsSelfDestruct.set(false);
-    this.currentTeaSenderId.set('');
-    this.currentTeaSenderName.set('');
-    this.currentTeaSenderAvatar.set('');
-    this.currentTeaTimestamp.set(null);
-    this.currentTeaUnreadFromSender.set(0);
   }
 
   openNewEntryModal() {

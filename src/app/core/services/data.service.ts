@@ -752,6 +752,32 @@ export class DataService {
 
   public deleteCrush(crushId: string): void {
     this._allCrushes.update(crushes => crushes.filter(c => c.id !== crushId));
+    this._entries.update(entries => entries.filter(e => e.crushId !== crushId));
+    this.persistEntries();
+    void this.persistCrushDeletion(crushId);
+  }
+
+  private async persistCrushDeletion(crushId: string): Promise<void> {
+    try {
+      let response = await this.authenticatedFetch(`/crushes/${crushId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response || !response.ok) {
+        const owner = encodeURIComponent(this.getDemoOwner());
+        response = await this.demoFetch(`/crushes/${crushId}?owner=${owner}`, {
+          method: 'DELETE'
+        });
+      }
+
+      if (!response || !response.ok) {
+        console.error('Failed to delete crush:', response?.status);
+        this.modal.show('Could not delete profile from the database. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error deleting crush:', err);
+      this.modal.show('Connection error. Could not delete profile.');
+    }
   }
 
   /**
