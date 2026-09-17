@@ -54,7 +54,7 @@
 .app-support-actions {
   position: fixed;
   top: calc(22px + env(safe-area-inset-top));
-  right: calc(104px + env(safe-area-inset-right));
+  right: calc(84px + env(safe-area-inset-right));
   z-index: 321;
   max-height: calc(100vh - env(safe-area-inset-top) - 24px);
   display: flex;
@@ -163,7 +163,7 @@
 @media (max-width: 760px) {
   .app-support-actions {
     top: calc(20px + env(safe-area-inset-top));
-    right: calc(72px + env(safe-area-inset-right));
+    right: calc(60px + env(safe-area-inset-right));
   }
 }
 
