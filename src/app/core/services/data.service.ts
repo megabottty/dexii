@@ -432,7 +432,13 @@ export class DataService {
 
   private async hydrateCrushesFromBackend(): Promise<void> {
     let response = await this.authenticatedFetch('/crushes');
-    if (!response || !response.ok) {
+    // Only fall back to the separate demo data store when there was no
+    // authenticated request at all (no token / network failure - see
+    // authenticatedFetch). Falling back here whenever the authenticated call
+    // merely returned a non-ok status (401/404/500) would silently swap a
+    // logged-in user onto stale demo data, which is exactly what caused
+    // deleted/old crushes to reappear after a transient backend hiccup.
+    if (!response) {
       const owner = encodeURIComponent(this.getDemoOwner());
       response = await this.demoFetch(`/crushes?owner=${owner}`);
     }
@@ -491,7 +497,11 @@ export class DataService {
         body: JSON.stringify(payload)
       });
 
-      if (!response || !response.ok) {
+      // Only retry against the demo store when there was no authenticated
+      // request at all (no token / network failure) - not on a real but
+      // failed authenticated response, which should surface as an error
+      // instead of silently writing to a different data store.
+      if (!response) {
         response = await this.demoFetch('/crushes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -571,7 +581,9 @@ export class DataService {
         body: JSON.stringify(payload)
       });
 
-      if (!response || !response.ok) {
+      // Only retry against the demo store when there was no authenticated
+      // request at all (no token / network failure) - see hydrateCrushesFromBackend.
+      if (!response) {
         response = await this.demoFetch(`/crushes/${crush.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -766,6 +778,16 @@ export class DataService {
     this._allCrushes.update(crushes => crushes.filter(c => c.id !== crushId));
     this._entries.update(entries => entries.filter(e => e.crushId !== crushId));
     this.persistEntries();
+
+    // A crush that hasn't finished being saved yet still carries its
+    // temporary local id (see addCrush/persistNewCrush) rather than a real
+    // Mongo ObjectId. Deleting it is a pure local no-op - there's nothing to
+    // remove on the backend, and issuing the DELETE would just 404 and
+    // (previously) silently fall back to the unrelated demo data store.
+    if (!/^[0-9a-fA-F]{24}$/.test(crushId)) {
+      return;
+    }
+
     void this.persistCrushDeletion(crushId);
   }
 
@@ -775,7 +797,13 @@ export class DataService {
         method: 'DELETE'
       });
 
-      if (!response || !response.ok) {
+      // Only retry against the demo store when there was no authenticated
+      // request at all (no token / network failure). Retrying here whenever
+      // the real delete merely returned a non-ok status (401/404/500) used
+      // to silently delete from the wrong (demo) data store while leaving
+      // the crush intact in the real database - which is exactly why a
+      // "deleted" crush could reappear after the next refresh/login.
+      if (!response) {
         const owner = encodeURIComponent(this.getDemoOwner());
         response = await this.demoFetch(`/crushes/${crushId}?owner=${owner}`, {
           method: 'DELETE'
