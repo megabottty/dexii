@@ -52,10 +52,13 @@ import { AppNotification, NotificationsService } from '../../services/notificati
               (click)="toggleMobileMenu()">
         <span></span><span></span><span></span>
       </button>
+      </div>
+    </nav>
 
       <div id="primary-navigation-links"
            class="navbar-links"
            [class.navbar-links-open]="mobileMenuOpen()"
+           [style.z-index]="mobileMenuOpen() ? 90 : 50"
            [style.background-color]="theme.colors().bgSecondary"
            [style.border-color]="theme.colors().border">
         <div class="navbar-drawer-header">
@@ -239,8 +242,6 @@ import { AppNotification, NotificationsService } from '../../services/notificati
           </a>
         </div>
       </div>
-      </div>
-    </nav>
 
     @if (mobileMenuOpen()) {
       <button type="button"

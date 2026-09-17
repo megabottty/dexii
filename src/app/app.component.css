@@ -166,6 +166,27 @@
   align-items: flex-end;
 }
 
+/* Group chat has its own "Leave" button in the top-right of the header,
+   which the default bottom-corner Help FAB used to sit underneath/over.
+   Move Help up next to it (to its left) instead. */
+.is-group-chat-route .app-support-actions {
+  top: calc(14px + env(safe-area-inset-top));
+  bottom: auto;
+  left: auto;
+  right: calc(96px + env(safe-area-inset-right));
+  align-items: flex-end;
+}
+
+.is-group-chat-route .app-support-menu {
+  order: 1;
+}
+
+@media (max-width: 760px) {
+  .is-group-chat-route .app-support-actions {
+    right: calc(84px + env(safe-area-inset-right));
+  }
+}
+
 .app-component__s8 {
   position: fixed;
   inset: 0;

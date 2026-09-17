@@ -25,6 +25,7 @@ interface WalkthroughStep {
   template: `
     <div [style.background-color]="theme.colors().bg"
          [class.is-chat-route]="currentPath().startsWith('/chat')"
+         [class.is-group-chat-route]="currentPath().startsWith('/groups')"
          class="app-component__s1">
       <a href="#main-content" class="app-skip-link">Skip to main content</a>
       <main id="main-content">
