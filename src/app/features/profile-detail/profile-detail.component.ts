@@ -1001,9 +1001,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                            [style.background-color]="theme.colors().bg"
                            style="padding: 12px; border-radius: 8px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                          <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
-                            {{ entry.timestamp | date:'MMM d, h:mm a' }}
-                          </span>
+                          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span [style.color]="noteVisibility(entry).color"
+                                  [style.border]="'1px solid ' + noteVisibility(entry).color"
+                                  style="padding: 3px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;">
+                              {{ noteVisibility(entry).label }}
+                            </span>
+                            <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                              {{ entry.timestamp | date:'MMM d, h:mm a' }}
+                            </span>
+                          </div>
                           <button (click)="startSharingNote(entry.id)"
                                   [style.background-color]="theme.colors().primary"
                                   style="border: none; color: white; border-radius: 999px; padding: 4px 10px; font-size: 0.78rem; cursor: pointer;">
@@ -1011,6 +1018,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           </button>
                         </div>
                         <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                        <p [style.color]="theme.colors().textSecondary" style="margin: 8px 0 0; font-size: 0.78rem;">
+                          {{ noteVisibility(entry).detail }}
+                        </p>
                       </div>
                     }
                   </div>
@@ -1269,6 +1279,37 @@ export class ProfileDetailComponent implements OnDestroy {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, (this.crush()?.redFlags || 0) > 0 ? 1 : 0)
   );
+
+  noteVisibility(entry: { visibility?: string[] }): { label: string; detail: string; color: string } {
+    const visibility = entry.visibility || [];
+    if (visibility.includes('public')) {
+      const friendNames = this.friends().map((friend) => friend.username);
+      return {
+        label: 'Public',
+        detail: friendNames.length > 0
+          ? `Visible to all friends: ${friendNames.join(', ')}`
+          : 'Visible to all friends',
+        color: '#16a34a'
+      };
+    }
+
+    if (visibility.length === 0) {
+      return {
+        label: 'Private',
+        detail: 'Only you can see this note',
+        color: '#64748b'
+      };
+    }
+
+    const friendNames = visibility.map((friendId) =>
+      this.friends().find((friend) => friend.id === friendId)?.username || 'Friend'
+    );
+    return {
+      label: 'Shared',
+      detail: `Visible to: ${friendNames.join(', ')}`,
+      color: '#2563eb'
+    };
+  }
 
   selectedSafetyContactNames = computed(() => {
     const selected = this.safetyContactIds();
