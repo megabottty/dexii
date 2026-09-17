@@ -36,6 +36,7 @@ const areFriends = async (userId, otherId) => {
     return false;
   }
 };
+exports.areFriends = areFriends;
 
 async function deleteExpiredMessages(expirableMessages) {
   if (!expirableMessages || expirableMessages.length === 0) return;
@@ -348,3 +349,66 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
+
+// @route   POST /api/messages/:messageId/react
+// @desc    Toggle an emoji reaction on a 1:1 or group message (one reaction per user; re-tapping
+//          the same emoji removes it, a different emoji replaces it)
+// @access  Private
+exports.reactToMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user.id;
+
+    if (!emoji || typeof emoji !== 'string') {
+      return res.status(400).json({ message: 'emoji is required' });
+    }
+
+    if (mongoose.connection.readyState !== 1 || req.user.isDemo) {
+      const { state, messages } = await getDemoMessages();
+      const message = messages.find((m) => String(m._id) === String(messageId));
+      if (!message) return res.status(404).json({ message: 'Message not found' });
+
+      message.reactions = message.reactions || [];
+      const existingIdx = message.reactions.findIndex((r) => r.user === userId);
+      if (existingIdx >= 0 && message.reactions[existingIdx].emoji === emoji) {
+        message.reactions.splice(existingIdx, 1);
+      } else if (existingIdx >= 0) {
+        message.reactions[existingIdx] = { user: userId, emoji };
+      } else {
+        message.reactions.push({ user: userId, emoji });
+      }
+      await writeStore(state);
+      return res.json(message);
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ message: 'Message not found' });
+
+    // Access check: must be sender/recipient of a 1:1 message, or a member of the group.
+    if (message.group) {
+      const GroupChat = require('../models/GroupChat');
+      const group = await GroupChat.findById(message.group).select('members').lean();
+      const isMember = !!group && (group.members || []).some((m) => String(m) === String(userId));
+      if (!isMember) return res.status(403).json({ message: 'You are not a member of this group.' });
+    } else {
+      const isParty = String(message.sender) === String(userId) || String(message.recipient) === String(userId);
+      if (!isParty) return res.status(403).json({ message: 'You cannot react to this message.' });
+    }
+
+    const existing = message.reactions.find((r) => String(r.user) === String(userId));
+    if (existing && existing.emoji === emoji) {
+      message.reactions = message.reactions.filter((r) => String(r.user) !== String(userId));
+    } else if (existing) {
+      existing.emoji = emoji;
+    } else {
+      message.reactions.push({ user: userId, emoji });
+    }
+
+    await message.save();
+    res.json(message);
+  } catch (err) {
+    console.error('React to message error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};

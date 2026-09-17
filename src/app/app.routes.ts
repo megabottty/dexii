@@ -68,6 +68,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/messaging/messaging.component').then(m => m.MessagingComponent)
   },
   {
+    path: 'groups/:groupId',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/group-chat/group-chat.component').then(m => m.GroupChatComponent)
+  },
+  {
     path: 'shared-history',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/shared-history/shared-history.component').then(m => m.SharedHistoryComponent)

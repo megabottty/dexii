@@ -23,8 +23,16 @@ export interface SafetyUpdate {
   crushId?: string;
 }
 
+export interface MessageReactionUpdate {
+  _id?: string;
+  id?: string;
+  reactions?: Array<{ user: string; emoji: string }>;
+}
+
 type MessageHandler = (message: IncomingSocketMessage) => void;
 type SafetyHandler = (update: SafetyUpdate) => void;
+type ReactionHandler = (update: MessageReactionUpdate) => void;
+type GroupMessageHandler = (message: any) => void;
 
 @Injectable({
   providedIn: 'root'
@@ -35,6 +43,8 @@ export class RealtimeService {
   private joinedRoom: string | null = null;
   private messageHandlers = new Set<MessageHandler>();
   private safetyHandlers = new Set<SafetyHandler>();
+  private reactionHandlers = new Set<ReactionHandler>();
+  private groupMessageHandlers = new Set<GroupMessageHandler>();
 
   private _connected = signal(false);
   public connected = this._connected.asReadonly();
@@ -91,6 +101,14 @@ export class RealtimeService {
     this.socket.on('safetyUpdate', (data: SafetyUpdate) => {
       this.safetyHandlers.forEach((handler) => handler(data));
     });
+
+    this.socket.on('messageReactionUpdated', (data: MessageReactionUpdate) => {
+      this.reactionHandlers.forEach((handler) => handler(data));
+    });
+
+    this.socket.on('receiveGroupMessage', (data: any) => {
+      this.groupMessageHandlers.forEach((handler) => handler(data));
+    });
   }
 
   emitMessage(payload: IncomingSocketMessage): void {
@@ -101,6 +119,11 @@ export class RealtimeService {
     this.socket?.emit('safetyAlert', payload);
   }
 
+  /** Relays a just-persisted reaction to the other party/parties in (near) real time. */
+  emitReactionUpdate(payload: { message: MessageReactionUpdate; recipientId?: string; memberIds?: string[] }): void {
+    this.socket?.emit('messageReaction', payload);
+  }
+
   onMessage(handler: MessageHandler): () => void {
     this.messageHandlers.add(handler);
     return () => this.messageHandlers.delete(handler);
@@ -109,6 +132,16 @@ export class RealtimeService {
   onSafetyUpdate(handler: SafetyHandler): () => void {
     this.safetyHandlers.add(handler);
     return () => this.safetyHandlers.delete(handler);
+  }
+
+  onReactionUpdate(handler: ReactionHandler): () => void {
+    this.reactionHandlers.add(handler);
+    return () => this.reactionHandlers.delete(handler);
+  }
+
+  onGroupMessage(handler: GroupMessageHandler): () => void {
+    this.groupMessageHandlers.add(handler);
+    return () => this.groupMessageHandlers.delete(handler);
   }
 
   disconnect(): void {

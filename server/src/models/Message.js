@@ -6,10 +6,15 @@ const MessageSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  // Exactly one of recipient/group is set, enforced in the controllers:
+  // 1:1 messages use recipient, group messages use group.
   recipient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
+  },
+  group: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GroupChat'
   },
   content: {
     type: String,
@@ -40,7 +45,13 @@ const MessageSchema = new mongoose.Schema({
   crushId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CrushProfile'
-  }
+  },
+  // One reaction per user per message; re-tapping the same emoji removes it,
+  // tapping a different emoji replaces it.
+  reactions: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    emoji: { type: String, required: true }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Message', MessageSchema);

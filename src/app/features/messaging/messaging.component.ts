@@ -9,6 +9,7 @@ import { ModalService } from '../../core/services/modal.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
 import { DataService } from '../../core/services/data.service';
+import { GroupChatApiService, GroupChatSummary } from '../../core/services/group-chat-api.service';
 
 @Component({
   selector: 'app-messaging',
@@ -138,6 +139,7 @@ import { DataService } from '../../core/services/data.service';
                    [attr.tabindex]="msg.relatedCrushId ? 0 : null"
                    (click)="openRelatedCrush(msg)"
                    (keydown.enter)="openRelatedCrush(msg)"
+                   (dblclick)="toggleReactionPicker(msg.id, $event)"
                    class="messaging-component__s9">
                 {{ msg.content }}
                 @if (msg.relatedCrushId) {
@@ -152,6 +154,47 @@ import { DataService } from '../../core/services/data.service';
                   </span>
                 }
               </div>
+
+              @if (groupedReactions(msg).length > 0) {
+                <div class="messaging-reactions-bar" [style.justify-content]="isMine(msg) ? 'flex-end' : 'flex-start'">
+                  @for (group of groupedReactions(msg); track group.emoji) {
+                    <button type="button"
+                            (click)="reactToMessage(msg.id, group.emoji)"
+                            [class.messaging-reaction-pill--mine]="group.reactedByMe"
+                            [style.background-color]="theme.colors().bgSecondary"
+                            [style.border]="'1px solid ' + (group.reactedByMe ? theme.colors().primary : theme.colors().border)"
+                            class="messaging-reaction-pill">
+                      <span class="messaging-reaction-pill__emoji">{{ group.emoji }}</span>
+                      @if (group.count > 1) { <span>{{ group.count }}</span> }
+                    </button>
+                  }
+                </div>
+              }
+
+              <button type="button"
+                      (click)="toggleReactionPicker(msg.id, $event)"
+                      [style.color]="theme.colors().textSecondary"
+                      class="messaging-react-trigger"
+                      [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'"
+                      aria-label="React to this message">
+                😀+
+              </button>
+
+              @if (activeReactionPickerFor() === msg.id) {
+                <div [style.background-color]="theme.colors().bgSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     class="messaging-reaction-picker"
+                     [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'">
+                  @for (emoji of reactionOptions; track emoji) {
+                    <button type="button"
+                            (click)="reactToMessage(msg.id, emoji); $event.stopPropagation()"
+                            class="messaging-reaction-picker__option">
+                      {{ emoji }}
+                    </button>
+                  }
+                </div>
+              }
+
               <span [style.color]="theme.colors().textSecondary" [style.text-align]="isMine(msg) ? 'right' : 'left'" class="messaging-time">
                 {{ msg.timestamp | date:'h:mm a' }}
               </span>
@@ -174,15 +217,102 @@ import { DataService } from '../../core/services/data.service';
                   }
                 </span>
               </div>
-              <button type="button"
-                      (click)="toggleNewChat()"
-                      [style.background-color]="showNewChat() ? 'transparent' : theme.colors().primary"
-                      [style.color]="showNewChat() ? theme.colors().primary : '#ffffff'"
-                      [style.border]="'1px solid ' + theme.colors().primary"
-                      class="chat-hub__new-btn">
-                {{ showNewChat() ? 'Cancel' : '+ New Chat' }}
-              </button>
+              <div class="chat-hub__toolbar-actions">
+                <button type="button"
+                        (click)="toggleNewChat()"
+                        [style.background-color]="showNewChat() ? 'transparent' : theme.colors().primary"
+                        [style.color]="showNewChat() ? theme.colors().primary : '#ffffff'"
+                        [style.border]="'1px solid ' + theme.colors().primary"
+                        class="chat-hub__new-btn">
+                  {{ showNewChat() ? 'Cancel' : '+ New Chat' }}
+                </button>
+                <button type="button"
+                        (click)="toggleNewGroup()"
+                        [style.background-color]="showNewGroup() ? 'transparent' : theme.colors().primary"
+                        [style.color]="showNewGroup() ? theme.colors().primary : '#ffffff'"
+                        [style.border]="'1px solid ' + theme.colors().primary"
+                        class="chat-hub__new-btn">
+                  {{ showNewGroup() ? 'Cancel' : '👥 New Group' }}
+                </button>
+              </div>
             </div>
+
+            @if (showNewGroup()) {
+              <div [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().primary"
+                   class="chat-hub__panel">
+                <label [style.color]="theme.colors().textSecondary" class="chat-hub__panel-label">
+                  Group name
+                </label>
+                <input [(ngModel)]="newGroupName"
+                       [style.background-color]="theme.colors().bg"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       placeholder="e.g. Girls Chat"
+                       aria-label="Group name"
+                       class="chat-hub__search">
+                <label [style.color]="theme.colors().textSecondary" class="chat-hub__panel-label">
+                  Pick friends to add (mutual friends only)
+                </label>
+                <div class="chat-hub__list chat-hub__list--scroll">
+                  @for (friend of friends(); track friend.id) {
+                    <button type="button"
+                            (click)="toggleGroupMember(friend.id)"
+                            [style.background-color]="theme.colors().bg"
+                            [style.border]="isGroupMemberSelected(friend.id) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                            [style.color]="theme.colors().text"
+                            class="chat-hub__card">
+                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
+                           [alt]="friend.username + ' avatar'"
+                           class="chat-hub__avatar">
+                      <span class="chat-hub__content">
+                        <span class="chat-hub__title">{{ friend.username }}</span>
+                      </span>
+                      @if (isGroupMemberSelected(friend.id)) { <span [style.color]="theme.colors().primary">✓</span> }
+                    </button>
+                  } @empty {
+                    <div [style.border]="'1px dashed ' + theme.colors().border" class="messaging-empty-state">
+                      <p [style.color]="theme.colors().textSecondary">Add a friend first to start a group chat.</p>
+                    </div>
+                  }
+                </div>
+                @if (newGroupError(); as error) {
+                  <p [style.color]="'#c0392b'" class="chat-hub__panel-label">{{ error }}</p>
+                }
+                <button type="button"
+                        (click)="createGroup()"
+                        [style.background-color]="theme.colors().primary"
+                        class="chat-hub__new-btn"
+                        style="margin-top: 8px;">
+                  Create Group
+                </button>
+              </div>
+            }
+
+            @if (groupChats().length > 0) {
+              <div class="chat-hub__list">
+                @for (gc of groupChats(); track gc.group.id) {
+                  <button (click)="openGroup(gc.group.id)"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="gc.unreadCount > 0 ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          class="chat-hub__card"
+                          [class.chat-hub__card--unread]="gc.unreadCount > 0">
+                    <span class="chat-hub__avatar chat-hub__avatar--group">👥</span>
+                    <span class="chat-hub__content">
+                      <span class="chat-hub__title">{{ gc.group.name }}</span>
+                      <span [style.color]="theme.colors().textSecondary" class="chat-hub__preview">
+                        {{ gc.group.members.length }} members
+                        @if (gc.latestMessage?.content) { • {{ gc.latestMessage.content }} }
+                      </span>
+                    </span>
+                    @if (gc.unreadCount > 0) {
+                      <span [style.background-color]="theme.colors().primary" class="chat-hub__badge">{{ gc.unreadCount }}</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
 
             @if (showNewChat()) {
               <div [style.background-color]="theme.colors().bgSecondary"
@@ -360,6 +490,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   public modal = inject(ModalService);
   private friendsApi = inject(FriendsApiService);
   private dataService = inject(DataService);
+  private groupsApi = inject(GroupChatApiService);
   private chatPartnerId = signal<string>('');
   private chatPartnerName = signal<string>('');
   friends = signal<FriendSummary[]>([]);
@@ -373,6 +504,13 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     { label: '1 minute', ms: 60000 },
     { label: '5 minutes', ms: 300000 }
   ];
+  reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🔥'];
+  activeReactionPickerFor = signal<string | null>(null);
+  showNewGroup = signal(false);
+  newGroupName = '';
+  selectedGroupMemberIds = signal<Set<string>>(new Set());
+  newGroupError = signal<string | null>(null);
+  groupChats = signal<GroupChatSummary[]>([]);
 
   currentChatPartner = computed(() => {
     const id = this.chatPartnerId();
@@ -403,6 +541,31 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   /** True when the message was sent by the signed-in user. */
   isMine(msg: { senderId: string }): boolean {
     return msg.senderId === this.selfId();
+  }
+
+  toggleReactionPicker(messageId: string, event?: Event): void {
+    event?.stopPropagation();
+    this.activeReactionPickerFor.set(this.activeReactionPickerFor() === messageId ? null : messageId);
+  }
+
+  reactToMessage(messageId: string, emoji: string): void {
+    void this.messaging.reactToMessage(messageId, emoji);
+    this.activeReactionPickerFor.set(null);
+  }
+
+  /** Groups a message's raw reactions by emoji for pill rendering (count + "did I react"). */
+  groupedReactions(msg: { reactions?: Array<{ user: string; emoji: string }> }): Array<{ emoji: string; count: number; reactedByMe: boolean }> {
+    const reactions = msg.reactions || [];
+    if (reactions.length === 0) return [];
+    const selfId = this.selfId();
+    const byEmoji = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>();
+    for (const r of reactions) {
+      const entry = byEmoji.get(r.emoji) || { emoji: r.emoji, count: 0, reactedByMe: false };
+      entry.count += 1;
+      if (r.user === selfId) entry.reactedByMe = true;
+      byEmoji.set(r.emoji, entry);
+    }
+    return Array.from(byEmoji.values());
   }
 
   activeMessages = computed(() =>
@@ -436,6 +599,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   ngOnInit() {
     void this.loadChatHub();
+    void this.loadGroupChats();
     if (this.hasActiveChat()) {
       this.messaging.markConversationAsRead(this.selfId(), this.currentChatPartner().id);
       void this.messaging.loadConversation(this.currentChatPartner().id);
@@ -484,6 +648,61 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   toggleNewChat(): void {
     this.showNewChat.update((open) => !open);
     this.friendSearch.set('');
+  }
+
+  async loadGroupChats(): Promise<void> {
+    try {
+      this.groupChats.set(await this.groupsApi.listGroups());
+    } catch (err) {
+      console.warn('Could not load group chats:', err);
+    }
+  }
+
+  toggleNewGroup(): void {
+    this.showNewGroup.update((open) => !open);
+    this.newGroupName = '';
+    this.selectedGroupMemberIds.set(new Set());
+    this.newGroupError.set(null);
+  }
+
+  toggleGroupMember(friendId: string): void {
+    this.selectedGroupMemberIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(friendId)) next.delete(friendId); else next.add(friendId);
+      return next;
+    });
+  }
+
+  isGroupMemberSelected(friendId: string): boolean {
+    return this.selectedGroupMemberIds().has(friendId);
+  }
+
+  async createGroup(): Promise<void> {
+    this.newGroupError.set(null);
+    const name = this.newGroupName.trim();
+    const memberIds = Array.from(this.selectedGroupMemberIds());
+
+    if (!name) {
+      this.newGroupError.set('Give your group a name.');
+      return;
+    }
+    if (memberIds.length < 1) {
+      this.newGroupError.set('Pick at least one friend to add.');
+      return;
+    }
+
+    try {
+      const group = await this.groupsApi.createGroup(name, memberIds);
+      this.toggleNewGroup();
+      void this.loadGroupChats();
+      this.router.navigate(['/groups', group.id]);
+    } catch (err) {
+      this.newGroupError.set(err instanceof Error ? err.message : 'Could not create the group chat.');
+    }
+  }
+
+  openGroup(groupId: string): void {
+    this.router.navigate(['/groups', groupId]);
   }
 
   // --- Add & share a new crush directly from the chat ---

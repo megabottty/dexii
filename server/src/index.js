@@ -54,6 +54,10 @@ app.use('/api/friends', require('./routes/friends'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/entries', require('./routes/entries'));
 app.use('/api/vault', require('./routes/vault'));
+app.use('/api/groups', require('./routes/groups'));
+
+// Expose io on the app so REST controllers (e.g. group messages) can emit realtime events.
+app.set('io', io);
 
 // Serve Angular app when built (single-service hosting option).
 const distPath = path.resolve(__dirname, '..', '..', 'dist', 'dexii', 'browser');
@@ -167,6 +171,38 @@ io.on('connection', (socket) => {
       });
     } catch (err) {
       console.warn('Socket safety alert dropped:', err.message);
+    }
+  });
+
+  // Reaction updates are persisted via REST (POST /api/messages/:id/react); this just
+  // relays the resulting message so open chat windows update live without polling.
+  socket.on('messageReaction', (data) => {
+    // data: { message, recipientId } for 1:1, or { message, memberIds } for groups
+    try {
+      if (data?.recipientId) {
+        io.to(data.recipientId).emit('messageReactionUpdated', data.message);
+      } else if (Array.isArray(data?.memberIds)) {
+        for (const memberId of data.memberIds) {
+          if (String(memberId) === String(socket.data.userId)) continue;
+          io.to(String(memberId)).emit('messageReactionUpdated', data.message);
+        }
+      }
+    } catch (err) {
+      console.warn('Socket reaction relay dropped:', err.message);
+    }
+  });
+
+  socket.on('sendGroupMessage', async (data) => {
+    // data: { groupId, message, memberIds } - membership is already verified by the
+    // REST endpoint that created the message; this just relays it live.
+    try {
+      const memberIds = Array.isArray(data?.memberIds) ? data.memberIds : [];
+      for (const memberId of memberIds) {
+        if (String(memberId) === String(socket.data.userId)) continue;
+        io.to(String(memberId)).emit('receiveGroupMessage', data.message);
+      }
+    } catch (err) {
+      console.warn('Socket group message relay dropped:', err.message);
     }
   });
 

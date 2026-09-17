@@ -16,4 +16,7 @@ router.post('/', [auth, moderate], messageController.sendMessage);
 // @route   PUT /api/messages/read/:friendId
 router.put('/read/:friendId', auth, messageController.markAsRead);
 
+// @route   POST /api/messages/:messageId/react
+router.post('/:messageId/react', auth, messageController.reactToMessage);
+
 module.exports = router;

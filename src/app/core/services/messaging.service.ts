@@ -141,6 +141,67 @@ export class MessagingService {
     this.realtimeBound = true;
 
     this.realtime.onMessage((incoming) => this.ingestRealtimeMessage(incoming));
+    this.realtime.onReactionUpdate((update) => this.ingestReactionUpdate(update));
+  }
+
+  private ingestReactionUpdate(update: { _id?: string; id?: string; reactions?: Array<{ user: string; emoji: string }> }): void {
+    const id = String(update._id || update.id || '');
+    if (!id) return;
+    this._messages.update((msgs) =>
+      msgs.map((m) => (m.id === id ? { ...m, reactions: update.reactions || [] } : m))
+    );
+    this.persistMessages();
+  }
+
+  /**
+   * Toggles the caller's reaction on a message (same emoji removes it, a different one
+   * replaces it) and syncs the result to the backend + the other party in real time.
+   */
+  async reactToMessage(messageId: string, emoji: string): Promise<void> {
+    const selfId = this.security.currentUserId();
+    if (!selfId) return;
+
+    // Optimistic local update so the UI feels instant.
+    const target = this._messages().find((m) => m.id === messageId);
+    const existing = target?.reactions?.find((r) => r.user === selfId);
+    const optimisticReactions = (target?.reactions || []).filter((r) => r.user !== selfId);
+    if (!existing || existing.emoji !== emoji) {
+      optimisticReactions.push({ user: selfId, emoji });
+    }
+    this._messages.update((msgs) =>
+      msgs.map((m) => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m))
+    );
+    this.persistMessages();
+
+    try {
+      const response = await fetch(`${this.apiBase}/messages/${messageId}/react`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.security.authHeaders()
+        },
+        body: JSON.stringify({ emoji })
+      });
+      if (!response.ok) return;
+      const saved = await response.json();
+      const reactions = Array.isArray(saved?.reactions)
+        ? saved.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
+        : optimisticReactions;
+
+      this._messages.update((msgs) =>
+        msgs.map((m) => (m.id === messageId ? { ...m, reactions } : m))
+      );
+      this.persistMessages();
+
+      if (target?.receiverId) {
+        this.realtime.emitReactionUpdate({
+          message: { _id: messageId, reactions },
+          recipientId: target.senderId === selfId ? target.receiverId : target.senderId
+        });
+      }
+    } catch (err) {
+      console.warn('Could not sync reaction to the server:', err);
+    }
   }
 
   private ingestRealtimeMessage(incoming: IncomingSocketMessage): void {
@@ -186,6 +247,7 @@ export class MessagingService {
         relatedEntryId?: string;
         isSelfDestruct?: boolean;
         selfDestructDurationMs?: number;
+        reactions?: Array<{ user: string; emoji: string }>;
       }>;
 
       if (!Array.isArray(parsed)) return [];
@@ -208,7 +270,8 @@ export class MessagingService {
           relatedCrushId: msg.relatedCrushId,
           relatedEntryId: msg.relatedEntryId,
           isSelfDestruct: Boolean(msg.isSelfDestruct),
-          selfDestructDurationMs: Number.isFinite(msg.selfDestructDurationMs) ? msg.selfDestructDurationMs : undefined
+          selfDestructDurationMs: Number.isFinite(msg.selfDestructDurationMs) ? msg.selfDestructDurationMs : undefined,
+          reactions: msg.reactions
         }));
     } catch {
       return [];
@@ -359,7 +422,10 @@ export class MessagingService {
           readAt: row.readAt ? new Date(row.readAt) : row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
           relatedCrushId: row.crushId ? String(row.crushId) : undefined,
           isSelfDestruct: Boolean(row.isSelfDestruct),
-          selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined
+          selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined,
+          reactions: Array.isArray(row.reactions)
+            ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
+            : undefined
         }));
 
       const serverIds = new Set(mapped.map((m) => m.id));
@@ -422,7 +488,10 @@ export class MessagingService {
       readAt: row.readAt ? new Date(row.readAt) : row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
       relatedCrushId: row.crushId ? String(row.crushId) : undefined,
       isSelfDestruct: Boolean(row.isSelfDestruct),
-      selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined
+      selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined,
+      reactions: Array.isArray(row.reactions)
+        ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
+        : undefined
     };
   }
 

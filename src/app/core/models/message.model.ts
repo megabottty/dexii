@@ -1,3 +1,8 @@
+export interface MessageReaction {
+  user: string; // user id who reacted
+  emoji: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -9,4 +14,6 @@ export interface Message {
   relatedEntryId?: string; // Link to specific entry/note
   isSelfDestruct?: boolean;
   selfDestructDurationMs?: number;
+  reactions?: MessageReaction[];
 }
+
