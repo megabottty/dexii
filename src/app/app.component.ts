@@ -86,7 +86,9 @@ interface WalkthroughStep {
                 aria-label="Open help tools"
                 [attr.aria-expanded]="supportMenuOpen()"
                 aria-controls="app-support-menu"
-                [style.background-color]="theme.colors().primary"
+                [style.background-color]="'transparent'"
+                [style.color]="theme.colors().text"
+                [style.border]="'1px solid ' + theme.colors().border"
                 class="app-support-fab">
           <span aria-hidden="true">?</span>
           Help
