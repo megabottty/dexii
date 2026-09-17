@@ -58,9 +58,39 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               @if (c.fullName) {
                 <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
               }
-              <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
-                {{ c.status }}
-              </span>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
+                <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
+                  {{ c.status }}
+                </span>
+                @if (c.relationshipStatus) {
+                  <span [style.color]="theme.colors().textSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        style="padding: 2px 8px; border-radius: 999px; font-size: 11px;">
+                    {{ c.relationshipStatus }}
+                  </span>
+                }
+                @if ((c.redFlags || 0) > 0) {
+                  <span style="color: #ef4444; border: 1px solid #ef4444; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;">
+                    🚩 Flagged
+                  </span>
+                } @else {
+                  <span style="color: #22c55e; border: 1px solid #22c55e; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;">
+                    ✅ Clear
+                  </span>
+                }
+              </div>
+              @if (c.rating) {
+                <div [style.color]="theme.colors().accent" style="margin-bottom: 8px;">
+                  @for (star of [1,2,3,4,5]; track star) {
+                    {{ c.rating >= star ? '★' : '☆' }}
+                  }
+                </div>
+              }
+              @if (c.location || c.age) {
+                <p [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 13px;">
+                  {{ c.location || 'Location Unknown' }}{{ c.age ? ' • ' + c.age + ' years' : '' }}
+                </p>
+              }
               @if (c.bio) {
                 <p style="margin-top: 12px; line-height: 1.6;">{{ c.bio }}</p>
               }
@@ -69,6 +99,27 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               }
             </div>
           </div>
+
+          @if (sharedEntriesForCrush().length > 0) {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 style="border-radius: 16px; padding: 20px; margin-top: 16px;">
+              <h3 [style.color]="theme.colors().textSecondary" style="margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
+                Shared with you
+              </h3>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                @for (entry of sharedEntriesForCrush(); track entry.id) {
+                  <div [style.border]="'1px solid ' + theme.colors().border"
+                       style="border-radius: 10px; padding: 10px 12px;">
+                    <p style="margin: 0; line-height: 1.5;">{{ entry.content }}</p>
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: 11px;">
+                      {{ entry.timestamp | date:'MMM d, h:mm a' }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
         </div>
       } @else if (crush(); as c) {
         <div class="profile-main-content">
@@ -1099,6 +1150,20 @@ export class ProfileDetailComponent implements OnDestroy {
     const id = this.crushId();
     if (!id) return [];
     return this.dataService.getEntriesForCrush(id)();
+  });
+
+  /**
+   * Journal entries a friend has specifically shared with *me* about this crush
+   * (used only in the read-only friend view, since `entries` above only covers
+   * entries the viewer owns themselves).
+   */
+  sharedEntriesForCrush = computed(() => {
+    const id = this.crushId();
+    if (!id) return [];
+    return this.dataService.getSharedEntries()()
+      .filter((entry) => entry.crushId === id)
+      .slice()
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   });
 
   noteEntries = computed(() =>
