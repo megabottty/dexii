@@ -1,5 +1,10 @@
 export type EntryType = 'Note' | 'Date' | 'RedFlag' | 'SafetyCheck' | 'PrivateJournal';
 
+export interface EntryEditHistoryItem {
+  previousContent: string;
+  editedAt: Date;
+}
+
 export interface Entry {
   id: string;
   crushId: string;
@@ -13,4 +18,6 @@ export interface Entry {
   safetyContactId?: string; // Friend ID for safety check-in
   safetyStatus?: 'Draft' | 'Sent' | 'Safe' | 'Urgent';
   redFlagCount?: number; // Optional increment if RedFlag type
+  editHistory?: EntryEditHistoryItem[]; // Prior versions of `content`, oldest first
+  editedAt?: Date; // Timestamp of the most recent content edit, if any
 }

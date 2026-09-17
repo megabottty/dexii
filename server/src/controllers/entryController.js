@@ -139,17 +139,26 @@ exports.updateEntry = async (req, res) => {
       return res.status(400).json({ message: 'Invalid entry id.' });
     }
 
-    const entry = await Entry.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      { $set: pickWritableFields(req.body) },
-      { new: true, runValidators: true }
-    );
-
-    if (!entry) {
+    const existing = await Entry.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!existing) {
       return res.status(404).json({ message: 'Entry not found.' });
     }
 
-    res.json(shapeEntry(entry));
+    const updates = pickWritableFields(req.body);
+
+    // Whenever the content actually changes, automatically archive the prior
+    // version into editHistory and stamp editedAt - computed server-side so
+    // the history log can't be tampered with or omitted by the client.
+    if (Object.prototype.hasOwnProperty.call(updates, 'content') && updates.content !== existing.content) {
+      existing.editHistory = existing.editHistory || [];
+      existing.editHistory.push({ previousContent: existing.content, editedAt: new Date() });
+      existing.editedAt = new Date();
+    }
+
+    Object.assign(existing, updates);
+    await existing.save();
+
+    res.json(shapeEntry(existing));
   } catch (err) {
     handleError(res, err);
   }

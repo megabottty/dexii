@@ -9,6 +9,7 @@ import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier } from '../../core/models/user.model';
+import { Entry } from '../../core/models/entry.model';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 @Component({
@@ -123,8 +124,51 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                           <time [style.color]="theme.colors().textSecondary" class="journal-page-time">
                             {{ entry.timestamp | date:'h:mm a' }}
                           </time>
+                          @if (entry.editedAt) {
+                            <span [style.color]="theme.colors().textSecondary" class="journal-page-edited-tag">(edited)</span>
+                          }
+                          <div class="journal-page-actions">
+                            @if (editingEntryId() !== entry.id) {
+                              <button type="button" (click)="startEdit(entry)" [style.color]="theme.colors().textSecondary"
+                                      class="journal-page-action-btn" aria-label="Edit entry">✎ Edit</button>
+                            }
+                            @if ((entry.editHistory?.length || 0) > 0) {
+                              <button type="button" (click)="toggleHistory(entry.id)" [style.color]="theme.colors().textSecondary"
+                                      class="journal-page-action-btn" aria-label="View edit history">
+                                🕘 History ({{ entry.editHistory?.length }})
+                              </button>
+                            }
+                          </div>
                         </header>
-                        <p [style.color]="theme.colors().text" class="journal-page-content">{{ entry.content }}</p>
+
+                        @if (editingEntryId() === entry.id) {
+                          <textarea [(ngModel)]="editDraft" [style.background-color]="theme.colors().bgSecondary"
+                                    [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                                    class="journal-page-edit-textarea"></textarea>
+                          <div class="journal-page-edit-actions">
+                            <button type="button" (click)="saveEdit(entry)" [style.background-color]="theme.colors().primary"
+                                    class="journal-page-edit-save">Save</button>
+                            <button type="button" (click)="cancelEdit()" [style.color]="theme.colors().textSecondary"
+                                    [style.border]="'1px solid ' + theme.colors().border" class="journal-page-edit-cancel">Cancel</button>
+                          </div>
+                        } @else {
+                          <p [style.color]="theme.colors().text" class="journal-page-content">{{ entry.content }}</p>
+                        }
+
+                        @if (expandedHistoryId() === entry.id && entry.editHistory?.length) {
+                          <div [style.border-top]="'1px dashed ' + theme.colors().border" class="journal-page-history">
+                            <span [style.color]="theme.colors().textSecondary" class="journal-page-history-title">Edit history</span>
+                            @for (version of [...(entry.editHistory || [])].reverse(); track $index) {
+                              <div [style.border-left]="'2px solid ' + theme.colors().border" class="journal-page-history-item">
+                                <time [style.color]="theme.colors().textSecondary" class="journal-page-history-time">
+                                  {{ version.editedAt | date:'MMM d, y h:mm a' }}
+                                </time>
+                                <p [style.color]="theme.colors().textSecondary" class="journal-page-history-content">{{ version.previousContent }}</p>
+                              </div>
+                            }
+                          </div>
+                        }
+
                         <div [style.border-top]="'1px dashed ' + theme.colors().border" class="journal-page-footer">
                           <span [style.color]="theme.colors().textSecondary" class="journal-page-footer-label">Private &amp; never shared</span>
                         </div>
@@ -250,6 +294,41 @@ export class VaultCenterComponent {
     });
     this.newJournalEntry = '';
     this.modal.show('Journal entry secured. Permanently separate from all sharing.');
+  }
+
+  editingEntryId = signal<string | null>(null);
+  editDraft = '';
+  expandedHistoryId = signal<string | null>(null);
+
+  startEdit(entry: Entry) {
+    this.expandedHistoryId.set(null);
+    this.editingEntryId.set(entry.id);
+    this.editDraft = entry.content;
+  }
+
+  cancelEdit() {
+    this.editingEntryId.set(null);
+    this.editDraft = '';
+  }
+
+  async saveEdit(entry: Entry) {
+    const draft = this.editDraft.trim();
+    if (!draft) return;
+    if (!this.security.moderateContent(draft)) {
+      this.modal.show('Journal entry flagged by AI moderation.');
+      return;
+    }
+    if (draft === entry.content) {
+      this.cancelEdit();
+      return;
+    }
+    await this.dataService.updateEntryContent(entry.id, draft);
+    this.cancelEdit();
+    this.modal.show('Journal entry updated. Previous version saved to its history.');
+  }
+
+  toggleHistory(entryId: string) {
+    this.expandedHistoryId.update((current) => (current === entryId ? null : entryId));
   }
 
   onFileSelected(event: Event) {

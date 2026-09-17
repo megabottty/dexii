@@ -650,6 +650,22 @@ export class DataService {
     void this.persistNewEntry(newEntry);
   }
 
+  /**
+   * Edits an existing entry's content in place. The backend automatically
+   * archives the prior content into `editHistory` (with a timestamp)
+   * whenever the content actually changes, so callers just pass the new text.
+   */
+  public async updateEntryContent(entryId: string, newContent: string): Promise<void> {
+    const trimmed = newContent.trim();
+    const entry = this._entries().find((e) => e.id === entryId);
+    if (!entry || !trimmed || trimmed === entry.content) return;
+
+    const updatedEntry: Entry = { ...entry, content: trimmed };
+    this._entries.update((entries) => entries.map((e) => (e.id === entryId ? updatedEntry : e)));
+    this.persistEntries();
+    await this.persistEntryUpdate(updatedEntry);
+  }
+
   private async persistNewEntry(entry: Entry): Promise<void> {
     if (!this.entriesApi.isAuthenticated()) {
       return;

@@ -13,9 +13,11 @@ export type SharedEntry = Entry & {
   owner: SharedEntryOwner;
 };
 
-type BackendEntry = Omit<Entry, 'timestamp'> & {
+type BackendEntry = Omit<Entry, 'timestamp' | 'editHistory' | 'editedAt'> & {
   timestamp: string;
   owner?: SharedEntryOwner;
+  editHistory?: { previousContent: string; editedAt: string }[];
+  editedAt?: string;
 };
 
 @Injectable({
@@ -57,7 +59,14 @@ export class EntriesApiService {
       visibility: Array.isArray(entry.visibility) ? entry.visibility.map(String) : [],
       isBurnAfterReading: Boolean(entry.isBurnAfterReading),
       hasViewed: Boolean(entry.hasViewed),
-      isSensitive: Boolean(entry.isSensitive)
+      isSensitive: Boolean(entry.isSensitive),
+      editHistory: Array.isArray(entry.editHistory)
+        ? entry.editHistory.map((item) => ({
+            previousContent: item.previousContent,
+            editedAt: new Date(item.editedAt)
+          }))
+        : [],
+      editedAt: entry.editedAt ? new Date(entry.editedAt) : undefined
     };
   }
 

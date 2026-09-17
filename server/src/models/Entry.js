@@ -47,7 +47,15 @@ const EntrySchema = new mongoose.Schema({
     type: String,
     enum: SAFETY_STATUSES
   },
-  redFlagCount: Number
+  redFlagCount: Number,
+  editHistory: {
+    type: [{
+      previousContent: { type: String, required: true },
+      editedAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
+  editedAt: Date
 }, { timestamps: true });
 
 EntrySchema.index({ userId: 1, crushId: 1 });
