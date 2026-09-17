@@ -1,0 +1,214 @@
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { DataService } from '../../core/services/data.service';
+import { ThemeService } from '../../core/services/theme.service';
+import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
+import { CrushProfile } from '../../core/models/crush-profile.model';
+import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+import { PageHintComponent } from '../../core/components/page-hint.component';
+
+interface FeedItem {
+  id: string;
+  kind: 'entry' | 'crush';
+  ownerId: string;
+  ownerUsername: string;
+  ownerAvatarUrl?: string;
+  crushId: string;
+  crushNickname?: string;
+  crushAvatarUrl?: string;
+  verb: string;
+  content: string;
+  isSensitive: boolean;
+  timestamp: Date;
+}
+
+const ENTRY_TYPE_VERBS: Record<string, string> = {
+  Note: 'shared a note about',
+  Date: 'logged a date with',
+  RedFlag: 'flagged a red flag about',
+  SafetyCheck: 'sent a safety check about',
+  PrivateJournal: 'shared a journal entry about'
+};
+
+@Component({
+  selector: 'app-feed',
+  standalone: true,
+  styleUrl: './feed.component.css',
+  imports: [CommonModule, RouterModule, NavbarComponent, PageHintComponent],
+  template: `
+    <div [style.background-color]="theme.colors().bg"
+         [style.color]="theme.colors().text"
+         class="feed-page">
+      <app-navbar></app-navbar>
+
+      <div class="feed-container">
+        <app-page-hint
+          hintKey="feed_inline"
+          title="Feed Hint"
+          message="See everything your friends have shared with you - crushes, notes, and updates - all in one place.">
+        </app-page-hint>
+
+        <div class="feed-header">
+          <div>
+            <h1 class="feed-title">Friend Feed</h1>
+            <p [style.color]="theme.colors().textSecondary" class="feed-subtitle">
+              Updates and entries your friends have shared with you.
+            </p>
+          </div>
+        </div>
+
+        @if (loading()) {
+          <div [style.border]="'1px dashed ' + theme.colors().border"
+               class="feed-empty-state">
+            <p [style.color]="theme.colors().textSecondary">Loading your feed...</p>
+          </div>
+        } @else if (feedItems().length === 0) {
+          <div [style.border]="'1px dashed ' + theme.colors().border"
+               class="feed-empty-state">
+            <p [style.color]="theme.colors().textSecondary">
+              Nothing here yet. Once a friend shares a crush or a note with you, it'll show up in this feed.
+            </p>
+          </div>
+        } @else {
+          <div class="feed-list">
+            @for (item of feedItems(); track item.id) {
+              <button type="button"
+                      (click)="openCrush(item)"
+                      [style.background-color]="theme.colors().bgSecondary"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.color]="theme.colors().text"
+                      class="feed-item">
+                <img [src]="item.ownerAvatarUrl || ('https://i.pravatar.cc/150?u=' + item.ownerUsername)"
+                     [alt]="item.ownerUsername"
+                     class="feed-item-avatar">
+                <div class="feed-item-body">
+                  <p class="feed-item-line">
+                    <span class="feed-item-username">{{ item.ownerUsername }}</span>
+                    <span [style.color]="theme.colors().textSecondary"> {{ item.verb }} </span>
+                    @if (item.crushNickname) {
+                      <span [style.color]="theme.colors().primary" class="feed-item-crush">{{ item.crushNickname }}</span>
+                    }
+                  </p>
+                  @if (item.isSensitive) {
+                    <p [style.color]="theme.colors().textSecondary" class="feed-item-content">
+                      🔒 Sensitive entry - open the crush to view details.
+                    </p>
+                  } @else if (item.content) {
+                    <p [style.color]="theme.colors().textSecondary" class="feed-item-content">{{ item.content }}</p>
+                  }
+                  <p [style.color]="theme.colors().textSecondary" class="feed-item-time">{{ timeAgo(item.timestamp) }}</p>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  `
+})
+export class FeedComponent implements OnInit {
+  protected theme = inject(ThemeService);
+  private dataService = inject(DataService);
+  private friendsApi = inject(FriendsApiService);
+  private router = inject(Router);
+
+  protected loading = signal(true);
+  private friendCrushes = signal<Map<string, CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string }>>(new Map());
+
+  async ngOnInit(): Promise<void> {
+    this.loading.set(true);
+    try {
+      await this.dataService.refreshSharedEntries();
+
+      if (this.friendsApi.isAuthenticated()) {
+        const friends: FriendSummary[] = await this.friendsApi.listFriends();
+        const map = new Map<string, CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string }>();
+
+        const results = await Promise.all(friends.map(async (friend) => {
+          try {
+            const crushes = await this.friendsApi.getFriendSharedCrushes(friend.id);
+            return { friend, crushes };
+          } catch {
+            return { friend, crushes: [] as CrushProfile[] };
+          }
+        }));
+
+        for (const { friend, crushes } of results) {
+          for (const crush of crushes) {
+            map.set(crush.id, {
+              ...crush,
+              ownerId: friend.id,
+              ownerUsername: friend.username,
+              ownerAvatarUrl: friend.avatarUrl
+            });
+          }
+        }
+
+        this.friendCrushes.set(map);
+      }
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  feedItems = computed<FeedItem[]>(() => {
+    const crushMap = this.friendCrushes();
+    const entries = this.dataService.getSharedEntries()();
+
+    const entryItems: FeedItem[] = entries.map((entry) => {
+      const crush = crushMap.get(entry.crushId);
+      return {
+        id: `entry-${entry.id}`,
+        kind: 'entry',
+        ownerId: entry.owner.id,
+        ownerUsername: entry.owner.username || 'Friend',
+        ownerAvatarUrl: entry.owner.avatarUrl,
+        crushId: entry.crushId,
+        crushNickname: crush?.nickname,
+        crushAvatarUrl: crush?.avatarUrl,
+        verb: ENTRY_TYPE_VERBS[entry.type] || 'shared an update about',
+        content: entry.content,
+        isSensitive: !!entry.isSensitive,
+        timestamp: entry.timestamp
+      };
+    });
+
+    const crushItems: FeedItem[] = [...crushMap.values()].map((crush) => ({
+      id: `crush-${crush.id}`,
+      kind: 'crush',
+      ownerId: crush.ownerId,
+      ownerUsername: crush.ownerUsername,
+      ownerAvatarUrl: crush.ownerAvatarUrl,
+      crushId: crush.id,
+      crushNickname: crush.nickname,
+      crushAvatarUrl: crush.avatarUrl,
+      verb: 'shared a crush:',
+      content: crush.bio || '',
+      isSensitive: false,
+      timestamp: crush.lastInteraction ? new Date(crush.lastInteraction) : new Date()
+    }));
+
+    return [...entryItems, ...crushItems].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  });
+
+  openCrush(item: FeedItem): void {
+    this.router.navigate(['/profile', item.crushId]);
+  }
+
+  timeAgo(date: Date): string {
+    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return `${weeks}w ago`;
+    return new Date(date).toLocaleDateString();
+  }
+}

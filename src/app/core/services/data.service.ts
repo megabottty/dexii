@@ -615,6 +615,18 @@ export class DataService {
     return this._sharedEntries.asReadonly();
   }
 
+  /** Forces a fresh fetch of entries friends have shared with me (e.g. when opening the Feed page). */
+  public async refreshSharedEntries(): Promise<void> {
+    if (!this.entriesApi.isAuthenticated()) {
+      return;
+    }
+    try {
+      this._sharedEntries.set(await this.entriesApi.listShared());
+    } catch (error) {
+      console.warn('Dexii shared entries refresh failed.', error);
+    }
+  }
+
   public addEntry(entry: Omit<Entry, 'id' | 'timestamp'>) {
     const newEntry: Entry = {
       ...entry,

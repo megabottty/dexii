@@ -82,6 +82,12 @@ import { AppNotification, NotificationsService } from '../../services/notificati
              class="navbar-link">
             Dashboard
           </a>
+          <a routerLink="/feed"
+             (click)="closeMobileMenu()"
+             [style.color]="theme.colors().text"
+             class="navbar-link">
+            Feed
+          </a>
           <a routerLink="/friends"
              (click)="closeMobileMenu()"
              [style.color]="theme.colors().text"

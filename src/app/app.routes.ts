@@ -33,6 +33,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
   },
   {
+    path: 'feed',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/feed/feed.component').then(m => m.FeedComponent)
+  },
+  {
     path: 'profile/:id',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/profile-detail/profile-detail.component').then(m => m.ProfileDetailComponent)

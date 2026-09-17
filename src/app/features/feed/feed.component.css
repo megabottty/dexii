@@ -1,0 +1,108 @@
+.feed-page {
+  min-height: 100vh;
+}
+
+.feed-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.feed-header {
+  margin-bottom: 20px;
+}
+
+.feed-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.feed-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.feed-empty-state {
+  border-radius: 16px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+}
+
+.feed-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.feed-item-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.feed-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.feed-item-line {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.feed-item-username {
+  font-weight: 700;
+}
+
+.feed-item-crush {
+  font-weight: 700;
+}
+
+.feed-item-content {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.feed-item-time {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .feed-container {
+    padding: 16px 14px 48px;
+  }
+
+  .feed-title {
+    font-size: 1.5rem;
+  }
+}
