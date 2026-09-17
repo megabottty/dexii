@@ -94,8 +94,78 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               @if (c.bio) {
                 <p style="margin-top: 12px; line-height: 1.6;">{{ c.bio }}</p>
               }
-              @if (c.customNotes) {
-                <p [style.color]="theme.colors().textSecondary" style="margin-top: 12px; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
+
+              @if (hasMoreCrushDetails()) {
+                <button type="button"
+                        (click)="toggleFullCrushDetails()"
+                        [style.color]="theme.colors().primary"
+                        [style.border]="'1px solid ' + theme.colors().primary"
+                        style="margin-top: 14px; background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                  {{ showFullCrushDetails() ? 'Show less ▲' : 'Show more details ▼' }}
+                </button>
+
+                @if (showFullCrushDetails()) {
+                  <div [style.border]="'1px solid ' + theme.colors().border"
+                       style="border-radius: 10px; padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+                    @if (c.customNotes) {
+                      <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
+                    }
+                    @if (c.pronouns) {
+                      <p style="margin: 0;"><strong>Pronouns:</strong> {{ c.pronouns }}</p>
+                    }
+                    @if (c.category) {
+                      <p style="margin: 0;"><strong>Category:</strong> {{ c.category }}</p>
+                    }
+                    @if (c.occupation) {
+                      <p style="margin: 0;"><strong>Occupation:</strong> {{ c.occupation }}</p>
+                    }
+                    @if (c.grade) {
+                      <p style="margin: 0;"><strong>Grade/Year:</strong> {{ c.grade }}</p>
+                    }
+                    @if (c.family) {
+                      <p style="margin: 0;"><strong>Family:</strong> {{ c.family }}</p>
+                    }
+                    @if (c.howWeMet) {
+                      <p style="margin: 0;"><strong>How they met:</strong> {{ c.howWeMet }}</p>
+                    }
+                    @if (c.whenWeMet) {
+                      <p style="margin: 0;"><strong>When they met:</strong> {{ c.whenWeMet }}</p>
+                    }
+                    @if (c.memorableMoments) {
+                      <p style="margin: 0;"><strong>Memorable moments:</strong> {{ c.memorableMoments }}</p>
+                    }
+                    @if (c.hair?.length) {
+                      <p style="margin: 0;"><strong>Hair:</strong> {{ c.hair?.join(', ') }}</p>
+                    }
+                    @if (c.eyes?.length) {
+                      <p style="margin: 0;"><strong>Eyes:</strong> {{ c.eyes?.join(', ') }}</p>
+                    }
+                    @if (c.build?.length) {
+                      <p style="margin: 0;"><strong>Build:</strong> {{ c.build?.join(', ') }}</p>
+                    }
+                    @if (c.heartbreakSong) {
+                      <p style="margin: 0;"><strong>Heartbreak song:</strong> {{ c.heartbreakSong }}</p>
+                    }
+                    @if (c.heartbreakRecovery) {
+                      <p style="margin: 0;"><strong>Heartbreak recovery:</strong> {{ c.heartbreakRecovery }}</p>
+                    }
+                    @if (c.redFlagReason) {
+                      <p style="margin: 0; color: #ef4444;"><strong>Red flag notes:</strong> {{ c.redFlagReason }}</p>
+                    }
+                    @if (c.social?.instagram || c.social?.snapchat || c.social?.twitter || c.social?.facebook || c.social?.whatsapp) {
+                      <div style="margin-top: 4px;">
+                        <strong>Social:</strong>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px;">
+                          @if (c.social?.instagram) { <span>📷 {{ c.social?.instagram }}</span> }
+                          @if (c.social?.snapchat) { <span>👻 {{ c.social?.snapchat }}</span> }
+                          @if (c.social?.twitter) { <span>🐦 {{ c.social?.twitter }}</span> }
+                          @if (c.social?.facebook) { <span>📘 {{ c.social?.facebook }}</span> }
+                          @if (c.social?.whatsapp) { <span>💬 {{ c.social?.whatsapp }}</span> }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
               }
             </div>
           </div>
@@ -1046,6 +1116,12 @@ export class ProfileDetailComponent implements OnDestroy {
   friendCrushOwnerName = signal<string | null>(null);
   friendCrushLoading = signal(false);
   friendCrushNotFound = signal(false);
+  /** Whether the "Show more details" section is expanded on the read-only friend view. */
+  showFullCrushDetails = signal(false);
+
+  toggleFullCrushDetails(): void {
+    this.showFullCrushDetails.update((v) => !v);
+  }
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
   onDateMode = signal(false);
   statuses = CrushStatus;
@@ -1164,6 +1240,19 @@ export class ProfileDetailComponent implements OnDestroy {
       .filter((entry) => entry.crushId === id)
       .slice()
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  });
+
+  /** True if the crush being viewed has any additional public details beyond the brief header (used to show/hide the "Show more" button on the read-only friend view). */
+  hasMoreCrushDetails = computed(() => {
+    const c = this.crush();
+    if (!c) return false;
+    return !!(
+      c.customNotes || c.pronouns || c.category || c.howWeMet || c.whenWeMet ||
+      c.occupation || c.grade || c.family || c.memorableMoments ||
+      c.heartbreakSong || c.heartbreakRecovery || c.redFlagReason ||
+      (c.hair && c.hair.length) || (c.eyes && c.eyes.length) || (c.build && c.build.length) ||
+      (c.social && Object.values(c.social).some((v) => !!v))
+    );
   });
 
   noteEntries = computed(() =>
