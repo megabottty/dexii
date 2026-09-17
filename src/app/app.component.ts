@@ -12,6 +12,7 @@ import { MessagingService } from './core/services/messaging.service';
 import { UserSettingsService } from './core/services/user-settings.service';
 import { WalkthroughService } from './core/services/walkthrough.service';
 import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from './core/config/walkthrough-tours';
+import { SupportMenuService } from './core/services/support-menu.service';
 
 interface WalkthroughStep {
   title: string;
@@ -57,7 +58,7 @@ interface WalkthroughStep {
 
       <div class="app-support-actions"
            [class.app-support-actions--hidden]="mobileNavOpen()">
-        @if (supportMenuOpen()) {
+        @if (supportMenu.open()) {
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                id="app-support-menu"
@@ -81,18 +82,6 @@ interface WalkthroughStep {
           </div>
         }
 
-        <button (click)="toggleSupportMenu()"
-                type="button"
-                aria-label="Open help tools"
-                [attr.aria-expanded]="supportMenuOpen()"
-                aria-controls="app-support-menu"
-                [style.background-color]="'transparent'"
-                [style.color]="theme.colors().text"
-                [style.border]="'1px solid ' + theme.colors().border"
-                class="app-support-fab">
-          <span aria-hidden="true">?</span>
-          Help
-        </button>
       </div>
 
       @if (showFriendRequestNotification()) {
@@ -326,6 +315,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private messaging = inject(MessagingService);
   private userSettings = inject(UserSettingsService);
   private walkthroughService = inject(WalkthroughService);
+  protected supportMenu = inject(SupportMenuService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private navMenuObserver: MutationObserver | null = null;
@@ -333,7 +323,6 @@ export class AppComponent implements OnInit, OnDestroy {
   currentPath = signal(this.router.url || '/dashboard');
   activeHint = signal('');
   showRouteHint = signal(false);
-  supportMenuOpen = signal(false);
   mobileNavOpen = signal(false);
   userWantsHint = signal(true);
   showWalkthrough = signal(false);
@@ -431,7 +420,7 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe((event) => {
         this.currentPath.set(event.urlAfterRedirects || event.url || '/dashboard');
-        this.supportMenuOpen.set(false);
+        this.supportMenu.close();
         this.userWantsHint.set(false);
         this.refreshRouteHint();
         this.syncMobileNavState();
@@ -463,17 +452,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR, true);
   }
 
-  toggleSupportMenu(): void {
-    this.supportMenuOpen.update((open) => !open);
-  }
-
   toggleRouteHint(): void {
     this.showRouteHint.set(!this.showRouteHint());
-    this.supportMenuOpen.set(false);
+    this.supportMenu.close();
   }
 
   openWalkthroughFromMenu(): void {
-    this.supportMenuOpen.set(false);
+    this.supportMenu.close();
     this.openWalkthrough();
   }
 
@@ -555,8 +540,8 @@ export class AppComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement | null;
-    if (!target?.closest('.app-support-actions')) {
-      this.supportMenuOpen.set(false);
+    if (!target?.closest('.app-support-actions, .navbar-help-button')) {
+      this.supportMenu.close();
     }
   }
 
@@ -614,7 +599,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.mobileNavOpen.set(isOpen);
 
     if (isOpen) {
-      this.supportMenuOpen.set(false);
+      this.supportMenu.close();
     }
   }
 

@@ -7,6 +7,7 @@ import { UserSettingsService } from '../../services/user-settings.service';
 import { MessagingService } from '../../services/messaging.service';
 import { FriendsApiService } from '../../services/friends-api.service';
 import { NotificationsService } from '../../services/notifications.service';
+import { SupportMenuService } from '../../services/support-menu.service';
 
 @Component({
   selector: 'app-navbar',
@@ -39,6 +40,17 @@ import { NotificationsService } from '../../services/notifications.service';
                alt="Your profile photo"
                class="navbar-profile-avatar-img">
         </a>
+
+        <button type="button"
+              class="navbar-help-button"
+              [style.color]="theme.colors().text"
+              [style.border]="'1px solid ' + theme.colors().border"
+              aria-label="Open help tools"
+              [attr.aria-expanded]="supportMenu.open()"
+              aria-controls="app-support-menu"
+              (click)="toggleSupportMenu(); $event.stopPropagation()">
+        ?
+        </button>
 
         <button type="button"
               class="navbar-menu-toggle"
@@ -206,6 +218,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   settings = inject(UserSettingsService);
   messaging = inject(MessagingService);
   notifications = inject(NotificationsService);
+  supportMenu = inject(SupportMenuService);
   private friendsApi = inject(FriendsApiService);
   private router = inject(Router);
   incomingFriendRequestCount = signal(0);
@@ -236,6 +249,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   closeAllMenus(): void {
     this.closeMobileMenu();
+    this.supportMenu.close();
+  }
+
+  toggleSupportMenu(): void {
+    this.supportMenu.toggle();
   }
 
 
