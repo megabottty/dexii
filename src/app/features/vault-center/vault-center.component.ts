@@ -46,11 +46,6 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                class="vault-nav-link">Friends</a>
             <a routerLink="/chat" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                class="vault-nav-link">Chat</a>
-            <button (click)="theme.toggleTheme()" [style.color]="theme.colors().text"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    class="vault-center-component__s8">
-              {{ theme.isOnyx() ? 'Pearl' : 'Onyx' }}
-            </button>
             <button (click)="security.lockApp()" [style.background-color]="theme.colors().primary"
                     class="vault-center-component__s9">
               Lock
