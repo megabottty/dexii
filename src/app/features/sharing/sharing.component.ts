@@ -131,10 +131,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                         <div style="display:flex; align-items:center; gap:6px;">
                           <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-label">Specific Entries</p>
                           <span class="info-icon-tooltip">
-                            <button (click)="showShareDestinationInfo()"
-                                    [style.color]="theme.colors().textSecondary"
-                                    title="This goes to the chat window between you two."
-                                    data-tooltip="This goes to the chat window between you two."
+                            <button                             (click)="showShareDestinationInfo()"
+                            [style.color]="theme.colors().textSecondary"
+                            data-tooltip="This goes to the chat window between you two."
                                     aria-label="Where do shared notes go?"
                                     type="button"
                                     class="sharing-component__info-button">
