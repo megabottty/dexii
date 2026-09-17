@@ -138,15 +138,10 @@
   text-transform: uppercase;
 }
 
-.navbar-tea-menu {
-  width: 100%;
-}
-
 .navbar-link,
 .navbar-btn-outline,
 .navbar-btn-primary,
-.navbar-link-vault,
-.navbar-tea-toggle {
+.navbar-link-vault {
   min-height: 48px;
   width: 100%;
   display: flex;
@@ -158,8 +153,7 @@
   border-radius: 16px;
 }
 
-.navbar-links-section--primary .navbar-link,
-.navbar-links-section--primary .navbar-tea-toggle {
+.navbar-links-section--primary .navbar-link {
   font-size: 13px;
   letter-spacing: 1.6px;
   font-weight: 700;
@@ -185,6 +179,11 @@
 
 .navbar-links-section--account {
   gap: 12px;
+}
+
+.navbar-links-section--logout {
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 .navbar-right {
@@ -293,22 +292,9 @@
   gap: 6px;
 }
 
-.navbar-tea-toggle {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-family: inherit;
-}
-
 .navbar-tea-icon {
   font-size: 16px;
   line-height: 1;
-}
-
-.navbar-tea-menu {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
 }
 
 .navbar-unread-badge {
@@ -334,97 +320,6 @@
 .navbar-unread-badge-icon {
   font-size: 9px;
   margin-right: 2px;
-}
-
-.navbar-notifications-panel {
-  position: static;
-  width: 100%;
-  margin-top: 4px;
-  border-radius: 20px;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
-  overflow: hidden;
-}
-
-.navbar-notifications-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px 12px;
-}
-
-.navbar-notifications-title {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.navbar-notifications-subtitle {
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.navbar-notifications-mark-all {
-  border: none;
-  background: transparent;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  cursor: pointer;
-  text-transform: uppercase;
-  padding: 0;
-}
-
-.navbar-notifications-mark-all:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.navbar-notifications-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.navbar-notifications-empty {
-  padding: 18px;
-  font-size: 13px;
-}
-
-.navbar-notification-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 18px;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.navbar-notification-item:last-child {
-  border-bottom: none !important;
-}
-
-.navbar-notification-item--unread {
-  background: rgba(219, 39, 119, 0.08);
-}
-
-.navbar-notification-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.navbar-notification-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  flex: 0 0 auto;
 }
 
 @keyframes flame-pulse {
@@ -476,8 +371,8 @@
   box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
   box-sizing: border-box;
 }
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { register, login, verifyPin, verifyEmail, resendCode, getProfile, requestPasswordReset, resetPassword, setPassword } = require('../controllers/authController');
+const { register, login, verifyPin, verifyEmail, resendCode, getProfile, requestPasswordReset, resetPassword, setPassword, updateThemePreference } = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
 // Optional auth middleware for verify-pin
@@ -37,5 +37,9 @@ router.post('/resend-code', resendCode);
 // @route   GET /api/auth/me
 // @desc    Get current user profile
 router.get('/me', auth, getProfile);
+
+// @route   PUT /api/auth/theme
+// @desc    Save the current user's theme choice so it syncs across devices
+router.put('/theme', auth, updateThemePreference);
 
 module.exports = router;

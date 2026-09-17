@@ -68,6 +68,22 @@ export class WalkthroughService {
     this._key.set(key);
     this._steps.set(steps);
     this._index.set(0);
+
+    // Record "seen" the moment an automatic (non-forced) tour actually opens,
+    // not only when the user explicitly finishes/skips it. Previously, if
+    // someone closed the tab, refreshed, or navigated away mid-tour without
+    // clicking Skip or stepping through to the end, nothing was ever saved -
+    // so the same "first login" tour kept reappearing on every later login.
+    // A manually-replayed tour (force=true, e.g. from Help & Tips) is exempt:
+    // it's already marked seen from the very first time, so this is a no-op
+    // for that path anyway.
+    if (!force) {
+      try {
+        localStorage.setItem(this.storageKey(key), '1');
+      } catch {
+        // Storage can be unavailable in private browsing; the tour simply reappears later.
+      }
+    }
     return true;
   }
 

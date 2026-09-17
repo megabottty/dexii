@@ -759,7 +759,8 @@ exports.getProfile = async (req, res) => {
         phoneE164: user.phoneE164 || '',
         bio: user.bio || '',
         subscriptionTier: user.subscriptionTier || 'Free',
-        avatarUrl: user.avatarUrl
+        avatarUrl: user.avatarUrl,
+        themePreference: user.themePreference || null
       });
     }
 
@@ -777,8 +778,50 @@ exports.getProfile = async (req, res) => {
       bio: user.bio,
       subscriptionTier: user.subscriptionTier,
       avatarUrl: user.avatarUrl,
-      isEmailVerified: user.isEmailVerified
+      isEmailVerified: user.isEmailVerified,
+      themePreference: user.themePreference || null
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Save the user's theme choice so it follows them across
+//          browsers/devices instead of only living in one browser's
+//          localStorage.
+// @route   PUT /api/auth/theme
+exports.updateThemePreference = async (req, res) => {
+  try {
+    const { mode, customColors } = req.body || {};
+    if (typeof mode !== 'string' || !mode) {
+      return res.status(400).json({ message: 'A theme mode is required.' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      // Demo mode has no persistent per-user document to update; the
+      // frontend still keeps localStorage as a fallback in that case.
+      return res.json({ mode, customColors: customColors || null });
+    }
+
+    const update = {
+      themePreference: {
+        mode,
+        customColors: customColors && typeof customColors === 'object'
+          ? {
+            bg: customColors.bg,
+            primary: customColors.primary,
+            accent: customColors.accent
+          }
+          : undefined
+      }
+    };
+
+    const user = await User.findByIdAndUpdate(req.user.id, update, { new: true }).select('themePreference');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user.themePreference || { mode, customColors: customColors || null });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

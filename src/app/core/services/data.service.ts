@@ -7,6 +7,7 @@ import { getApiBaseUrl } from '../config/api-config';
 import { ModalService } from './modal.service';
 import { SecurityService } from './security.service';
 import { EntriesApiService, SharedEntry } from './entries-api.service';
+import { ThemeService } from './theme.service';
 
 interface BackendCrush {
   _id: string;
@@ -69,6 +70,7 @@ export class DataService {
   private audit = inject(AuditService);
   private security = inject(SecurityService);
   private entriesApi = inject(EntriesApiService);
+  private theme = inject(ThemeService);
 
   constructor() {
     effect(() => {
@@ -258,6 +260,7 @@ export class DataService {
     this._entries.set(localEntries);
     await this.hydrateEntriesFromBackend(owner, localEntries);
     await this.hydrateCrushesFromBackend();
+    void this.theme.hydrateFromBackend(owner);
   }
 
   private toCrushStatus(status?: string): CrushStatus {
@@ -791,6 +794,9 @@ export class DataService {
   });
 
   public deleteCrush(crushId: string): void {
+    const removedCrush = this._allCrushes().find(c => c.id === crushId);
+    const removedEntries = this._entries().filter(e => e.crushId === crushId);
+
     this._allCrushes.update(crushes => crushes.filter(c => c.id !== crushId));
     this._entries.update(entries => entries.filter(e => e.crushId !== crushId));
     this.persistEntries();
@@ -804,10 +810,36 @@ export class DataService {
       return;
     }
 
-    void this.persistCrushDeletion(crushId);
+    void this.persistCrushDeletion(crushId, removedCrush, removedEntries);
   }
 
-  private async persistCrushDeletion(crushId: string): Promise<void> {
+  private async persistCrushDeletion(
+    crushId: string,
+    removedCrush: CrushProfile | undefined,
+    removedEntries: Entry[]
+  ): Promise<void> {
+    // If the backend delete doesn't actually succeed, restore the crush (and
+    // its entries) into local state so the UI doesn't lie about it being
+    // gone - previously a failed/expired-token delete would still remove the
+    // crush from the on-screen list (optimistic update), leaving the user
+    // thinking it was deleted, only for it to silently reappear on the next
+    // refresh/login since it was never actually removed from the database.
+    const restoreLocalState = () => {
+      if (removedCrush) {
+        this._allCrushes.update(crushes =>
+          crushes.some(c => c.id === crushId) ? crushes : [...crushes, removedCrush]
+        );
+      }
+      if (removedEntries.length) {
+        this._entries.update(entries => {
+          const existingIds = new Set(entries.map(e => e.id));
+          const toRestore = removedEntries.filter(e => !existingIds.has(e.id));
+          return toRestore.length ? [...entries, ...toRestore] : entries;
+        });
+        this.persistEntries();
+      }
+    };
+
     try {
       let response = await this.authenticatedFetch(`/crushes/${crushId}`, {
         method: 'DELETE'
@@ -828,10 +860,12 @@ export class DataService {
 
       if (!response || !response.ok) {
         console.error('Failed to delete crush:', response?.status);
+        restoreLocalState();
         this.modal.show('Could not delete profile from the database. Please try again.');
       }
     } catch (err) {
       console.error('Error deleting crush:', err);
+      restoreLocalState();
       this.modal.show('Connection error. Could not delete profile.');
     }
   }

@@ -12,6 +12,95 @@
   margin-bottom: 20px;
 }
 
+.tea-updates-section {
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.tea-updates-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+}
+
+.tea-updates-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tea-updates-subtitle {
+  font-size: 0.85rem;
+  margin: 4px 0 0;
+}
+
+.tea-updates-mark-all {
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-transform: uppercase;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.tea-updates-mark-all:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tea-updates-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tea-updates-empty {
+  padding: 20px;
+  font-size: 0.9rem;
+}
+
+.tea-update-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tea-update-item:last-child {
+  border-bottom: none !important;
+}
+
+.tea-update-item--unread {
+  background: rgba(219, 39, 119, 0.08);
+}
+
+.tea-update-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.tea-update-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
 .feed-title {
   font-size: 1.8rem;
   font-weight: 700;

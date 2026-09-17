@@ -100,6 +100,19 @@ const UserSchema = new mongoose.Schema({
   isEmailVerified: {
     type: Boolean,
     default: false
+  },
+  // Lets a user's chosen theme follow them across browsers/devices instead
+  // of only being remembered in one browser's localStorage.
+  themePreference: {
+    mode: {
+      type: String,
+      default: null
+    },
+    customColors: {
+      bg: String,
+      primary: String,
+      accent: String
+    }
   }
 }, { timestamps: true });
 

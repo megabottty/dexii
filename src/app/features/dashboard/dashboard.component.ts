@@ -1,6 +1,6 @@
 import { Component, signal, inject, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../core/services/data.service';
 import { SecurityService } from '../../core/services/security.service';
@@ -781,6 +781,7 @@ export class DashboardComponent implements OnInit {
   public modal = inject(ModalService);
   public subscription = inject(SubscriptionService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private walkthrough = inject(WalkthroughService);
   private friendsApi = inject(FriendsApiService);
 
@@ -998,6 +999,20 @@ export class DashboardComponent implements OnInit {
     setTimeout(() => {
       this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
     }, 150);
+
+    // Lets other pages (e.g. the user's own profile page's "+ Add New
+    // Crush" link) deep-link straight into this same New Crush modal
+    // instead of just dropping the user on the dashboard and making them
+    // find/click the button themselves.
+    if (this.route.snapshot.queryParamMap.get('newCrush') === '1') {
+      setTimeout(() => this.openNewEntryModal(), 0);
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { newCrush: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
   }
 
   private async loadFriends(): Promise<void> {

@@ -7,6 +7,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 import { CrushProfile } from '../../core/models/crush-profile.model';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
+import { AppNotification, NotificationsService } from '../../core/services/notifications.service';
 
 interface FeedItem {
   id: string;
@@ -48,6 +49,54 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
           title="Feed Hint"
           message="See everything your friends have shared with you - crushes, notes, and updates - all in one place.">
         </app-page-hint>
+
+        <div class="tea-updates-section"
+             [style.background-color]="theme.colors().bgSecondary"
+             [style.border]="'1px solid ' + theme.colors().border">
+          <div class="tea-updates-header">
+            <div>
+              <h2 [style.color]="theme.colors().text" class="tea-updates-title">🍵 Tea Updates</h2>
+              <p [style.color]="theme.colors().textSecondary" class="tea-updates-subtitle">
+                Fresh nudges and shared crushes.
+              </p>
+            </div>
+            <button type="button"
+                    class="tea-updates-mark-all"
+                    [style.color]="theme.colors().primary"
+                    [disabled]="notifications.unreadCount() === 0"
+                    (click)="markAllNotificationsRead()">
+              Mark all read
+            </button>
+          </div>
+
+          <div class="tea-updates-list">
+            @if (notificationsLoading()) {
+              <div [style.color]="theme.colors().textSecondary" class="tea-updates-empty">
+                Loading tea updates...
+              </div>
+            } @else if (notifications.notifications().length === 0) {
+              <div [style.color]="theme.colors().textSecondary" class="tea-updates-empty">
+                No tea yet. We'll spill it here.
+              </div>
+            } @else {
+              @for (notification of notifications.notifications(); track notification.id) {
+                <button type="button"
+                        class="tea-update-item"
+                        [class.tea-update-item--unread]="!notification.read"
+                        [style.border-bottom]="'1px solid ' + theme.colors().border"
+                        (click)="openNotification(notification)">
+                  <div class="tea-update-copy">
+                    <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
+                    <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
+                  </div>
+                  @if (!notification.read) {
+                    <span [style.background-color]="theme.colors().primary" class="tea-update-dot"></span>
+                  }
+                </button>
+              }
+            }
+          </div>
+        </div>
 
         <div class="feed-header">
           <div>
@@ -109,14 +158,18 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
 })
 export class FeedComponent implements OnInit {
   protected theme = inject(ThemeService);
+  protected notifications = inject(NotificationsService);
   private dataService = inject(DataService);
   private friendsApi = inject(FriendsApiService);
   private router = inject(Router);
 
   protected loading = signal(true);
+  protected notificationsLoading = signal(true);
   private friendCrushes = signal<Map<string, CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string }>>(new Map());
 
   async ngOnInit(): Promise<void> {
+    void this.loadTeaUpdates();
+
     this.loading.set(true);
     try {
       await this.dataService.refreshSharedEntries();
@@ -210,5 +263,66 @@ export class FeedComponent implements OnInit {
     const weeks = Math.floor(days / 7);
     if (weeks < 5) return `${weeks}w ago`;
     return new Date(date).toLocaleDateString();
+  }
+
+  private async loadTeaUpdates(): Promise<void> {
+    this.notificationsLoading.set(true);
+    try {
+      await this.notifications.loadNotifications();
+      await this.notifications.loadUnreadCount();
+    } finally {
+      this.notificationsLoading.set(false);
+    }
+  }
+
+  async openNotification(notification: AppNotification): Promise<void> {
+    try {
+      if (!notification.read) {
+        await this.notifications.markRead(notification.id);
+      }
+    } catch {
+      // Navigation should still work if marking read fails.
+    }
+
+    await this.router.navigate(this.notificationLink(notification));
+  }
+
+  async markAllNotificationsRead(): Promise<void> {
+    try {
+      await this.notifications.markAllRead();
+    } catch {
+      // Leave the list as-is so the user can retry.
+    }
+  }
+
+  notificationMessage(notification: AppNotification): string {
+    const actorName = this.actorDisplayName(notification.actor);
+    switch (notification.type) {
+      case 'friend_request_nudge':
+        return `${actorName} sent you a nudge on their friend request`;
+      case 'crush_shared':
+        return `${actorName} shared a new crush with you`;
+      case 'invite_accepted':
+        return `${actorName} accepted your invite and joined Dexii!`;
+      case 'friend_request_received':
+        return `${actorName} sent you a friend request`;
+      case 'friend_request_accepted':
+        return `${actorName} accepted your friend request`;
+      default:
+        return `${actorName} sent you an update`;
+    }
+  }
+
+  private actorDisplayName(actor: AppNotification['actor']): string {
+    if (!actor) return 'A friend';
+    const fullName = [actor.firstName, actor.lastName].filter(Boolean).join(' ').trim();
+    return fullName || actor.username || 'A friend';
+  }
+
+  private notificationLink(notification: AppNotification): any[] {
+    if (notification.type === 'crush_shared' && typeof notification.payload?.crushId === 'string') {
+      return ['/profile', notification.payload.crushId];
+    }
+    return ['/friends'];
   }
 }

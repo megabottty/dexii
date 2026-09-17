@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { getApiBaseUrl } from '../config/api-config';
 
 export type ThemeMode =
   | 'pearl'
@@ -285,8 +286,11 @@ function buildCustomPalette(custom: CustomThemeColors): ThemePalette {
 })
 export class ThemeService {
   private readonly storageKey = 'dexii_theme';
+  private readonly apiBaseUrl = getApiBaseUrl();
+  private readonly tokenStorageKey = 'dexii_api_token';
   private _mode = signal<ThemeMode>(this.getInitialMode());
   private _customColors = signal<CustomThemeColors>(this.getInitialCustomColors());
+  private _hydratedOwner: string | null = null;
   public mode = this._mode.asReadonly();
   public customColors = this._customColors.asReadonly();
   public themes = THEME_DEFINITIONS;
@@ -336,11 +340,14 @@ export class ThemeService {
     return DEFAULT_CUSTOM_COLORS;
   }
 
-  setTheme(mode: ThemeMode) {
+  setTheme(mode: ThemeMode, options: { sync?: boolean } = {}) {
     const normalized: ThemeMode = (mode === 'custom' || THEME_MAP.has(mode)) ? mode : 'pearl';
     this._mode.set(normalized);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(this.storageKey, normalized);
+    }
+    if (options.sync !== false) {
+      void this.persistThemeToBackend(normalized, this._customColors());
     }
   }
 
@@ -354,11 +361,69 @@ export class ThemeService {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors));
     }
+    // setTheme() below already syncs the mode+colors together, so it
+    // covers persisting these custom colors - no need to sync twice.
     this.setTheme('custom');
   }
 
   toggleTheme() {
     const next: ThemeMode = this.isOnyx() ? 'pearl' : 'onyx';
     this.setTheme(next);
+  }
+
+  /**
+   * Pulls the signed-in user's saved theme choice from the backend so it
+   * follows them to a new browser/device, instead of each browser only ever
+   * seeing whatever was in its own localStorage. Safe to call repeatedly
+   * (e.g. once per login) - it only applies the remote value once per owner
+   * and is a no-op while logged out / offline.
+   */
+  async hydrateFromBackend(owner: string): Promise<void> {
+    if (!owner || this._hydratedOwner === owner) return;
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem(this.tokenStorageKey) : null;
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/auth/me`, {
+        headers: { 'x-auth-token': token }
+      });
+      if (!response.ok) return;
+
+      const profile = await response.json();
+      const pref = profile?.themePreference;
+      this._hydratedOwner = owner;
+      if (!pref?.mode) return;
+
+      if (pref.mode === 'custom' && pref.customColors?.bg && pref.customColors?.primary && pref.customColors?.accent) {
+        this._customColors.set(pref.customColors);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(pref.customColors));
+        }
+      }
+      // sync: false - this value just came from the backend, so writing it
+      // straight back would be a redundant round-trip.
+      this.setTheme(pref.mode as ThemeMode, { sync: false });
+    } catch {
+      // Offline/network failure - keep whatever's in localStorage already.
+    }
+  }
+
+  private async persistThemeToBackend(mode: ThemeMode, customColors: CustomThemeColors): Promise<void> {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem(this.tokenStorageKey) : null;
+    if (!token) return;
+
+    try {
+      await fetch(`${this.apiBaseUrl}/auth/theme`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ mode, customColors: mode === 'custom' ? customColors : undefined })
+      });
+    } catch {
+      // Offline/network failure - theme still works locally via localStorage;
+      // it'll just stay unsynced until the next successful save.
+    }
   }
 }

@@ -80,6 +80,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             </p>
             @if (isSelf()) {
               <a routerLink="/dashboard"
+                 [queryParams]="{ newCrush: 1 }"
                  [style.color]="theme.colors().primary"
                  class="user-profile-component__s14">
                 + Add New Crush
