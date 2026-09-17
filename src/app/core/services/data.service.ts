@@ -527,7 +527,7 @@ export class DataService {
     void this.persistCrushUpdate(crush);
   }
 
-  private async persistCrushUpdate(crush: CrushProfile): Promise<void> {
+  private async persistCrushUpdate(crush: CrushProfile, silent = false): Promise<void> {
     try {
       const payload = {
         nickname: crush.nickname,
@@ -594,7 +594,9 @@ export class DataService {
       this._allCrushes.update(crushes =>
         crushes.map((existing) => existing.id === crush.id ? mapped : existing)
       );
-      this.modal.show('Profile updated successfully!');
+      if (!silent) {
+        this.modal.show('Profile updated successfully!');
+      }
     } catch (err) {
       console.error('Error persisting crush update:', err);
       this.modal.show('Connection error. Could not update profile.');
@@ -816,7 +818,11 @@ export class DataService {
     // Persist change if backend exists
     const finalCrush = this._allCrushes().find(c => c.id === crushId);
     if (finalCrush) {
-      void this.persistCrushUpdate(finalCrush);
+      // Silent: a blocking "Profile updated" modal here would cover the
+      // sharing-controls UI (e.g. the quick-note input that appears right
+      // after sharing a crush), so we skip the success confirmation for
+      // this lightweight visibility toggle. Errors are still shown.
+      void this.persistCrushUpdate(finalCrush, true);
     }
   }
 

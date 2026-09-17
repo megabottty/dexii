@@ -38,3 +38,47 @@ textarea {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Reusable "info icon" tooltip pattern used app-wide (ⓘ buttons).
+ * Wrap the icon button in <span class="info-icon-tooltip" data-tooltip="...">
+ * so hovering/focusing it shows a styled tooltip immediately, in addition to
+ * any native `title` attribute or click handler already on the button.
+ */
+.info-icon-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-icon-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background-color: #1e1b2e;
+  color: #f3f0ff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  width: max-content;
+  max-width: 220px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 40;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.info-icon-tooltip:hover::after,
+.info-icon-tooltip:focus-within::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+

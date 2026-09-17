@@ -137,14 +137,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     <div class="friends-list-component__s26">
                       <div style="display:flex; align-items:center; gap:6px;">
                         <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s27">Specific Entries</p>
-                        <button (click)="showShareDestinationInfo()"
-                                [style.color]="theme.colors().textSecondary"
-                                title="This goes to the chat window between you two."
-                                aria-label="Where do shared notes go?"
-                                type="button"
-                                style="background:none; border:none; cursor:pointer; font-size:14px; line-height:1; padding:0;">
-                          ⓘ
-                        </button>
+                        <span class="info-icon-tooltip" data-tooltip="This goes to the chat window between you two.">
+                          <button (click)="showShareDestinationInfo()"
+                                  [style.color]="theme.colors().textSecondary"
+                                  title="This goes to the chat window between you two."
+                                  aria-label="Where do shared notes go?"
+                                  type="button"
+                                  style="background:none; border:none; cursor:pointer; font-size:14px; line-height:1; padding:0;">
+                            ⓘ
+                          </button>
+                        </span>
                       </div>
                       <div
                         [style.max-height]="getEntries(crush.id).length > 3 ? '260px' : 'none'"
@@ -1672,7 +1674,10 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         content: `Shared a crush: ${crush?.nickname || 'a crush'}`,
         relatedCrushId: crushId
       });
-      this.modal.show(`Shared crush sent to ${friend.username}.`);
+      // No blocking confirmation modal here on purpose: it would cover the
+      // "Specific Entries" quick-note input that appears right below as soon
+      // as the crush becomes shared, making it impossible to type into.
+      // The chat message above already serves as confirmation.
     }
   }
 

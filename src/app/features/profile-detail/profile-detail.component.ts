@@ -1424,6 +1424,7 @@ export class ProfileDetailComponent implements OnDestroy {
       "Just friends",
       "Just flirting",
       "Just sexting",
+      "Seeing where it goes (more than friends, haven't DTR)",
       "Heartbroken",
       `I think ${subject} ${likes} me`,
       "Getting serious",
