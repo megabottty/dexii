@@ -83,6 +83,14 @@ const UserSchema = new mongoose.Schema({
     enum: ['Free', 'Premium', 'Gold'],
     default: 'Free'
   },
+  stripeCustomerId: {
+    type: String,
+    default: null
+  },
+  stripeSubscriptionId: {
+    type: String,
+    default: null
+  },
   isVerified18: {
     type: Boolean,
     default: false

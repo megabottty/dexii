@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
+const { handleWebhook } = require('./controllers/billingController');
 
 dotenv.config();
 
@@ -18,6 +19,8 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
+
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
 // Connect to Database (optional in demo mode)
 const enableMongo = process.env.ENABLE_MONGO !== 'false';
@@ -55,6 +58,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/entries', require('./routes/entries'));
 app.use('/api/vault', require('./routes/vault'));
 app.use('/api/groups', require('./routes/groups'));
+app.use('/api/billing', require('./routes/billing'));
 
 // Expose io on the app so REST controllers (e.g. group messages) can emit realtime events.
 app.set('io', io);

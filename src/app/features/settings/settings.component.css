@@ -231,6 +231,13 @@
   font-size: 12px;
 }
 
+.settings-plan-price {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .settings-plan-active {
   margin-top: 10px;
   font-size: 10px;

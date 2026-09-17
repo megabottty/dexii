@@ -54,6 +54,12 @@ interface FriendChoice {
                     class="settings-reset-btn">
               Reset Defaults
             </button>
+            <button (click)="saveChanges()"
+                    [style.background-color]="theme.colors().primary"
+                    class="settings-photo-btn"
+                    type="button">
+              {{ saveMessage() || 'Save Changes' }}
+            </button>
           </div>
 
           <div class="settings-profile-banner">
@@ -466,7 +472,7 @@ interface FriendChoice {
 
             <div class="settings-plan-options">
               @for (tier of subscriptionTiers; track tier) {
-                <button (click)="subscription.upgrade(tier)"
+                <button (click)="choosePlan(tier)"
                         [attr.aria-pressed]="subscription.tier() === tier"
                         [style.background-color]="subscription.tier() === tier ? theme.colors().primary : 'transparent'"
                         [style.color]="subscription.tier() === tier ? 'white' : theme.colors().text"
@@ -474,6 +480,7 @@ interface FriendChoice {
                         class="settings-plan-option"
                         type="button">
                   <span class="settings-plan-tier">{{ tier }}</span>
+                  <span class="settings-plan-price">{{ planPrice(tier) }}</span>
                   <span class="settings-plan-limit">Up to {{ crushLimitFor(tier) }} crushes</span>
                   @if (subscription.tier() === tier) {
                     <span class="settings-plan-active">Active</span>
@@ -590,6 +597,7 @@ export class SettingsComponent {
   availableFriends = signal<FriendChoice[]>([]);
   selectedFriendIds = signal<string[]>(this.settings.getSelectedFriendIds());
   showFriendPicker = signal(false);
+  saveMessage = signal('');
   relationshipStatusOptions: ReadonlyArray<{ label: string; value: UserSettings['relationshipStatus'] }> = [
     { label: 'Select Status', value: '' },
     { label: 'Single', value: 'Single' },
@@ -605,6 +613,10 @@ export class SettingsComponent {
     [SubscriptionTier.Premium]: 25,
     [SubscriptionTier.Gold]: 100
   };
+
+  constructor() {
+    void this.subscription.refreshFromBackend();
+  }
 
   username() {
     return this.settings.currentUsername();
@@ -660,6 +672,12 @@ export class SettingsComponent {
 
   crushLimitFor(tier: SubscriptionTier): number {
     return this.crushLimits[tier];
+  }
+
+  planPrice(tier: SubscriptionTier): string {
+    if (tier === SubscriptionTier.Premium) return '$7.99/month';
+    if (tier === SubscriptionTier.Gold) return '$9.99/month';
+    return 'Free';
   }
 
   setLookingFor(event: Event) {
@@ -732,7 +750,16 @@ export class SettingsComponent {
 
   saveChanges() {
     this.settings.updateSettings(this.settings.settings());
+    this.saveMessage.set('Saved');
     this.modal.show('Settings saved.');
+  }
+
+  async choosePlan(tier: SubscriptionTier): Promise<void> {
+    try {
+      await this.subscription.upgrade(tier);
+    } catch (error) {
+      this.modal.show(error instanceof Error ? error.message : 'Unable to start checkout.');
+    }
   }
 
   replayWalkthrough() {
