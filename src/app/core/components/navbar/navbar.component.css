@@ -189,7 +189,7 @@
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 44px;
+  gap: 56px;
 }
 
 .navbar-profile-avatar {
