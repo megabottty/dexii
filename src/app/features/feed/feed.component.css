@@ -64,6 +64,36 @@
   font-size: 0.9rem;
 }
 
+.tea-updates-history-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 20px;
+  border: none;
+  border-top: 1px solid rgba(160, 113, 162, 0.2);
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.tea-updates-history-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(160, 113, 162, 0.14);
+  font-size: 0.7rem;
+}
+
 .tea-update-item {
   display: flex;
   align-items: center;
@@ -84,6 +114,10 @@
 
 .tea-update-item--unread {
   background: rgba(219, 39, 119, 0.08);
+}
+
+.tea-update-item--read {
+  opacity: 0.78;
 }
 
 .tea-update-copy {

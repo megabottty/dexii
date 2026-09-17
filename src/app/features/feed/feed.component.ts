@@ -79,7 +79,7 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
                 No tea yet. We'll spill it here.
               </div>
             } @else {
-              @for (notification of notifications.notifications(); track notification.id) {
+              @for (notification of unreadNotifications(); track notification.id) {
                 <button type="button"
                         class="tea-update-item"
                         [class.tea-update-item--unread]="!notification.read"
@@ -89,10 +89,34 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
                     <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
                     <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
                   </div>
-                  @if (!notification.read) {
-                    <span [style.background-color]="theme.colors().primary" class="tea-update-dot"></span>
-                  }
+                  <span [style.background-color]="theme.colors().primary" class="tea-update-dot"></span>
                 </button>
+              }
+
+              @if (readNotifications().length > 0) {
+                <button type="button"
+                        class="tea-updates-history-toggle"
+                        [style.color]="theme.colors().textSecondary"
+                        [attr.aria-expanded]="readUpdatesExpanded()"
+                        (click)="toggleReadUpdates()">
+                  <span>{{ readUpdatesExpanded() ? 'Hide earlier tea' : 'Show earlier tea' }}</span>
+                  <span class="tea-updates-history-count">{{ readNotifications().length }}</span>
+                  <span aria-hidden="true">{{ readUpdatesExpanded() ? '▴' : '▾' }}</span>
+                </button>
+
+                @if (readUpdatesExpanded()) {
+                  @for (notification of readNotifications(); track notification.id) {
+                    <button type="button"
+                            class="tea-update-item tea-update-item--read"
+                            [style.border-bottom]="'1px solid ' + theme.colors().border"
+                            (click)="openNotification(notification)">
+                      <div class="tea-update-copy">
+                        <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
+                        <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
+                      </div>
+                    </button>
+                  }
+                }
               }
             }
           </div>
@@ -165,7 +189,10 @@ export class FeedComponent implements OnInit {
 
   protected loading = signal(true);
   protected notificationsLoading = signal(true);
+  protected readUpdatesExpanded = signal(false);
   private friendCrushes = signal<Map<string, CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string }>>(new Map());
+  protected unreadNotifications = computed(() => this.notifications.notifications().filter(notification => !notification.read));
+  protected readNotifications = computed(() => this.notifications.notifications().filter(notification => notification.read));
 
   async ngOnInit(): Promise<void> {
     void this.loadTeaUpdates();
@@ -279,6 +306,7 @@ export class FeedComponent implements OnInit {
     try {
       if (!notification.read) {
         await this.notifications.markRead(notification.id);
+        this.readUpdatesExpanded.set(false);
       }
     } catch {
       // Navigation should still work if marking read fails.
@@ -290,9 +318,14 @@ export class FeedComponent implements OnInit {
   async markAllNotificationsRead(): Promise<void> {
     try {
       await this.notifications.markAllRead();
+      this.readUpdatesExpanded.set(false);
     } catch {
       // Leave the list as-is so the user can retry.
     }
+  }
+
+  toggleReadUpdates(): void {
+    this.readUpdatesExpanded.update(expanded => !expanded);
   }
 
   notificationMessage(notification: AppNotification): string {
