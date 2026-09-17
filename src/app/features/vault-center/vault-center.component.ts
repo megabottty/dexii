@@ -99,17 +99,49 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                        class="vault-center-component__s17">Secure Entry</button>
             </div>
 
-            <div class="vault-center-component__s18">
-              @for (entry of journalEntries(); track entry.id) {
-                <div [style.border-left]="'3px solid ' + theme.colors().primary" [style.background-color]="theme.colors().bgSecondary"
-                     class="vault-center-component__s19">
-                  <span [style.color]="theme.colors().textSecondary" class="vault-center-component__s20">
-                    {{ entry.timestamp | date:'MMMM d, y h:mm a' }}
-                  </span>
-                  <p class="vault-center-component__s21">"{{ entry.content }}"</p>
-                </div>
-              }
-            </div>
+            @if (journalEntries().length > 0) {
+              <div [style.color]="theme.colors().textSecondary" class="journal-entry-count">
+                {{ journalEntries().length }} {{ journalEntries().length === 1 ? 'entry' : 'entries' }} in your journal
+              </div>
+
+              <div class="journal-book">
+                @for (group of journalGroups(); track group.dateKey) {
+                  <div class="journal-day-divider">
+                    <span [style.background-color]="theme.colors().bg" [style.color]="theme.colors().primary" class="journal-day-label">
+                      {{ group.dateKey }}
+                    </span>
+                    <span [style.background-color]="theme.colors().border" class="journal-day-line"></span>
+                  </div>
+
+                  <div class="journal-pages">
+                    @for (entry of group.entries; track entry.id) {
+                      <article [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border"
+                               class="journal-page">
+                        <div class="journal-page-fold" [style.background]="'linear-gradient(135deg, transparent 50%, ' + theme.colors().border + ' 50%)'"></div>
+                        <header class="journal-page-header">
+                          <span [style.color]="theme.colors().primary" class="journal-page-icon">✦</span>
+                          <time [style.color]="theme.colors().textSecondary" class="journal-page-time">
+                            {{ entry.timestamp | date:'h:mm a' }}
+                          </time>
+                        </header>
+                        <p [style.color]="theme.colors().text" class="journal-page-content">{{ entry.content }}</p>
+                        <div [style.border-top]="'1px dashed ' + theme.colors().border" class="journal-page-footer">
+                          <span [style.color]="theme.colors().textSecondary" class="journal-page-footer-label">Private &amp; never shared</span>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div [style.border]="'1px dashed ' + theme.colors().border" class="journal-empty-state">
+                <span class="journal-empty-icon">📔</span>
+                <h3 [style.color]="theme.colors().text" class="journal-empty-title">Your journal is empty</h3>
+                <p [style.color]="theme.colors().textSecondary" class="journal-empty-copy">
+                  Write your first private entry above - it stays here, on its own page, just for you.
+                </p>
+              </div>
+            }
           </div>
         }
 
@@ -178,6 +210,30 @@ export class VaultCenterComponent {
   journalEntries = computed(() =>
     this.dataService.getEntriesForCrush('private_vault')() // Using a special ID for global journal
   );
+
+  /** Groups journal entries by calendar day (newest first) so the UI reads like real journal pages. */
+  journalGroups = computed(() => {
+    const entries = [...this.journalEntries()].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    const groups: { dateKey: string; entries: typeof entries }[] = [];
+    for (const entry of entries) {
+      const dateKey = new Date(entry.timestamp).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const existing = groups.find(g => g.dateKey === dateKey);
+      if (existing) {
+        existing.entries.push(entry);
+      } else {
+        groups.push({ dateKey, entries: [entry] });
+      }
+    }
+    return groups;
+  });
 
   saveJournal() {
     if (!this.newJournalEntry.trim()) return;

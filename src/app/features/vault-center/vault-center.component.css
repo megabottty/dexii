@@ -282,6 +282,161 @@
   position: relative;
 }
 
+/* --- Journal page-style layout --- */
+
+.journal-entry-count {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+  margin-top: -12px;
+}
+
+.journal-book {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journal-day-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.journal-day-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  z-index: 0;
+}
+
+.journal-day-label {
+  position: relative;
+  z-index: 1;
+  padding-right: 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.journal-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.journal-page {
+  position: relative;
+  padding: 24px 24px 16px;
+  border-radius: 2px 14px 14px 2px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 40px 0 0 -39px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 27px,
+    rgba(120, 100, 120, 0.08) 28px
+  );
+}
+
+.journal-page-fold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 0 2px 0 0;
+  opacity: 0.7;
+}
+
+.journal-page-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.journal-page-icon {
+  font-size: 12px;
+}
+
+.journal-page-time {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.journal-page-content {
+  font-size: 15px;
+  line-height: 1.7;
+  font-style: italic;
+  margin: 0;
+  flex: 1;
+  white-space: pre-wrap;
+}
+
+.journal-page-footer {
+  margin-top: 16px;
+  padding-top: 10px;
+}
+
+.journal-page-footer-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+}
+
+.journal-empty-state {
+  text-align: center;
+  padding: 60px 30px;
+  border-radius: 16px;
+}
+
+.journal-empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.journal-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.journal-empty-copy {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 360px;
+  margin-inline: auto;
+}
+
+@media (max-width: 760px) {
+  .journal-pages {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .journal-page {
+    padding: 18px 18px 14px;
+  }
+
+  .journal-empty-state {
+    padding: 40px 18px;
+  }
+}
+
+
 @media (max-width: 760px) {
   .vault-settings-grid,
   .vault-settings-toggles {
