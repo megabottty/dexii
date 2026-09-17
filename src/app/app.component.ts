@@ -96,6 +96,7 @@ interface WalkthroughStep {
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.color]="theme.colors().text"
              [style.border]="'1px solid ' + theme.colors().accent"
+             [class.app-friend-request-notification--stacked]="showChatNotification()"
              role="status"
              aria-live="polite"
              class="app-friend-request-notification">

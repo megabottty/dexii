@@ -424,7 +424,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
                 <div class="dashboard-component__s26">
                   <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Age</label>
-                  <input type="number" [(ngModel)]="newCrush.age" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                  <input type="number" [(ngModel)]="newCrush.age" (wheel)="$any($event.target).blur()" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
                 </div>
 
                 <div class="dashboard-component__s26">

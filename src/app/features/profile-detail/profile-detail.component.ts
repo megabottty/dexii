@@ -748,7 +748,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </div>
                   <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Age</label>
-                    <input type="number" [(ngModel)]="editForm.age" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                    <input type="number" [(ngModel)]="editForm.age" (wheel)="$any($event.target).blur()" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
                   <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">How We Met</label>

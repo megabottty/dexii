@@ -53,13 +53,13 @@
 
 .app-support-actions {
   position: fixed;
-  top: var(--app-support-offset-top);
-  right: var(--app-support-offset-right);
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: calc(16px + env(safe-area-inset-left));
   z-index: 321;
   max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -160,7 +160,7 @@
 }
 
 .is-chat-route .app-support-actions {
-  top: calc(16px + env(safe-area-inset-top));
+  bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .app-component__s8 {
@@ -259,7 +259,7 @@
 .app-friend-request-notification {
   position: fixed;
   right: 16px;
-  bottom: 72px;
+  bottom: 16px;
   z-index: 322;
   width: min(340px, calc(100vw - 32px));
   padding: 14px;
@@ -269,11 +269,16 @@
 .app-chat-notification {
   position: fixed;
   right: 16px;
-  bottom: 210px;
+  bottom: 16px;
   z-index: 322;
   width: min(340px, calc(100vw - 32px));
   padding: 14px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+/* When both toasts are visible at once, stack the friend-request toast above the chat one instead of overlapping. */
+.app-friend-request-notification--stacked {
+  bottom: calc(16px + 130px);
 }
 
 .app-friend-request-notification__close {
