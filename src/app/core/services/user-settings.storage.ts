@@ -21,7 +21,7 @@ export interface UserSettings {
   loveLanguage: 'Words of Affirmation' | 'Acts of Service' | 'Receiving Gifts' | 'Quality Time' | 'Physical Touch' | '';
   idealDate: string;
   profileVisibility: 'Friends only' | 'Selected friends' | 'Private';
-  themeMode?: 'pearl' | 'onyx';
+  themeMode?: 'pearl' | 'onyx' | 'girlie' | 'manly' | 'hippie' | 'gothic' | 'light' | 'dark' | 'highschool' | 'neutral' | 'custom';
 }
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {

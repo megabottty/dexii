@@ -56,14 +56,31 @@ import { DataService } from '../../core/services/data.service';
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border-bottom]="'1px solid ' + theme.colors().border"
              class="messaging-add-crush-panel">
-          <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__label">
-            Share one of your crushes with {{ currentChatPartner().username }}
-          </p>
+          <div class="messaging-add-crush-panel__header">
+            <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__label">
+              Share one of your crushes with {{ currentChatPartner().username }}
+            </p>
+            <button type="button"
+                    (click)="toggleAddCrush()"
+                    [style.color]="theme.colors().textSecondary"
+                    aria-label="Close crush sharing panel"
+                    class="messaging-add-crush-panel__close">
+              ✕
+            </button>
+          </div>
+          @if (shareFeedback(); as feedback) {
+            <p [style.color]="theme.colors().primary" class="messaging-add-crush-panel__feedback">
+              ✓ {{ feedback }}
+            </p>
+          }
           <div class="messaging-crush-picker-grid">
             @for (crush of myCrushesForSharing(); track crush.id) {
               <div [style.background-color]="theme.colors().cardBg"
-                   [style.border]="'1px solid ' + theme.colors().border"
+                   [style.border]="isCrushSharedWithChatPartner(crush) ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                    class="messaging-crush-picker-card">
+                @if (isCrushSharedWithChatPartner(crush)) {
+                  <span class="messaging-crush-picker-badge" [style.background-color]="theme.colors().primary">✓ Shared</span>
+                }
                 <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
                      [alt]="crush.nickname + ' photo'"
                      class="messaging-crush-picker-avatar">
@@ -73,9 +90,9 @@ import { DataService } from '../../core/services/data.service';
                 </div>
                 <button type="button"
                         (click)="toggleShareCrushWithChatPartner(crush)"
-                        [style.background-color]="isCrushSharedWithChatPartner(crush) ? theme.colors().primary : 'transparent'"
-                        [style.color]="isCrushSharedWithChatPartner(crush) ? 'white' : theme.colors().text"
-                        [style.border]="'1px solid ' + (isCrushSharedWithChatPartner(crush) ? theme.colors().primary : theme.colors().border)"
+                        [style.background-color]="isCrushSharedWithChatPartner(crush) ? 'transparent' : theme.colors().primary"
+                        [style.color]="isCrushSharedWithChatPartner(crush) ? theme.colors().textSecondary : 'white'"
+                        [style.border]="'1px solid ' + (isCrushSharedWithChatPartner(crush) ? theme.colors().border : theme.colors().primary)"
                         [attr.aria-pressed]="isCrushSharedWithChatPartner(crush)"
                         class="messaging-crush-picker-toggle">
                   {{ isCrushSharedWithChatPartner(crush) ? 'Unshare' : 'Share' }}
@@ -471,6 +488,8 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   // --- Add & share a new crush directly from the chat ---
   showAddCrush = signal(false);
+  shareFeedback = signal<string | null>(null);
+  private shareFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /** Same underlying crush list shown on the Dashboard, used here so you can
    * share an existing crush with the current chat partner instead of having
@@ -479,6 +498,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   toggleAddCrush(): void {
     this.showAddCrush.update((open) => !open);
+    this.shareFeedback.set(null);
   }
 
   isCrushSharedWithChatPartner(crush: any): boolean {
@@ -502,6 +522,14 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
         relatedCrushId: crush.id
       });
     }
+
+    this.showShareFeedback(`${crush.nickname} ${wasShared ? 'is no longer shared with' : 'was shared with'} ${friend.username}.`);
+  }
+
+  private showShareFeedback(message: string): void {
+    this.shareFeedback.set(message);
+    if (this.shareFeedbackTimeout) clearTimeout(this.shareFeedbackTimeout);
+    this.shareFeedbackTimeout = setTimeout(() => this.shareFeedback.set(null), 2500);
   }
 
   startChat(friend: FriendSummary): void {

@@ -241,7 +241,7 @@
 
 .settings-theme-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 14px;
 }
 
@@ -259,6 +259,65 @@
 .settings-theme-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.settings-custom-theme-editor {
+  margin-top: 16px;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.settings-custom-theme-label {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+}
+
+.settings-custom-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.settings-custom-theme-swatch-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-custom-theme-swatch-picker input[type='color'] {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+}
+
+.settings-custom-theme-apply {
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.settings-custom-theme-apply:hover {
+  opacity: 0.88;
+}
+
+@media (max-width: 640px) {
+  .settings-custom-theme-row {
+    justify-content: center;
+  }
 }
 
 .settings-theme-preview {

@@ -1,7 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { ThemeService } from '../../core/services/theme.service';
+import { ThemeService, ThemeMode, CustomThemeColors } from '../../core/services/theme.service';
 import { ModalService } from '../../core/services/modal.service';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
@@ -23,7 +24,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavbarComponent, PageHintComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -283,65 +284,95 @@ interface FriendChoice {
 
           <div class="settings-divider"></div>
 
-          <section class="settings-plan-section">
+          <section id="theme" class="settings-plan-section">
             <div class="settings-plan-header">
               <div>
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Appearance</p>
                 <h2 class="settings-section-title">Theme Mode</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  Choose your Dexii aesthetic: Pearl (Classic Glamour Light) or Onyx (Midnight Slate Dark).
+                  Pick the aesthetic that feels like you - there's one for every vibe.
                 </p>
               </div>
             </div>
 
             <div class="settings-theme-options">
-              <button (click)="selectTheme('pearl')"
-                      [attr.aria-pressed]="theme.isPearl()"
-                      [style.background-color]="theme.isPearl() ? (theme.isPearl() ? 'rgba(168, 129, 175, 0.08)' : theme.colors().bgSecondary) : 'transparent'"
-                      [style.border]="theme.isPearl() ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                      class="settings-theme-card"
-                      type="button">
-                <div class="settings-theme-preview settings-theme-preview--pearl">
-                  <span class="settings-theme-swatch" style="background-color: #fffafa; border: 1px solid #e2d1e2;"></span>
-                  <span class="settings-theme-swatch" style="background-color: #a881af;"></span>
-                  <span class="settings-theme-swatch" style="background-color: #d4af37;"></span>
-                </div>
-                <div class="settings-theme-info">
-                  <div class="settings-theme-title-row">
-                    <span class="settings-theme-name" [style.color]="theme.colors().text">Pearl Mode</span>
-                    @if (theme.isPearl()) {
-                      <span class="settings-theme-active-tag" [style.background-color]="theme.colors().primary">Active</span>
-                    }
+              @for (t of theme.themes; track t.id) {
+                <button (click)="selectTheme(t.id)"
+                        [attr.aria-pressed]="theme.mode() === t.id"
+                        [style.background-color]="theme.mode() === t.id ? t.colors.primary + '14' : 'transparent'"
+                        [style.border]="theme.mode() === t.id ? '2px solid ' + t.colors.primary : '1px solid ' + theme.colors().border"
+                        class="settings-theme-card"
+                        type="button">
+                  <div class="settings-theme-preview">
+                    <span class="settings-theme-swatch" [style.background-color]="t.colors.bg" [style.border]="'1px solid ' + t.colors.border"></span>
+                    <span class="settings-theme-swatch" [style.background-color]="t.colors.primary"></span>
+                    <span class="settings-theme-swatch" [style.background-color]="t.colors.accent"></span>
                   </div>
-                  <span class="settings-theme-desc" [style.color]="theme.colors().textSecondary">
-                    Classic Glamour Light with Soft Mauve Silk & Polished Gold
-                  </span>
-                </div>
-              </button>
+                  <div class="settings-theme-info">
+                    <div class="settings-theme-title-row">
+                      <span class="settings-theme-name" [style.color]="theme.colors().text">{{ t.name }}</span>
+                      @if (theme.mode() === t.id) {
+                        <span class="settings-theme-active-tag" [style.background-color]="theme.colors().primary">Active</span>
+                      }
+                    </div>
+                    <span class="settings-theme-desc" [style.color]="theme.colors().textSecondary">
+                      {{ t.description }}
+                    </span>
+                  </div>
+                </button>
+              }
 
-              <button (click)="selectTheme('onyx')"
-                      [attr.aria-pressed]="theme.isOnyx()"
-                      [style.background-color]="theme.isOnyx() ? 'rgba(79, 70, 229, 0.12)' : 'transparent'"
-                      [style.border]="theme.isOnyx() ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+              <button (click)="selectTheme('custom')"
+                      [attr.aria-pressed]="theme.mode() === 'custom'"
+                      [style.background-color]="theme.mode() === 'custom' ? theme.colors().primary + '14' : 'transparent'"
+                      [style.border]="theme.mode() === 'custom' ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                       class="settings-theme-card"
                       type="button">
-                <div class="settings-theme-preview settings-theme-preview--onyx">
-                  <span class="settings-theme-swatch" style="background-color: #020617; border: 1px solid #1e293b;"></span>
-                  <span class="settings-theme-swatch" style="background-color: #4f46e5;"></span>
-                  <span class="settings-theme-swatch" style="background-color: #6366f1;"></span>
+                <div class="settings-theme-preview">
+                  <span class="settings-theme-swatch" [style.background-color]="customColorDraft.bg" [style.border]="'1px solid ' + theme.colors().border"></span>
+                  <span class="settings-theme-swatch" [style.background-color]="customColorDraft.primary"></span>
+                  <span class="settings-theme-swatch" [style.background-color]="customColorDraft.accent"></span>
                 </div>
                 <div class="settings-theme-info">
                   <div class="settings-theme-title-row">
-                    <span class="settings-theme-name" [style.color]="theme.colors().text">Onyx Mode</span>
-                    @if (theme.isOnyx()) {
+                    <span class="settings-theme-name" [style.color]="theme.colors().text">Custom</span>
+                    @if (theme.mode() === 'custom') {
                       <span class="settings-theme-active-tag" [style.background-color]="theme.colors().primary">Active</span>
                     }
                   </div>
                   <span class="settings-theme-desc" [style.color]="theme.colors().textSecondary">
-                    Midnight Slate Dark with Electric Indigo accents
+                    Pick your own 3 colors below
                   </span>
                 </div>
               </button>
+            </div>
+
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 class="settings-custom-theme-editor">
+              <p [style.color]="theme.colors().textSecondary" class="settings-custom-theme-label">
+                Design your own theme - pick a background, a primary color, and an accent color:
+              </p>
+              <div class="settings-custom-theme-row">
+                <label class="settings-custom-theme-swatch-picker">
+                  <input type="color" [(ngModel)]="customColorDraft.bg" (ngModelChange)="onCustomColorChange()" aria-label="Background color">
+                  <span [style.color]="theme.colors().text">Background</span>
+                </label>
+                <label class="settings-custom-theme-swatch-picker">
+                  <input type="color" [(ngModel)]="customColorDraft.primary" (ngModelChange)="onCustomColorChange()" aria-label="Primary color">
+                  <span [style.color]="theme.colors().text">Primary</span>
+                </label>
+                <label class="settings-custom-theme-swatch-picker">
+                  <input type="color" [(ngModel)]="customColorDraft.accent" (ngModelChange)="onCustomColorChange()" aria-label="Accent color">
+                  <span [style.color]="theme.colors().text">Accent</span>
+                </label>
+                <button type="button"
+                        (click)="applyCustomTheme()"
+                        [style.background-color]="theme.colors().primary"
+                        class="settings-custom-theme-apply">
+                  Apply Custom Theme
+                </button>
+              </div>
             </div>
           </section>
 
@@ -605,9 +636,22 @@ export class SettingsComponent {
     this.update('relationshipStatus', value);
   }
 
-  selectTheme(mode: 'pearl' | 'onyx') {
+  selectTheme(mode: ThemeMode) {
     this.theme.setTheme(mode);
     this.update('themeMode', mode);
+  }
+
+  /** Local draft for the 3-color custom theme editor, seeded from whatever was last saved/applied. */
+  customColorDraft: CustomThemeColors = { ...this.theme.customColors() };
+
+  onCustomColorChange(): void {
+    // Live-preview the swatches in the "Custom" card as the user picks colors,
+    // without switching the whole app's theme until they hit Apply.
+  }
+
+  applyCustomTheme(): void {
+    this.theme.setCustomColors({ ...this.customColorDraft });
+    this.update('themeMode', 'custom');
   }
 
   async installApp() {

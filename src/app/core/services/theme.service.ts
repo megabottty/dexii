@@ -1,6 +1,23 @@
 import { Injectable, signal, computed } from '@angular/core';
 
-export type ThemeMode = 'pearl' | 'onyx' | 'light' | 'dark';
+export type ThemeMode =
+  | 'pearl'
+  | 'onyx'
+  | 'girlie'
+  | 'manly'
+  | 'hippie'
+  | 'gothic'
+  | 'light'
+  | 'dark'
+  | 'highschool'
+  | 'neutral'
+  | 'custom';
+
+export interface CustomThemeColors {
+  bg: string;
+  primary: string;
+  accent: string;
+}
 
 export interface ThemePalette {
   bg: string;
@@ -14,54 +31,313 @@ export interface ThemePalette {
   accent: string;
 }
 
+export interface ThemeDefinition {
+  id: ThemeMode;
+  name: string;
+  description: string;
+  /** 'light' themes get the pearl-style shimmer/UI touches; 'dark' themes get the onyx-style ones. */
+  kind: 'light' | 'dark';
+  colors: ThemePalette;
+}
+
+const THEME_DEFINITIONS: ThemeDefinition[] = [
+  {
+    id: 'pearl',
+    name: 'Pearl',
+    description: 'Classic Glamour Light with Soft Mauve Silk & Polished Gold',
+    kind: 'light',
+    colors: {
+      bg: '#fffafa',
+      bgSecondary: '#f5f3f4',
+      text: '#4a374a',
+      textSecondary: '#9d7a9d',
+      primary: '#a881af',
+      primaryHover: '#8e6695',
+      border: '#e2d1e2',
+      cardBg: '#ffffff',
+      accent: '#d4af37'
+    }
+  },
+  {
+    id: 'onyx',
+    name: 'Onyx',
+    description: 'Midnight Slate Dark with Electric Indigo accents',
+    kind: 'dark',
+    colors: {
+      bg: '#020617',
+      bgSecondary: '#0f172a',
+      text: '#f8fafc',
+      textSecondary: '#94a3b8',
+      primary: '#4f46e5',
+      primaryHover: '#4338ca',
+      border: '#1e293b',
+      cardBg: '#0f172a',
+      accent: '#6366f1'
+    }
+  },
+  {
+    id: 'girlie',
+    name: 'Girlie',
+    description: 'Blush pink, sparkly and sweet',
+    kind: 'light',
+    colors: {
+      bg: '#fff5f8',
+      bgSecondary: '#ffe8f0',
+      text: '#5a2a45',
+      textSecondary: '#b76e93',
+      primary: '#ec4899',
+      primaryHover: '#db2777',
+      border: '#fbcfe8',
+      cardBg: '#ffffff',
+      accent: '#f9a8d4'
+    }
+  },
+  {
+    id: 'manly',
+    name: 'Rugged',
+    description: 'Steel, denim & leather - bold and grounded',
+    kind: 'dark',
+    colors: {
+      bg: '#1c1f24',
+      bgSecondary: '#262b32',
+      text: '#eef1f5',
+      textSecondary: '#9aa5b1',
+      primary: '#3b6ea5',
+      primaryHover: '#2f5a89',
+      border: '#3a4048',
+      cardBg: '#22262c',
+      accent: '#c0752f'
+    }
+  },
+  {
+    id: 'hippie',
+    name: 'Hippie Gardener',
+    description: 'Earthy greens & warm terracotta, grown from the garden',
+    kind: 'light',
+    colors: {
+      bg: '#f6f3e7',
+      bgSecondary: '#eae4cf',
+      text: '#3f4a2f',
+      textSecondary: '#7c8a5c',
+      primary: '#6b8e4e',
+      primaryHover: '#577640',
+      border: '#d8cfa8',
+      cardBg: '#fffdf6',
+      accent: '#c97b3d'
+    }
+  },
+  {
+    id: 'gothic',
+    name: 'Gothic',
+    description: 'Black lace, deep wine & moonlit drama',
+    kind: 'dark',
+    colors: {
+      bg: '#0b0509',
+      bgSecondary: '#160a12',
+      text: '#f1e6ea',
+      textSecondary: '#a98d97',
+      primary: '#8f1d3a',
+      primaryHover: '#711530',
+      border: '#2b1720',
+      cardBg: '#160a12',
+      accent: '#7c3aed'
+    }
+  },
+  {
+    id: 'light',
+    name: 'Clean Light',
+    description: 'Simple, crisp and minimal - no frills',
+    kind: 'light',
+    colors: {
+      bg: '#ffffff',
+      bgSecondary: '#f4f4f5',
+      text: '#18181b',
+      textSecondary: '#71717a',
+      primary: '#2563eb',
+      primaryHover: '#1d4ed8',
+      border: '#e4e4e7',
+      cardBg: '#ffffff',
+      accent: '#0ea5e9'
+    }
+  },
+  {
+    id: 'dark',
+    name: 'Clean Dark',
+    description: 'Simple, crisp and minimal - true black & white',
+    kind: 'dark',
+    colors: {
+      bg: '#0a0a0a',
+      bgSecondary: '#171717',
+      text: '#fafafa',
+      textSecondary: '#a1a1aa',
+      primary: '#2563eb',
+      primaryHover: '#1d4ed8',
+      border: '#27272a',
+      cardBg: '#171717',
+      accent: '#0ea5e9'
+    }
+  },
+  {
+    id: 'highschool',
+    name: 'Locker Room',
+    description: 'Y2K bubblegum pink & purple - loud and fun',
+    kind: 'light',
+    colors: {
+      bg: '#fdf4ff',
+      bgSecondary: '#fae8ff',
+      text: '#581c87',
+      textSecondary: '#a855f7',
+      primary: '#d946ef',
+      primaryHover: '#c026d3',
+      border: '#f0abfc',
+      cardBg: '#ffffff',
+      accent: '#22d3ee'
+    }
+  },
+  {
+    id: 'neutral',
+    name: 'Sandstone',
+    description: 'Warm neutral tones that work for anyone',
+    kind: 'light',
+    colors: {
+      bg: '#faf7f2',
+      bgSecondary: '#f0ebe1',
+      text: '#3a352e',
+      textSecondary: '#8a8072',
+      primary: '#b08968',
+      primaryHover: '#96714f',
+      border: '#e3dccb',
+      cardBg: '#ffffff',
+      accent: '#5f7470'
+    }
+  }
+];
+
+const THEME_MAP = new Map<ThemeMode, ThemeDefinition>(THEME_DEFINITIONS.map((def) => [def.id, def]));
+
+const CUSTOM_COLORS_KEY = 'dexii_custom_theme_colors';
+const DEFAULT_CUSTOM_COLORS: CustomThemeColors = {
+  bg: '#fdf6f0',
+  primary: '#e0796b',
+  accent: '#3d8f89'
+};
+
+function clamp(value: number, min = 0, max = 255): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  const normalized = clean.length === 3
+    ? clean.split('').map((c) => c + c).join('')
+    : clean;
+  const int = parseInt(normalized, 16) || 0;
+  return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255 };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (n: number) => clamp(Math.round(n)).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/** Mixes two hex colors together; weight 0 = all colorA, 1 = all colorB. */
+function mix(colorA: string, colorB: string, weight: number): string {
+  const a = hexToRgb(colorA);
+  const b = hexToRgb(colorB);
+  return rgbToHex(
+    a.r + (b.r - a.r) * weight,
+    a.g + (b.g - a.g) * weight,
+    a.b + (b.b - a.b) * weight
+  );
+}
+
+/** Perceived brightness (0-255); above ~140 is considered a "light" background. */
+function luminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex);
+  return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+/** Builds a full, readable palette from just a background, primary, and accent color. */
+function buildCustomPalette(custom: CustomThemeColors): ThemePalette {
+  const isLight = luminance(custom.bg) >= 140;
+  const text = isLight ? mix(custom.bg, '#000000', 0.82) : mix(custom.bg, '#ffffff', 0.9);
+  const textSecondary = isLight ? mix(custom.bg, '#000000', 0.45) : mix(custom.bg, '#ffffff', 0.5);
+  const bgSecondary = isLight ? mix(custom.bg, '#000000', 0.05) : mix(custom.bg, '#ffffff', 0.07);
+  const border = isLight ? mix(custom.bg, '#000000', 0.14) : mix(custom.bg, '#ffffff', 0.18);
+  const cardBg = isLight ? mix(custom.bg, '#ffffff', 0.6) : mix(custom.bg, '#ffffff', 0.05);
+  const primaryHover = mix(custom.primary, '#000000', 0.18);
+
+  return {
+    bg: custom.bg,
+    bgSecondary,
+    text,
+    textSecondary,
+    primary: custom.primary,
+    primaryHover,
+    border,
+    cardBg,
+    accent: custom.accent
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ThemeService {
   private readonly storageKey = 'dexii_theme';
   private _mode = signal<ThemeMode>(this.getInitialMode());
+  private _customColors = signal<CustomThemeColors>(this.getInitialCustomColors());
   public mode = this._mode.asReadonly();
-  public isPearl = computed(() => this._mode() === 'pearl' || this._mode() === 'light');
-  public isOnyx = computed(() => this._mode() === 'onyx' || this._mode() === 'dark');
+  public customColors = this._customColors.asReadonly();
+  public themes = THEME_DEFINITIONS;
+
+  public activeThemeDefinition = computed<ThemeDefinition | null>(() =>
+    this._mode() === 'custom' ? null : (THEME_MAP.get(this._mode()) || THEME_DEFINITIONS[0])
+  );
+
+  public colors = computed<ThemePalette>(() => {
+    if (this._mode() === 'custom') {
+      return buildCustomPalette(this._customColors());
+    }
+    return (THEME_MAP.get(this._mode()) || THEME_DEFINITIONS[0]).colors;
+  });
+
+  public isPearl = computed(() => {
+    if (this._mode() === 'custom') {
+      return luminance(this._customColors().bg) >= 140;
+    }
+    return this.activeThemeDefinition()?.kind === 'light';
+  });
+  public isOnyx = computed(() => !this.isPearl());
 
   private getInitialMode(): ThemeMode {
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(this.storageKey) : null;
-    if (saved === 'onyx' || saved === 'dark') {
-      return 'onyx';
+    if (saved === 'custom' || (saved && THEME_MAP.has(saved as ThemeMode))) {
+      return saved as ThemeMode;
     }
+    // Legacy fallback for old 'dark'/'light' localStorage values pre-dating the expanded theme list.
+    if (saved === 'dark') return 'onyx';
+    if (saved === 'light') return 'pearl';
     return 'pearl';
   }
 
-  public colors = computed<ThemePalette>(() => {
-    if (this._mode() === 'dark' || this._mode() === 'onyx') {
-      return {
-        bg: '#020617', // Slate 950
-        bgSecondary: '#0f172a', // Slate 900
-        text: '#f8fafc', // Slate 50
-        textSecondary: '#94a3b8', // Slate 400
-        primary: '#4f46e5', // Indigo 600
-        primaryHover: '#4338ca', // Indigo 700
-        border: '#1e293b', // Slate 800
-        cardBg: '#0f172a',
-        accent: '#6366f1'
-      };
-    } else {
-      return {
-        bg: '#fffafa', // Pearl White
-        bgSecondary: '#f5f3f4', // Soft Stone
-        text: '#4a374a', // Deep Plum/Mauve Charcoal
-        textSecondary: '#9d7a9d', // Dusty Mauve
-        primary: '#a881af', // Classic Glamour Mauve
-        primaryHover: '#8e6695', // Deeper Mauve
-        border: '#e2d1e2', // Soft Mauve Silk
-        cardBg: '#ffffff',
-        accent: '#d4af37' // Polished Gold
-      };
+  private getInitialCustomColors(): CustomThemeColors {
+    if (typeof localStorage === 'undefined') return DEFAULT_CUSTOM_COLORS;
+    try {
+      const raw = localStorage.getItem(CUSTOM_COLORS_KEY);
+      if (!raw) return DEFAULT_CUSTOM_COLORS;
+      const parsed = JSON.parse(raw);
+      if (parsed?.bg && parsed?.primary && parsed?.accent) {
+        return parsed;
+      }
+    } catch {
+      // fall through to default
     }
-  });
+    return DEFAULT_CUSTOM_COLORS;
+  }
 
   setTheme(mode: ThemeMode) {
-    const normalized: ThemeMode = (mode === 'onyx' || mode === 'dark') ? 'onyx' : 'pearl';
+    const normalized: ThemeMode = (mode === 'custom' || THEME_MAP.has(mode)) ? mode : 'pearl';
     this._mode.set(normalized);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(this.storageKey, normalized);
@@ -70,6 +346,15 @@ export class ThemeService {
 
   setMode(mode: ThemeMode) {
     this.setTheme(mode);
+  }
+
+  /** Saves the user's three hand-picked colors and switches to Custom theme mode. */
+  setCustomColors(customColors: CustomThemeColors) {
+    this._customColors.set(customColors);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors));
+    }
+    this.setTheme('custom');
   }
 
   toggleTheme() {

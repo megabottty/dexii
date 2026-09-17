@@ -199,12 +199,12 @@ import { AppNotification, NotificationsService } from '../../services/notificati
 
         <div class="navbar-links-section navbar-links-section--account">
           <span [style.color]="theme.colors().textSecondary" class="navbar-section-title">Account</span>
-          <button (click)="toggleTheme()"
+          <button (click)="goToThemeSettings()"
                   [style.background-color]="'transparent'"
                   [style.color]="theme.colors().textSecondary"
                   [style.border]="'1px solid ' + theme.colors().border"
                   class="navbar-btn-outline navbar-account-action">
-            {{ theme.isOnyx() ? 'Pearl' : 'Onyx' }}
+            🎨 Theme
           </button>
           <button (click)="lockApp()"
                   [style.background-color]="theme.colors().primary"
@@ -288,9 +288,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
 
-  toggleTheme(): void {
+  goToThemeSettings(): void {
     this.closeAllMenus();
-    this.theme.toggleTheme();
+    this.router.navigate(['/settings'], { fragment: 'theme' }).then(() => {
+      // Give the settings page a moment to render before scrolling to the theme section.
+      setTimeout(() => {
+        document.getElementById('theme')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    });
   }
 
   lockApp(): void {
