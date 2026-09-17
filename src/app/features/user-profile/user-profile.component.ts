@@ -57,6 +57,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   {{ profileBio() }}
                 </p>
               }
+              @if (!isSelf()) {
+                <a [routerLink]="['/chat']"
+                   [queryParams]="{ friendId: routeUserId(), friendName: profileDisplayName() }"
+                   [style.background-color]="theme.colors().primary"
+                   style="display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none; padding: 6px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; margin-top: 10px;">
+                  💬 Chat with {{ profileDisplayName() }}
+                </a>
+              }
             </div>
           </div>
         </div>
@@ -308,7 +316,7 @@ export class UserProfileComponent {
   private settings = inject(UserSettingsService);
   public theme = inject(ThemeService);
 
-  private routeUserId = signal('');
+  routeUserId = signal('');
   private friendSummaries = signal<FriendSummary[]>([]);
   private friendSharedCrushes = signal<CrushProfile[]>([]);
   protected friendSharedCrushesLoading = signal(false);
