@@ -1,0 +1,236 @@
+.sharing-component__page {
+  min-height: 100vh;
+}
+
+.sharing-component__main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.sharing-component__title {
+  font-size: 28px;
+  font-weight: 700;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+}
+
+.sharing-component__subtitle {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.sharing-component__layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .sharing-component__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sharing-component__picker,
+.sharing-component__panel,
+.sharing-component__overview {
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.sharing-component__search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+
+.sharing-component__friend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.sharing-component__friend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sharing-component__friend-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.sharing-component__friend-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.sharing-component__friend-count {
+  font-size: 11px;
+}
+
+.sharing-component__friend-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.sharing-component__friend-banner-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.sharing-component__friend-banner-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sharing-component__friend-banner-name {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.sharing-component__crush-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sharing-component__crush-row {
+  padding: 12px 0;
+}
+
+.sharing-component__crush-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sharing-component__crush-row-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sharing-component__crush-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.sharing-component__crush-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sharing-component__crush-status {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sharing-component__crush-toggle {
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sharing-component__entries {
+  margin-top: 10px;
+  padding-left: 4px;
+}
+
+.sharing-component__entries-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.sharing-component__entries-list {
+  border-radius: 6px;
+  margin-top: 6px;
+  padding: 6px;
+}
+
+.sharing-component__entry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 4px;
+}
+
+.sharing-component__entry-text {
+  font-size: 13px;
+  flex: 1;
+}
+
+.sharing-component__entry-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.sharing-component__entries-empty {
+  font-size: 12px;
+  padding: 6px 4px;
+  margin: 0;
+}
+
+.sharing-component__empty {
+  font-size: 13px;
+  padding: 12px 4px;
+}
+
+.sharing-component__overview {
+  margin-top: 24px;
+}
+
+.sharing-component__overview-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.sharing-component__overview-row {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  gap: 2px;
+}
+
+.sharing-component__overview-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.sharing-component__overview-friends {
+  font-size: 12px;
+}

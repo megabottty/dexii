@@ -85,6 +85,12 @@ import { AppNotification, NotificationsService } from '../../services/notificati
               </span>
             }
           </a>
+          <a routerLink="/sharing"
+             (click)="closeMobileMenu()"
+             [style.color]="theme.colors().text"
+             class="navbar-link">
+            Sharing
+          </a>
           <div class="navbar-tea-menu">
             <button type="button"
                     class="navbar-link navbar-tea-toggle"

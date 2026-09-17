@@ -756,16 +756,28 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           </div>
 
         <div class="dashboard-component__s84">
-          @for (crush of filteredCrushes(); track crush.id) {
-            <div [routerLink]="['/profile', crush.id]"
+          @for (crush of displayCrushes(); track crush.id) {
+            <div [routerLink]="draggingId() ? null : ['/profile', crush.id]"
+                 [attr.data-crush-id]="crush.id"
                  [style.background-color]="theme.colors().cardBg"
-                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.border]="dragOverId() === crush.id ? '2px dashed ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                 [style.opacity]="draggingId() === crush.id ? 0.5 : 1"
                  class="dashboard-component__s85">
 
               <!-- Shimmer Effect on Card (Light Mode) -->
               @if (theme.isPearl()) {
                 <div class="dashboard-component__s86"></div>
               }
+
+              <!-- Drag handle: press and drag to reorder crushes -->
+              <button type="button"
+                      class="dashboard-crush-drag-handle"
+                      title="Drag to reorder"
+                      aria-label="Drag to reorder this crush"
+                      (pointerdown)="onDragHandlePointerDown($event, crush.id)"
+                      (click)="$event.preventDefault(); $event.stopPropagation()">
+                ⠿
+              </button>
 
               <!-- Image Area -->
               <div class="dashboard-component__s87">
@@ -864,6 +876,7 @@ export class DashboardComponent implements OnInit {
 
   filteredCrushes = computed(() => {
     let crushes = this.dataService.visibleCrushes();
+    crushes = this.sortByOrder(crushes);
 
     if (this.showArchived()) {
       return crushes.filter((c: any) => c.status === CrushStatus.Archived);
@@ -882,6 +895,102 @@ export class DashboardComponent implements OnInit {
 
     return crushes;
   });
+
+  private sortByOrder(crushes: any[]): any[] {
+    return [...crushes].sort((a, b) => {
+      const orderA = a.sortOrder ?? 0;
+      const orderB = b.sortOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return 0;
+    });
+  }
+
+  // --- Drag-and-drop crush reordering ---
+  draggingId = signal<string | null>(null);
+  dragOverId = signal<string | null>(null);
+  private orderedVisibleIds = signal<string[]>([]);
+  private dragPointerId: number | null = null;
+  private boundPointerMove = (e: PointerEvent) => this.onDragPointerMove(e);
+  private boundPointerUp = (e: PointerEvent) => this.onDragPointerUp(e);
+
+  /** While dragging, shows the live-reordered list; otherwise mirrors filteredCrushes(). */
+  displayCrushes = computed(() => {
+    const dragging = this.draggingId();
+    if (!dragging) return this.filteredCrushes();
+
+    const byId = new Map(this.filteredCrushes().map((c: any) => [c.id, c]));
+    return this.orderedVisibleIds()
+      .map((id) => byId.get(id))
+      .filter((c): c is any => !!c);
+  });
+
+  onDragHandlePointerDown(event: PointerEvent, crushId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.dragPointerId = event.pointerId;
+    this.orderedVisibleIds.set(this.filteredCrushes().map((c: any) => c.id));
+    this.draggingId.set(crushId);
+    this.dragOverId.set(crushId);
+
+    window.addEventListener('pointermove', this.boundPointerMove);
+    window.addEventListener('pointerup', this.boundPointerUp);
+  }
+
+  private onDragPointerMove(event: PointerEvent): void {
+    if (event.pointerId !== this.dragPointerId) return;
+
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const card = target?.closest('[data-crush-id]') as HTMLElement | null;
+    if (!card) return;
+
+    const overId = card.getAttribute('data-crush-id');
+    const draggedId = this.draggingId();
+    if (!overId || !draggedId || overId === draggedId) return;
+
+    this.dragOverId.set(overId);
+
+    const ids = [...this.orderedVisibleIds()];
+    const fromIndex = ids.indexOf(draggedId);
+    const toIndex = ids.indexOf(overId);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    ids.splice(fromIndex, 1);
+    ids.splice(toIndex, 0, draggedId);
+    this.orderedVisibleIds.set(ids);
+  }
+
+  private onDragPointerUp(event: PointerEvent): void {
+    if (event.pointerId !== this.dragPointerId) return;
+
+    window.removeEventListener('pointermove', this.boundPointerMove);
+    window.removeEventListener('pointerup', this.boundPointerUp);
+    this.dragPointerId = null;
+
+    const finalVisibleOrder = this.orderedVisibleIds();
+    const draggedId = this.draggingId();
+    this.draggingId.set(null);
+    this.dragOverId.set(null);
+
+    if (!draggedId || finalVisibleOrder.length === 0) return;
+
+    // Merge the new order of the *visible* (filtered) subset back into the
+    // full crush list, preserving the relative position of any crushes not
+    // currently shown (e.g. hidden by the Dating/Prospects filter or archive).
+    const fullSorted = this.sortByOrder(this.dataService.getAllCrushes()());
+    const visibleSet = new Set(finalVisibleOrder);
+    const visiblePositions = fullSorted
+      .map((c: any, index: number) => (visibleSet.has(c.id) ? index : -1))
+      .filter((index) => index !== -1);
+
+    const fullIds = fullSorted.map((c: any) => c.id);
+    visiblePositions.forEach((position, i) => {
+      fullIds[position] = finalVisibleOrder[i];
+    });
+
+    this.dataService.reorderCrushes(fullIds);
+  }
+
   activeCrushCount = computed(() =>
     this.dataService.getAllCrushes()().filter((c: any) => c.status !== CrushStatus.Archived).length
   );

@@ -362,6 +362,30 @@
   border-radius: 0px; overflow: hidden; cursor: pointer; transition: all 0.4s; position: relative;
 }
 
+.dashboard-crush-drag-handle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-crush-drag-handle:active {
+  cursor: grabbing;
+}
+
 .dashboard-component__s86 {
   position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, transparent, #fbbf24, transparent); opacity: 0.3;
 }

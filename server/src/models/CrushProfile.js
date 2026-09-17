@@ -77,7 +77,11 @@ const CrushProfileSchema = new mongoose.Schema({
   occupation: String,
   family: String,
   memorableMoments: String,
-  friends: [String]
+  friends: [String],
+  sortOrder: {
+    type: Number,
+    default: 0
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('CrushProfile', CrushProfileSchema);

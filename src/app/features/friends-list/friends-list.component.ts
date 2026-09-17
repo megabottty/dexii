@@ -2,7 +2,6 @@ import { Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { SlicePipe } from '@angular/common';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
@@ -79,119 +78,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, SlicePipe, PageHintComponent, NavbarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
       <app-navbar></app-navbar>
-
-      @if (selectedFriend()) {
-        <div class="friends-list-component__s9">
-          <div [style.background-color]="theme.colors().bg"
-               [style.border]="'1px solid ' + theme.colors().border"
-               class="friends-list-component__s10">
-
-            <button (click)="closeSharing()" [style.color]="theme.colors().textSecondary" aria-label="Close sharing controls" class="friends-list-component__s11">✕</button>
-
-            <h3 class="friends-list-component__s12">Sharing Controls</h3>
-            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s13">
-              Managing access for {{ selectedFriend()?.username }}
-            </p>
-            <div [style.border]="'1px solid ' + theme.colors().border"
-                 class="friends-list-component__s14">
-              <img [src]="selectedFriend()?.avatarUrl || 'https://i.pravatar.cc/150?u=' + (selectedFriend()?.id || 'friend')"
-                   [alt]="selectedFriend()?.username || 'Selected friend'"
-                   class="friends-list-component__s15">
-              <div>
-                <p [style.color]="theme.colors().textSecondary"
-                   class="friends-list-component__s16">
-                  Sharing with
-                </p>
-                <p class="friends-list-component__s17">{{ selectedFriend()?.username }}</p>
-              </div>
-            </div>
-
-            <div class="friends-list-component__s18">
-              @for (crush of allCrushes(); track crush.id) {
-                <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-component__s19">
-                  <div class="friends-list-component__s20">
-                    <div class="friends-list-component__s21">
-                      <img [src]="crush.avatarUrl" [alt]="crush.nickname + ' avatar'" class="friends-list-component__s22">
-                      <div>
-                        <h4 class="friends-list-component__s23">{{ crush.nickname }}</h4>
-                        <span [style.color]="theme.colors().primary" class="friends-list-component__s24">{{ crush.status }}</span>
-                      </div>
-                    </div>
-                    <button (click)="toggleCrushSharing(crush.id)"
-                            [style.background-color]="isCrushShared(crush) ? theme.colors().primary : 'transparent'"
-                            [style.color]="isCrushShared(crush) ? 'white' : theme.colors().text"
-                            [style.border]="'1px solid ' + (isCrushShared(crush) ? theme.colors().primary : theme.colors().border)"
-                            [attr.aria-pressed]="isCrushShared(crush)"
-                            [attr.aria-label]="(isCrushShared(crush) ? 'Unshare ' : 'Share ') + crush.nickname + ' with ' + (selectedFriend()?.username || 'selected friend')"
-                            class="friends-list-component__s25">
-                      {{ isCrushShared(crush) ? 'Unshare' : 'Share' }}
-                    </button>
-                  </div>
-
-                  @if (isCrushShared(crush)) {
-                    <div class="friends-list-component__s26">
-                      <div style="display:flex; align-items:center; gap:6px;">
-                        <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s27">Specific Entries</p>
-                        <span class="info-icon-tooltip" data-tooltip="This goes to the chat window between you two.">
-                          <button (click)="showShareDestinationInfo()"
-                                  [style.color]="theme.colors().textSecondary"
-                                  title="This goes to the chat window between you two."
-                                  aria-label="Where do shared notes go?"
-                                  type="button"
-                                  style="background:none; border:none; cursor:pointer; font-size:14px; line-height:1; padding:0;">
-                            ⓘ
-                          </button>
-                        </span>
-                      </div>
-                      <div
-                        [style.max-height]="getEntries(crush.id).length > 3 ? '260px' : 'none'"
-                        [style.overflow-y]="getEntries(crush.id).length > 3 ? 'auto' : 'visible'"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.background-color]="theme.colors().bg"
-                        class="friends-list-specific-entries">
-                        @for (entry of getEntries(crush.id); track entry.id) {
-                          <div class="friends-list-component__s28">
-                            <span class="friends-list-component__s29">"{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
-                            <button (click)="toggleEntrySharing(entry)"
-                                    [style.color]="isEntryShared(entry) ? theme.colors().accent : theme.colors().textSecondary"
-                                    class="friends-list-component__s30">
-                              {{ isEntryShared(entry) ? '👁️' : '🔒' }}
-                            </button>
-                          </div>
-                        } @empty {
-                          <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s31">No specific entries to share.</p>
-                        }
-                      </div>
-                      <div style="display:flex; gap:6px; margin-top:8px;">
-                        <input [ngModel]="quickEntryDraft(crush.id)"
-                               (ngModelChange)="setQuickEntryDraft(crush.id, $event)"
-                               (keydown.enter)="addAndShareQuickEntry(crush.id)"
-                               [style.background-color]="theme.colors().bgSecondary"
-                               [style.border]="'1px solid ' + theme.colors().border"
-                               [style.color]="theme.colors().text"
-                               placeholder="Type a quick note to share..."
-                               [attr.aria-label]="'Quick note to share about ' + crush.nickname"
-                               style="flex:1; border-radius:6px; padding:6px 8px; font-size:13px;">
-                        <button (click)="addAndShareQuickEntry(crush.id)"
-                                [disabled]="!quickEntryDraft(crush.id).trim()"
-                                [style.background-color]="theme.colors().primary"
-                                style="color:white; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">
-                          Share
-                        </button>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      }
 
       <div class="friends-list-component__s32">
         <app-page-hint
@@ -471,8 +362,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           class="friends-list-action-btn">
                     View Friendship
                   </button>
-                  <button (click)="manageSharing(friend)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
-                          class="friends-list-action-btn">Sharing</button>
+                  <a [routerLink]="['/sharing']" [queryParams]="{ friendId: friend.id }"
+                     [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
+                     class="friends-list-action-link">Sharing</a>
                   <a routerLink="/chat"
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
@@ -807,7 +699,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return this.security.currentUser() || '';
   }
 
-  selectedFriend = signal<FriendCardView | null>(null);
   activeTab = signal<'friends' | 'find' | 'incoming' | 'sent' | 'archived'>('friends');
   friends = signal<FriendCardView[]>([]);
   archivedFriends = signal<FriendCardView[]>([]);
@@ -1565,9 +1456,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         this.writeArchivedFriendIds(archivedIds);
         this.friends.update((items) => items.filter((item) => item.id !== friend.id));
         this.messaging.pruneConversation(friend.id, friend.username);
-        if (this.selectedFriend()?.id === friend.id) {
-          this.closeSharing();
-        }
         await this.loadFriends();
         this.modal.show(`${friend.username} removed from your friends.`);
       } catch (error: any) {
@@ -1617,14 +1505,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return this.readArchivedFriendIds().size;
   }
 
-  manageSharing(friend: FriendCardView) {
-    this.selectedFriend.set(friend);
-  }
-
-  closeSharing() {
-    this.selectedFriend.set(null);
-  }
-
   async nudgeRequest(req: FriendRequestItem) {
     try {
       await this.friendsApi.nudgeRequest(req.id);
@@ -1646,116 +1526,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         this.modal.show(error?.message || 'Unable to delete request right now.');
       }
     });
-  }
-
-  isCrushShared(crush: any): boolean {
-    const friend = this.selectedFriend();
-    if (!friend) return false;
-    return this.dataService.isCrushSharedWith(crush, friend.id);
-  }
-
-  isEntryShared(entry: any): boolean {
-    const friend = this.selectedFriend();
-    return friend ? entry.visibility.includes(friend.id) || entry.visibility.includes('public') : false;
-  }
-
-  toggleCrushSharing(crushId: string) {
-    const friend = this.selectedFriend();
-    if (!friend) return;
-
-    const wasShared = this.isCrushSharedBefore(crushId, friend.id);
-    this.dataService.toggleCrushVisibility(crushId, friend.id);
-
-    if (!wasShared) {
-      const crush = this.allCrushes().find((current) => current.id === crushId);
-      this.messaging.sendMessage({
-        senderId: this.currentUserId || this.currentUsername,
-        receiverId: friend.id,
-        content: `Shared a crush: ${crush?.nickname || 'a crush'}`,
-        relatedCrushId: crushId
-      });
-      // No blocking confirmation modal here on purpose: it would cover the
-      // "Specific Entries" quick-note input that appears right below as soon
-      // as the crush becomes shared, making it impossible to type into.
-      // The chat message above already serves as confirmation.
-    }
-  }
-
-  private isCrushSharedBefore(crushId: string, friendId: string): boolean {
-    const crush = this.allCrushes().find((current) => current.id === crushId);
-    return crush ? this.dataService.isCrushSharedWith(crush, friendId) : false;
-  }
-
-  toggleEntrySharing(entry: any) {
-    const friend = this.selectedFriend();
-    if (!friend) return;
-
-    const wasShared = this.isEntryShared(entry);
-    this.dataService.toggleEntryVisibility(entry.id, friend.id);
-
-    if (!wasShared) {
-      const crush = this.allCrushes().find((current) => current.id === entry.crushId);
-      const preview = (entry.content || '').trim();
-      this.messaging.sendMessage({
-        senderId: this.currentUserId || this.currentUsername,
-        receiverId: friend.id,
-        content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${preview}`,
-        relatedCrushId: entry.crushId,
-        relatedEntryId: entry.id
-      });
-      this.modal.show(`Shared entry sent to ${friend.username}.`);
-    }
-  }
-
-  getEntries(crushId: string) {
-    return this.dataService.getEntriesForCrush(crushId)();
-  }
-
-  /** Draft text for the quick-add note input, keyed by crush id. */
-  quickEntryDrafts: Record<string, string> = {};
-
-  quickEntryDraft(crushId: string): string {
-    return this.quickEntryDrafts[crushId] || '';
-  }
-
-  setQuickEntryDraft(crushId: string, value: string): void {
-    this.quickEntryDrafts[crushId] = value;
-  }
-
-  /** Types a quick note about a crush and shares it immediately with the selected friend. */
-  addAndShareQuickEntry(crushId: string): void {
-    const friend = this.selectedFriend();
-    if (!friend) return;
-
-    const content = (this.quickEntryDrafts[crushId] || '').trim();
-    if (!content) return;
-
-    const crush = this.allCrushes().find((current) => current.id === crushId);
-
-    this.dataService.addEntry({
-      crushId,
-      type: 'Note',
-      content,
-      visibility: [friend.id],
-      isSensitive: false
-    });
-
-    const newEntry = this.getEntries(crushId).find((entry) => entry.content === content);
-
-    this.messaging.sendMessage({
-      senderId: this.currentUserId || this.currentUsername,
-      receiverId: friend.id,
-      content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${content}`,
-      relatedCrushId: crushId,
-      relatedEntryId: newEntry?.id
-    });
-
-    this.quickEntryDrafts[crushId] = '';
-    this.modal.show(`Shared note sent to ${friend.username}.`);
-  }
-
-  showShareDestinationInfo(): void {
-    this.modal.show('This goes to the chat window between you two.');
   }
 
   lockApp() {

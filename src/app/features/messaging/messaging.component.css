@@ -347,3 +347,17 @@
     white-space: normal;
   }
 }
+
+.messaging-add-crush-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.messaging-add-crush-panel__label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}

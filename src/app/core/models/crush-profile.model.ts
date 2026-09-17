@@ -51,4 +51,5 @@ export interface CrushProfile {
   family?: string;
   memorableMoments?: string;
   friends?: string[];
+  sortOrder?: number; // Manual drag-and-drop ordering on the dashboard (lower = earlier)
 }

@@ -47,6 +47,7 @@ interface BackendCrush {
   family?: string;
   memorableMoments?: string;
   friends?: string[];
+  sortOrder?: number;
 }
 
 @Injectable({
@@ -309,7 +310,8 @@ export class DataService {
       occupation: crush.occupation,
       family: crush.family,
       memorableMoments: crush.memorableMoments,
-      friends: crush.friends || []
+      friends: crush.friends || [],
+      sortOrder: crush.sortOrder ?? 0
     };
   }
 
@@ -480,7 +482,8 @@ export class DataService {
         occupation: crush.occupation,
         family: crush.family,
         memorableMoments: crush.memorableMoments,
-        friends: crush.friends
+        friends: crush.friends,
+        sortOrder: crush.sortOrder
       };
 
       let response = await this.authenticatedFetch('/crushes', {
@@ -559,7 +562,8 @@ export class DataService {
         occupation: crush.occupation,
         family: crush.family,
         memorableMoments: crush.memorableMoments,
-        friends: crush.friends
+        friends: crush.friends,
+        sortOrder: crush.sortOrder
       };
 
       let response = await this.authenticatedFetch(`/crushes/${crush.id}`, {
@@ -709,6 +713,10 @@ export class DataService {
     const localId = Math.random().toString(36).substring(7);
     const { initialRating: passedInitial, ...crushData } = crush as any;
     const startRating = passedInitial ?? crush.rating ?? 3;
+    const existing = this._allCrushes();
+    const minSortOrder = existing.length
+      ? Math.min(...existing.map((c) => c.sortOrder ?? 0))
+      : 0;
     const newCrush: CrushProfile = {
       ...crushData,
       id: localId,
@@ -718,7 +726,10 @@ export class DataService {
       redFlagReason: '',
       initialRating: startRating,
       vibeHistory: [startRating],
-      sharedEntries: []
+      sharedEntries: [],
+      // New crushes appear first by default; subtract 1 so they always sort
+      // above whatever previously had the lowest sortOrder.
+      sortOrder: crushData.sortOrder ?? (minSortOrder - 1)
     };
 
     this._allCrushes.update(prev => [newCrush, ...prev]);
@@ -741,6 +752,29 @@ export class DataService {
 
   public deleteCrush(crushId: string): void {
     this._allCrushes.update(crushes => crushes.filter(c => c.id !== crushId));
+  }
+
+  /**
+   * Persists a new manual display order for the given crush ids (drag-and-drop
+   * reordering on the dashboard). `orderedIds` should list every crush id in
+   * its new desired order; each gets a sequential `sortOrder` and the change
+   * is saved to the backend (silently, since this is a lightweight reorder).
+   */
+  public reorderCrushes(orderedIds: string[]): void {
+    const orderIndex = new Map(orderedIds.map((id, index) => [id, index]));
+
+    this._allCrushes.update(crushes =>
+      crushes.map((c) =>
+        orderIndex.has(c.id) ? { ...c, sortOrder: orderIndex.get(c.id)! } : c
+      )
+    );
+
+    for (const id of orderedIds) {
+      const crush = this._allCrushes().find((c) => c.id === id);
+      if (crush) {
+        void this.persistCrushUpdate(crush, true);
+      }
+    }
   }
 
   setViewer(friendId: string | null): void {

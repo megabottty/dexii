@@ -8,6 +8,8 @@ import { SecurityService } from '../../core/services/security.service';
 import { ModalService } from '../../core/services/modal.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
+import { DataService } from '../../core/services/data.service';
+import { CrushStatus } from '../../core/models/crush-profile.model';
 
 @Component({
   selector: 'app-messaging',
@@ -39,7 +41,60 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
            style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
           Dashboard
         </a>
+        @if (hasActiveChat() && isChatPartnerFriend()) {
+          <button type="button"
+                  (click)="toggleAddCrush()"
+                  [style.background-color]="showAddCrush() ? 'transparent' : theme.colors().primary"
+                  [style.color]="showAddCrush() ? theme.colors().primary : '#ffffff'"
+                  [style.border]="'1px solid ' + theme.colors().primary"
+                  style="margin-left: 8px; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            {{ showAddCrush() ? 'Cancel' : '+ Add Crush' }}
+          </button>
+        }
       </header>
+
+      @if (showAddCrush()) {
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.border-bottom]="'1px solid ' + theme.colors().border"
+             class="messaging-add-crush-panel">
+          <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__label">
+            New crush to share with {{ currentChatPartner().username }}
+          </p>
+          <input [(ngModel)]="newCrushDraft.nickname"
+                 [style.background-color]="theme.colors().bg"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().text"
+                 placeholder="Name / nickname"
+                 aria-label="Crush name"
+                 class="chat-hub__search">
+          <select [(ngModel)]="newCrushDraft.status"
+                  [style.background-color]="theme.colors().bg"
+                  [style.border]="'1px solid ' + theme.colors().border"
+                  [style.color]="theme.colors().text"
+                  style="padding: 8px 10px; border-radius: 6px; font-family: 'Times New Roman', serif;">
+            @for (status of crushStatusOptions; track status) {
+              <option [ngValue]="status">{{ status }}</option>
+            }
+          </select>
+          <textarea [(ngModel)]="newCrushDraft.bio"
+                    [style.background-color]="theme.colors().bg"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.color]="theme.colors().text"
+                    rows="2"
+                    placeholder="Quick bio / notes (optional)"
+                    aria-label="Crush bio"
+                    class="chat-hub__search"
+                    style="height: auto;"></textarea>
+          <button type="button"
+                  (click)="createAndShareCrush()"
+                  [disabled]="!newCrushDraft.nickname.trim()"
+                  [style.background-color]="theme.colors().primary"
+                  [style.opacity]="newCrushDraft.nickname.trim() ? 1 : 0.5"
+                  style="padding: 10px; border-radius: 6px; border: none; color: #fff; font-weight: 600; cursor: pointer;">
+            Create &amp; Share
+          </button>
+        </div>
+      }
 
       <!-- Messages Area -->
       <div #scrollContainer class="messaging-component__s7">
@@ -292,6 +347,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   public security = inject(SecurityService);
   public modal = inject(ModalService);
   private friendsApi = inject(FriendsApiService);
+  private dataService = inject(DataService);
   private chatPartnerId = signal<string>('');
   private chatPartnerName = signal<string>('');
   friends = signal<FriendSummary[]>([]);
@@ -416,6 +472,40 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   toggleNewChat(): void {
     this.showNewChat.update((open) => !open);
     this.friendSearch.set('');
+  }
+
+  // --- Add & share a new crush directly from the chat ---
+  crushStatusOptions = Object.values(CrushStatus).filter((s) => s !== CrushStatus.Archived);
+  showAddCrush = signal(false);
+  newCrushDraft = { nickname: '', status: CrushStatus.Crush as CrushStatus, bio: '' };
+
+  toggleAddCrush(): void {
+    this.showAddCrush.update((open) => !open);
+    this.newCrushDraft = { nickname: '', status: CrushStatus.Crush, bio: '' };
+  }
+
+  createAndShareCrush(): void {
+    const friend = this.currentChatPartner();
+    const nickname = this.newCrushDraft.nickname.trim();
+    if (!friend.id || !nickname) return;
+
+    const crush = this.dataService.addCrush({
+      nickname,
+      status: this.newCrushDraft.status,
+      bio: this.newCrushDraft.bio.trim(),
+      visibility: [friend.id]
+    } as any);
+
+    this.messaging.sendMessage({
+      senderId: this.selfId(),
+      receiverId: friend.id,
+      content: `Shared a crush: ${nickname}`,
+      relatedCrushId: crush.id
+    });
+
+    this.showAddCrush.set(false);
+    this.newCrushDraft = { nickname: '', status: CrushStatus.Crush, bio: '' };
+    this.modal.show(`${nickname} was added and shared with ${friend.username}.`);
   }
 
   startChat(friend: FriendSummary): void {

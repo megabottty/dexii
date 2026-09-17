@@ -43,6 +43,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/friends-list/friends-list.component').then(m => m.FriendsListComponent)
   },
   {
+    path: 'sharing',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/sharing/sharing.component').then(m => m.SharingComponent)
+  },
+  {
     path: 'friends/:id',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/friend-profile/friend-profile.component').then(m => m.FriendProfileComponent)
