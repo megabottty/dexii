@@ -9,6 +9,7 @@ export interface IncomingSocketMessage {
   content: string;
   isSafetyAlert?: boolean;
   crushId?: string;
+  relatedEntryId?: string;
   messageId?: string;
   timestamp?: string;
   isSelfDestruct?: boolean;

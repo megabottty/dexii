@@ -217,6 +217,7 @@ export class MessagingService {
       content: incoming.content,
       timestamp: incoming.timestamp ? new Date(incoming.timestamp) : new Date(),
       relatedCrushId: incoming.crushId,
+      relatedEntryId: incoming.relatedEntryId,
       isSelfDestruct: Boolean(incoming.isSelfDestruct),
       selfDestructDurationMs: incoming.selfDestructDurationMs
     };
@@ -362,6 +363,7 @@ export class MessagingService {
           recipientId: message.receiverId,
           content: message.content,
           crushId: message.relatedCrushId,
+          relatedEntryId: message.relatedEntryId,
           isSelfDestruct: message.isSelfDestruct,
           selfDestructDurationMs: message.selfDestructDurationMs
         })
@@ -385,6 +387,7 @@ export class MessagingService {
         recipientId: message.receiverId,
         content: message.content,
         crushId: message.relatedCrushId,
+        relatedEntryId: message.relatedEntryId,
         isSelfDestruct: message.isSelfDestruct,
         selfDestructDurationMs: message.selfDestructDurationMs,
         messageId: saved?._id ? String(saved._id) : message.id,
@@ -421,6 +424,7 @@ export class MessagingService {
           timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
           readAt: row.readAt ? new Date(row.readAt) : row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
           relatedCrushId: row.crushId ? String(row.crushId) : undefined,
+          relatedEntryId: row.relatedEntryId ? String(row.relatedEntryId) : undefined,
           isSelfDestruct: Boolean(row.isSelfDestruct),
           selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined,
           reactions: Array.isArray(row.reactions)
@@ -487,6 +491,7 @@ export class MessagingService {
       timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
       readAt: row.readAt ? new Date(row.readAt) : row.isRead ? new Date(row.updatedAt || row.createdAt || Date.now()) : undefined,
       relatedCrushId: row.crushId ? String(row.crushId) : undefined,
+      relatedEntryId: row.relatedEntryId ? String(row.relatedEntryId) : undefined,
       isSelfDestruct: Boolean(row.isSelfDestruct),
       selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined,
       reactions: Array.isArray(row.reactions)

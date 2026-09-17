@@ -46,6 +46,10 @@ const MessageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CrushProfile'
   },
+  relatedEntryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Entry'
+  },
   // One reaction per user per message; re-tapping the same emoji removes it,
   // tapping a different emoji replaces it.
   reactions: [{

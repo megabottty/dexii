@@ -48,6 +48,8 @@ export class AuditService {
             crushId: crushId,
             crushName: crush?.nickname || 'Unknown Crush',
             receiverId: m.receiverId,
+            entryId: m.relatedEntryId,
+            entryContent: m.content,
             timestamp: m.timestamp,
             readAt: m.readAt
           };

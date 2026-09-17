@@ -55,6 +55,11 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                     <span class="timestamp" [style.color]="theme.colors().textSecondary" style="margin-left: 1rem; font-size: 0.9rem;">{{ item.timestamp | date:'short' }}</span>
                   </div>
                   <h3 class="crush-name" style="font-size: 1.4rem; margin: 0;">{{ item.crushName }}</h3>
+                  @if (item.entryId) {
+                    <p [style.color]="theme.colors().textSecondary" style="margin: 6px 0 0; font-size: 0.95rem;">
+                      {{ item.entryContent }}
+                    </p>
+                  }
                 </div>
 
                 <div class="shared-actions" style="display: flex; align-items: center; gap: 1.5rem;">

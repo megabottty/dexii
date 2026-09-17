@@ -264,7 +264,7 @@ exports.getMessages = async (req, res) => {
 // @access  Private
 exports.sendMessage = async (req, res) => {
   try {
-    const { recipientId, content, isSafetyAlert, crushId, isSelfDestruct, selfDestructDurationMs } = req.body;
+    const { recipientId, content, isSafetyAlert, crushId, relatedEntryId, isSelfDestruct, selfDestructDurationMs } = req.body;
     const senderId = req.user.id;
 
     if (!recipientId) {
@@ -288,6 +288,7 @@ exports.sendMessage = async (req, res) => {
         isSelfDestruct: Boolean(isSelfDestruct),
         selfDestructDurationMs: isSelfDestruct && Number.isFinite(duration) && duration >= 1000 ? duration : undefined,
         crushId,
+        relatedEntryId,
         isRead: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -304,7 +305,8 @@ exports.sendMessage = async (req, res) => {
       isSafetyAlert,
       isSelfDestruct: Boolean(isSelfDestruct),
       selfDestructDurationMs: isSelfDestruct && Number.isFinite(duration) && duration >= 1000 ? duration : undefined,
-      crushId
+      crushId,
+      relatedEntryId
     });
 
     const message = await newMessage.save();
