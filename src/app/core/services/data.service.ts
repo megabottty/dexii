@@ -65,6 +65,8 @@ export class DataService {
   private readonly entriesMigrationStorageKeyPrefix = 'dexii_entries_migrated';
 
   private _allCrushes = signal<CrushProfile[]>([]);
+  private _isLoading = signal(false);
+  public isLoading = this._isLoading.asReadonly();
   private _entries = signal<Entry[]>([]);
   private _sharedEntries = signal<SharedEntry[]>([]);
   private _activeOwner = signal<string>('');
@@ -256,14 +258,19 @@ export class DataService {
     if (!owner) return;
     if (owner === this._activeOwner()) return;
 
+    this._isLoading.set(true);
     this._activeOwner.set(owner);
     this._allCrushes.set([]);
     this._sharedEntries.set([]);
     const localEntries = this.readEntriesFromStorage(owner);
     this._entries.set(localEntries);
-    await this.hydrateEntriesFromBackend(owner, localEntries);
-    await this.hydrateCrushesFromBackend();
-    void this.theme.hydrateFromBackend(owner);
+    try {
+      await this.hydrateEntriesFromBackend(owner, localEntries);
+      await this.hydrateCrushesFromBackend();
+      void this.theme.hydrateFromBackend(owner);
+    } finally {
+      this._isLoading.set(false);
+    }
   }
 
   private toCrushStatus(status?: string): CrushStatus {
