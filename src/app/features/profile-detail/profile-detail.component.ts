@@ -668,11 +668,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div class="edit-field edit-field--full">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Additional relationship labels</label>
                     <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">The main status is above. Choose any labels that add context.</span>
-                    @if (editForm.relationshipLabels?.length) {
-                      <div class="relationship-label-order">
-                        <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">
+                    <div class="relationship-label-order">
+                      <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">
+                        @if (editForm.relationshipLabels?.length) {
                           Drag selected labels to customize their order:
-                        </span>
+                        } @else {
+                          Select labels below, then drag them here to customize their order.
+                        }
+                      </span>
+                      @if (editForm.relationshipLabels?.length) {
                         <div class="relationship-label-order__list">
                           @for (label of editForm.relationshipLabels; track label) {
                             <button type="button"
@@ -690,8 +694,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             </button>
                           }
                         </div>
-                      </div>
-                    }
+                      } @else {
+                        <span [style.color]="theme.colors().textSecondary" class="relationship-label-order__empty">
+                          No additional labels selected yet.
+                        </span>
+                      }
+                    </div>
                     <div class="edit-chip-grid">
                       @for (s of getRelationshipStatusOptions(); track s) {
                         <button (click)="toggleRelationshipLabel(s)"
