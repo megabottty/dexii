@@ -671,10 +671,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     <div class="edit-chip-grid">
                       @for (s of getRelationshipStatusOptions(); track s) {
                         <button (click)="toggleRelationshipLabel(s)"
+                                type="button"
+                                draggable="true"
+                                (dragstart)="startRelationshipLabelDrag(s, $event)"
+                                (dragover)="$event.preventDefault()"
+                                (drop)="dropRelationshipLabel(s, $event)"
                                 [style.background-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : 'transparent'"
                                 [style.color]="isRelationshipLabelSelected(s) ? 'white' : theme.colors().text"
                                 [style.border-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ s }}</button>
+                                (dragend)="clearRelationshipLabelDrag()"
+                                class="option-btn relationship-label-chip">{{ s }}</button>
                       }
                     </div>
                     @if (isRelationshipLabelSelected('Other')) {
@@ -1178,6 +1184,7 @@ export class ProfileDetailComponent implements OnDestroy {
   ];
   private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingRedFlagLogs = new Set<string>();
+  private draggedRelationshipLabel: string | null = null;
 
   pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
     {label: 'He/Him', value: 'he'},
@@ -1300,6 +1307,40 @@ export class ProfileDetailComponent implements OnDestroy {
     } else {
       labels.push(label);
     }
+    this.editForm.relationshipLabels = labels;
+  }
+
+  startRelationshipLabelDrag(label: string, event: DragEvent): void {
+    if (!this.isRelationshipLabelSelected(label)) {
+      event.preventDefault();
+      return;
+    }
+
+    this.draggedRelationshipLabel = label;
+    event.dataTransfer?.setData('text/plain', label);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }
+
+  clearRelationshipLabelDrag(): void {
+    this.draggedRelationshipLabel = null;
+  }
+
+  dropRelationshipLabel(targetLabel: string, event: DragEvent): void {
+    event.preventDefault();
+    const draggedLabel = this.draggedRelationshipLabel || event.dataTransfer?.getData('text/plain');
+    this.draggedRelationshipLabel = null;
+
+    if (!draggedLabel || draggedLabel === targetLabel) return;
+
+    const labels = [...(this.editForm.relationshipLabels || [])];
+    const fromIndex = labels.indexOf(draggedLabel);
+    const toIndex = labels.indexOf(targetLabel);
+    if (fromIndex < 0 || toIndex < 0) return;
+
+    labels.splice(fromIndex, 1);
+    labels.splice(toIndex, 0, draggedLabel);
     this.editForm.relationshipLabels = labels;
   }
 

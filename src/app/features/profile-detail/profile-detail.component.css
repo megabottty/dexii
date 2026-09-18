@@ -443,6 +443,14 @@
   gap: 8px;
 }
 
+.relationship-label-chip {
+  cursor: grab;
+}
+
+.relationship-label-chip:active {
+  cursor: grabbing;
+}
+
 .edit-options-grid {
   display: flex;
   flex-wrap: wrap;
