@@ -353,8 +353,8 @@ exports.markAsRead = async (req, res) => {
 
 
 // @route   POST /api/messages/:messageId/react
-// @desc    Toggle an emoji reaction on a 1:1 or group message (one reaction per user; re-tapping
-//          the same emoji removes it, a different emoji replaces it)
+// @desc    Toggle an emoji reaction on a 1:1 or group message. Users can react
+//          with multiple emojis; re-tapping the same emoji removes that reaction.
 // @access  Private
 exports.reactToMessage = async (req, res) => {
   try {
@@ -372,11 +372,9 @@ exports.reactToMessage = async (req, res) => {
       if (!message) return res.status(404).json({ message: 'Message not found' });
 
       message.reactions = message.reactions || [];
-      const existingIdx = message.reactions.findIndex((r) => r.user === userId);
-      if (existingIdx >= 0 && message.reactions[existingIdx].emoji === emoji) {
+      const existingIdx = message.reactions.findIndex((r) => r.user === userId && r.emoji === emoji);
+      if (existingIdx >= 0) {
         message.reactions.splice(existingIdx, 1);
-      } else if (existingIdx >= 0) {
-        message.reactions[existingIdx] = { user: userId, emoji };
       } else {
         message.reactions.push({ user: userId, emoji });
       }
@@ -398,11 +396,11 @@ exports.reactToMessage = async (req, res) => {
       if (!isParty) return res.status(403).json({ message: 'You cannot react to this message.' });
     }
 
-    const existing = message.reactions.find((r) => String(r.user) === String(userId));
-    if (existing && existing.emoji === emoji) {
-      message.reactions = message.reactions.filter((r) => String(r.user) !== String(userId));
-    } else if (existing) {
-      existing.emoji = emoji;
+    const existing = message.reactions.some((r) => String(r.user) === String(userId) && r.emoji === emoji);
+    if (existing) {
+      message.reactions = message.reactions.filter(
+        (r) => !(String(r.user) === String(userId) && r.emoji === emoji)
+      );
     } else {
       message.reactions.push({ user: userId, emoji });
     }

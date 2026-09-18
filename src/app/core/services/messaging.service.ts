@@ -163,11 +163,10 @@ export class MessagingService {
 
     // Optimistic local update so the UI feels instant.
     const target = this._messages().find((m) => m.id === messageId);
-    const existing = target?.reactions?.find((r) => r.user === selfId);
-    const optimisticReactions = (target?.reactions || []).filter((r) => r.user !== selfId);
-    if (!existing || existing.emoji !== emoji) {
-      optimisticReactions.push({ user: selfId, emoji });
-    }
+    const existing = target?.reactions?.some((r) => r.user === selfId && r.emoji === emoji);
+    const optimisticReactions = existing
+      ? (target?.reactions || []).filter((r) => !(r.user === selfId && r.emoji === emoji))
+      : [...(target?.reactions || []), { user: selfId, emoji }];
     this._messages.update((msgs) =>
       msgs.map((m) => (m.id === messageId ? { ...m, reactions: optimisticReactions } : m))
     );

@@ -713,8 +713,6 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                              class="dashboard-red-flag-chip dashboard-red-flag-chip-button">
                        🚩
                      </button>
-                   } @else {
-                     <span class="dashboard-clear-flag" title="No red flags" aria-label="No red flags">⚑</span>
                    }
                 </div>
               </div>

@@ -251,21 +251,25 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
               <div class="profile-title-section">
                 <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
-                @if (c.relationshipStatus) {
-                  <p [style.color]="theme.colors().textSecondary"
-                     [style.border]="'1px solid ' + theme.colors().border"
-                     [style.background-color]="theme.colors().bg"
-                     class="profile-relationship-status">
-                    {{ c.relationshipStatus }}
-                  </p>
-                }
-                @if (c.relationshipLabels?.length) {
-                  <p [style.color]="theme.colors().textSecondary"
-                     [style.border]="'1px solid ' + theme.colors().border"
-                     [style.background-color]="theme.colors().bg"
-                     class="profile-relationship-status">
-                    Labels: {{ c.relationshipLabels?.join(', ') }}
-                  </p>
+                @if (c.relationshipStatus || c.relationshipLabels?.length) {
+                  <div class="profile-relationship-row">
+                    @if (c.relationshipStatus) {
+                      <span [style.color]="theme.colors().textSecondary"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.background-color]="theme.colors().bg"
+                            class="profile-relationship-status">
+                        {{ c.relationshipStatus }}
+                      </span>
+                    }
+                    @if (c.relationshipLabels?.length) {
+                      <span [style.color]="theme.colors().textSecondary"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.background-color]="theme.colors().bg"
+                            class="profile-relationship-status profile-relationship-labels">
+                        {{ c.relationshipLabels?.join(' · ') }}
+                      </span>
+                    }
+                  </div>
                 }
                 <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                   @if (!statusQuickEditOpen()) {

@@ -176,7 +176,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                       [style.color]="theme.colors().textSecondary"
                       class="messaging-react-trigger"
                       [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'"
-                      aria-label="React to this message">
+                      aria-label="Add emoji reactions to this message">
                 😀+
               </button>
 
@@ -552,7 +552,6 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   reactToMessage(messageId: string, emoji: string): void {
     void this.messaging.reactToMessage(messageId, emoji);
-    this.activeReactionPickerFor.set(null);
   }
 
   /** Groups a message's raw reactions by emoji for pill rendering (count + "did I react"). */

@@ -50,8 +50,8 @@ const MessageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Entry'
   },
-  // One reaction per user per message; re-tapping the same emoji removes it,
-  // tapping a different emoji replaces it.
+  // Users can add multiple emoji reactions to the same message. Re-tapping an
+  // emoji removes that user's reaction for that emoji.
   reactions: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     emoji: { type: String, required: true }
