@@ -260,6 +260,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             class="status-chip-button">
                       Status: {{ c.status || 'Crushing' }}
                     </button>
+                    <span class="status-visibility-info"
+                          title="Status tracks where things stand: Crush → Crushing → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
+                          aria-label="What does changing status do?">ℹ</span>
                     @for (label of c.relationshipLabels || []; track label) {
                       <span [style.color]="theme.colors().textSecondary"
                             [style.border]="'1px solid ' + theme.colors().border"
@@ -268,9 +271,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         {{ label }}
                       </span>
                     }
-                    <span class="status-visibility-info"
-                          title="Status tracks where things stand: Crush → Crushing → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
-                          aria-label="What does changing status do?">ℹ</span>
                   } @else {
                     <div class="status-quick-edit">
                       <select [value]="quickStatusDraft() || c.status || statuses.Crushing"
