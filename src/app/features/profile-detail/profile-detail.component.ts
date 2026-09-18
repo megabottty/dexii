@@ -82,9 +82,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     Relationship: {{ c.relationshipStatus }}
                   </span>
                 }
-                @if (c.relationshipLabels?.length) {
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: 11px;">
-                    {{ c.relationshipLabels?.join(', ') }}
+                @if (getRelationshipLabels(c).length) {
+                  <span class="profile-relationship-label-list" aria-label="Additional relationship labels">
+                    @for (label of getRelationshipLabels(c); track label) {
+                      <span [style.color]="theme.colors().textSecondary"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.background-color]="theme.colors().bg"
+                            class="profile-relationship-status profile-relationship-labels">
+                        {{ label }}
+                      </span>
+                    }
                   </span>
                 }
               </div>
@@ -1350,7 +1357,18 @@ export class ProfileDetailComponent implements OnDestroy {
         (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
       age -= 1;
     }
+
     return age >= 0 ? age : null;
+  }
+
+  getRelationshipLabels(crush: CrushProfile): string[] {
+    const labels = Array.isArray(crush.relationshipLabels) ? crush.relationshipLabels : [];
+    return [...new Set([
+      ...labels,
+      ...(crush.relationshipStatus && !labels.includes(crush.relationshipStatus)
+        ? [crush.relationshipStatus]
+        : [])
+    ])];
   }
 
   isRelationshipLabelSelected(label: string): boolean {

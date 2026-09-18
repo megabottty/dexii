@@ -730,6 +730,13 @@ select.edit-input-styled {
 .status-visibility-option__title {
   display: inline-flex;
   align-items: center;
+}
+
+.profile-relationship-label-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 0.95rem;
   font-weight: 700;

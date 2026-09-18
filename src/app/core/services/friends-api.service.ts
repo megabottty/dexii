@@ -178,7 +178,9 @@ export class FriendsApiService {
       build: crush.build || [],
       social: crush.social,
       relationshipStatus: crush.relationshipStatus,
-      relationshipLabels: Array.isArray(crush.relationshipLabels) ? crush.relationshipLabels : [],
+      relationshipLabels: Array.isArray(crush.relationshipLabels)
+        ? crush.relationshipLabels.filter((label): label is string => typeof label === 'string' && label.trim().length > 0)
+        : [],
       heartbreakSong: crush.heartbreakSong,
       heartbreakRecovery: crush.heartbreakRecovery,
       pronouns: crush.pronouns,
