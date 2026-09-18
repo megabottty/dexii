@@ -47,6 +47,7 @@ interface BackendCrushProfile {
   build?: string[];
   social?: CrushProfile['social'];
   relationshipStatus?: string;
+  relationshipLabels?: string[];
   heartbreakSong?: string;
   heartbreakRecovery?: string;
   pronouns?: CrushProfile['pronouns'];
@@ -176,6 +177,7 @@ export class FriendsApiService {
       build: crush.build || [],
       social: crush.social,
       relationshipStatus: crush.relationshipStatus,
+      relationshipLabels: Array.isArray(crush.relationshipLabels) ? crush.relationshipLabels : [],
       heartbreakSong: crush.heartbreakSong,
       heartbreakRecovery: crush.heartbreakRecovery,
       pronouns: crush.pronouns,
