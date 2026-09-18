@@ -251,26 +251,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
               <div class="profile-title-section">
                 <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
-                @if (c.relationshipStatus || c.relationshipLabels?.length) {
-                  <div class="profile-relationship-row">
-                    @if (c.relationshipStatus) {
-                      <span [style.color]="theme.colors().textSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.background-color]="theme.colors().bg"
-                            class="profile-relationship-status">
-                        {{ c.relationshipStatus }}
-                      </span>
-                    }
-                    @if (c.relationshipLabels?.length) {
-                      <span [style.color]="theme.colors().textSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.background-color]="theme.colors().bg"
-                            class="profile-relationship-status profile-relationship-labels">
-                        {{ c.relationshipLabels?.join(' · ') }}
-                      </span>
-                    }
-                  </div>
-                }
                 <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                   @if (!statusQuickEditOpen()) {
                     <button type="button"
@@ -280,12 +260,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             class="status-chip-button">
                       Status: {{ c.status || 'Crushing' }}
                     </button>
-                    @if (c.relationshipLabels?.length) {
+                    @for (label of c.relationshipLabels || []; track label) {
                       <span [style.color]="theme.colors().textSecondary"
                             [style.border]="'1px solid ' + theme.colors().border"
                             [style.background-color]="theme.colors().bg"
                             class="profile-relationship-status profile-relationship-labels">
-                        {{ c.relationshipLabels?.join(' · ') }}
+                        {{ label }}
                       </span>
                     }
                     <span class="status-visibility-info"

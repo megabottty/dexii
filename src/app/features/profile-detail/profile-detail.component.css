@@ -107,6 +107,8 @@
 
 .profile-relationship-labels {
   opacity: 0.85;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .status-chip-button {
