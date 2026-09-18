@@ -57,6 +57,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                    placeholder="Search friends..."
                    aria-label="Search friends"
                    class="sharing-component__search">
+            <p [style.color]="theme.colors().textSecondary" class="sharing-component__picker-help">
+              Choose a friend from the list to manage what they can see.
+            </p>
             <div class="sharing-component__friend-list">
               @for (friend of filteredFriends(); track friend.id) {
                 <button type="button"
@@ -90,9 +93,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                    [style.border]="'1px solid ' + theme.colors().border"
                    class="sharing-component__panel">
             @if (!selectedFriend()) {
-              <p [style.color]="theme.colors().textSecondary" class="sharing-component__empty">
-                Choose a friend above to manage what they can see.
-              </p>
+              <p [style.color]="theme.colors().textSecondary" class="sharing-component__empty">Select a friend to view sharing controls.</p>
             } @else {
               <div [style.border]="'1px solid ' + theme.colors().border" class="sharing-component__friend-banner">
                 <img [src]="selectedFriend()?.avatarUrl || 'https://i.pravatar.cc/150?u=' + selectedFriend()?.id"

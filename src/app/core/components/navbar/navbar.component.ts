@@ -112,7 +112,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
              (click)="closeMobileMenu()"
              [style.color]="theme.colors().text"
              class="navbar-link">
-            Dashboard
+            Crushes
           </a>
           <a routerLink="/feed"
              (click)="closeMobileMenu()"
