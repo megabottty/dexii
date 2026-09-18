@@ -710,7 +710,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       }
                     </div>
                     @if (isRelationshipLabelSelected('Other')) {
-                      <textarea [(ngModel)]="editForm.relationshipNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..." style="margin-top:12px;"></textarea>
+                      <textarea [(ngModel)]="editForm.relationshipNotes"
+                                (ngModelChange)="updateOtherRelationshipLabel($event)"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border-color]="theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                class="edit-textarea-styled"
+                                rows="2"
+                                placeholder="Describe your relationship status..."
+                                style="margin-top:12px;"></textarea>
                     }
                     @if (isRelationshipLabelSelected('Heartbroken')) {
                       <input [(ngModel)]="editForm.heartbreakSong"
@@ -1322,17 +1330,34 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   isRelationshipLabelSelected(label: string): boolean {
-    return (this.editForm.relationshipLabels || []).includes(label);
+    return (this.editForm.relationshipLabels || []).some((selected: string) =>
+      selected === label || (label === 'Other' && selected.startsWith('Other: '))
+    );
   }
 
   toggleRelationshipLabel(label: string): void {
     const labels = [...(this.editForm.relationshipLabels || [])];
-    const index = labels.indexOf(label);
+    const index = label === 'Other'
+      ? labels.findIndex((selected) => selected === 'Other' || selected.startsWith('Other: '))
+      : labels.indexOf(label);
     if (index >= 0) {
       labels.splice(index, 1);
+      if (label === 'Other') {
+        this.editForm.relationshipNotes = '';
+      }
     } else {
       labels.push(label);
     }
+    this.editForm.relationshipLabels = labels;
+  }
+
+  updateOtherRelationshipLabel(value: string): void {
+    if (!this.isRelationshipLabelSelected('Other')) return;
+
+    const labels = (this.editForm.relationshipLabels || [])
+      .filter((selected: string) => selected !== 'Other' && !selected.startsWith('Other: '));
+    const text = value.trim();
+    labels.push(text ? `Other: ${text}` : 'Other');
     this.editForm.relationshipLabels = labels;
   }
 
@@ -2198,6 +2223,7 @@ export class ProfileDetailComponent implements OnDestroy {
       // Entering edit mode - populate form
       const c = this.crush();
       if (c) {
+        const savedOtherLabel = c.relationshipLabels?.find((label) => label.startsWith('Other: '));
         this.editForm = {
           nickname: c.nickname || '',
           fullName: c.fullName || '',
@@ -2208,7 +2234,9 @@ export class ProfileDetailComponent implements OnDestroy {
           relationshipLabels: c.relationshipLabels ? [...c.relationshipLabels] : [],
           heartbreakSong: c.heartbreakSong || '',
           heartbreakRecovery: c.heartbreakRecovery || '',
-          relationshipNotes: this.getOtherNoteDetail(c.customNotes, 'Relationship'),
+          relationshipNotes: savedOtherLabel
+            ? savedOtherLabel.slice('Other: '.length)
+            : this.getOtherNoteDetail(c.customNotes, 'Relationship'),
           customNotes: this.getFilteredNotes(c.customNotes),
           location: c.location || '',
           age: c.age || null,
