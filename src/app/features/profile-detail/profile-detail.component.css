@@ -142,22 +142,23 @@
 /* Action Buttons Grid */
 .action-buttons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  padding-top: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+  padding-top: 28px;
   border-top: 1px solid var(--border);
 }
 
 .action-btn-styled {
   text-decoration: none;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
-  padding: 12px 16px;
-  min-height: 44px;
+  letter-spacing: 0.9px;
+  line-height: 1.25;
+  padding: 9px 12px;
+  min-height: 38px;
   border: 1.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -913,7 +914,8 @@ select.edit-input-styled {
 
   .action-buttons-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding-top: 24px;
+    gap: 8px;
+    padding-top: 22px;
   }
 
   .action-btn-no-wrap {
