@@ -450,7 +450,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .friends-list-component__s1 {
     padding: 28px 12px 48px;
   }

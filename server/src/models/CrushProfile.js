@@ -79,6 +79,7 @@ const CrushProfileSchema = new mongoose.Schema({
     default: ''
   },
   location: String,
+  dateOfBirth: Date,
   age: Number,
   howWeMet: String,
   whenWeMet: String,

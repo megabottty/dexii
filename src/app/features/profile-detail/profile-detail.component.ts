@@ -46,6 +46,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             } @else {
               Shared crush · Read-only
             }
+
           </div>
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
@@ -87,9 +88,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </span>
                 }
               </div>
-              @if (c.location || c.age) {
+              @if (c.location || getCrushAge(c)) {
                 <p [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 13px;">
-                  {{ c.location || 'Location Unknown' }}{{ c.age ? ' • ' + c.age + ' years' : '' }}
+                  {{ c.location || 'Location Unknown' }}{{ getCrushAge(c) ? ' • ' + getCrushAge(c) + ' years' : '' }}
                 </p>
               }
               @if (c.bio) {
@@ -299,7 +300,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   }
                 </p>
                 <p [style.color]="theme.colors().primary" class="profile-subtitle">
-                  {{ c.location || 'Location Unknown' }} • {{ c.age ? c.age + ' years' : 'Age Unknown' }}
+                  {{ c.location || 'Location Unknown' }} • {{ getCrushAge(c) ? getCrushAge(c) + ' years' : 'Age Unknown' }}
                 </p>
                 @if (c.bio) {
                   <p [style.color]="theme.colors().textSecondary" class="profile-bio">{{ c.bio }}</p>
@@ -803,7 +804,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </div>
                   <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Age</label>
-                    <input type="number" [(ngModel)]="editForm.age" (wheel)="$any($event.target).blur()" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                    <input type="date" [(ngModel)]="editForm.dateOfBirth" [max]="todayDate" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
                   <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">How We Met</label>
@@ -1166,6 +1167,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   `
 })
 export class ProfileDetailComponent implements OnDestroy {
+  readonly todayDate = new Date().toISOString().slice(0, 10);
   private route = inject(ActivatedRoute);
   private dataService = inject(DataService);
   private messaging = inject(MessagingService);
@@ -1336,6 +1338,19 @@ export class ProfileDetailComponent implements OnDestroy {
     return crush.displayName === 'fullName' && crush.fullName?.trim()
       ? crush.fullName
       : crush.nickname;
+  }
+
+  getCrushAge(crush: CrushProfile): number | null {
+    if (!crush.dateOfBirth) return null;
+    const birthDate = new Date(`${crush.dateOfBirth.slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(birthDate.getTime()) || birthDate > new Date()) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    if (today.getMonth() < birthDate.getMonth() ||
+        (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+      age -= 1;
+    }
+    return age >= 0 ? age : null;
   }
 
   isRelationshipLabelSelected(label: string): boolean {
@@ -2258,6 +2273,7 @@ export class ProfileDetailComponent implements OnDestroy {
             : this.getOtherNoteDetail(c.customNotes, 'Relationship'),
           customNotes: this.getFilteredNotes(c.customNotes),
           location: c.location || '',
+          dateOfBirth: c.dateOfBirth ? c.dateOfBirth.slice(0, 10) : '',
           age: c.age || null,
           hair: c.hair ? [...c.hair] : [],
           eyes: c.eyes ? [...c.eyes] : [],

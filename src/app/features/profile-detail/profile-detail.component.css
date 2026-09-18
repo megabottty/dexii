@@ -905,7 +905,7 @@ select.edit-input-styled {
   opacity: 1;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .header-gradient-container {
     height: 200px;
   }

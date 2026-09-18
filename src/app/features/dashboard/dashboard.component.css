@@ -637,7 +637,7 @@
   background-color: #dc2626;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .dashboard-component__s70 {
     padding: 28px 16px 48px;
   }

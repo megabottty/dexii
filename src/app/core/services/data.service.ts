@@ -42,6 +42,7 @@ interface BackendCrush {
   pronouns?: string;
   customNotes?: string;
   location?: string;
+  dateOfBirth?: string;
   age?: number;
   howWeMet?: string;
   whenWeMet?: string;
@@ -310,6 +311,7 @@ export class DataService {
       pronouns: crush.pronouns as any,
       customNotes: crush.customNotes,
       location: crush.location,
+      dateOfBirth: crush.dateOfBirth,
       age: crush.age,
       howWeMet: crush.howWeMet,
       whenWeMet: crush.whenWeMet,
@@ -489,6 +491,7 @@ export class DataService {
         heartbreakRecovery: crush.heartbreakRecovery,
         customNotes: crush.customNotes,
         location: crush.location,
+        dateOfBirth: crush.dateOfBirth,
         age: crush.age,
         howWeMet: crush.howWeMet,
         whenWeMet: crush.whenWeMet,
@@ -574,6 +577,7 @@ export class DataService {
         pronouns: crush.pronouns,
         customNotes: crush.customNotes,
         location: crush.location,
+        dateOfBirth: crush.dateOfBirth,
         age: crush.age,
         howWeMet: crush.howWeMet,
         whenWeMet: crush.whenWeMet,

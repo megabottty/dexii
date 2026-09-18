@@ -335,7 +335,7 @@
   50% { transform: scale(1.08); }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .messaging-component__s2 {
     padding: 14px 16px;
   }

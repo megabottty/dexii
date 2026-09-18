@@ -28,7 +28,7 @@ textarea {
   outline-offset: 2px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   html,
   body {
     width: 100%;

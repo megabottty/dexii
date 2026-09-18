@@ -53,6 +53,7 @@ interface BackendCrushProfile {
   pronouns?: CrushProfile['pronouns'];
   customNotes?: string;
   location?: string;
+  dateOfBirth?: string;
   age?: number;
   howWeMet?: string;
   whenWeMet?: string;
@@ -183,6 +184,7 @@ export class FriendsApiService {
       pronouns: crush.pronouns,
       customNotes: crush.customNotes,
       location: crush.location,
+      dateOfBirth: crush.dateOfBirth,
       age: crush.age,
       howWeMet: crush.howWeMet,
       whenWeMet: crush.whenWeMet,

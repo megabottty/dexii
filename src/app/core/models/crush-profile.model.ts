@@ -45,6 +45,7 @@ export interface CrushProfile {
   pronouns?: 'he' | 'she' | 'they' | 'custom';
   customNotes?: string;
   location?: string;
+  dateOfBirth?: string;
   age?: number;
   howWeMet?: string;
   whenWeMet?: string;

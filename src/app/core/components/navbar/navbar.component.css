@@ -410,7 +410,7 @@
   to { opacity: 1; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .navbar {
     padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
     min-height: 56px;

@@ -424,7 +424,8 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
                 <div class="dashboard-component__s26">
                   <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Age</label>
-                  <input type="number" [(ngModel)]="newCrush.age" (wheel)="$any($event.target).blur()" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                  <input type="date" [(ngModel)]="newCrush.dateOfBirth" [max]="todayDate" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
+                  <span class="vibe-sub-label">Enter their birthday so the displayed age stays current.</span>
                 </div>
 
                 <div class="dashboard-component__s26">
@@ -774,6 +775,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   `
 })
 export class DashboardComponent implements OnInit {
+  readonly todayDate = new Date().toISOString().slice(0, 10);
   getCrushDisplayName(crush: CrushProfile): string {
     return crush.displayName === 'fullName' && crush.fullName?.trim()
       ? crush.fullName
@@ -982,6 +984,7 @@ export class DashboardComponent implements OnInit {
     relationshipNotes: '',
     bio: '',
     location: '',
+    dateOfBirth: '',
     age: undefined as number | undefined,
     howWeMet: '',
     whenWeMet: '',
@@ -1163,6 +1166,7 @@ export class DashboardComponent implements OnInit {
       heartbreakRecovery: this.newCrush.heartbreakRecovery,
       customNotes: customNotes.trim(),
       location: this.newCrush.location,
+      dateOfBirth: this.newCrush.dateOfBirth || undefined,
       age: this.newCrush.age,
       howWeMet: this.newCrush.howWeMet,
       whenWeMet: this.newCrush.whenWeMet,
@@ -1291,6 +1295,7 @@ export class DashboardComponent implements OnInit {
       relationshipNotes: '',
       bio: '',
       location: '',
+      dateOfBirth: '',
       age: undefined,
       howWeMet: '',
       whenWeMet: '',
