@@ -74,7 +74,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
                   Main status: {{ c.status }}
                 </span>
-                @if (c.relationshipStatus) {
+                @if (c.relationshipStatus && !(c.relationshipLabels || []).includes(c.relationshipStatus)) {
                   <span [style.color]="theme.colors().textSecondary"
                         [style.border]="'1px solid ' + theme.colors().border"
                         style="padding: 2px 8px; border-radius: 999px; font-size: 11px;">
