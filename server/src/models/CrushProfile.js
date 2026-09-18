@@ -11,6 +11,11 @@ const CrushProfileSchema = new mongoose.Schema({
     required: true
   },
   fullName: String,
+  displayName: {
+    type: String,
+    enum: ['nickname', 'fullName'],
+    default: 'nickname'
+  },
   avatarUrl: String,
   bio: String,
   status: {
@@ -58,6 +63,10 @@ const CrushProfileSchema = new mongoose.Schema({
     instagram: String
   },
   relationshipStatus: String,
+  relationshipLabels: {
+    type: [String],
+    default: []
+  },
   heartbreakSong: String,
   heartbreakRecovery: String,
   pronouns: {

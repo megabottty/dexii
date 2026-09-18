@@ -11,6 +11,8 @@ export interface FriendSearchResult {
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
+  email?: string;
+  phoneE164?: string;
   subscriptionTier?: string;
   relationship: FriendRelationship;
 }
@@ -88,6 +90,7 @@ export interface InviteLookup {
   method: 'email' | 'sms';
   message?: string;
   inviterName: string;
+  invitedEmail?: string;
   expiresAt?: string;
 }
 

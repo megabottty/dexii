@@ -16,7 +16,7 @@ import {
   FIRST_CRUSH_SHARE_TOUR_KEY
 } from '../../core/config/walkthrough-tours';
 import { PageHintComponent } from '../../core/components/page-hint.component';
-import { CrushStatus } from '../../core/models/crush-profile.model';
+import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
 import { SubscriptionTier } from '../../core/models/user.model';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -698,7 +698,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               <!-- Image Area -->
               <div class="dashboard-component__s87">
                 <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
-                     [alt]="crush.nickname + ' profile photo'"
+                     [alt]="getCrushDisplayName(crush) + ' profile photo'"
                      class="dashboard-component__s88">
                 <div class="dashboard-component__s89"></div>
                 <div class="dashboard-component__s90">
@@ -711,15 +711,17 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                      <button type="button"
                              (click)="$event.stopPropagation(); showRedFlagReason(crush)"
                              class="dashboard-red-flag-chip dashboard-red-flag-chip-button">
-                       🚩 Flagged
+                       🚩
                      </button>
+                   } @else {
+                     <span class="dashboard-clear-flag" title="No red flags" aria-label="No red flags">⚑</span>
                    }
                 </div>
               </div>
 
               <!-- Content -->
               <div class="dashboard-component__s92">
-                <h3 class="dashboard-component__s93">{{ crush.nickname }}</h3>
+                <h3 class="dashboard-component__s93">{{ getCrushDisplayName(crush) }}</h3>
 
                 <div [style.color]="theme.colors().accent" class="dashboard-component__s94">
                   @for (star of [1,2,3,4,5]; track star) {
@@ -774,6 +776,11 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   `
 })
 export class DashboardComponent implements OnInit {
+  getCrushDisplayName(crush: CrushProfile): string {
+    return crush.displayName === 'fullName' && crush.fullName?.trim()
+      ? crush.fullName
+      : crush.nickname;
+  }
   public dataService = inject(DataService);
   public security = inject(SecurityService);
   public theme = inject(ThemeService);

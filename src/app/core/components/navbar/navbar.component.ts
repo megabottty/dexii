@@ -41,6 +41,23 @@ import { SupportMenuService } from '../../services/support-menu.service';
                class="navbar-profile-avatar-img">
         </a>
 
+        <a routerLink="/dashboard"
+         class="navbar-quick-link"
+         [style.color]="theme.colors().text"
+         [style.border]="'1px solid ' + theme.colors().border"
+         aria-label="View your crushes">
+        <span aria-hidden="true">💘</span>
+        <span class="navbar-quick-link-label">Crushes</span>
+        </a>
+        <a routerLink="/chat"
+         class="navbar-quick-link"
+         [style.color]="theme.colors().text"
+         [style.border]="'1px solid ' + theme.colors().border"
+         aria-label="Open chat">
+        <span aria-hidden="true">💬</span>
+        <span class="navbar-quick-link-label">Chat</span>
+        </a>
+
         <button type="button"
               class="navbar-help-button"
               [style.color]="theme.colors().text"

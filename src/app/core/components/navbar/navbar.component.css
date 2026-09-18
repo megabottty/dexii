@@ -207,6 +207,19 @@
   transform: scale(1.05);
 }
 
+.navbar-quick-link {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .navbar-profile-avatar-img {
   width: 100%;
   height: 100%;
@@ -436,6 +449,19 @@
 
   .navbar-right {
     gap: 8px;
+  }
+
+  .navbar-quick-link {
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 17px;
+  }
+
+  .navbar-quick-link-label {
+    display: none;
   }
 
   .navbar-help-button,

@@ -637,6 +637,15 @@
   background-color: #dc2626;
 }
 
+.dashboard-clear-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #22c55e;
+  font-size: 15px;
+  line-height: 1;
+}
+
 @media (max-width: 760px) {
   .dashboard-component__s70 {
     padding: 28px 16px 48px;

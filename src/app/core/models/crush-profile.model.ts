@@ -14,6 +14,7 @@ export interface CrushProfile {
   userId: string; // The owner of this profile
   nickname: string;
   fullName?: string;
+  displayName?: 'nickname' | 'fullName';
   avatarUrl?: string;
   bio?: string;
   status: CrushStatus;
@@ -38,6 +39,7 @@ export interface CrushProfile {
     instagram?: string;
   };
   relationshipStatus?: string;
+  relationshipLabels?: string[];
   heartbreakSong?: string;
   heartbreakRecovery?: string;
   pronouns?: 'he' | 'she' | 'they' | 'custom';

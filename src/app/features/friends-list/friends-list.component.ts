@@ -662,6 +662,18 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           class="friends-list-add-modal-textarea"
                           placeholder="Message they’ll receive"></textarea>
               </label>
+
+              <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
+                <span>
+                  <input type="checkbox"
+                         [checked]="skipFriendshipProfile()"
+                         (change)="skipFriendshipProfile.set($any($event.target).checked)">
+                  Skip the friendship profile for now
+                </span>
+                <small [style.color]="theme.colors().textSecondary">
+                  You can finish it later from Pending Sent or your Friends list.
+                </small>
+              </label>
             </div>
 
             <div class="friends-list-add-modal-actions">
@@ -724,6 +736,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   addFriendInviteMethod = signal<InviteMethod>('email');
   addFriendInviteContact = signal('');
   addFriendInviteMessage = signal('');
+  skipFriendshipProfile = signal(false);
   viewingFriendProfile = signal<FriendRequestItem | null>(null);
   viewingFriendUsername = signal('');
   friendProfileDraft = signal<FriendshipProfile>({
@@ -1073,18 +1086,23 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   openAddFriendModal(candidate: FriendSearchResult) {
-    const cleanUsername = (candidate.username || '').trim();
-    if (!cleanUsername) {
-      this.modal.show('Enter a username first.');
+    const searchedValue = (candidate.email || candidate.phoneE164 || candidate.username || '').trim();
+    if (!searchedValue) {
+      this.modal.show('Enter a name, email, or phone number first.');
       return;
     }
 
+    const cleanUsername = (candidate.username || searchedValue).trim();
     const displayName = this.candidateDisplayName(candidate).trim() || cleanUsername;
-    const inviteMethod: InviteMethod = candidate.email ? 'email' : candidate.phoneE164 ? 'sms' : 'copy';
+    const inviteMethod: InviteMethod = candidate.email || this.looksLikeEmail(searchedValue)
+      ? 'email'
+      : candidate.phoneE164 || this.looksLikePhone(searchedValue)
+      ? 'sms'
+      : 'copy';
     const inviteContact = inviteMethod === 'email'
-      ? (candidate.email || '')
+      ? (candidate.email || (this.looksLikeEmail(searchedValue) ? searchedValue : ''))
       : inviteMethod === 'sms'
-      ? (candidate.phoneE164 || '')
+      ? (candidate.phoneE164 || (this.looksLikePhone(searchedValue) ? searchedValue : ''))
       : '';
 
     this.addFriendCandidate.set({ ...candidate, username: cleanUsername });
@@ -1098,6 +1116,16 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.addFriendInviteMessage.set(
       `Hey ${displayName}! I added you in my Dexii circle. Make your own account and we can connect there.`
     );
+    this.skipFriendshipProfile.set(false);
+  }
+
+  private looksLikeEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+
+  private looksLikePhone(value: string): boolean {
+    const digits = value.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15 && !this.looksLikeEmail(value);
   }
 
   closeAddFriendModal() {
@@ -1318,9 +1346,14 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     };
 
     if (candidate.id && (!candidate.relationship || candidate.relationship === 'none')) {
-      const result = await this.sendFriendRequest({ ...candidate, username }, { friendshipProfile });
+      const result = await this.sendFriendRequest(
+        { ...candidate, username },
+        this.skipFriendshipProfile() ? undefined : { friendshipProfile }
+      );
       if (!result) return;
-      this.writeFriendshipProfile(candidate.id, friendshipProfile);
+      if (!this.skipFriendshipProfile()) {
+        this.writeFriendshipProfile(candidate.id, friendshipProfile);
+      }
     }
 
     const inviteMessage = this.buildInviteMessage(username);

@@ -226,14 +226,16 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                         class="chat-hub__new-btn">
                   {{ showNewChat() ? 'Cancel' : '+ New Chat' }}
                 </button>
-                <button type="button"
-                        (click)="toggleNewGroup()"
-                        [style.background-color]="showNewGroup() ? 'transparent' : theme.colors().primary"
-                        [style.color]="showNewGroup() ? theme.colors().primary : '#ffffff'"
-                        [style.border]="'1px solid ' + theme.colors().primary"
-                        class="chat-hub__new-btn">
+                <!-- Group chat stays available in the codebase for later, but is
+                     intentionally hidden from the current chat UI. -->
+                <!-- <button type="button"
+                  (click)="toggleNewGroup()"
+                  [style.background-color]="showNewGroup() ? 'transparent' : theme.colors().primary"
+                  [style.color]="showNewGroup() ? theme.colors().primary : '#ffffff'"
+                  [style.border]="'1px solid ' + theme.colors().primary"
+                  class="chat-hub__new-btn">
                   {{ showNewGroup() ? 'Cancel' : '👥 New Group' }}
-                </button>
+                </button> -->
               </div>
             </div>
 

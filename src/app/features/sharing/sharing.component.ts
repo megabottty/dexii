@@ -91,7 +91,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                    class="sharing-component__panel">
             @if (!selectedFriend()) {
               <p [style.color]="theme.colors().textSecondary" class="sharing-component__empty">
-                Select a friend on the left to manage what they can see.
+                Choose a friend above to manage what they can see.
               </p>
             } @else {
               <div [style.border]="'1px solid ' + theme.colors().border" class="sharing-component__friend-banner">
@@ -361,7 +361,7 @@ export class SharingComponent implements OnInit {
     this.quickEntryDrafts[crushId] = value;
   }
 
-  /** Types a quick note about a crush and shares it immediately with the selected friend. */
+  /** Adds a private quick note; the lock can be toggled to share it with the selected friend. */
   addAndShareQuickEntry(crushId: string): void {
     const friend = this.selectedFriend();
     if (!friend) return;
@@ -375,22 +375,14 @@ export class SharingComponent implements OnInit {
       crushId,
       type: 'Note',
       content,
-      visibility: [friend.id],
+      visibility: [],
       isSensitive: false
     });
 
     const newEntry = this.getEntries(crushId).find((entry) => entry.content === content);
 
-    this.messaging.sendMessage({
-      senderId: this.currentUserId || this.currentUsername,
-      receiverId: friend.id,
-      content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${content}`,
-      relatedCrushId: crushId,
-      relatedEntryId: newEntry?.id
-    });
-
     this.quickEntryDrafts[crushId] = '';
-    this.modal.show(`Shared note sent to ${friend.username}.`);
+    this.modal.show(`Private note added. Tap the lock to share it with ${friend.username}.`);
   }
 
   showShareDestinationInfo(): void {

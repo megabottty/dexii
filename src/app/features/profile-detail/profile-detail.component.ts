@@ -50,42 +50,43 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                style="border-radius: 16px; padding: 24px; display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-            <img [src]="c.avatarUrl || 'https://i.pravatar.cc/150?u=' + c.nickname"
-                 [alt]="c.nickname"
-                 style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <img [src]="c.avatarUrl || 'https://i.pravatar.cc/150?u=' + c.nickname"
+                   [alt]="c.nickname"
+                   style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span [style.color]="theme.colors().accent" aria-label="Rating">
+                  @for (star of [1,2,3,4,5]; track star) { {{ (c.rating || 0) >= star ? '★' : '☆' }} }
+                </span>
+                @if ((c.redFlags || 0) > 0) {
+                  <button type="button" (click)="showRedFlagReason(c)" class="status-chip-button red-flag-chip-button" aria-label="Red flagged">🚩</button>
+                } @else {
+                  <span [style.color]="'#22c55e'" aria-label="No red flags">⚑</span>
+                }
+              </div>
+            </div>
             <div style="flex: 1; min-width: 200px;">
-              <h2 style="margin: 0 0 4px 0; font-size: 22px;">{{ c.nickname }}</h2>
+              <h2 style="margin: 0 0 4px 0; font-size: 22px;">{{ getCrushDisplayName(c) }}</h2>
               @if (c.fullName) {
                 <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
               }
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
                 <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
-                  {{ c.status }}
+                  Main status: {{ c.status }}
                 </span>
                 @if (c.relationshipStatus) {
                   <span [style.color]="theme.colors().textSecondary"
                         [style.border]="'1px solid ' + theme.colors().border"
                         style="padding: 2px 8px; border-radius: 999px; font-size: 11px;">
-                    {{ c.relationshipStatus }}
+                    Relationship: {{ c.relationshipStatus }}
                   </span>
                 }
-                @if ((c.redFlags || 0) > 0) {
-                  <span style="color: #ef4444; border: 1px solid #ef4444; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;">
-                    🚩 Flagged
-                  </span>
-                } @else {
-                  <span style="color: #22c55e; border: 1px solid #22c55e; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;">
-                    ✅ Clear
+                @if (c.relationshipLabels?.length) {
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: 11px;">
+                    {{ c.relationshipLabels?.join(', ') }}
                   </span>
                 }
               </div>
-              @if (c.rating) {
-                <div [style.color]="theme.colors().accent" style="margin-bottom: 8px;">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    {{ c.rating >= star ? '★' : '☆' }}
-                  }
-                </div>
-              }
               @if (c.location || c.age) {
                 <p [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 13px;">
                   {{ c.location || 'Location Unknown' }}{{ c.age ? ' • ' + c.age + ' years' : '' }}
@@ -236,26 +237,34 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             [style.color]="'#ef4444'"
                             [style.border]="'1px solid #ef4444'"
                             class="status-chip-button red-flag-chip-button">
-                      🚩 Flagged
+                      🚩
                     </button>
                   } @else {
                     <span
                       [style.color]="'#22c55e'"
                       [style.border]="'1px solid #22c55e'"
                       style="padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; line-height: 1.2;">
-                      ✅ Clear
+                      ⚑
                     </span>
                   }
                 </div>
               </div>
               <div class="profile-title-section">
-                <h1 class="profile-name">{{ c.nickname }}</h1>
+                <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
                 @if (c.relationshipStatus) {
                   <p [style.color]="theme.colors().textSecondary"
                      [style.border]="'1px solid ' + theme.colors().border"
                      [style.background-color]="theme.colors().bg"
                      class="profile-relationship-status">
                     {{ c.relationshipStatus }}
+                  </p>
+                }
+                @if (c.relationshipLabels?.length) {
+                  <p [style.color]="theme.colors().textSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     [style.background-color]="theme.colors().bg"
+                     class="profile-relationship-status">
+                    Labels: {{ c.relationshipLabels?.join(', ') }}
                   </p>
                 }
                 <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -580,6 +589,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     <input [(ngModel)]="editForm.fullName" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                   </div>
                   <div class="edit-field">
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Name shown on cards</label>
+                    <select [(ngModel)]="editForm.displayName" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
+                      <option value="nickname">Nickname</option>
+                      <option value="fullName">Real name</option>
+                    </select>
+                  </div>
+                  <div class="edit-field">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Crush Status</label>
                     <select [(ngModel)]="editForm.status" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                       <option [value]="statuses.Crush">Crush</option>
@@ -658,21 +674,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">About Them</h3>
                 <div class="edit-fields-grid">
                   <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Relationship Label</label>
-                    <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">More specific context you can share with friends.</span>
+                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Additional relationship labels</label>
+                    <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">The main status is above. Choose any labels that add context.</span>
                     <div class="edit-chip-grid">
                       @for (s of getRelationshipStatusOptions(); track s) {
-                        <button (click)="editForm.relationshipStatus = s"
-                                [style.background-color]="editForm.relationshipStatus === s ? theme.colors().primary : 'transparent'"
-                                [style.color]="editForm.relationshipStatus === s ? 'white' : theme.colors().text"
-                                [style.border-color]="editForm.relationshipStatus === s ? theme.colors().primary : theme.colors().border"
+                        <button (click)="toggleRelationshipLabel(s)"
+                                [style.background-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : 'transparent'"
+                                [style.color]="isRelationshipLabelSelected(s) ? 'white' : theme.colors().text"
+                                [style.border-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : theme.colors().border"
                                 class="option-btn">{{ s }}</button>
                       }
                     </div>
-                    @if (editForm.relationshipStatus === 'Other') {
+                    @if (isRelationshipLabelSelected('Other')) {
                       <textarea [(ngModel)]="editForm.relationshipNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe your relationship status..." style="margin-top:12px;"></textarea>
                     }
-                    @if (editForm.relationshipStatus === 'Heartbroken') {
+                    @if (isRelationshipLabelSelected('Heartbroken')) {
                       <input [(ngModel)]="editForm.heartbreakSong"
                              [style.background-color]="theme.colors().bg"
                              [style.border-color]="theme.colors().border"
@@ -1180,9 +1196,11 @@ export class ProfileDetailComponent implements OnDestroy {
   editForm: any = {
     nickname: '',
     fullName: '',
+    displayName: 'nickname',
     bio: '',
     pronouns: 'they',
     relationshipStatus: '',
+    relationshipLabels: [] as string[],
     heartbreakSong: '',
     heartbreakRecovery: '',
     relationshipNotes: '',
@@ -1271,6 +1289,27 @@ export class ProfileDetailComponent implements OnDestroy {
       .slice()
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
   );
+
+  getCrushDisplayName(crush: CrushProfile): string {
+    return crush.displayName === 'fullName' && crush.fullName?.trim()
+      ? crush.fullName
+      : crush.nickname;
+  }
+
+  isRelationshipLabelSelected(label: string): boolean {
+    return (this.editForm.relationshipLabels || []).includes(label);
+  }
+
+  toggleRelationshipLabel(label: string): void {
+    const labels = [...(this.editForm.relationshipLabels || [])];
+    const index = labels.indexOf(label);
+    if (index >= 0) {
+      labels.splice(index, 1);
+    } else {
+      labels.push(label);
+    }
+    this.editForm.relationshipLabels = labels;
+  }
 
   redFlagEntries = computed(() =>
     this.entries()
@@ -2103,9 +2142,11 @@ export class ProfileDetailComponent implements OnDestroy {
         this.editForm = {
           nickname: c.nickname || '',
           fullName: c.fullName || '',
+          displayName: c.displayName || 'nickname',
           bio: c.bio || '',
           pronouns: c.pronouns || 'they',
           relationshipStatus: c.relationshipStatus || '',
+          relationshipLabels: c.relationshipLabels ? [...c.relationshipLabels] : [],
           heartbreakSong: c.heartbreakSong || '',
           heartbreakRecovery: c.heartbreakRecovery || '',
           relationshipNotes: this.getOtherNoteDetail(c.customNotes, 'Relationship'),

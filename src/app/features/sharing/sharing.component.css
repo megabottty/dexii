@@ -251,6 +251,45 @@
   padding: 12px 4px;
 }
 
+@media (max-width: 800px) {
+  .sharing-component__main {
+    padding: 16px 12px calc(40px + env(safe-area-inset-bottom));
+  }
+
+  .sharing-component__title {
+    font-size: 24px;
+  }
+
+  .sharing-component__layout {
+    gap: 12px;
+  }
+
+  .sharing-component__picker,
+  .sharing-component__panel,
+  .sharing-component__overview {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .sharing-component__friend-list {
+    max-height: 220px;
+  }
+
+  .sharing-component__panel > .sharing-component__empty {
+    padding: 8px 4px;
+    text-align: center;
+  }
+
+  .sharing-component__crush-row-header {
+    align-items: flex-start;
+  }
+
+  .sharing-component__crush-toggle {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+}
+
 .sharing-component__overview {
   margin-top: 24px;
 }

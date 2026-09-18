@@ -14,6 +14,7 @@ interface BackendCrush {
   userId: string;
   nickname: string;
   fullName?: string;
+  displayName?: 'nickname' | 'fullName';
   avatarUrl?: string;
   bio?: string;
   status?: string;
@@ -35,6 +36,7 @@ interface BackendCrush {
     instagram?: string;
   };
   relationshipStatus?: string;
+  relationshipLabels?: string[];
   heartbreakSong?: string;
   heartbreakRecovery?: string;
   pronouns?: string;
@@ -285,6 +287,7 @@ export class DataService {
       userId: crush.userId,
       nickname: crush.nickname,
       fullName: crush.fullName,
+      displayName: crush.displayName || 'nickname',
       avatarUrl: crush.avatarUrl,
       bio: crush.bio,
       status: this.toCrushStatus(crush.status),
@@ -301,6 +304,7 @@ export class DataService {
       build: crush.build || [],
       social: crush.social,
       relationshipStatus: crush.relationshipStatus,
+      relationshipLabels: crush.relationshipLabels || [],
       heartbreakSong: crush.heartbreakSong,
       heartbreakRecovery: crush.heartbreakRecovery,
       pronouns: crush.pronouns as any,

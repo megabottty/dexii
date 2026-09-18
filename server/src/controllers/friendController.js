@@ -188,12 +188,12 @@ exports.searchUsers = async (req, res) => {
     // Try exact email/phone lookup first
     if (normalizedEmail && normalizedEmail.includes('@')) {
       users = await User.find({ ...baseFilter, email: normalizedEmail })
-        .select('username firstName lastName avatarUrl subscriptionTier friendCategories')
+        .select('username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .limit(50)
         .lean();
     } else if (normalizedPhone) {
       users = await User.find({ ...baseFilter, phoneE164: normalizedPhone })
-        .select('username firstName lastName avatarUrl subscriptionTier friendCategories')
+        .select('username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .limit(50)
         .lean();
     }
@@ -209,7 +209,7 @@ exports.searchUsers = async (req, res) => {
           { searchName: rx }
         ]
       })
-        .select('username firstName lastName avatarUrl subscriptionTier friendCategories')
+        .select('username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .limit(50)
         .lean();
     }
@@ -439,6 +439,7 @@ exports.getInvite = async (req, res) => {
     res.json({
       token: invite.token,
       method: invite.method,
+      invitedEmail: invite.method === 'email' ? invite.contact : undefined,
       message: invite.message,
       inviterName: buildDisplayName(invite.invitedBy),
       expiresAt: invite.expiresAt
@@ -491,7 +492,7 @@ exports.acceptInviteForUser = async function acceptInviteForUser(token, newUserI
           recipient: invite.invitedBy,
           actor: newUserId,
           type: 'invite_accepted',
-          payload: { inviteId: String(invite._id) }
+          payload: { inviteId: String(invite._id), friendshipSetupPending: true }
         });
       } catch (notifyErr) {
         console.error('Invite accepted notification failed:', notifyErr.message);

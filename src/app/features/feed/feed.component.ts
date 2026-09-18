@@ -336,7 +336,7 @@ export class FeedComponent implements OnInit {
       case 'crush_shared':
         return `${actorName} shared a new crush with you`;
       case 'invite_accepted':
-        return `${actorName} accepted your invite and joined Dexii!`;
+        return `${actorName} accepted your invite and joined Dexii! Finish setting up your friendship profile.`;
       case 'friend_request_received':
         return `${actorName} sent you a friend request`;
       case 'friend_request_accepted':

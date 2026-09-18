@@ -406,8 +406,12 @@ export class SignupProfileComponent implements OnInit {
 
     localStorage.setItem('dexii_invite_token', token);
     void this.friendsApi.lookupInvite(token).then((invite) => {
-      if (invite?.inviterName) {
-        this.inviterName.set(invite.inviterName);
+      if (invite) {
+        if (invite.inviterName) this.inviterName.set(invite.inviterName);
+        if (invite.invitedEmail) {
+          this.email.set(invite.invitedEmail);
+          this.settings.updateSignupDraft({ email: invite.invitedEmail });
+        }
       } else {
         // Expired or already-used links shouldn't silently attach to the signup.
         localStorage.removeItem('dexii_invite_token');

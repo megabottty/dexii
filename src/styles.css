@@ -58,6 +58,7 @@ textarea {
     width: 100%;
     min-height: 100dvh;
     overflow-x: clip;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   }
 
   input,
