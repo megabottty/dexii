@@ -304,7 +304,7 @@ export class DataService {
       build: crush.build || [],
       social: crush.social,
       relationshipStatus: crush.relationshipStatus,
-      relationshipLabels: crush.relationshipLabels || [],
+      relationshipLabels: Array.isArray(crush.relationshipLabels) ? crush.relationshipLabels : [],
       heartbreakSong: crush.heartbreakSong,
       heartbreakRecovery: crush.heartbreakRecovery,
       pronouns: crush.pronouns as any,

@@ -2244,6 +2244,9 @@ export class ProfileDetailComponent implements OnDestroy {
       hair: Array.isArray(this.editForm.hair) ? this.editForm.hair : [],
       eyes: Array.isArray(this.editForm.eyes) ? this.editForm.eyes : [],
       build: Array.isArray(this.editForm.build) ? this.editForm.build : [],
+      relationshipLabels: Array.isArray(this.editForm.relationshipLabels)
+        ? [...this.editForm.relationshipLabels]
+        : [],
       friends: this.editForm.friends ? this.editForm.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
       heartbreakSong: this.editForm.heartbreakSong || '',
       heartbreakRecovery: this.editForm.heartbreakRecovery || '',

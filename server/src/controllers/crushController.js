@@ -166,7 +166,13 @@ exports.updateCrush = async (req, res) => {
       newRecipients = await resolveNewVisibilityRecipients(req.user.id, previousVisibility, req.body.visibility);
     }
 
-    crush = await CrushProfile.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    const updatePayload = {
+      ...req.body,
+      relationshipLabels: Array.isArray(req.body.relationshipLabels)
+        ? req.body.relationshipLabels
+        : []
+    };
+    crush = await CrushProfile.findByIdAndUpdate(req.params.id, { $set: updatePayload }, { new: true });
 
     if (newRecipients.length > 0) {
       try {
