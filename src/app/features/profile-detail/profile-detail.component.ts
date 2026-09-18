@@ -706,19 +706,26 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                                 [style.background-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : 'transparent'"
                                 [style.color]="isRelationshipLabelSelected(s) ? 'white' : theme.colors().text"
                                 [style.border-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ s }}</button>
+                                class="option-btn">{{ s === 'Other' ? 'Add custom label' : s }}</button>
                       }
                     </div>
                     @if (isRelationshipLabelSelected('Other')) {
-                      <textarea [(ngModel)]="editForm.relationshipNotes"
-                                (ngModelChange)="updateOtherRelationshipLabel($event)"
-                                [style.background-color]="theme.colors().bgSecondary"
-                                [style.border-color]="theme.colors().border"
-                                [style.color]="theme.colors().text"
-                                class="edit-textarea-styled"
-                                rows="2"
-                                placeholder="Describe your relationship status..."
-                                style="margin-top:12px;"></textarea>
+                      <div class="custom-relationship-label-form">
+                        <input [(ngModel)]="editForm.customRelationshipLabelDraft"
+                               [style.background-color]="theme.colors().bg"
+                               [style.border-color]="theme.colors().border"
+                               [style.color]="theme.colors().text"
+                               class="edit-input-styled"
+                               placeholder="Add a custom label">
+                        <button type="button"
+                                (click)="addCustomRelationshipLabel()"
+                                [style.background-color]="theme.colors().primary"
+                                [style.color]="'white'"
+                                [style.border-color]="theme.colors().primary"
+                                class="option-btn">
+                          Add label
+                        </button>
+                      </div>
                     }
                     @if (isRelationshipLabelSelected('Heartbroken')) {
                       <input [(ngModel)]="editForm.heartbreakSong"
@@ -1264,7 +1271,9 @@ export class ProfileDetailComponent implements OnDestroy {
       instagram: ''
     },
     note: '',
-    noteVisibility: 'private'
+    noteVisibility: 'private',
+    customLabelMode: false,
+    customRelationshipLabelDraft: ''
   };
 
   crush = computed(() => {
@@ -1330,35 +1339,41 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   isRelationshipLabelSelected(label: string): boolean {
+    if (label === 'Other') return Boolean(this.editForm.customLabelMode);
     return (this.editForm.relationshipLabels || []).some((selected: string) =>
-      selected === label || (label === 'Other' && selected.startsWith('Other: '))
+      selected === label
     );
   }
 
   toggleRelationshipLabel(label: string): void {
+    if (label === 'Other') {
+      this.editForm.customLabelMode = !this.editForm.customLabelMode;
+      if (!this.editForm.customLabelMode) {
+        this.editForm.customRelationshipLabelDraft = '';
+      }
+      return;
+    }
+
     const labels = [...(this.editForm.relationshipLabels || [])];
-    const index = label === 'Other'
-      ? labels.findIndex((selected) => selected === 'Other' || selected.startsWith('Other: '))
-      : labels.indexOf(label);
+    const index = labels.indexOf(label);
     if (index >= 0) {
       labels.splice(index, 1);
-      if (label === 'Other') {
-        this.editForm.relationshipNotes = '';
-      }
     } else {
       labels.push(label);
     }
     this.editForm.relationshipLabels = labels;
   }
 
-  updateOtherRelationshipLabel(value: string): void {
-    if (!this.isRelationshipLabelSelected('Other')) return;
+  addCustomRelationshipLabel(): void {
+    const label = (this.editForm.customRelationshipLabelDraft || '').trim();
+    if (!label) return;
 
-    const labels = (this.editForm.relationshipLabels || [])
-      .filter((selected: string) => selected !== 'Other' && !selected.startsWith('Other: '));
-    const text = value.trim();
-    labels.push(text ? `Other: ${text}` : 'Other');
+    const labels = [...(this.editForm.relationshipLabels || [])];
+    if (!labels.includes(label)) {
+      labels.push(label);
+    }
     this.editForm.relationshipLabels = labels;
+    this.editForm.customRelationshipLabelDraft = '';
   }
 
   startRelationshipLabelDrag(label: string, event: DragEvent): void {
@@ -2231,7 +2246,11 @@ export class ProfileDetailComponent implements OnDestroy {
           bio: c.bio || '',
           pronouns: c.pronouns || 'they',
           relationshipStatus: c.relationshipStatus || '',
-          relationshipLabels: c.relationshipLabels ? [...c.relationshipLabels] : [],
+          relationshipLabels: c.relationshipLabels
+            ? c.relationshipLabels.map((label) => label.startsWith('Other: ') ? label.slice('Other: '.length) : label)
+            : [],
+          customLabelMode: Boolean(savedOtherLabel),
+          customRelationshipLabelDraft: '',
           heartbreakSong: c.heartbreakSong || '',
           heartbreakRecovery: c.heartbreakRecovery || '',
           relationshipNotes: savedOtherLabel
@@ -2267,6 +2286,9 @@ export class ProfileDetailComponent implements OnDestroy {
           note: '',
           noteVisibility: 'private'
         };
+        this.editForm.customLabelMode = this.editForm.relationshipLabels.some(
+          (label: string) => !this.getRelationshipStatusOptions().includes(label)
+        ) || Boolean(savedOtherLabel);
       }
     }
     this.isEditMode.set(!this.isEditMode());
