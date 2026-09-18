@@ -80,17 +80,21 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
               </div>
             } @else {
               @for (notification of unreadNotifications(); track notification.id) {
-                <button type="button"
-                        class="tea-update-item"
-                        [class.tea-update-item--unread]="!notification.read"
-                        [style.border-bottom]="'1px solid ' + theme.colors().border"
-                        (click)="openNotification(notification)">
+                <div class="tea-update-row"
+                     [style.border-bottom]="'1px solid ' + theme.colors().border">
+                  <div class="tea-update-item"
+                       role="button"
+                       tabindex="0"
+                       [class.tea-update-item--unread]="!notification.read"
+                       (click)="openNotification(notification)"
+                       (keydown.enter)="openNotification(notification)">
                   <div class="tea-update-copy">
                     <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
                     <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
                   </div>
                   <span [style.background-color]="theme.colors().primary" class="tea-update-dot"></span>
-                </button>
+                  </div>
+                </div>
               }
 
               @if (readNotifications().length > 0) {
@@ -106,15 +110,26 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
 
                 @if (readUpdatesExpanded()) {
                   @for (notification of readNotifications(); track notification.id) {
-                    <button type="button"
-                            class="tea-update-item tea-update-item--read"
-                            [style.border-bottom]="'1px solid ' + theme.colors().border"
-                            (click)="openNotification(notification)">
+                    <div class="tea-update-row"
+                         [style.border-bottom]="'1px solid ' + theme.colors().border">
+                      <div class="tea-update-item tea-update-item--read"
+                           role="button"
+                           tabindex="0"
+                           (click)="openNotification(notification)"
+                           (keydown.enter)="openNotification(notification)">
                       <div class="tea-update-copy">
                         <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
                         <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
                       </div>
-                    </button>
+                      </div>
+                      <button type="button"
+                              class="tea-update-mark-unread"
+                              [style.color]="theme.colors().primary"
+                              aria-label="Mark notification as unread"
+                              (click)="markNotificationUnread(notification); $event.stopPropagation()">
+                        Mark as unread
+                      </button>
+                    </div>
                   }
                 }
               }
@@ -321,6 +336,17 @@ export class FeedComponent implements OnInit {
       this.readUpdatesExpanded.set(false);
     } catch {
       // Leave the list as-is so the user can retry.
+    }
+  }
+
+  async markNotificationUnread(notification: AppNotification): Promise<void> {
+    if (!notification.read) return;
+
+    try {
+      await this.notifications.markUnread(notification.id);
+      this.readUpdatesExpanded.set(false);
+    } catch {
+      // Keep the notification in its current state so the user can retry.
     }
   }
 

@@ -9,8 +9,6 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 import { SubscriptionTier } from '../../core/models/user.model';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { FriendsApiService } from '../../core/services/friends-api.service';
-import { WalkthroughService } from '../../core/services/walkthrough.service';
-import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from '../../core/config/walkthrough-tours';
 import { UserSettings, UserSettingsService } from '../../core/services/user-settings.service';
 import { InstallPromptService } from '../../core/services/install-prompt.service';
 
@@ -48,6 +46,25 @@ interface FriendChoice {
                 Username: @{{ username() }}
               </p>
             </div>
+            <div class="settings-header-profile">
+              <img [src]="settings.settings().avatarUrl || defaultAvatar()"
+                   [alt]="settings.settings().displayName || username()"
+                   class="settings-avatar">
+              <div class="settings-photo-actions">
+                <input #photoInput type="file" accept="image/*" (change)="uploadPhoto($event)" hidden>
+                <button (click)="photoInput.click()"
+                        [style.background-color]="theme.colors().primary"
+                        class="settings-photo-btn">
+                  Upload / Change Photo
+                </button>
+                <button (click)="clearPhoto()"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [style.color]="theme.colors().textSecondary"
+                        class="settings-reset-btn">
+                  Remove Photo
+                </button>
+              </div>
+            </div>
             <button (click)="settings.resetSettings()"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().textSecondary"
@@ -60,26 +77,6 @@ interface FriendChoice {
                     type="button">
               {{ saveMessage() || 'Save Changes' }}
             </button>
-          </div>
-
-          <div class="settings-profile-banner">
-            <img [src]="settings.settings().avatarUrl || defaultAvatar()"
-                 [alt]="settings.settings().displayName || username()"
-                 class="settings-avatar">
-            <div class="settings-photo-actions">
-              <input #photoInput type="file" accept="image/*" (change)="uploadPhoto($event)" hidden>
-              <button (click)="photoInput.click()"
-                      [style.background-color]="theme.colors().primary"
-                      class="settings-photo-btn">
-                Upload / Change Photo
-              </button>
-              <button (click)="clearPhoto()"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().textSecondary"
-                      class="settings-photo-btn settings-photo-btn--ghost">
-                Remove Photo
-              </button>
-            </div>
           </div>
 
           <div class="settings-grid">
@@ -490,25 +487,6 @@ interface FriendChoice {
             </div>
           </section>
 
-          <section class="settings-plan-section">
-            <div class="settings-plan-header">
-              <div>
-                <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Getting started</p>
-                <h2 class="settings-section-title">App Walkthrough</h2>
-                <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  Replay the intro tour if you want a refresher on how Dexii works.
-                </p>
-              </div>
-            </div>
-            <button (click)="replayWalkthrough()"
-                    [style.border]="'1px solid ' + theme.colors().primary"
-                    [style.color]="theme.colors().primary"
-                    class="settings-photo-btn settings-photo-btn--ghost"
-                    type="button">
-              Replay Walkthrough
-            </button>
-          </section>
-
           <div [style.border-top]="'1px solid ' + theme.colors().border" class="settings-footer">
             <p [style.color]="theme.colors().textSecondary">
               Saved for this username only, so each account can keep its own profile and journal vibe.
@@ -592,7 +570,6 @@ export class SettingsComponent {
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
   subscription = inject(SubscriptionService);
-  private walkthrough = inject(WalkthroughService);
   private friendsApi = inject(FriendsApiService);
   availableFriends = signal<FriendChoice[]>([]);
   selectedFriendIds = signal<string[]>(this.settings.getSelectedFriendIds());
@@ -762,7 +739,4 @@ export class SettingsComponent {
     }
   }
 
-  replayWalkthrough() {
-    this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
-  }
 }

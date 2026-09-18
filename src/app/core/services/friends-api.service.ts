@@ -259,7 +259,7 @@ export class FriendsApiService {
    * Returns null if the crush doesn't exist, isn't shared with the caller, or the
    * caller isn't friends with its owner.
    */
-  async getSharedCrush(crushId: string): Promise<{ crush: CrushProfile; ownerName: string | null } | null> {
+  async getSharedCrush(crushId: string): Promise<{ crush: CrushProfile; ownerId: string | null; ownerName: string | null } | null> {
     try {
       const result = await this.request<{ crush: BackendCrushProfile; owner: { id: string; username: string; firstName?: string; lastName?: string } | null }>(
         `/shared/${encodeURIComponent(crushId)}`,
@@ -270,7 +270,7 @@ export class FriendsApiService {
       const ownerName = result.owner
         ? ([result.owner.firstName, result.owner.lastName].filter(Boolean).join(' ') || result.owner.username || null)
         : null;
-      return { crush: this.mapCrush(result.crush), ownerName };
+      return { crush: this.mapCrush(result.crush), ownerId: result.owner?.id ? String(result.owner.id) : null, ownerName };
     } catch {
       return null;
     }

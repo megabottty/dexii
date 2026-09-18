@@ -48,6 +48,30 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             }
 
           </div>
+          @if (friendCrushOwnerId(); as ownerId) {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 class="read-only-chat-card">
+              <div>
+                <strong>Want to talk about {{ getCrushDisplayName(c) }}?</strong>
+                @if (existingOwnerChat(); as chat) {
+                  <p [style.color]="theme.colors().textSecondary">
+                    Existing chat: “{{ chat.latestMessage.content }}”
+                  </p>
+                } @else {
+                  <p [style.color]="theme.colors().textSecondary">
+                    Ask {{ friendCrushOwnerName() || 'your friend' }} a question or leave a comment.
+                  </p>
+                }
+              </div>
+              <a [routerLink]="['/chat']"
+                 [queryParams]="{ friendId: ownerId, friendName: friendCrushOwnerName() || 'Friend' }"
+                 [style.background-color]="theme.colors().primary"
+                 class="read-only-chat-button">
+                {{ existingOwnerChat() ? 'Open Existing Chat' : 'Chat About This Crush' }}
+              </a>
+            </div>
+          }
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                style="border-radius: 16px; padding: 24px; display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
@@ -108,6 +132,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
                 @if (showFullCrushDetails()) {
                   <div [style.border]="'1px solid ' + theme.colors().border"
+                       class="read-only-details-panel"
                        style="border-radius: 10px; padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
                     @if (c.customNotes) {
                       <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
@@ -1180,11 +1205,18 @@ export class ProfileDetailComponent implements OnDestroy {
 
   crushId = signal<string | null>(null);
   friendCrush = signal<CrushProfile | null>(null);
+  friendCrushOwnerId = signal<string | null>(null);
   friendCrushOwnerName = signal<string | null>(null);
   friendCrushLoading = signal(false);
   friendCrushNotFound = signal(false);
   /** Whether the "Show more details" section is expanded on the read-only friend view. */
   showFullCrushDetails = signal(false);
+
+  existingOwnerChat = computed(() => {
+    const ownerId = this.friendCrushOwnerId();
+    if (!ownerId) return null;
+    return this.messaging.conversationSummaries().find((summary) => summary.friend.id === ownerId) || null;
+  });
 
   toggleFullCrushDetails(): void {
     this.showFullCrushDetails.update((v) => !v);
@@ -1482,6 +1514,7 @@ export class ProfileDetailComponent implements OnDestroy {
     this.loadFriends();
     this.loadVibePromptFrequency();
     this.refreshVibePromptVisibility();
+    void this.messaging.loadConversationSummaries();
     this.loadFriendCrushIfNeeded();
   }
 
@@ -1500,6 +1533,7 @@ export class ProfileDetailComponent implements OnDestroy {
       const result = await this.friendsApi.getSharedCrush(id);
       if (result) {
         this.friendCrush.set(result.crush);
+        this.friendCrushOwnerId.set(result.ownerId);
         this.friendCrushOwnerName.set(result.ownerName);
       } else {
         this.friendCrushNotFound.set(true);

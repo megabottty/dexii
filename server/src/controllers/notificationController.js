@@ -109,6 +109,34 @@ exports.markRead = async (req, res) => {
   }
 };
 
+exports.markUnread = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid notification id.' });
+    }
+
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, recipient: req.user.id },
+      { $set: { read: false } },
+      { new: true }
+    )
+      .populate('actor', ACTOR_FIELDS)
+      .lean();
+
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found.' });
+    }
+
+    res.json(shapeNotification(notification));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 exports.markAllRead = async (req, res) => {
   try {
     if (!requireDb(res)) return;

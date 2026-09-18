@@ -57,6 +57,21 @@ import { SupportMenuService } from '../../services/support-menu.service';
         <span aria-hidden="true">💬</span>
         <span class="navbar-quick-link-label">Chat</span>
         </a>
+        @if (notifications.unreadCount() > 0) {
+          <a routerLink="/feed"
+             class="navbar-quick-link navbar-quick-link--tea"
+             [style.color]="theme.colors().text"
+             [style.border]="'1px solid ' + theme.colors().accent"
+             aria-label="Open new Tea updates">
+            <span aria-hidden="true">🍵</span>
+            <span class="navbar-quick-link-label">Tea</span>
+            <span [style.background-color]="theme.colors().accent"
+                  class="navbar-quick-link-badge"
+                  aria-label="Unread Tea updates">
+              {{ notifications.unreadCount() }}
+            </span>
+          </a>
+        }
 
         <button type="button"
               class="navbar-help-button"

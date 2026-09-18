@@ -58,6 +58,13 @@
   margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
 }
 
+.user-profile-component__s13--detail {
+  margin-top: 6px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: none;
+}
+
 .user-profile-component__s14 {
   text-decoration: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
 }
@@ -87,7 +94,27 @@
 }
 
 .user-profile-component__s21 {
+  flex: 0 0 auto;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 999px;
   font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+  text-align: center;
+}
+
+.user-profile-component__s25 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.user-profile-component__s26 {
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 9px;
+  letter-spacing: 0.3px;
 }
 
 .user-profile-component__s22 {
@@ -168,6 +195,15 @@
 
   .user-profile-component__s9 {
     font-size: 16px;
+  }
+
+  .user-profile-component__s16 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-profile-component__s21 {
+    align-self: flex-start;
   }
 
   .user-profile-component__s10 {

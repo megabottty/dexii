@@ -73,7 +73,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
              [style.border]="'1px solid ' + theme.colors().border"
              class="user-profile-component__s11">
           <div class="user-profile-component__s12">
-            <h2 class="section-title">{{ isSelf() ? 'Your Boys' : profileDisplayName() + "'s Boys" }}</h2>
+            <div>
+              <h2 class="section-title">{{ isSelf() ? 'Your Crushes' : profileDisplayName() + "'s Crushes" }}</h2>
+              @if (!isSelf()) {
+                <p [style.color]="theme.colors().textSecondary"
+                   class="user-profile-component__s13 user-profile-component__s13--detail">
+                  Only crushes they have shared with you are shown here.
+                </p>
+              }
+            </div>
             <p [style.color]="theme.colors().textSecondary"
                class="user-profile-component__s13">
               {{ crushes().length }} crushes
@@ -109,11 +117,22 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <p class="user-profile-component__s19">{{ crush.nickname }}</p>
                       <p [style.color]="theme.colors().textSecondary"
                          class="user-profile-component__s20">{{ crush.fullName || 'No first name set' }}</p>
+                      @if (getRelationshipLabels(crush).length > 0) {
+                        <div class="user-profile-component__s25">
+                          @for (label of getRelationshipLabels(crush); track label) {
+                            <span [style.border-color]="theme.colors().primary"
+                                  [style.color]="theme.colors().primary"
+                                  class="user-profile-component__s26">
+                              {{ label }}
+                            </span>
+                          }
+                        </div>
+                      }
                     </div>
                   </div>
-                  <span [style.color]="theme.colors().primary"
-                        class="user-profile-component__s21">
-                    {{ crush.status }}
+                  <span [style.background-color]="theme.colors().primary"
+                      class="user-profile-component__s21">
+                  Dating status: {{ crush.status }}
                   </span>
                 </a>
               }
@@ -407,6 +426,14 @@ export class UserProfileComponent {
     let friendId = this.routeUserId();
     if (this.dataService.isMe(friendId)) friendId = this.dataService.getUserId();
     this.dataService.toggleCrushVisibility(crushId, friendId);
+  }
+
+  getRelationshipLabels(crush: CrushProfile): string[] {
+    return (crush.relationshipLabels || [])
+      .map((label) => label.trim())
+      .filter((label) => label.length > 0)
+      .map((label) => label.replace(/^Other:\s*/i, '').trim())
+      .filter((label, index, labels) => label.length > 0 && labels.indexOf(label) === index);
   }
 
   private async loadFriendContext(friendId: string): Promise<void> {

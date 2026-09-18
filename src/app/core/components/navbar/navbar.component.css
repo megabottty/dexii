@@ -220,6 +220,28 @@
   white-space: nowrap;
 }
 
+.navbar-quick-link--tea {
+  animation: navbar-tea-attention 1.8s ease-in-out infinite;
+}
+
+.navbar-quick-link-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+}
+
+@keyframes navbar-tea-attention {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
 .navbar-profile-avatar-img {
   width: 100%;
   height: 100%;

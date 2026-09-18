@@ -17,4 +17,7 @@ router.put('/read-all', notificationController.markAllRead);
 // @route   PUT /api/notifications/:id/read
 router.put('/:id/read', notificationController.markRead);
 
+// @route   PUT /api/notifications/:id/unread
+router.put('/:id/unread', notificationController.markUnread);
+
 module.exports = router;

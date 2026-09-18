@@ -115,6 +115,20 @@ export class NotificationsService {
     }
   }
 
+  async markUnread(id: string): Promise<void> {
+    if (!id || !this.canRequest()) return;
+
+    const wasRead = this._notifications().some((notification) => notification.id === id && notification.read);
+    await this.request<AppNotification>(`/${encodeURIComponent(id)}/unread`, { method: 'PUT' });
+    this._notifications.update((notifications) => notifications.map((notification) =>
+      notification.id === id ? { ...notification, read: false } : notification
+    ));
+    if (wasRead) {
+      this._unreadCount.update((count) => count + 1);
+    }
+    await this.loadUnreadCount();
+  }
+
   async markAllRead(): Promise<void> {
     if (!this.canRequest()) return;
 

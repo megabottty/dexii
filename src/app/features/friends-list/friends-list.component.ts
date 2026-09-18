@@ -354,8 +354,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
 
                 <div class="friends-list-component__s59">
-                  <a [routerLink]="['/user', friend.id]" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                     class="friends-list-action-link">Profile</a>
+                  <a [routerLink]="['/user', friend.id]"
+                     [attr.aria-label]="'View ' + friend.username + ' profile and dating overview'"
+                     [style.color]="theme.colors().text"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     class="friends-list-action-link">Dating Overview</a>
                   <button (click)="openFriendProfileFromFriend(friend)"
                           [style.color]="theme.colors().primary"
                           [style.border]="'1px solid ' + theme.colors().primary"

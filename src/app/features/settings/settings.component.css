@@ -23,6 +23,21 @@
   margin-bottom: 18px;
 }
 
+.settings-header-profile {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+  margin-left: auto;
+}
+
+.settings-header > .settings-reset-btn,
+.settings-header > .settings-photo-btn {
+  flex: 0 0 220px;
+  width: 220px;
+}
+
 .settings-eyebrow {
   margin: 0 0 4px 0;
   font-size: 11px;
@@ -53,16 +68,6 @@
   cursor: pointer;
 }
 
-.settings-profile-banner {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  padding: 18px;
-  border-radius: 18px;
-  margin-bottom: 18px;
-}
-
 .settings-avatar {
   width: 96px;
   height: 96px;
@@ -74,6 +79,9 @@
 .settings-photo-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
   flex-wrap: wrap;
 }
 
@@ -85,10 +93,17 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .settings-photo-btn--ghost {
   background: transparent;
+}
+
+.settings-photo-actions .settings-reset-btn {
+  flex: 0 0 220px;
+  width: 220px;
 }
 
 .settings-grid {
@@ -510,7 +525,6 @@
     font-size: 28px;
   }
 
-  .settings-profile-banner,
   .settings-photo-actions {
     align-items: stretch;
     flex-direction: column;
@@ -520,6 +534,13 @@
   .settings-reset-btn {
     min-height: 44px;
     width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .settings-photo-actions .settings-reset-btn {
+    width: 100%;
+    flex: 1 1 auto;
   }
 
   .settings-footer-actions {
@@ -566,11 +587,6 @@
     font-size: 22px;
   }
 
-  .settings-profile-banner {
-    gap: 14px;
-    padding: 14px;
-  }
-
   .settings-avatar {
     width: 80px;
     height: 80px;
@@ -593,6 +609,12 @@
   .settings-plan-header,
   .settings-modal-header {
     gap: 12px;
+  }
+
+  .settings-header-profile {
+    align-items: flex-start;
+    margin-left: 0;
+    width: 100%;
   }
 
   .settings-plan-option,
@@ -625,6 +647,7 @@
   border-radius: 999px;
   color: #ffffff;
   cursor: pointer;
+  box-sizing: border-box;
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.02em;

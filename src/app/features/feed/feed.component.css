@@ -108,6 +108,35 @@
   font-family: inherit;
 }
 
+.tea-update-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.tea-update-row .tea-update-item {
+  flex: 1;
+}
+
+.tea-update-mark-unread {
+  flex: 0 0 auto;
+  margin-right: 20px;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.tea-update-mark-unread:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .tea-update-item:last-child {
   border-bottom: none !important;
 }
