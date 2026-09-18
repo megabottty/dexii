@@ -4,7 +4,6 @@ import { ThemeService } from './theme.service';
 import {
   DEFAULT_USER_SETTINGS,
   normalizeUserSettings,
-  readLegacyProfileSnapshot,
   readPendingSettings,
   readStoredSettings,
   type UserSettings,
@@ -29,7 +28,13 @@ export class UserSettingsService {
   constructor() {
     effect(() => {
       const username = this.security.currentUser() || localStorage.getItem('dexii_api_username') || '';
-      if (!username || username === this.activeUser()) {
+      if (!username) {
+        this.activeUser.set('');
+        this._settings.set(DEFAULT_USER_SETTINGS);
+        this.themeService.setTheme(DEFAULT_USER_SETTINGS.themeMode || 'pearl', { sync: false });
+        return;
+      }
+      if (username === this.activeUser()) {
         return;
       }
       this.loadUserSettings(username);
@@ -46,14 +51,10 @@ export class UserSettingsService {
 
   private buildSettingsFromStorage(username: string): UserSettings {
     const parsed = readStoredSettings(username);
-    const legacy = readLegacyProfileSnapshot();
     return this.mergeWithDefaults({
       ...parsed,
       username,
-      email: parsed?.email || legacy.email,
-      bio: parsed?.bio || legacy.bio,
-      avatarUrl: parsed?.avatarUrl || legacy.avatarUrl,
-      displayName: parsed?.displayName || legacy.displayName || username
+      displayName: parsed?.displayName || username
     });
   }
 
