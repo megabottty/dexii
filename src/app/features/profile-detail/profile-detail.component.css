@@ -451,6 +451,22 @@
   cursor: grabbing;
 }
 
+.relationship-label-order {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+.relationship-label-order__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .edit-options-grid {
   display: flex;
   flex-wrap: wrap;

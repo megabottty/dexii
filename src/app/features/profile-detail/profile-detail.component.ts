@@ -668,19 +668,37 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div class="edit-field edit-field--full">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Additional relationship labels</label>
                     <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">The main status is above. Choose any labels that add context.</span>
+                    @if (editForm.relationshipLabels?.length) {
+                      <div class="relationship-label-order">
+                        <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">
+                          Drag selected labels to customize their order:
+                        </span>
+                        <div class="relationship-label-order__list">
+                          @for (label of editForm.relationshipLabels; track label) {
+                            <button type="button"
+                                    draggable="true"
+                                    (click)="toggleRelationshipLabel(label)"
+                                    (dragstart)="startRelationshipLabelDrag(label, $event)"
+                                    (dragover)="$event.preventDefault()"
+                                    (drop)="dropRelationshipLabel(label, $event)"
+                                    (dragend)="clearRelationshipLabelDrag()"
+                                    [style.background-color]="theme.colors().primary"
+                                    [style.color]="'white'"
+                                    [style.border]="'1px solid ' + theme.colors().primary"
+                                    class="option-btn relationship-label-chip">
+                              {{ label }}
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
                     <div class="edit-chip-grid">
                       @for (s of getRelationshipStatusOptions(); track s) {
                         <button (click)="toggleRelationshipLabel(s)"
-                                type="button"
-                                draggable="true"
-                                (dragstart)="startRelationshipLabelDrag(s, $event)"
-                                (dragover)="$event.preventDefault()"
-                                (drop)="dropRelationshipLabel(s, $event)"
                                 [style.background-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : 'transparent'"
                                 [style.color]="isRelationshipLabelSelected(s) ? 'white' : theme.colors().text"
                                 [style.border-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : theme.colors().border"
-                                (dragend)="clearRelationshipLabelDrag()"
-                                class="option-btn relationship-label-chip">{{ s }}</button>
+                                class="option-btn">{{ s }}</button>
                       }
                     </div>
                     @if (isRelationshipLabelSelected('Other')) {
