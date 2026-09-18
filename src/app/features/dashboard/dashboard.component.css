@@ -256,11 +256,15 @@
 }
 
 .dashboard-crush-loading__spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
   border-width: 3px;
   border-style: solid;
   border-radius: 50%;
+  font-size: 12px;
   animation: dashboard-crush-loading-spin 0.8s linear infinite;
 }
 

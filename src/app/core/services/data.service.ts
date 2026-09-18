@@ -66,7 +66,9 @@ export class DataService {
 
   private _allCrushes = signal<CrushProfile[]>([]);
   private _isLoading = signal(false);
+  private _hasLoaded = signal(false);
   public isLoading = this._isLoading.asReadonly();
+  public hasLoaded = this._hasLoaded.asReadonly();
   private _entries = signal<Entry[]>([]);
   private _sharedEntries = signal<SharedEntry[]>([]);
   private _activeOwner = signal<string>('');
@@ -259,6 +261,7 @@ export class DataService {
     if (owner === this._activeOwner()) return;
 
     this._isLoading.set(true);
+    this._hasLoaded.set(false);
     this._activeOwner.set(owner);
     this._allCrushes.set([]);
     this._sharedEntries.set([]);
@@ -270,6 +273,7 @@ export class DataService {
       void this.theme.hydrateFromBackend(owner);
     } finally {
       this._isLoading.set(false);
+      this._hasLoaded.set(true);
     }
   }
 

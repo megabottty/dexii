@@ -575,14 +575,16 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           message="Use New Crush to add a crush. Keep notes private/public, then control who sees what from Friends > Sharing Controls.">
         </app-page-hint>
 
-        @if (dataService.isLoading()) {
+        @if (!dataService.hasLoaded()) {
           <div class="dashboard-crush-loading"
                [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                role="status"
                aria-live="polite">
-            <span class="dashboard-crush-loading__spinner" [style.border-color]="theme.colors().border"
-                  [style.border-top-color]="theme.colors().primary"></span>
+            <span class="dashboard-crush-loading__spinner"
+                  [style.border-color]="theme.colors().border"
+                  [style.border-top-color]="theme.colors().primary"
+                  aria-hidden="true">💖</span>
             <span [style.color]="theme.colors().textSecondary">Loading your crushes...</span>
           </div>
         }
