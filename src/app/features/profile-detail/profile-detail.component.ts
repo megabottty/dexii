@@ -320,7 +320,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="openShareSelector(c.id)" class="action-btn-styled primary">🔗 Share</button>
-                <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary action-btn-no-wrap">📣 Share Dating Status</button>
+                <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary share-dating-status-button">📣 Share Dating Status</button>
                 <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
                   {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
                 </button>
