@@ -449,7 +449,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openWalkthrough() {
-    this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR, true);
+    this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
   }
 
   toggleRouteHint(): void {
