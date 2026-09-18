@@ -27,6 +27,9 @@ export class WalkthroughService {
   public isLastStep = computed(() => this._index() >= this._steps().length - 1);
 
   private storageKey(key: string): string {
+    if (key === 'first_login') {
+      return `${this.storagePrefix}${key}`;
+    }
     return `${this.storagePrefix}${this.storageOwner()}_${key}`;
   }
 

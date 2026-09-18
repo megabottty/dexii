@@ -763,7 +763,6 @@ export class SettingsComponent {
   }
 
   replayWalkthrough() {
-    this.walkthrough.reset(FIRST_LOGIN_TOUR_KEY);
     this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
   }
 }
