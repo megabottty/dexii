@@ -367,6 +367,8 @@ export class FeedComponent implements OnInit {
         return `${actorName} sent you a friend request`;
       case 'friend_request_accepted':
         return `${actorName} accepted your friend request`;
+      case 'journal_prompt':
+        return 'Your journal prompt is ready in the Vault';
       default:
         return `${actorName} sent you an update`;
     }
@@ -381,6 +383,9 @@ export class FeedComponent implements OnInit {
   private notificationLink(notification: AppNotification): any[] {
     if (notification.type === 'crush_shared' && typeof notification.payload?.crushId === 'string') {
       return ['/profile', notification.payload.crushId];
+    }
+    if (notification.type === 'journal_prompt') {
+      return ['/vault'];
     }
     return ['/friends'];
   }

@@ -100,7 +100,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   Main status: {{ c.status }}
                 </span>
                 @if (getRelationshipLabels(c).length) {
-                  <span class="profile-relationship-label-list" aria-label="Additional relationship labels">
+                  <span class="profile-relationship-label-list read-only-relationship-labels" aria-label="Additional relationship labels">
                     @for (label of getRelationshipLabels(c); track label) {
                       <span [style.color]="theme.colors().textSecondary"
                             [style.border]="'1px solid ' + theme.colors().border"

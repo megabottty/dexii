@@ -36,6 +36,9 @@ router.get('/invite/:token', friendController.getInvite);
 // @route   GET /api/friends
 router.get('/', auth, friendController.getFriends);
 
+// @route   GET /api/friends/profile/:friendId
+router.get('/profile/:friendId', auth, friendController.getFriendProfile);
+
 // @route   DELETE /api/friends/:friendId
 router.delete('/:friendId', auth, friendController.removeFriend);
 

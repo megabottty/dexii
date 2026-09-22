@@ -7,6 +7,7 @@ router.use(auth);
 
 // @route   GET /api/notifications/unread-count
 router.get('/unread-count', notificationController.getUnreadCount);
+router.post('/journal-prompt', notificationController.createJournalPrompt);
 
 // @route   GET /api/notifications
 router.get('/', notificationController.listNotifications);

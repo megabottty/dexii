@@ -91,6 +91,17 @@
   white-space: nowrap;
 }
 
+.read-only-relationship-labels {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 6px;
+  position: relative;
+  left: -116px;
+  width: calc(100% + 116px);
+  margin-top: 4px;
+}
+
 .read-only-details-panel {
   position: relative;
   left: -116px;
@@ -871,12 +882,13 @@ select.edit-input-styled {
 /* Vibe Check Banner */
 .vibe-banner {
   border-radius: 14px;
-  padding: 16px 20px;
+  padding: 16px 52px 16px 20px;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  position: relative;
   animation: slideDown 0.3s ease-out;
 }
 
@@ -937,6 +949,9 @@ select.edit-input-styled {
 }
 
 .vibe-banner-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 10px;
   background: none;
   border: none;
   font-size: 16px;
@@ -1080,6 +1095,11 @@ select.edit-input-styled {
 }
 
 @media (max-width: 480px) {
+  .read-only-relationship-labels {
+    left: 0;
+    width: 100%;
+  }
+
   .read-only-details-panel {
     left: 0;
     width: 100%;

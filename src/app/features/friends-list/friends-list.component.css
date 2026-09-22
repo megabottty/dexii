@@ -283,7 +283,8 @@
 }
 
 .friends-list-component__s60 {
-  background: none; border: 1px solid #ef4444; padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+  background: transparent;
+  border: 1px solid #ef4444;
 }
 
 .friends-list-component__s61 {
@@ -328,21 +329,29 @@
 
 .friends-list-action-link {
   text-decoration: none;
-  padding: 8px 16px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  cursor: pointer;
 }
 
 .friends-list-action-btn {
   background: none;
-  padding: 8px 16px;
+}
+
+.friends-list-action-link,
+.friends-list-action-btn,
+.friends-list-component__s60 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 132px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 8px;
   font-size: 10px;
   font-weight: 700;
+  text-align: center;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  line-height: 1.2;
   cursor: pointer;
 }
 
@@ -473,8 +482,10 @@
   .friends-list-component__s40,
   .friends-list-component__s35,
   .friends-list-action-link,
-  .friends-list-action-btn {
+  .friends-list-action-btn,
+  .friends-list-component__s60 {
     min-height: 44px;
+    width: 100%;
   }
 
   .friends-list-component__s10 {

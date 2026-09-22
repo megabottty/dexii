@@ -30,8 +30,90 @@
   margin: 6px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
 }
 
-.friend-profile-component__s9 {
-  text-decoration: none; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+.friend-profile-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.friend-profile-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 132px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.friend-profile-action--primary {
+  color: white;
+}
+
+.friend-profile-action--secondary {
+  background: transparent;
+}
+
+.friend-profile-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.friend-profile-edit-link {
+  background: transparent;
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.friend-profile-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.friend-profile-edit-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.friend-profile-edit-grid input,
+.friend-profile-edit-grid textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.friend-profile-edit-field--full {
+  grid-column: 1 / -1;
 }
 
 .friend-profile-component__s10 {
@@ -140,6 +222,14 @@
     align-items: flex-start;
   }
 
+  .friend-profile-actions {
+    width: 100%;
+  }
+
+  .friend-profile-action {
+    flex: 1 1 132px;
+  }
+
   .friend-profile-component__s7 {
     font-size: clamp(28px, 7vw, 32px);
     letter-spacing: 1px;
@@ -180,6 +270,22 @@
   .friend-profile-component__s5 {
     flex-direction: column;
     text-align: center;
+  }
+
+  .friend-profile-actions {
+    justify-content: center;
+  }
+
+  .friend-profile-action {
+    flex-basis: 100%;
+  }
+
+  .friend-profile-edit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .friend-profile-edit-field--full {
+    grid-column: auto;
   }
 
   .friend-profile-component__s6 {

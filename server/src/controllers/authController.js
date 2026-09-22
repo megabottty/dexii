@@ -816,6 +816,40 @@ exports.updateThemePreference = async (req, res) => {
       }
     };
 
+    exports.updateProfileSettings = async (req, res) => {
+      try {
+        const allowedKeys = [
+          'displayName', 'bio', 'avatarUrl', 'relationshipStatus', 'lookingFor',
+          'interestedIn', 'loveLanguage', 'idealDate', 'profileVisibility', 'selectedFriendIds'
+          , 'journalPromptFrequency'
+        ];
+        const profileSettings = {};
+        for (const key of allowedKeys) {
+          if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+            profileSettings[key] = req.body[key];
+          }
+        }
+
+        if (!['Public', 'Friends only', 'Selected friends', 'Private'].includes(profileSettings.profileVisibility)) {
+          return res.status(400).json({ message: 'Invalid profile visibility.' });
+        }
+        if (profileSettings.selectedFriendIds && !Array.isArray(profileSettings.selectedFriendIds)) {
+          return res.status(400).json({ message: 'Selected friends must be an array.' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+          req.user.id,
+          { $set: { profileSettings } },
+          { new: true, runValidators: false }
+        ).select('profileSettings');
+        if (!user) return res.status(404).json({ message: 'User not found.' });
+        res.json(user.profileSettings || {});
+      } catch (err) {
+        console.error('Profile settings update failed:', err.message);
+        res.status(500).json({ message: 'Unable to save profile settings.' });
+      }
+    };
+
     const user = await User.findByIdAndUpdate(req.user.id, update, { new: true }).select('themePreference');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });

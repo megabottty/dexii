@@ -26,6 +26,24 @@ export interface FriendSummary {
   friendCategories?: string[];
 }
 
+export interface FriendProfileDetails {
+  id: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  profileVisibility: 'Public' | 'Friends only' | 'Selected friends' | 'Private';
+  profile: {
+    displayName?: string;
+    bio?: string;
+    relationshipStatus?: string;
+    lookingFor?: string;
+    interestedIn?: string;
+    loveLanguage?: string;
+    idealDate?: string;
+  } | null;
+}
+
 interface BackendCrushProfile {
   _id: string;
   userId: string;
@@ -204,6 +222,10 @@ export class FriendsApiService {
 
   listFriends(): Promise<FriendSummary[]> {
     return this.request<FriendSummary[]>('');
+  }
+
+  getFriendProfile(friendId: string): Promise<FriendProfileDetails> {
+    return this.request<FriendProfileDetails>(`/profile/${encodeURIComponent(friendId)}`);
   }
 
   search(query: string): Promise<FriendSearchResult[]> {

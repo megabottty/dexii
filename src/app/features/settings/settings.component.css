@@ -32,10 +32,21 @@
   margin-left: auto;
 }
 
-.settings-header > .settings-reset-btn,
-.settings-header > .settings-photo-btn {
-  flex: 0 0 220px;
+.settings-action-btn {
+  box-sizing: border-box;
   width: 220px;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+
+.settings-header > .settings-action-btn {
+  flex: 0 0 220px;
 }
 
 .settings-eyebrow {
@@ -60,12 +71,6 @@
 
 .settings-reset-btn {
   background: transparent;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  cursor: pointer;
 }
 
 .settings-avatar {
@@ -87,14 +92,12 @@
 
 .settings-photo-btn {
   border: none;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+}
+
+.settings-photo-btn,
+.settings-reset-btn {
   cursor: pointer;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .settings-photo-btn--ghost {
@@ -539,6 +542,11 @@
   }
 
   .settings-photo-actions .settings-reset-btn {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .settings-header > .settings-action-btn {
     width: 100%;
     flex: 1 1 auto;
   }

@@ -201,6 +201,53 @@
   color: white; border: none; padding: 12px 30px; font-size: var(--vault-fs-small); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
 }
 
+.journal-prompt-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.journal-prompt-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.journal-prompt-text {
+  margin: 6px 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.journal-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.journal-prompt-button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.journal-prompt-button--ghost {
+  background: transparent;
+}
+
 .vault-center-component__s18 {
   display: flex; flex-direction: column; gap: 24px;
 }
@@ -535,6 +582,19 @@
 }
 
 @media (max-width: 760px) {
+  .journal-prompt-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .journal-prompt-actions {
+    justify-content: stretch;
+  }
+
+  .journal-prompt-button {
+    flex: 1 1 140px;
+  }
+
   .journal-pages {
     grid-template-columns: 1fr;
     gap: 16px;

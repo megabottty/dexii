@@ -54,13 +54,13 @@ interface FriendChoice {
                 <input #photoInput type="file" accept="image/*" (change)="uploadPhoto($event)" hidden>
                 <button (click)="photoInput.click()"
                         [style.background-color]="theme.colors().primary"
-                        class="settings-photo-btn">
+                        class="settings-photo-btn settings-action-btn">
                   Upload / Change Photo
                 </button>
                 <button (click)="clearPhoto()"
                         [style.border]="'1px solid ' + theme.colors().border"
                         [style.color]="theme.colors().textSecondary"
-                        class="settings-reset-btn">
+                        class="settings-reset-btn settings-action-btn">
                   Remove Photo
                 </button>
               </div>
@@ -68,12 +68,12 @@ interface FriendChoice {
             <button (click)="settings.resetSettings()"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().textSecondary"
-                    class="settings-reset-btn">
+                    class="settings-reset-btn settings-action-btn">
               Reset Defaults
             </button>
             <button (click)="saveChanges()"
                     [style.background-color]="theme.colors().primary"
-                    class="settings-photo-btn"
+                    class="settings-photo-btn settings-action-btn"
                     type="button">
               {{ saveMessage() || 'Save Changes' }}
             </button>
@@ -219,6 +219,20 @@ interface FriendChoice {
                      [style.color]="theme.colors().text">
             </label>
 
+            <label class="settings-field">
+              Journal Prompt Frequency
+              <select [value]="settings.settings().journalPromptFrequency"
+                      (change)="setJournalPromptFrequency($event)"
+                      [style.background-color]="theme.colors().bg"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.color]="theme.colors().text">
+                <option>Off</option>
+                <option>Daily</option>
+                <option>Twice daily</option>
+                <option>Every 4 hours</option>
+              </select>
+            </label>
+
             <label class="settings-field settings-field--full">
               Journal Prompt
               <textarea [value]="settings.settings().journalPrompt"
@@ -236,7 +250,8 @@ interface FriendChoice {
                       [style.background-color]="theme.colors().bg"
                       [style.border]="'1px solid ' + theme.colors().border"
                       [style.color]="theme.colors().text">
-                <option>Friends only</option>
+                      <option>Public</option>
+                      <option>Friends only</option>
                 <option>Selected friends</option>
                 <option>Private</option>
               </select>
@@ -669,6 +684,10 @@ export class SettingsComponent {
     this.update('loveLanguage', this.inputValue(event) as UserSettings['loveLanguage']);
   }
 
+  setJournalPromptFrequency(event: Event) {
+    this.update('journalPromptFrequency', this.inputValue(event) as UserSettings['journalPromptFrequency']);
+  }
+
   update<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
     this.settings.updateSettings({ [key]: value } as Partial<UserSettings>);
   }
@@ -725,10 +744,16 @@ export class SettingsComponent {
     this.closeFriendPicker();
   }
 
-  saveChanges() {
+  async saveChanges() {
     this.settings.updateSettings(this.settings.settings());
-    this.saveMessage.set('Saved');
-    this.modal.show('Settings saved.');
+    try {
+      await this.settings.saveToBackend();
+      this.saveMessage.set('Saved');
+      this.modal.show('Settings saved.');
+    } catch (error) {
+      this.saveMessage.set('');
+      this.modal.show(error instanceof Error ? error.message : 'Settings saved locally, but could not sync to your profile.');
+    }
   }
 
   async choosePlan(tier: SubscriptionTier): Promise<void> {

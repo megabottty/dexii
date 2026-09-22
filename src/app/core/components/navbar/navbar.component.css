@@ -224,7 +224,17 @@
   animation: navbar-tea-attention 1.8s ease-in-out infinite;
 }
 
+.navbar-tea-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .navbar-quick-link-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;

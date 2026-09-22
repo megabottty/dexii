@@ -137,6 +137,12 @@ export class NotificationsService {
     this._unreadCount.set(0);
   }
 
+  async createJournalPrompt(): Promise<void> {
+    if (!this.canRequest()) return;
+    await this.request<AppNotification>('/journal-prompt', { method: 'POST' });
+    await Promise.all([this.loadUnreadCount(), this.loadNotifications()]);
+  }
+
   private canRequest(): boolean {
     return Boolean(this.security.currentUserId() && this.security.isLoggedIn() && !this.security.isLocked());
   }
@@ -148,11 +154,14 @@ export class NotificationsService {
     };
   }
 
-  private async request<T>(path: string, init: { method?: 'GET' | 'PUT'; body?: unknown } = {}): Promise<T> {
+  private async request<T>(path: string, init: { method?: 'GET' | 'PUT' | 'POST'; body?: unknown } = {}): Promise<T> {
     const method = init.method || 'GET';
     const url = `${this.apiBase}${path}`;
 
     if (this.http) {
+      if (method === 'POST') {
+        return firstValueFrom(this.http.post<T>(url, init.body ?? {}, { headers: this.buildHeaders() }));
+      }
       if (method === 'PUT') {
         return firstValueFrom(this.http.put<T>(url, init.body ?? {}, { headers: this.buildHeaders() }));
       }

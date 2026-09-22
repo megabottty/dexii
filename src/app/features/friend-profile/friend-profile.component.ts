@@ -25,6 +25,8 @@ interface FriendView {
   } | null;
 }
 
+type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
+
 @Component({
   selector: 'app-friend-profile',
   standalone: true,
@@ -68,18 +70,27 @@ interface FriendView {
                    class="friend-profile-component__s8">
                   {{ f.subscriptionTier }} • {{ f.friendCategories[0] || 'Uncategorized' }}
                 </p>
-                <a [routerLink]="['/user', f.id]"
-                   [style.color]="theme.colors().primary"
-                   class="friend-profile-component__s9">
-                  Open Profile
-                </a>
-                <a [routerLink]="['/chat']"
-                   [queryParams]="{ friendId: f.id, friendName: f.username }"
-                   [style.color]="theme.colors().primary"
-                   class="friend-profile-component__s9"
-                   style="margin-left: 12px;">
-                  Open Chat
-                </a>
+                <div class="friend-profile-actions">
+                  <a [routerLink]="['/user', f.id]"
+                     [style.background-color]="theme.colors().primary"
+                     [style.border-color]="theme.colors().primary"
+                     class="friend-profile-action friend-profile-action--primary">
+                    Open Profile
+                  </a>
+                  <a [routerLink]="['/chat']"
+                     [queryParams]="{ friendId: f.id, friendName: f.username }"
+                     [style.color]="theme.colors().primary"
+                     [style.border-color]="theme.colors().primary"
+                     class="friend-profile-action friend-profile-action--secondary">
+                    Open Chat
+                  </a>
+                  <button (click)="startEditingFriendshipProfile()"
+                          [style.color]="theme.colors().primary"
+                          [style.border-color]="theme.colors().primary"
+                          class="friend-profile-action friend-profile-action--secondary">
+                    Edit
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -142,11 +153,50 @@ interface FriendView {
           <div [style.border]="'1px solid ' + theme.colors().border"
                [style.background-color]="theme.colors().bgSecondary"
                class="friend-profile-component__s15">
-            <h3 class="friend-profile-component__s10">
-              Friendship Profile
-            </h3>
+            <div class="friend-profile-section-heading">
+              <h3 class="friend-profile-component__s10">Friendship Profile</h3>
+              @if (!editingFriendshipProfile()) {
+                <button (click)="startEditingFriendshipProfile()"
+                        [style.color]="theme.colors().primary"
+                        [style.border-color]="theme.colors().primary"
+                        class="friend-profile-edit-link">
+                  Edit
+                </button>
+              }
+            </div>
 
-            @if (friend(); as f) {
+            @if (editingFriendshipProfile()) {
+              <div class="friend-profile-edit-grid">
+                <label>Relationship Name
+                  <input [(ngModel)]="friendshipDraft.relationshipName">
+                </label>
+                <label>Relationship Type
+                  <input [(ngModel)]="friendshipDraft.relationshipType">
+                </label>
+                <label>How You Met
+                  <input [(ngModel)]="friendshipDraft.howMet">
+                </label>
+                <label>Trust Level
+                  <input [(ngModel)]="friendshipDraft.trustLevel">
+                </label>
+                <label class="friend-profile-edit-field--full">Notes
+                  <textarea [(ngModel)]="friendshipDraft.notes" rows="3"></textarea>
+                </label>
+              </div>
+              <div class="friend-profile-actions">
+                <button (click)="saveFriendshipProfile()"
+                        [style.background-color]="theme.colors().primary"
+                        class="friend-profile-action friend-profile-action--primary">
+                  Save Changes
+                </button>
+                <button (click)="editingFriendshipProfile.set(false)"
+                        [style.color]="theme.colors().primary"
+                        [style.border-color]="theme.colors().primary"
+                        class="friend-profile-action friend-profile-action--secondary">
+                  Cancel
+                </button>
+              </div>
+            } @else if (friend(); as f) {
               @if (f.friendshipProfile) {
                 <div class="friend-profile-friendship-grid">
                   <div class="friend-profile-friendship-row">
@@ -197,9 +247,14 @@ export class FriendProfileComponent {
   private friendId = signal(this.route.snapshot.paramMap.get('id') || '');
 
   friend = signal<FriendView | null>(null);
+  editingFriendshipProfile = signal(false);
+  friendshipDraft: NonNullable<FriendView['friendshipProfile']> = {};
   draftNote = '';
 
-  notes = computed(() => this.notesService.getNotesForFriend(this.friendId()));
+  notes = computed(() => {
+    const friend = this.friend();
+    return this.notesService.getNotesForFriend(friend?.id || this.friendId());
+  });
 
   constructor() {
     void this.loadFriend();
@@ -237,6 +292,44 @@ export class FriendProfileComponent {
     } catch {
       return null;
     }
+  }
+
+  startEditingFriendshipProfile() {
+    const profile = this.friend()?.friendshipProfile;
+    this.friendshipDraft = { ...(profile || {}) };
+    this.editingFriendshipProfile.set(true);
+  }
+
+  saveFriendshipProfile() {
+    const friend = this.friend();
+    if (!friend) return;
+
+    const profile = {
+      relationshipName: this.friendshipDraft.relationshipName?.trim() || '',
+      relationshipType: this.friendshipDraft.relationshipType?.trim() || '',
+      howMet: this.friendshipDraft.howMet?.trim() || '',
+      trustLevel: this.friendshipDraft.trustLevel?.trim() || '',
+      notes: this.friendshipDraft.notes?.trim() || ''
+    };
+    const ownerId = this.security.currentUserId() || 'signed_out';
+    const storageKey = `dexii_friendship_profiles_${ownerId}`;
+    const raw = localStorage.getItem(storageKey);
+    let profiles: Record<string, FriendshipProfile> = {};
+    if (raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          profiles = parsed as Record<string, FriendshipProfile>;
+        }
+      } catch {
+        profiles = {};
+      }
+    }
+    profiles[friend.id] = profile;
+    localStorage.setItem(storageKey, JSON.stringify(profiles));
+    this.friend.update((current) => current ? { ...current, friendshipProfile: profile } : current);
+    this.editingFriendshipProfile.set(false);
+    this.modal.show('Friendship profile saved.');
   }
 
   addFriendNote() {

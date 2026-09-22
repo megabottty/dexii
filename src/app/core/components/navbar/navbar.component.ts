@@ -63,26 +63,30 @@ import { SupportMenuService } from '../../services/support-menu.service';
              [style.color]="theme.colors().text"
              [style.border]="'1px solid ' + theme.colors().accent"
              aria-label="Open new Tea updates">
-            <span aria-hidden="true">🍵</span>
-            <span class="navbar-quick-link-label">Tea</span>
-            <span [style.background-color]="theme.colors().accent"
-                  class="navbar-quick-link-badge"
-                  aria-label="Unread Tea updates">
-              {{ notifications.unreadCount() }}
-            </span>
+             <span class="navbar-tea-icon-wrap">
+               <span aria-hidden="true">🍵</span>
+               <span [style.background-color]="theme.colors().accent"
+                     class="navbar-quick-link-badge"
+                     aria-label="Unread Tea updates">
+                 {{ notifications.unreadCount() }}
+               </span>
+             </span>
+             <span class="navbar-quick-link-label">Tea</span>
           </a>
         }
 
-        <button type="button"
-              class="navbar-help-button"
-              [style.color]="theme.colors().text"
-              [style.border]="'1px solid ' + theme.colors().border"
-              aria-label="Open help tools"
-              [attr.aria-expanded]="supportMenu.open()"
-              aria-controls="app-support-menu"
-              (click)="toggleSupportMenu(); $event.stopPropagation()">
-        ?
-        </button>
+        @if (notifications.unreadCount() === 0) {
+          <button type="button"
+                class="navbar-help-button"
+                [style.color]="theme.colors().text"
+                [style.border]="'1px solid ' + theme.colors().border"
+                aria-label="Open help tools"
+                [attr.aria-expanded]="supportMenu.open()"
+                aria-controls="app-support-menu"
+                (click)="toggleSupportMenu(); $event.stopPropagation()">
+          ?
+          </button>
+        }
 
         <button type="button"
               class="navbar-menu-toggle"

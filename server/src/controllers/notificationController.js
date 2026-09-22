@@ -81,6 +81,26 @@ exports.getUnreadCount = async (req, res) => {
   }
 };
 
+exports.createJournalPrompt = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+
+    const notification = await exports.createNotification({
+      recipient: req.user.id,
+      type: 'journal_prompt',
+      payload: { route: '/vault' }
+    });
+
+    if (!notification) {
+      return res.status(503).json({ message: 'Unable to create journal prompt notification.' });
+    }
+    res.status(201).json(shapeNotification(notification));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 exports.markRead = async (req, res) => {
   try {
     if (!requireDb(res)) return;

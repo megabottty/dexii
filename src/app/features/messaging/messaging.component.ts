@@ -35,22 +35,24 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
             </span>
           </div>
         </div>
-        <a routerLink="/dashboard"
-           [style.color]="theme.colors().primary"
-           [style.border]="'1px solid ' + theme.colors().primary"
-           style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
-          Dashboard
-        </a>
-        @if (hasActiveChat() && isChatPartnerFriend()) {
-          <button type="button"
-                  (click)="toggleAddCrush()"
-                  [style.background-color]="showAddCrush() ? 'transparent' : theme.colors().primary"
-                  [style.color]="showAddCrush() ? theme.colors().primary : '#ffffff'"
-                  [style.border]="'1px solid ' + theme.colors().primary"
-                  style="margin-left: 8px; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">
-            {{ showAddCrush() ? 'Cancel' : '+ Add Crush' }}
-          </button>
-        }
+        <div class="messaging-header-actions">
+          <a routerLink="/dashboard"
+             [style.color]="theme.colors().primary"
+             [style.border]="'1px solid ' + theme.colors().primary"
+             style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
+            Dashboard
+          </a>
+          @if (hasActiveChat() && isChatPartnerFriend()) {
+            <button type="button"
+                    (click)="toggleAddCrush()"
+                    [style.background-color]="showAddCrush() ? 'transparent' : theme.colors().primary"
+                    [style.color]="showAddCrush() ? theme.colors().primary : '#ffffff'"
+                    [style.border]="'1px solid ' + theme.colors().primary"
+                    style="padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+              {{ showAddCrush() ? 'Cancel' : '+ Add Crush' }}
+            </button>
+          }
+        </div>
       </header>
 
       @if (showAddCrush()) {

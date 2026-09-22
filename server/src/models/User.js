@@ -100,6 +100,10 @@ const UserSchema = new mongoose.Schema({
     type: [String],
     default: ["Close Friends", "Casual", "Work"]
   },
+  profileSettings: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
   verificationCode: String,
   verificationCodeExpires: Date,
   passwordResetCode: String,

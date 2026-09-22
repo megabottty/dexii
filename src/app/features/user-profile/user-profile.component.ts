@@ -7,7 +7,7 @@ import { MessagingService } from '../../core/services/messaging.service';
 import { AuditService } from '../../core/services/audit.service';
 import { UserSettingsService } from '../../core/services/user-settings.service';
 import { CrushProfile } from '../../core/models/crush-profile.model';
-import { FriendSummary, FriendsApiService } from '../../core/services/friends-api.service';
+import { FriendProfileDetails, FriendSummary, FriendsApiService } from '../../core/services/friends-api.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -38,36 +38,70 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  [alt]="profileDisplayName()"
                  class="user-profile-component__s7">
             <div>
-              <h1 class="user-profile-component__s8">
-                {{ profileDisplayName() }}
-                @if (!isSelf()) {
-                  <span [style.color]="theme.colors().textSecondary"
-                        class="user-profile-component__s24">({{ crushes().length }})</span>
+              @if (profileLoading()) {
+                <div class="user-profile-loading" role="status" aria-live="polite">
+                  <span class="user-profile-spinner" aria-hidden="true"></span>
+                  Loading profile…
+                </div>
+              } @else {
+                <h1 class="user-profile-component__s8">
+                  {{ profileDisplayName() }}
+                </h1>
+                @if (profileUsername()) {
+                  <p [style.color]="theme.colors().textSecondary"
+                     class="user-profile-username">
+                    @{{ profileUsername() }}
+                  </p>
                 }
-              </h1>
-              <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem;">
-                <p [style.color]="theme.colors().primary"
-                   class="user-profile-component__s9" style="font-style: italic; margin: 0;">
-                  "Spilling the tea since day one."
-                </p>
-              </div>
-              @if (profileBio()) {
-                <p [style.color]="theme.colors().textSecondary"
-                   class="user-profile-component__s10">
-                  {{ profileBio() }}
-                </p>
-              }
-              @if (!isSelf()) {
-                <a [routerLink]="['/chat']"
-                   [queryParams]="{ friendId: routeUserId(), friendName: profileDisplayName() }"
-                   [style.background-color]="theme.colors().primary"
-                   style="display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none; padding: 6px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; margin-top: 10px;">
-                  💬 Chat with {{ profileDisplayName() }}
-                </a>
+                @if (!isSelf()) {
+                  <p [style.color]="theme.colors().textSecondary"
+                     class="user-profile-component__s9" style="margin: 0.25rem 0 0;">
+                    {{ crushes().length }} shared {{ crushes().length === 1 ? 'crush' : 'crushes' }}
+                  </p>
+                }
+                @if (profileBio()) {
+                  <p [style.color]="theme.colors().textSecondary"
+                     class="user-profile-component__s10">
+                    {{ profileBio() }}
+                  </p>
+                }
+                @if (!isSelf()) {
+                  <a [routerLink]="['/chat']"
+                     [queryParams]="{ friendId: routeUserId(), friendName: profileDisplayName() }"
+                     [style.background-color]="theme.colors().primary"
+                     style="display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none; padding: 6px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; margin-top: 10px;">
+                    💬 Chat with {{ profileDisplayName() }}
+                  </a>
+                }
               }
             </div>
           </div>
         </div>
+
+        @if (profileDetails(); as profile) {
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.border]="'1px solid ' + theme.colors().border"
+             class="user-profile-component__s11 user-profile-details-card">
+          <h2 class="section-title">About {{ profileDisplayName() }}</h2>
+          <div class="user-profile-details-grid">
+            @if (profile.relationshipStatus) {
+              <p><strong>Relationship status:</strong> {{ profile.relationshipStatus }}</p>
+            }
+            @if (profile.lookingFor) {
+              <p><strong>Looking for:</strong> {{ profile.lookingFor }}</p>
+            }
+            @if (profile.interestedIn) {
+              <p><strong>Interested in:</strong> {{ profile.interestedIn }}</p>
+            }
+            @if (profile.loveLanguage) {
+              <p><strong>Love language:</strong> {{ profile.loveLanguage }}</p>
+            }
+            @if (profile.idealDate) {
+              <p><strong>Ideal date:</strong> {{ profile.idealDate }}</p>
+            }
+          </div>
+        </div>
+        }
 
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
@@ -339,7 +373,10 @@ export class UserProfileComponent {
   routeUserId = signal('');
   private friendSummaries = signal<FriendSummary[]>([]);
   private friendSharedCrushes = signal<CrushProfile[]>([]);
+  private friendProfileDetailsState = signal<FriendProfileDetails | null>(null);
+  protected friendProfileDetails = this.friendProfileDetailsState.asReadonly();
   protected friendSharedCrushesLoading = signal(false);
+  protected profileLoading = signal(false);
   protected auditLogView = signal(false);
   private friendLoadRequestId = 0;
 
@@ -358,8 +395,10 @@ export class UserProfileComponent {
 
       if (!routeUserId || this.isSelf() || !this.friendsApi.isAuthenticated()) {
         this.friendLoadRequestId++;
+        this.profileLoading.set(false);
         this.friendSharedCrushesLoading.set(false);
         this.friendSharedCrushes.set([]);
+        this.friendProfileDetailsState.set(null);
         return;
       }
 
@@ -380,11 +419,37 @@ export class UserProfileComponent {
     const name = [friend.firstName, friend.lastName].filter(Boolean).join(' ').trim();
     return name || friend.username || id;
   });
-  profileBio = computed(() => (this.isSelf() ? this.settings.settings().bio : ''));
+  profileUsername = computed(() => {
+    if (this.isSelf()) return this.dataService.getUserId();
+    const friend = this.friendSummaries().find((item) => item.id === this.routeUserId() || item.username === this.routeUserId());
+    return friend?.username || '';
+  });
+  profileBio = computed(() => {
+    if (this.isSelf()) return this.settings.settings().bio;
+    return this.friendProfileDetailsState()?.profile?.bio || '';
+  });
+  profileDetails = computed(() => {
+    if (this.isSelf()) {
+      const settings = this.settings.settings();
+      return settings.profileVisibility === 'Public'
+        ? {
+            relationshipStatus: settings.relationshipStatus,
+            lookingFor: settings.lookingFor,
+            interestedIn: settings.interestedIn,
+            loveLanguage: settings.loveLanguage,
+            idealDate: settings.idealDate
+          }
+        : null;
+    }
+    return this.friendProfileDetailsState()?.profile || null;
+  });
 
   profileAvatar = computed(() => {
     if (this.isSelf() && this.settings.settings().avatarUrl) {
       return this.settings.settings().avatarUrl;
+    }
+    if (!this.isSelf() && this.friendProfileDetailsState()?.avatarUrl) {
+      return this.friendProfileDetailsState()?.avatarUrl || '';
     }
     return `https://i.pravatar.cc/300?u=${encodeURIComponent(this.profileDisplayName())}`;
   });
@@ -438,11 +503,13 @@ export class UserProfileComponent {
 
   private async loadFriendContext(friendId: string): Promise<void> {
     const requestId = ++this.friendLoadRequestId;
+    this.profileLoading.set(true);
     this.friendSharedCrushesLoading.set(true);
 
-    const [friendsResult, sharedCrushesResult] = await Promise.allSettled([
+    const [friendsResult, sharedCrushesResult, profileResult] = await Promise.allSettled([
       this.friendsApi.listFriends(),
-      this.friendsApi.getFriendSharedCrushes(friendId)
+      this.friendsApi.getFriendSharedCrushes(friendId),
+      this.friendsApi.getFriendProfile(friendId)
     ]);
 
     if (requestId !== this.friendLoadRequestId) return;
@@ -460,7 +527,14 @@ export class UserProfileComponent {
       console.error('Failed to load shared crushes for user profile.', sharedCrushesResult.reason);
       this.friendSharedCrushes.set([]);
     }
+    if (profileResult.status === 'fulfilled') {
+      this.friendProfileDetailsState.set(profileResult.value);
+    } else {
+      console.error('Failed to load friend profile details.', profileResult.reason);
+      this.friendProfileDetailsState.set(null);
+    }
 
     this.friendSharedCrushesLoading.set(false);
+    this.profileLoading.set(false);
   }
 }

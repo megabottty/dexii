@@ -18,7 +18,8 @@ const NotificationSchema = new mongoose.Schema({
       'crush_shared',
       'invite_accepted',
       'friend_request_received',
-      'friend_request_accepted'
+      'friend_request_accepted',
+      'journal_prompt'
     ]
   },
   payload: {

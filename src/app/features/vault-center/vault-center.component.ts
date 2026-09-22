@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed } from '@angular/core';
+import { Component, signal, inject, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,8 @@ import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier } from '../../core/models/user.model';
 import { Entry } from '../../core/models/entry.model';
 import { PageHintComponent } from '../../core/components/page-hint.component';
+import { UserSettingsService } from '../../core/services/user-settings.service';
+import { NotificationsService } from '../../core/services/notifications.service';
 
 @Component({
   selector: 'app-vault-center',
@@ -88,6 +90,28 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           <div class="vault-center-component__s14">
             <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="vault-journal-box">
                <h3 class="vault-center-component__s15">New Journal Entry</h3>
+               <div [style.border]="'1px solid ' + theme.colors().border" class="journal-prompt-card">
+                 <div>
+                   <span [style.color]="theme.colors().primary" class="journal-prompt-label">Today's prompt</span>
+                   <p [style.color]="theme.colors().text" class="journal-prompt-text">{{ journalPrompt() }}</p>
+                   <small [style.color]="theme.colors().textSecondary">
+                     {{ settings.settings().journalPromptFrequency }} · Reminder starts at {{ settings.settings().reminderTime }}
+                   </small>
+                 </div>
+                 <div class="journal-prompt-actions">
+                   <button type="button" (click)="useJournalPrompt()"
+                           [style.background-color]="theme.colors().primary"
+                           class="journal-prompt-button">
+                     Use prompt
+                   </button>
+                   <button type="button" (click)="randomizeJournalPrompt()"
+                           [style.color]="theme.colors().primary"
+                           [style.border]="'1px solid ' + theme.colors().primary"
+                           class="journal-prompt-button journal-prompt-button--ghost">
+                     New prompt
+                   </button>
+                 </div>
+               </div>
                <textarea [(ngModel)]="newJournalEntry" placeholder="Write your private thoughts here... (Never shared)"
                          [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                          class="vault-center-component__s16"></textarea>
@@ -234,17 +258,32 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     </div>
   `
 })
-export class VaultCenterComponent {
+export class VaultCenterComponent implements OnDestroy {
   public vault = inject(VaultService);
   public dataService = inject(DataService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
   public modal = inject(ModalService);
+  public settings = inject(UserSettingsService);
+  private notifications = inject(NotificationsService);
   premiumTier = SubscriptionTier.Premium;
 
   activeTab = signal<'journal' | 'photos'>('journal');
   newJournalEntry = '';
+  journalPrompt = signal('');
+  private readonly journalPrompts = [
+    'What felt most like you today, and why?',
+    'What small moment would you like to remember from this week?',
+    'Where are you craving more honesty in your life?',
+    'What boundary helped you feel safe or respected recently?',
+    'What are you learning about the way you give and receive love?',
+    'Describe a recent moment that made you laugh unexpectedly.',
+    'What would your future self thank you for doing today?',
+    'What is one thing you want to release before tomorrow?',
+    'Which relationship in your life deserves a little more attention?',
+    'What does feeling at home in yourself look like right now?'
+  ];
 
   journalEntries = computed(() =>
     this.dataService.getEntriesForCrush('private_vault')() // Using a special ID for global journal
@@ -294,6 +333,55 @@ export class VaultCenterComponent {
   editingEntryId = signal<string | null>(null);
   editDraft = '';
   expandedHistoryId = signal<string | null>(null);
+  private reminderTimer: ReturnType<typeof setInterval>;
+
+  constructor() {
+    const configuredPrompt = this.settings.settings().journalPrompt.trim();
+    this.journalPrompt.set(configuredPrompt || this.journalPrompts[0]);
+    void this.checkJournalReminder();
+    this.reminderTimer = setInterval(() => void this.checkJournalReminder(), 60_000);
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.reminderTimer);
+  }
+
+  randomizeJournalPrompt(): void {
+    const current = this.journalPrompt();
+    const choices = this.journalPrompts.filter((prompt) => prompt !== current);
+    this.journalPrompt.set(choices[Math.floor(Math.random() * choices.length)] || this.journalPrompts[0]);
+  }
+
+  useJournalPrompt(): void {
+    this.newJournalEntry = `${this.journalPrompt()}\n\n`;
+  }
+
+  private async checkJournalReminder(): Promise<void> {
+    const frequency = this.settings.settings().journalPromptFrequency;
+    if (frequency === 'Off') return;
+
+    const reminderTime = this.settings.settings().reminderTime || '19:00';
+    const now = new Date();
+    const [hours, minutes] = reminderTime.split(':').map(Number);
+    const reminder = new Date(now);
+    reminder.setHours(hours, minutes, 0, 0);
+    const username = this.security.currentUser() || 'guest';
+    const reminderKey = `dexii_journal_prompt_last_${username}`;
+    const lastPromptAt = localStorage.getItem(reminderKey);
+    const lastPromptTimestamp = lastPromptAt ? Date.parse(lastPromptAt) : NaN;
+    if (!Number.isFinite(lastPromptTimestamp) && now < reminder) return;
+
+    const intervalMs = frequency === 'Twice daily'
+      ? 12 * 60 * 60 * 1000
+      : frequency === 'Every 4 hours'
+        ? 4 * 60 * 60 * 1000
+        : 24 * 60 * 60 * 1000;
+    if (Number.isFinite(lastPromptTimestamp) && now.getTime() - lastPromptTimestamp < intervalMs) return;
+
+    await this.notifications.createJournalPrompt();
+    localStorage.setItem(reminderKey, now.toISOString());
+    this.modal.show('Your journal prompt is ready whenever you are.');
+  }
 
   startEdit(entry: Entry) {
     this.expandedHistoryId.set(null);

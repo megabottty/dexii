@@ -7,6 +7,7 @@ export interface UserSettings {
   journalTitle: string;
   journalPrompt: string;
   reminderTime: string;
+  journalPromptFrequency: 'Off' | 'Daily' | 'Twice daily' | 'Every 4 hours';
   weeklySummary: boolean;
   shareWithFriends: boolean;
   showUsername: boolean;
@@ -20,7 +21,7 @@ export interface UserSettings {
   interestedIn: 'Men' | 'Women' | 'Everyone' | 'Other' | '';
   loveLanguage: 'Words of Affirmation' | 'Acts of Service' | 'Receiving Gifts' | 'Quality Time' | 'Physical Touch' | '';
   idealDate: string;
-  profileVisibility: 'Friends only' | 'Selected friends' | 'Private';
+  profileVisibility: 'Public' | 'Friends only' | 'Selected friends' | 'Private';
   themeMode?: 'pearl' | 'onyx' | 'girlie' | 'manly' | 'hippie' | 'gothic' | 'light' | 'dark' | 'highschool' | 'neutral' | 'custom';
 }
 
@@ -33,6 +34,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   journalTitle: 'Tea Time',
   journalPrompt: 'What did I learn about love today?',
   reminderTime: '19:00',
+  journalPromptFrequency: 'Daily',
   weeklySummary: true,
   shareWithFriends: true,
   showUsername: true,

@@ -1,6 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { SecurityService } from './security.service';
 import { ThemeService } from './theme.service';
+import { getApiBaseUrl } from '../config/api-config';
 import {
   DEFAULT_USER_SETTINGS,
   normalizeUserSettings,
@@ -20,6 +21,7 @@ export class UserSettingsService {
   private readonly storagePrefix = 'dexii_user_settings_';
   private security = inject(SecurityService);
   private themeService = inject(ThemeService);
+  private apiBase = getApiBaseUrl();
   private activeUser = signal<string>('');
   private _settings = signal<UserSettings>(DEFAULT_USER_SETTINGS);
 
@@ -91,6 +93,32 @@ export class UserSettingsService {
     if (DEFAULT_USER_SETTINGS.themeMode) {
       this.themeService.setTheme(DEFAULT_USER_SETTINGS.themeMode);
     }
+  }
+
+  saveToBackend(): Promise<void> {
+    const settings = this._settings();
+    return fetch(`${this.apiBase}/auth/profile-settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.security.authHeaders()
+      },
+      body: JSON.stringify({
+        displayName: settings.displayName,
+        bio: settings.bio,
+        avatarUrl: settings.avatarUrl,
+        relationshipStatus: settings.relationshipStatus,
+        lookingFor: settings.lookingFor,
+        interestedIn: settings.interestedIn,
+        loveLanguage: settings.loveLanguage,
+        idealDate: settings.idealDate,
+        journalPromptFrequency: settings.journalPromptFrequency,
+        profileVisibility: settings.profileVisibility,
+        selectedFriendIds: settings.selectedFriendIds
+      })
+    }).then((response) => {
+      if (!response.ok) throw new Error(`Profile settings save failed (${response.status})`);
+    });
   }
 
   currentUsername(): string {

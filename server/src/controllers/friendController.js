@@ -103,11 +103,56 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // @access  Private
 exports.getFriends = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate('friends', 'username avatarUrl friendCategories');
+    const user = await User.findById(req.user.id).populate(
+      'friends',
+      'username firstName lastName avatarUrl friendCategories'
+    );
     res.json((user?.friends || []).map(shapeUser));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
+  }
+};
+
+exports.getFriendProfile = async (req, res) => {
+  try {
+    const viewer = await User.findById(req.user.id).select('friends');
+    const friend = await User.findById(req.params.friendId).select(
+      'username firstName lastName avatarUrl friends profileSettings'
+    );
+    if (!viewer || !friend) return res.status(404).json({ message: 'Friend not found.' });
+
+    const isMutualFriend = viewer.friends.some((id) => String(id) === String(friend._id))
+      && friend.friends.some((id) => String(id) === String(viewer._id));
+    if (!isMutualFriend) return res.status(403).json({ message: 'Profile is only available to friends.' });
+
+    const settings = friend.profileSettings || {};
+    const visibility = settings.profileVisibility || 'Friends only';
+    const selectedIds = Array.isArray(settings.selectedFriendIds) ? settings.selectedFriendIds.map(String) : [];
+    const allowed = visibility === 'Public'
+      || (visibility === 'Friends only')
+      || (visibility === 'Selected friends' && selectedIds.includes(String(viewer._id)));
+
+    res.json({
+      id: String(friend._id),
+      username: friend.username,
+      firstName: friend.firstName || '',
+      lastName: friend.lastName || '',
+      avatarUrl: friend.avatarUrl || '',
+      profileVisibility: visibility,
+      profile: allowed ? {
+        displayName: settings.displayName || '',
+        bio: settings.bio || '',
+        relationshipStatus: settings.relationshipStatus || '',
+        lookingFor: settings.lookingFor || '',
+        interestedIn: settings.interestedIn || '',
+        loveLanguage: settings.loveLanguage || '',
+        idealDate: settings.idealDate || ''
+      } : null
+    });
+  } catch (err) {
+    console.error('Friend profile lookup failed:', err.message);
+    res.status(500).json({ message: 'Unable to load friend profile.' });
   }
 };
 
