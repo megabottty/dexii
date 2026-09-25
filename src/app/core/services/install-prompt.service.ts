@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { isNativeApp } from '../config/api-config';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -77,7 +78,7 @@ export class InstallPromptService {
   private detectStandalone(): boolean {
     const displayMode = window.matchMedia?.('(display-mode: standalone)')?.matches;
     const iosStandalone = (window.navigator as unknown as { standalone?: boolean })?.standalone === true;
-    return Boolean(displayMode || iosStandalone);
+    return Boolean(displayMode || iosStandalone || isNativeApp());
   }
 
   private detectIos(): boolean {

@@ -1,15 +1,36 @@
+import { Capacitor } from '@capacitor/core';
+
 declare global {
   interface Window {
     __DEXII_API_BASE__?: string;
   }
 }
 
+/**
+ * Inside the native iOS/Android shell the web bundle is served from the device
+ * (capacitor://localhost or https://localhost), so the API must be called by
+ * its absolute hosted URL rather than derived from window.location.
+ */
+export const NATIVE_API_BASE = 'https://dexii.onrender.com/api';
+
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
+
+export const isNativeApp = (): boolean => {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+};
 
 export const getApiBaseUrl = (): string => {
   const fromWindow = typeof window !== 'undefined' ? window.__DEXII_API_BASE__ : undefined;
   if (fromWindow && fromWindow.trim()) {
     return trimTrailingSlash(fromWindow.trim());
+  }
+
+  if (isNativeApp()) {
+    return NATIVE_API_BASE;
   }
 
   if (typeof window !== 'undefined') {

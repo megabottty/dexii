@@ -104,6 +104,16 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
+  // Native app devices (Capacitor). One entry per device; APNs token for iOS,
+  // FCM registration token for Android.
+  pushTokens: {
+    type: [{
+      token: { type: String, required: true },
+      platform: { type: String, enum: ['ios', 'android'], required: true },
+      updatedAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
   verificationCode: String,
   verificationCodeExpires: Date,
   passwordResetCode: String,

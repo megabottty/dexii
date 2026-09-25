@@ -314,7 +314,26 @@ export class SecurityService {
     this.router.navigate(['/login']);
   }
 
+  private beforeLogoutHooks: Array<() => void> = [];
+
+  /**
+   * Registers work that must start while the session is still valid, e.g.
+   * telling the server to forget this device's push token. Hooks run
+   * synchronously before the session is cleared; any async work they kick off
+   * must capture what it needs (like auth headers) before its first await.
+   */
+  registerBeforeLogout(hook: () => void): void {
+    this.beforeLogoutHooks.push(hook);
+  }
+
   logout(): void {
+    for (const hook of this.beforeLogoutHooks) {
+      try {
+        hook();
+      } catch (err) {
+        console.warn('Before-logout hook failed:', err);
+      }
+    }
     this.clearSession();
     this.router.navigate(['/login']);
   }

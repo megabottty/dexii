@@ -9,6 +9,10 @@ router.use(auth);
 router.get('/unread-count', notificationController.getUnreadCount);
 router.post('/journal-prompt', notificationController.createJournalPrompt);
 
+// Native app device tokens (Capacitor push).
+router.post('/push-token', notificationController.registerPushToken);
+router.delete('/push-token', notificationController.removePushToken);
+
 // @route   GET /api/notifications
 router.get('/', notificationController.listNotifications);
 

@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
+const push = require('../services/pushService');
 
 const ACTOR_FIELDS = 'username firstName lastName avatarUrl';
 
@@ -36,6 +38,57 @@ const shapeNotification = (notification) => ({
   createdAt: notification.createdAt
 });
 
+const actorDisplayName = (actor) => {
+  if (!actor) return 'A friend';
+  const fullName = [actor.firstName, actor.lastName].filter(Boolean).join(' ').trim();
+  return fullName || actor.username || 'A friend';
+};
+
+/** Mirrors the copy the feed shows for each notification type. */
+const pushCopy = (type, actor, payload = {}) => {
+  const name = actorDisplayName(actor);
+  switch (type) {
+    case 'friend_request_nudge':
+      return { title: 'Friend request nudge', body: `${name} sent you a nudge on their friend request`, route: '/friends' };
+    case 'crush_shared':
+      return {
+        title: 'New crush shared',
+        body: `${name} shared a new crush with you`,
+        route: payload.crushId ? `/profile/${payload.crushId}` : '/feed'
+      };
+    case 'invite_accepted':
+      return { title: 'Invite accepted', body: `${name} joined Dexii! Finish setting up your friendship profile.`, route: '/friends' };
+    case 'friend_request_received':
+      return { title: 'Friend request', body: `${name} sent you a friend request`, route: '/friends' };
+    case 'friend_request_accepted':
+      return { title: 'Friend request accepted', body: `${name} accepted your friend request`, route: '/friends' };
+    case 'journal_prompt':
+      return { title: 'Journal prompt', body: 'Your journal prompt is ready in the Vault', route: '/vault' };
+    default:
+      return { title: 'Dexii', body: `${name} sent you an update`, route: '/feed' };
+  }
+};
+
+/** Fire-and-forget: wakes the recipient's phone(s) about a saved notification. */
+const notifyDevices = async (notification) => {
+  try {
+    if (!push.isEnabled()) return;
+    const actor = notification.actor
+      ? await User.findById(notification.actor).select(ACTOR_FIELDS).lean()
+      : null;
+    const { title, body, route } = pushCopy(notification.type, actor, notification.payload);
+    const badge = await Notification.countDocuments({ recipient: notification.recipient, read: false });
+    await push.sendToUser(notification.recipient, {
+      title,
+      body,
+      badge,
+      data: { route, notificationId: String(notification._id), type: notification.type }
+    });
+  } catch (err) {
+    console.warn('Push: notifyDevices failed:', err.message);
+  }
+};
+
 exports.createNotification = async ({ recipient, actor, type, payload = {} }) => {
   if (!recipient || !type || mongoose.connection.readyState !== 1) {
     return null;
@@ -49,7 +102,58 @@ exports.createNotification = async ({ recipient, actor, type, payload = {} }) =>
     read: false
   });
 
-  return notification.save();
+  const saved = await notification.save();
+  // Don't hold up the request that triggered the notification.
+  setImmediate(() => { void notifyDevices(saved); });
+  return saved;
+};
+
+const VALID_PLATFORMS = new Set(['ios', 'android']);
+
+exports.registerPushToken = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    const platform = String(req.body?.platform || '').toLowerCase();
+    if (!token || !VALID_PLATFORMS.has(platform)) {
+      return res.status(400).json({ message: 'token and platform (ios|android) are required.' });
+    }
+
+    // A device token belongs to exactly one account: remove it from anyone else
+    // (shared phone, account switch), then upsert onto this user.
+    await User.updateMany(
+      { _id: { $ne: req.user.id }, 'pushTokens.token': token },
+      { $pull: { pushTokens: { token } } }
+    );
+    await User.updateOne({ _id: req.user.id }, { $pull: { pushTokens: { token } } });
+    await User.updateOne(
+      { _id: req.user.id },
+      { $push: { pushTokens: { token, platform, updatedAt: new Date() } } }
+    );
+
+    res.json({ ok: true, pushEnabled: push.isEnabled() });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+exports.removePushToken = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    if (!token) {
+      return res.status(400).json({ message: 'token is required.' });
+    }
+
+    await User.updateOne({ _id: req.user.id }, { $pull: { pushTokens: { token } } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };
 
 exports.listNotifications = async (req, res) => {

@@ -63,6 +63,9 @@ app.use('/api/billing', require('./routes/billing'));
 // Expose io on the app so REST controllers (e.g. group messages) can emit realtime events.
 app.set('io', io);
 
+// Native push (APNs / FCM). Logs which providers are configured.
+require('./services/pushService').init();
+
 // Serve Angular app when built (single-service hosting option).
 const distPath = path.resolve(__dirname, '..', '..', 'dist', 'dexii', 'browser');
 app.use(express.static(distPath));

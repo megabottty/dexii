@@ -48,3 +48,7 @@ Thumbs.db
 server/node_modules/
 server/data/*.json
 LOCAL_TESTING_NOTES.md
+
+# Firebase config files for the native apps (download from the Firebase console)
+/ios/App/App/GoogleService-Info.plist
+/android/app/google-services.json

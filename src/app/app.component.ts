@@ -13,6 +13,7 @@ import { UserSettingsService } from './core/services/user-settings.service';
 import { WalkthroughService } from './core/services/walkthrough.service';
 import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from './core/config/walkthrough-tours';
 import { SupportMenuService } from './core/services/support-menu.service';
+import { PushNotificationsService } from './core/services/push-notifications.service';
 
 interface WalkthroughStep {
   title: string;
@@ -316,6 +317,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private userSettings = inject(UserSettingsService);
   private walkthroughService = inject(WalkthroughService);
   protected supportMenu = inject(SupportMenuService);
+  // Instantiated here so native push registration starts with the app.
+  private push = inject(PushNotificationsService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private navMenuObserver: MutationObserver | null = null;
