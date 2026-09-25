@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://dexii.onrender.com/sitemap.xml
+Sitemap: https://www.dexii.net/sitemap.xml

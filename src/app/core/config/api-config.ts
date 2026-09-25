@@ -11,7 +11,7 @@ declare global {
  * (capacitor://localhost or https://localhost), so the API must be called by
  * its absolute hosted URL rather than derived from window.location.
  */
-export const NATIVE_API_BASE = 'https://dexii.onrender.com/api';
+export const NATIVE_API_BASE = 'https://www.dexii.net/api';
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
 

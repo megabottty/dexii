@@ -3,7 +3,7 @@
 The Angular web app is wrapped by [Capacitor](https://capacitorjs.com) so the
 same build can ship to the App Store and Google Play. The web app and PWA are
 unchanged; the native shell loads the built bundle from `dist/dexii/browser`
-and talks to the hosted API at `https://dexii.onrender.com/api`
+and talks to the hosted API at `https://www.dexii.net/api`
 (see `NATIVE_API_BASE` in `src/app/core/config/api-config.ts`).
 
 Project layout:
@@ -120,4 +120,4 @@ already live and needs no configuration:
 ## PWABuilder later?
 
 Still possible: the manifest and service worker are untouched, so
-https://www.pwabuilder.com can package `https://dexii.onrender.com` at any time.
+https://www.pwabuilder.com can package `https://www.dexii.net` at any time.

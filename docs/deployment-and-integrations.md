@@ -41,7 +41,7 @@ appear anywhere under the service itself.
 
 ### 2. Resume a suspended service
 
-If `https://dexii.onrender.com` returns **503** with the header
+If `https://www.dexii.net` returns **503** with the header
 `x-render-routing: suspend`, the service is suspended and no deploy will go
 out until it is resumed. This is an account action; it cannot be fixed from
 the codebase.
@@ -49,7 +49,7 @@ the codebase.
 Check it from the terminal at any time with:
 
 ```bash
-curl -s -o /dev/null -D - https://dexii.onrender.com/api/health | grep -i "HTTP/\|x-render-routing"
+curl -s -o /dev/null -D - https://www.dexii.net/api/health | grep -i "HTTP/\|x-render-routing"
 ```
 
 `x-render-routing: suspend` means still suspended. A `200` means live.
@@ -148,7 +148,7 @@ Point it at any host with `npm run smoke -- https://your-host.example.com`.
 Or check just the health endpoint:
 
 ```bash
-curl https://dexii.onrender.com/api/health
+curl https://www.dexii.net/api/health
 # {"status":"ok","uptime":<n>}
 ```
 

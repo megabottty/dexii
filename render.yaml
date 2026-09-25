@@ -12,7 +12,7 @@ services:
       - key: ENABLE_MONGO
         value: "true"
       - key: PUBLIC_APP_URL
-        value: https://dexii.onrender.com
+        value: https://www.dexii.net
       - key: JWT_SECRET
         generateValue: true
       - key: MONGO_URI

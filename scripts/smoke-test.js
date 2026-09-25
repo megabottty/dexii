@@ -13,7 +13,7 @@
  *   npm run smoke -- https://your-host.example.com
  */
 
-const BASE = (process.argv[2] || process.env.SMOKE_URL || 'https://dexii.onrender.com').replace(/\/$/, '');
+const BASE = (process.argv[2] || process.env.SMOKE_URL || 'https://www.dexii.net').replace(/\/$/, '');
 const TIMEOUT_MS = 60_000;
 
 const get = async (path) => {

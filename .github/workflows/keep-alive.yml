@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Ping Dexii Render Service
         env:
-          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || 'https://dexii.onrender.com' }}
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || 'https://www.dexii.net' }}
           KEEP_ALIVE_ENABLED: ${{ vars.KEEP_ALIVE_ENABLED }}
         run: |
           if [ "$KEEP_ALIVE_ENABLED" = "false" ]; then

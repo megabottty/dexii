@@ -6,7 +6,7 @@
  *   RENDER_URL=https://your-app.onrender.com node scripts/keep-alive.js
  */
 
-const targetUrl = (process.env.RENDER_URL || process.env.APP_URL || 'https://dexii.onrender.com').replace(/\/+$/, '');
+const targetUrl = (process.env.RENDER_URL || process.env.APP_URL || 'https://www.dexii.net').replace(/\/+$/, '');
 const endpoint = `${targetUrl}/api/status`;
 const INTERVAL_MS = parseInt(process.env.PING_INTERVAL_MS || String(14 * 60 * 1000), 10); // 14 mins
 
