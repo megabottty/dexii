@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const compression = require('compression');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -44,6 +45,7 @@ if (enableMongo) {
 }
 
 // Middleware
+app.use(compression());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors());
@@ -68,7 +70,22 @@ require('./services/pushService').init();
 
 // Serve Angular app when built (single-service hosting option).
 const distPath = path.resolve(__dirname, '..', '..', 'dist', 'dexii', 'browser');
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+  index: false,
+  setHeaders: (res, filePath) => {
+    const base = path.basename(filePath);
+    if (base === 'index.html' || base === 'ngsw.json' || base === 'ngsw-worker.js' || base === 'manifest.webmanifest') {
+      // The app shell and service-worker manifest must always be revalidated
+      // so deploys reach users promptly.
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (/-[0-9A-Z]{8}\.(js|css)$/i.test(base)) {
+      // Angular fingerprints these; the URL changes whenever the content does.
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+}));
 
 // Lightweight liveness probe for keep-alive pings. Deliberately does no
 // database work so scheduled pings stay fast and cheap.
@@ -91,6 +108,12 @@ app.use((req, res, next) => {
   if (req.method !== 'GET' || req.path.startsWith('/api/')) {
     return next();
   }
+  // A path that looks like a file (robots.txt, foo.png) that static didn't
+  // find is a real 404, not a route for the SPA shell.
+  if (/\.[a-z0-9]{1,8}$/i.test(req.path)) {
+    return res.status(404).type('text').send('Not found');
+  }
+  res.setHeader('Cache-Control', 'no-cache');
   return res.sendFile(path.join(distPath, 'index.html'));
 });
 

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { getSocketUrl } from '../config/api-config';
 import { SecurityService } from './security.service';
 
@@ -54,7 +54,13 @@ export class RealtimeService {
    * Connects and joins the user's private room. Safe to call repeatedly; it only
    * reconnects when the identity actually changes.
    */
+  private connectSeq = 0;
+
   connect(userId: string): void {
+    void this.connectAsync(userId);
+  }
+
+  private async connectAsync(userId: string): Promise<void> {
     if (!userId) return;
     const token = this.security.authHeaders()['x-auth-token'];
 
@@ -72,6 +78,12 @@ export class RealtimeService {
     if (this.socket && this.joinedRoom !== userId) {
       this.disconnect();
     }
+
+    // socket.io-client is only needed once someone is signed in, so it is
+    // loaded on demand instead of in the startup bundle.
+    const seq = ++this.connectSeq;
+    const { io } = await import('socket.io-client');
+    if (seq !== this.connectSeq) return; // a newer connect/disconnect superseded this one
 
     this.socket = io(getSocketUrl(), {
       transports: ['websocket', 'polling'],
@@ -146,6 +158,7 @@ export class RealtimeService {
   }
 
   disconnect(): void {
+    this.connectSeq++;
     this.socket?.removeAllListeners();
     this.socket?.disconnect();
     this.socket = null;

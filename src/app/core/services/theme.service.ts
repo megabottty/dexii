@@ -51,9 +51,9 @@ const THEME_DEFINITIONS: ThemeDefinition[] = [
       bg: '#fffafa',
       bgSecondary: '#f5f3f4',
       text: '#4a374a',
-      textSecondary: '#9d7a9d',
-      primary: '#a881af',
-      primaryHover: '#8e6695',
+      textSecondary: '#866386',
+      primary: '#8d5e94',
+      primaryHover: '#815688',
       border: '#e2d1e2',
       cardBg: '#ffffff',
       accent: '#d4af37'
@@ -85,9 +85,9 @@ const THEME_DEFINITIONS: ThemeDefinition[] = [
       bg: '#fff5f8',
       bgSecondary: '#ffe8f0',
       text: '#5a2a45',
-      textSecondary: '#b76e93',
-      primary: '#ec4899',
-      primaryHover: '#db2777',
+      textSecondary: '#a2507a',
+      primary: '#cf1571',
+      primaryHover: '#bc1367',
       border: '#fbcfe8',
       cardBg: '#ffffff',
       accent: '#f9a8d4'
@@ -119,9 +119,9 @@ const THEME_DEFINITIONS: ThemeDefinition[] = [
       bg: '#f6f3e7',
       bgSecondary: '#eae4cf',
       text: '#3f4a2f',
-      textSecondary: '#7c8a5c',
-      primary: '#6b8e4e',
-      primaryHover: '#577640',
+      textSecondary: '#5f6a47',
+      primary: '#526d3c',
+      primaryHover: '#4b6337',
       border: '#d8cfa8',
       cardBg: '#fffdf6',
       accent: '#c97b3d'
@@ -153,7 +153,7 @@ const THEME_DEFINITIONS: ThemeDefinition[] = [
       bg: '#ffffff',
       bgSecondary: '#f4f4f5',
       text: '#18181b',
-      textSecondary: '#71717a',
+      textSecondary: '#6f6f77',
       primary: '#2563eb',
       primaryHover: '#1d4ed8',
       border: '#e4e4e7',
@@ -187,9 +187,9 @@ const THEME_DEFINITIONS: ThemeDefinition[] = [
       bg: '#fdf4ff',
       bgSecondary: '#fae8ff',
       text: '#581c87',
-      textSecondary: '#a855f7',
-      primary: '#d946ef',
-      primaryHover: '#c026d3',
+      textSecondary: '#942ef5',
+      primary: '#b612cf',
+      primaryHover: '#a510bc',
       border: '#f0abfc',
       cardBg: '#ffffff',
       accent: '#22d3ee'
@@ -204,9 +204,9 @@ const THEME_DEFINITIONS: ThemeDefinition[] = [
       bg: '#faf7f2',
       bgSecondary: '#f0ebe1',
       text: '#3a352e',
-      textSecondary: '#8a8072',
-      primary: '#b08968',
-      primaryHover: '#96714f',
+      textSecondary: '#71695d',
+      primary: '#866346',
+      primaryHover: '#7a5a40',
       border: '#e3dccb',
       cardBg: '#ffffff',
       accent: '#5f7470'
@@ -262,7 +262,7 @@ function luminance(hex: string): number {
 function buildCustomPalette(custom: CustomThemeColors): ThemePalette {
   const isLight = luminance(custom.bg) >= 140;
   const text = isLight ? mix(custom.bg, '#000000', 0.82) : mix(custom.bg, '#ffffff', 0.9);
-  const textSecondary = isLight ? mix(custom.bg, '#000000', 0.45) : mix(custom.bg, '#ffffff', 0.5);
+  const textSecondary = isLight ? mix(custom.bg, '#000000', 0.62) : mix(custom.bg, '#ffffff', 0.68);
   const bgSecondary = isLight ? mix(custom.bg, '#000000', 0.05) : mix(custom.bg, '#ffffff', 0.07);
   const border = isLight ? mix(custom.bg, '#000000', 0.14) : mix(custom.bg, '#ffffff', 0.18);
   const cardBg = isLight ? mix(custom.bg, '#ffffff', 0.6) : mix(custom.bg, '#ffffff', 0.05);
