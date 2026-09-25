@@ -2,7 +2,7 @@ services:
   - type: web
     name: dexii
     env: node
-    plan: free
+    plan: starter
     buildCommand: npm ci && npm --prefix server ci && npm run build
     startCommand: npm --prefix server start
     autoDeploy: true
