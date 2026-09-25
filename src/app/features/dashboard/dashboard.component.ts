@@ -10,8 +10,6 @@ import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { WalkthroughService } from '../../core/services/walkthrough.service';
 import {
-  FIRST_LOGIN_TOUR,
-  FIRST_LOGIN_TOUR_KEY,
   FIRST_CRUSH_SHARE_TOUR,
   FIRST_CRUSH_SHARE_TOUR_KEY
 } from '../../core/config/walkthrough-tours';
@@ -1019,7 +1017,7 @@ export class DashboardComponent implements OnInit {
       void this.messaging.loadConversationSummaries();
     }, 10000);
     setTimeout(() => {
-      this.walkthrough.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
+      void this.walkthrough.startFirstLogin();
     }, 150);
 
     // Lets other pages (e.g. the user's own profile page's "+ Add New

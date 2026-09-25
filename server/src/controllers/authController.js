@@ -760,7 +760,8 @@ exports.getProfile = async (req, res) => {
         bio: user.bio || '',
         subscriptionTier: user.subscriptionTier || 'Free',
         avatarUrl: user.avatarUrl,
-        themePreference: user.themePreference || null
+        themePreference: user.themePreference || null,
+        firstLoginTourSeen: Boolean(user.firstLoginTourSeen)
       });
     }
 
@@ -779,8 +780,29 @@ exports.getProfile = async (req, res) => {
       subscriptionTier: user.subscriptionTier,
       avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
-      themePreference: user.themePreference || null
+      themePreference: user.themePreference || null,
+      firstLoginTourSeen: Boolean(user.onboarding?.firstLoginTourSeenAt)
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Record that the account has seen the first-login walkthrough so it
+//          never auto-opens again on any device. Replaying it from Help & Tips
+//          is still possible; that path bypasses this flag.
+// @route   PUT /api/auth/onboarding
+exports.markFirstLoginTourSeen = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({ firstLoginTourSeen: true });
+    }
+
+    await User.updateOne(
+      { _id: req.user.id, 'onboarding.firstLoginTourSeenAt': null },
+      { $set: { 'onboarding.firstLoginTourSeenAt': new Date() } }
+    );
+    res.json({ firstLoginTourSeen: true });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

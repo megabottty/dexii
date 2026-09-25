@@ -221,11 +221,12 @@
 }
 
 .navbar-quick-link--tea {
+  /* The badge is anchored to this bordered shell, not the emoji inside it. */
+  position: relative;
   animation: navbar-tea-attention 1.8s ease-in-out infinite;
 }
 
 .navbar-tea-icon-wrap {
-  position: relative;
   display: inline-flex;
   align-items: center;
   line-height: 1;
@@ -233,8 +234,8 @@
 
 .navbar-quick-link-badge {
   position: absolute;
-  top: -8px;
-  right: -10px;
+  top: -7px;
+  right: -7px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -244,7 +245,11 @@
   justify-content: center;
   color: white;
   font-size: 10px;
+  font-weight: 700;
   line-height: 1;
+  /* Ring in the page colour so the badge reads as sitting on the shell's edge. */
+  box-shadow: 0 0 0 2px var(--navbar-badge-ring, #fffafa);
+  z-index: 1;
 }
 
 @keyframes navbar-tea-attention {

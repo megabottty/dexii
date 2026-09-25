@@ -66,6 +66,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
              <span class="navbar-tea-icon-wrap">
                <span aria-hidden="true">🍵</span>
                <span [style.background-color]="theme.colors().accent"
+                     [style.--navbar-badge-ring]="theme.colors().bg"
                      class="navbar-quick-link-badge"
                      aria-label="Unread Tea updates">
                  {{ notifications.unreadCount() }}

@@ -1,5 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { SecurityService } from './security.service';
+import { getApiBaseUrl } from '../config/api-config';
+import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from '../config/walkthrough-tours';
 
 export interface WalkthroughStep {
   title: string;
@@ -13,6 +15,8 @@ export interface WalkthroughStep {
 export class WalkthroughService {
   private readonly storagePrefix = 'dexii_walkthrough_';
   private security = inject(SecurityService);
+  private apiBase = getApiBaseUrl();
+  private firstLoginCheck: Promise<boolean> | null = null;
 
   private _key = signal<string | null>(null);
   private _steps = signal<WalkthroughStep[]>([]);
@@ -47,6 +51,77 @@ export class WalkthroughService {
       ''
     ).trim().toLowerCase();
     return username || 'global';
+  }
+
+  /**
+   * Auto-opens the welcome tour the very first time an account signs in.
+   *
+   * The "seen" flag lives on the account (server), with localStorage only as a
+   * fast cache, so the tour shows once per user rather than once per browser,
+   * PWA install or native app. Resolves to whether the tour opened.
+   */
+  startFirstLogin(): Promise<boolean> {
+    if (this.firstLoginCheck) return this.firstLoginCheck;
+
+    this.firstLoginCheck = (async () => {
+      try {
+        if (this.hasCompleted(FIRST_LOGIN_TOUR_KEY) || this.isOpen()) return false;
+
+        const seenOnServer = await this.fetchFirstLoginSeen();
+        if (seenOnServer === true) {
+          this.markSeenLocally(FIRST_LOGIN_TOUR_KEY);
+          return false;
+        }
+        if (seenOnServer === null) {
+          // Could not reach the API: don't guess. The next dashboard visit
+          // will ask again, and the local cache still prevents repeats here.
+          return false;
+        }
+
+        const opened = this.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
+        if (opened) void this.persistFirstLoginSeen();
+        return opened;
+      } finally {
+        this.firstLoginCheck = null;
+      }
+    })();
+
+    return this.firstLoginCheck;
+  }
+
+  /** true/false from the server, or null when the request failed. */
+  private async fetchFirstLoginSeen(): Promise<boolean | null> {
+    const headers = this.security.authHeaders();
+    if (!headers['x-auth-token']) return null;
+    try {
+      const response = await fetch(`${this.apiBase}/auth/me`, { headers });
+      if (!response.ok) return null;
+      const profile = await response.json();
+      return Boolean(profile?.firstLoginTourSeen);
+    } catch {
+      return null;
+    }
+  }
+
+  private async persistFirstLoginSeen(): Promise<void> {
+    try {
+      await fetch(`${this.apiBase}/auth/onboarding`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...this.security.authHeaders() },
+        body: JSON.stringify({ firstLoginTourSeen: true })
+      });
+    } catch {
+      // Offline: the local cache covers this device, and the server flag is
+      // retried the next time the tour would otherwise open elsewhere.
+    }
+  }
+
+  private markSeenLocally(key: string): void {
+    try {
+      localStorage.setItem(this.storageKey(key), '1');
+    } catch {
+      // Storage can be unavailable in private browsing.
+    }
   }
 
   hasCompleted(key: string): boolean {

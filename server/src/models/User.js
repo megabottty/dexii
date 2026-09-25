@@ -104,6 +104,11 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
+  // One-time onboarding flags, kept on the account so they follow the user
+  // across browsers, the PWA and the native apps.
+  onboarding: {
+    firstLoginTourSeenAt: { type: Date, default: null }
+  },
   // Native app devices (Capacitor). One entry per device; APNs token for iOS,
   // FCM registration token for Android.
   pushTokens: {

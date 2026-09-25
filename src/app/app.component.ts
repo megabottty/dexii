@@ -452,7 +452,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openWalkthrough() {
-    this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR);
+    // Manual replay from Help & Tips: force past the "already seen" flag.
+    this.walkthroughService.start(FIRST_LOGIN_TOUR_KEY, FIRST_LOGIN_TOUR, true);
   }
 
   toggleRouteHint(): void {
