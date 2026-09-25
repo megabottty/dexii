@@ -109,6 +109,19 @@ const UserSchema = new mongoose.Schema({
   onboarding: {
     firstLoginTourSeenAt: { type: Date, default: null }
   },
+  // Browser / installed-PWA devices (Web Push). One entry per browser.
+  webPushSubscriptions: {
+    type: [{
+      endpoint: { type: String, required: true },
+      keys: {
+        p256dh: { type: String, required: true },
+        auth: { type: String, required: true }
+      },
+      userAgent: { type: String, default: '' },
+      updatedAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
   // Native app devices (Capacitor). One entry per device; APNs token for iOS,
   // FCM registration token for Android.
   pushTokens: {

@@ -72,7 +72,7 @@ const pushCopy = (type, actor, payload = {}) => {
 /** Fire-and-forget: wakes the recipient's phone(s) about a saved notification. */
 const notifyDevices = async (notification) => {
   try {
-    if (!push.isEnabled()) return;
+    if (!(await push.isEnabled())) return;
     const actor = notification.actor
       ? await User.findById(notification.actor).select(ACTOR_FIELDS).lean()
       : null;
@@ -132,7 +132,75 @@ exports.registerPushToken = async (req, res) => {
       { $push: { pushTokens: { token, platform, updatedAt: new Date() } } }
     );
 
-    res.json({ ok: true, pushEnabled: push.isEnabled() });
+    res.json({ ok: true, pushEnabled: await push.isEnabled() });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// ---- Web Push (browsers and the installed PWA) ----
+
+exports.getWebPushPublicKey = async (req, res) => {
+  try {
+    const publicKey = await push.getVapidPublicKey();
+    if (!publicKey) {
+      return res.status(503).json({ message: 'Web Push is not available right now.' });
+    }
+    res.json({ publicKey });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const isValidSubscription = (sub) => Boolean(
+  sub && typeof sub.endpoint === 'string' && /^https:\/\//.test(sub.endpoint) &&
+  sub.keys && typeof sub.keys.p256dh === 'string' && typeof sub.keys.auth === 'string'
+);
+
+exports.subscribeWebPush = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+
+    const sub = req.body?.subscription || req.body;
+    if (!isValidSubscription(sub)) {
+      return res.status(400).json({ message: 'A valid push subscription is required.' });
+    }
+
+    const entry = {
+      endpoint: sub.endpoint,
+      keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+      userAgent: String(req.headers['user-agent'] || '').slice(0, 200),
+      updatedAt: new Date()
+    };
+
+    // A browser subscription belongs to exactly one account.
+    await User.updateMany(
+      { _id: { $ne: req.user.id }, 'webPushSubscriptions.endpoint': entry.endpoint },
+      { $pull: { webPushSubscriptions: { endpoint: entry.endpoint } } }
+    );
+    await User.updateOne({ _id: req.user.id }, { $pull: { webPushSubscriptions: { endpoint: entry.endpoint } } });
+    await User.updateOne({ _id: req.user.id }, { $push: { webPushSubscriptions: entry } });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+exports.unsubscribeWebPush = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+
+    const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint : '';
+    if (!endpoint) {
+      return res.status(400).json({ message: 'endpoint is required.' });
+    }
+
+    await User.updateOne({ _id: req.user.id }, { $pull: { webPushSubscriptions: { endpoint } } });
+    res.json({ ok: true });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: 'Server Error' });

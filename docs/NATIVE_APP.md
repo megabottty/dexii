@@ -79,6 +79,22 @@ The server logs at boot which providers are configured, e.g.
 `Push: APNs provider ready.` If neither is configured the app still works,
 you just don't get pushes.
 
+## Web Push (works today, no App Store needed)
+
+Browsers and the installed PWA get notifications through Web Push, which is
+already live and needs no configuration:
+
+- VAPID keys are generated on first boot and kept in the `AppConfig`
+  collection (override with `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`). Set
+  `VAPID_SUBJECT` to a `mailto:` you own if you like.
+- Users turn it on from the banner on the Tea feed or in Settings →
+  Notifications. iPhone requires Dexii to be added to the Home Screen first
+  (iOS 16.4+), and the app must be opened from that icon.
+- Subscriptions are stored on the user (`webPushSubscriptions`), routed with
+  the same copy as the feed, and pruned when a browser reports them gone.
+- The Angular service worker (`ngsw-worker.js`) displays the notification and
+  opens the right screen on tap. It only runs in production builds.
+
 ## How push works
 
 1. When a signed-in, unlocked user opens the native app, the app asks for

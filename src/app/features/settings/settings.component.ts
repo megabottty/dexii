@@ -11,6 +11,7 @@ import { SubscriptionService } from '../../core/services/subscription.service';
 import { FriendsApiService } from '../../core/services/friends-api.service';
 import { UserSettings, UserSettingsService } from '../../core/services/user-settings.service';
 import { InstallPromptService } from '../../core/services/install-prompt.service';
+import { WebPushService } from '../../core/services/web-push.service';
 
 interface FriendChoice {
   id: string;
@@ -440,6 +441,49 @@ interface FriendChoice {
               </div>
             </section>
           }
+
+          @if (webPush.status() !== 'unsupported') {
+            <div class="settings-divider"></div>
+
+            <section class="settings-plan-section">
+              <div class="settings-plan-header">
+                <div>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
+                  <h2 class="settings-section-title">Tea on your phone</h2>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
+                    @switch (webPush.status()) {
+                      @case ('on') { Notifications are on for this device. You'll hear about friend requests and shared crushes even when Dexii is closed. }
+                      @case ('blocked') { Notifications are blocked for Dexii in your browser settings. Allow them there, then come back and turn them on. }
+                      @case ('needs-install') { On iPhone, notifications work once Dexii is on your Home Screen. Add it using the steps above, open it from there, and turn them on here. }
+                      @default { Get a notification on this device when a friend sends a request or shares a crush. }
+                    }
+                  </p>
+                  @if (webPush.error()) {
+                    <p class="settings-push-error">{{ webPush.error() }}</p>
+                  }
+                </div>
+              </div>
+
+              @if (webPush.status() === 'off') {
+                <button type="button"
+                        (click)="webPush.enable()"
+                        [disabled]="webPush.busy()"
+                        [style.background-color]="theme.colors().primary"
+                        class="settings-install-btn">
+                  {{ webPush.busy() ? 'Turning on…' : 'Turn on notifications' }}
+                </button>
+              } @else if (webPush.status() === 'on') {
+                <button type="button"
+                        (click)="webPush.disable()"
+                        [disabled]="webPush.busy()"
+                        [style.color]="theme.colors().text"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        class="settings-push-off-btn">
+                  Turn off on this device
+                </button>
+              }
+            </section>
+          }
           <div class="settings-divider"></div>
 
           <section class="settings-plan-section">
@@ -582,6 +626,7 @@ interface FriendChoice {
 export class SettingsComponent {
   theme = inject(ThemeService);
   install = inject(InstallPromptService);
+  webPush = inject(WebPushService);
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
   subscription = inject(SubscriptionService);

@@ -1,13 +1,18 @@
 /**
- * Native push delivery for the Capacitor apps.
+ * Push delivery to phones.
  *
- *  - iOS   -> Apple Push Notification service (APNs), token-based auth.
+ *  - Web Push -> browsers / installed PWA (Android Chrome, iOS 16.4+ home
+ *                screen app, desktop). Zero configuration: VAPID keys are
+ *                generated once and kept in the AppConfig collection.
+ *  - iOS     -> Apple Push Notification service (APNs), token-based auth.
  *  - Android -> Firebase Cloud Messaging (FCM) via firebase-admin.
  *
- * Both providers are optional: when their env vars are missing the sender is
- * skipped and a single warning is logged at boot, so the web app keeps working.
+ * The native providers are optional: when their env vars are missing the
+ * sender is skipped and a single line is logged at boot.
  *
  * Env vars:
+ *   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY  optional; override the stored keys
+ *   VAPID_SUBJECT   contact for push services, defaults to mailto:support@dexii.app
  *   APNS_KEY        contents of the .p8 auth key (newlines may be escaped as \n)
  *   APNS_KEY_ID     10-character key id from the Apple developer portal
  *   APNS_TEAM_ID    10-character Apple team id
@@ -15,11 +20,77 @@
  *   APNS_PRODUCTION "true" for App Store / TestFlight builds, "false" for Xcode dev builds
  *   FIREBASE_SERVICE_ACCOUNT  service-account JSON (raw or base64-encoded)
  */
+const mongoose = require('mongoose');
 const User = require('../models/User');
+const AppConfig = require('../models/AppConfig');
 
 let apnProvider = null;
 let fcmMessaging = null;
 let initialised = false;
+
+let webPush = null;          // the web-push module, once configured
+let vapidPublicKey = null;
+let webPushInit = null;      // promise so concurrent callers share one setup
+
+const VAPID_CONFIG_KEY = 'webPush.vapid';
+
+const waitForMongo = () => new Promise((resolve) => {
+  if (mongoose.connection.readyState === 1) return resolve(true);
+  const done = (ok) => { cleanup(); resolve(ok); };
+  const onConnected = () => done(true);
+  const onError = () => done(false);
+  const timer = setTimeout(() => done(mongoose.connection.readyState === 1), 20000);
+  const cleanup = () => {
+    clearTimeout(timer);
+    mongoose.connection.off('connected', onConnected);
+    mongoose.connection.off('error', onError);
+  };
+  mongoose.connection.once('connected', onConnected);
+  mongoose.connection.once('error', onError);
+});
+
+/** Loads (or generates and stores) VAPID keys and configures web-push. */
+const ensureWebPush = () => {
+  if (webPushInit) return webPushInit;
+  webPushInit = (async () => {
+    try {
+      const lib = require('web-push');
+      let publicKey = process.env.VAPID_PUBLIC_KEY;
+      let privateKey = process.env.VAPID_PRIVATE_KEY;
+
+      if (!publicKey || !privateKey) {
+        if (!(await waitForMongo())) {
+          console.log('Push: Web Push waiting on MongoDB for VAPID keys; disabled until it connects.');
+          webPushInit = null;
+          return false;
+        }
+        let stored = await AppConfig.findOne({ key: VAPID_CONFIG_KEY }).lean();
+        if (!stored?.value?.publicKey || !stored?.value?.privateKey) {
+          const generated = lib.generateVAPIDKeys();
+          stored = await AppConfig.findOneAndUpdate(
+            { key: VAPID_CONFIG_KEY },
+            { $setOnInsert: { value: generated } },
+            { new: true, upsert: true }
+          ).lean();
+          console.log('Push: generated new VAPID keys for Web Push.');
+        }
+        publicKey = stored.value.publicKey;
+        privateKey = stored.value.privateKey;
+      }
+
+      lib.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:support@dexii.app', publicKey, privateKey);
+      webPush = lib;
+      vapidPublicKey = publicKey;
+      console.log('Push: Web Push ready.');
+      return true;
+    } catch (err) {
+      console.warn('Push: Web Push setup failed:', err.message);
+      webPushInit = null;
+      return false;
+    }
+  })();
+  return webPushInit;
+};
 
 const parseServiceAccount = (raw) => {
   if (!raw) return null;
@@ -35,6 +106,8 @@ const parseServiceAccount = (raw) => {
 const init = () => {
   if (initialised) return;
   initialised = true;
+
+  void ensureWebPush();
 
   const { APNS_KEY, APNS_KEY_ID, APNS_TEAM_ID } = process.env;
   if (APNS_KEY && APNS_KEY_ID && APNS_TEAM_ID) {
@@ -73,9 +146,59 @@ const init = () => {
   }
 };
 
-const isEnabled = () => {
+const isEnabled = async () => {
   init();
-  return Boolean(apnProvider || fcmMessaging);
+  const web = await ensureWebPush();
+  return Boolean(web || apnProvider || fcmMessaging);
+};
+
+const getVapidPublicKey = async () => {
+  init();
+  return (await ensureWebPush()) ? vapidPublicKey : null;
+};
+
+/**
+ * Sends to browser subscriptions. The payload follows the Angular service
+ * worker's format so ngsw displays it and handles the click navigation.
+ * Returns endpoints that are gone and should be removed.
+ */
+const sendWebPush = async (subscriptions, { title, body, data, badge }) => {
+  if (!webPush || !subscriptions.length) return [];
+  const route = data?.route || '/feed';
+  const payload = JSON.stringify({
+    notification: {
+      title,
+      body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data?.notificationId || undefined,
+      renotify: false,
+      data: {
+        ...stringifyData(data),
+        onActionClick: {
+          default: { operation: 'navigateLastFocusedOrOpen', url: route }
+        }
+      }
+    }
+  });
+
+  const stale = [];
+  await Promise.all(subscriptions.map(async (sub) => {
+    try {
+      await webPush.sendNotification(
+        { endpoint: sub.endpoint, keys: sub.keys },
+        payload,
+        { TTL: 60 * 60 * 24, urgency: 'high' }
+      );
+    } catch (err) {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        stale.push(sub.endpoint);
+      } else {
+        console.warn('Push: Web Push send failed:', err.statusCode || '', err.message);
+      }
+    }
+  }));
+  return stale;
 };
 
 const stringifyData = (data = {}) => Object.fromEntries(
@@ -136,27 +259,32 @@ const sendFcm = async (tokens, { title, body, data }) => {
  */
 const sendToUser = async (userId, message) => {
   try {
-    if (!userId || !isEnabled()) return;
+    if (!userId || !(await isEnabled())) return;
 
-    const user = await User.findById(userId).select('pushTokens').lean();
+    const user = await User.findById(userId).select('pushTokens webPushSubscriptions').lean();
     const tokens = user?.pushTokens || [];
-    if (!tokens.length) return;
+    const subscriptions = user?.webPushSubscriptions || [];
+    if (!tokens.length && !subscriptions.length) return;
 
     const ios = tokens.filter((t) => t.platform === 'ios').map((t) => t.token);
     const android = tokens.filter((t) => t.platform === 'android').map((t) => t.token);
 
-    const [staleIos, staleAndroid] = await Promise.all([
+    const [staleIos, staleAndroid, staleWeb] = await Promise.all([
       sendApns(ios, message).catch((err) => { console.warn('Push: APNs error:', err.message); return []; }),
-      sendFcm(android, message).catch((err) => { console.warn('Push: FCM error:', err.message); return []; })
+      sendFcm(android, message).catch((err) => { console.warn('Push: FCM error:', err.message); return []; }),
+      sendWebPush(subscriptions, message).catch((err) => { console.warn('Push: Web Push error:', err.message); return []; })
     ]);
 
     const stale = [...staleIos, ...staleAndroid];
     if (stale.length) {
       await User.updateOne({ _id: userId }, { $pull: { pushTokens: { token: { $in: stale } } } });
     }
+    if (staleWeb.length) {
+      await User.updateOne({ _id: userId }, { $pull: { webPushSubscriptions: { endpoint: { $in: staleWeb } } } });
+    }
   } catch (err) {
     console.warn('Push: sendToUser failed:', err.message);
   }
 };
 
-module.exports = { init, isEnabled, sendToUser };
+module.exports = { init, isEnabled, getVapidPublicKey, sendToUser };

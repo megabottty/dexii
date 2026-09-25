@@ -681,3 +681,18 @@
   margin: 0;
   padding: 1rem 1rem 1rem 2.2rem;
 }
+
+.settings-push-off-btn {
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.8rem 1.6rem;
+}
+
+.settings-push-error {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #dc2626;
+}

@@ -8,6 +8,7 @@ import { CrushProfile } from '../../core/models/crush-profile.model';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { AppNotification, NotificationsService } from '../../core/services/notifications.service';
+import { WebPushService } from '../../core/services/web-push.service';
 
 interface FeedItem {
   id: string;
@@ -49,6 +50,47 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
           title="Feed Hint"
           message="See everything your friends have shared with you - crushes, notes, and updates - all in one place.">
         </app-page-hint>
+
+        @if (webPush.shouldPrompt()) {
+          <div class="tea-push-banner"
+               [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + theme.colors().accent"
+               role="region"
+               aria-label="Turn on notifications">
+            <div class="tea-push-banner-copy">
+              <p [style.color]="theme.colors().text" class="tea-push-banner-title">📲 Get Tea on your phone</p>
+              @if (webPush.status() === 'needs-install') {
+                <p [style.color]="theme.colors().textSecondary" class="tea-push-banner-text">
+                  Add Dexii to your Home Screen first (Settings → Get the App), then open it from there to turn on notifications.
+                </p>
+              } @else {
+                <p [style.color]="theme.colors().textSecondary" class="tea-push-banner-text">
+                  Hear about friend requests and shared crushes the moment they happen, even when Dexii is closed.
+                </p>
+              }
+              @if (webPush.error()) {
+                <p class="tea-push-banner-error">{{ webPush.error() }}</p>
+              }
+            </div>
+            <div class="tea-push-banner-actions">
+              @if (webPush.status() === 'off') {
+                <button type="button"
+                        class="tea-push-banner-enable"
+                        [style.background-color]="theme.colors().primary"
+                        [disabled]="webPush.busy()"
+                        (click)="webPush.enable()">
+                  {{ webPush.busy() ? 'Turning on…' : 'Turn on notifications' }}
+                </button>
+              }
+              <button type="button"
+                      class="tea-push-banner-dismiss"
+                      [style.color]="theme.colors().textSecondary"
+                      (click)="webPush.dismissPrompt()">
+                Not now
+              </button>
+            </div>
+          </div>
+        }
 
         <div class="tea-updates-section"
              [style.background-color]="theme.colors().bgSecondary"
@@ -198,6 +240,7 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
 export class FeedComponent implements OnInit {
   protected theme = inject(ThemeService);
   protected notifications = inject(NotificationsService);
+  protected webPush = inject(WebPushService);
   private dataService = inject(DataService);
   private friendsApi = inject(FriendsApiService);
   private router = inject(Router);

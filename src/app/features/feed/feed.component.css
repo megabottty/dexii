@@ -12,6 +12,72 @@
   margin-bottom: 20px;
 }
 
+.tea-push-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-radius: 20px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.tea-push-banner-copy {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.tea-push-banner-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tea-push-banner-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.tea-push-banner-error {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: #dc2626;
+}
+
+.tea-push-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tea-push-banner-enable {
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.7rem 1.2rem;
+  white-space: nowrap;
+}
+
+.tea-push-banner-enable:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tea-push-banner-dismiss {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.5rem 0.25rem;
+}
+
 .tea-updates-section {
   border-radius: 20px;
   overflow: hidden;
