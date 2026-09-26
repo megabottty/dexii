@@ -19,7 +19,7 @@ const displayName = (user) => {
 
 const preview = (message) => {
   if (message.isSafetyAlert) return 'sent you a safety alert';
-  if (message.isSelfDestruct) return 'sent you a disappearing message';
+  if (message.isSelfDestruct) return '🔒 Private message';
   const text = String(message.content || '').replace(/\s+/g, ' ').trim();
   if (!text) return 'sent you a message';
   return text.length > PREVIEW_LIMIT ? `${text.slice(0, PREVIEW_LIMIT - 1)}…` : text;
