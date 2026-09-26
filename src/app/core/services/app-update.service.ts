@@ -3,6 +3,9 @@ import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 
+/** sessionStorage key set just before an update-triggered reload. */
+export const UPDATE_RELOAD_KEY = 'dexii_update_reload_at';
+
 /**
  * Keeps installed/PWA users on the latest deploy.
  *
@@ -34,20 +37,42 @@ export class AppUpdateService {
     // Unrecoverable state (e.g. cached files evicted): reload to a clean version.
     this.updates.unrecoverable.subscribe(() => document.location.reload());
 
+    // Apply on a route change, but never on the hop out of the lock/login
+    // screens: a reload there sends the user straight back to the PIN pad and
+    // looks like their PIN was rejected.
+    let previousUrl = this.router.url;
     this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => this.applyIfReady());
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        const from = previousUrl;
+        previousUrl = event.urlAfterRedirects || event.url;
+        if (this.isAuthRoute(from) || this.isAuthRoute(previousUrl)) return;
+        this.applyIfReady();
+      });
 
     if (typeof document !== 'undefined') {
+      let hiddenAt: number | null = null;
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState !== 'visible') return;
-        if (this.updateReady) {
+        if (document.visibilityState === 'hidden') {
+          hiddenAt = Date.now();
+          return;
+        }
+        const awayMs = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        if (this.updateReady && awayMs > 5 * 60 * 1000 && !this.isAuthRoute(this.router.url)) {
+          // Been away a while: a fresh start is unobtrusive now.
           this.applyIfReady();
         } else {
           void this.updates.checkForUpdate().catch(() => undefined);
         }
       });
     }
+  }
+
+  /** Screens where a surprise reload would interrupt signing in or unlocking. */
+  private isAuthRoute(url: string): boolean {
+    const path = (url || '').split('?')[0];
+    return path === '/' || path.startsWith('/lock') || path.startsWith('/login') || path.startsWith('/signup');
   }
 
   /** Manual "Check for updates": fetch, and if a new version exists apply it right away. */
@@ -62,7 +87,7 @@ export class AppUpdateService {
       if (found || this.updateReady) {
         this.lastCheck.set('updating');
         await this.updates.activateUpdate();
-        document.location.reload();
+        this.reloadKeepingUnlock();
       } else {
         this.lastCheck.set('current');
       }
@@ -77,7 +102,16 @@ export class AppUpdateService {
     if (!this.updateReady) return;
     this.updateReady = false;
     void this.updates.activateUpdate()
-      .then(() => document.location.reload())
+      .then(() => this.reloadKeepingUnlock())
       .catch(() => { this.updateReady = true; });
+  }
+
+  /**
+   * Reloads for an update without forcing the PIN pad again: SecurityService
+   * honours this short-lived marker on startup (see restoreUnlockAfterUpdate).
+   */
+  private reloadKeepingUnlock(): void {
+    try { sessionStorage.setItem(UPDATE_RELOAD_KEY, String(Date.now())); } catch { /* ignore */ }
+    document.location.reload();
   }
 }

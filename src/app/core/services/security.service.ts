@@ -59,6 +59,27 @@ export class SecurityService {
       this._userPin.set(null);
       localStorage.removeItem('dexii_pin');
     }
+
+    this.restoreUnlockAfterUpdate(Boolean(savedToken));
+  }
+
+  /**
+   * The app reloads itself to apply a new deploy (AppUpdateService). That reload
+   * is not a real app launch, so if it happened seconds ago and the user was
+   * signed in, skip the PIN pad instead of bouncing them back to it.
+   */
+  private restoreUnlockAfterUpdate(hasToken: boolean): void {
+    try {
+      const raw = sessionStorage.getItem('dexii_update_reload_at');
+      if (!raw) return;
+      sessionStorage.removeItem('dexii_update_reload_at');
+      const age = Date.now() - Number(raw);
+      if (hasToken && Number.isFinite(age) && age >= 0 && age < 30000) {
+        this._isLocked.set(false);
+      }
+    } catch {
+      // sessionStorage unavailable: fall back to the normal locked start.
+    }
   }
 
   // 3. Logic to unlock the app
