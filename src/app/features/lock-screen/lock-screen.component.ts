@@ -45,7 +45,7 @@ export class LockScreenComponent {
 
     const success = await this.security.verifyPin(nextPin);
     if (!success) {
-      this.errorMessage.set('Incorrect PIN.');
+      this.errorMessage.set(this.security.lastPinError() || 'Incorrect PIN.');
       this.isShaking.set(true);
       setTimeout(() => this.isShaking.set(false), 500);
       this.clear();

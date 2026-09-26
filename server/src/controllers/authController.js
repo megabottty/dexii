@@ -646,6 +646,10 @@ exports.verifyPin = async (req, res) => {
       return res.status(400).json({ message: 'User not found' });
     }
 
+    if (!user.pin) {
+      return res.status(400).json({ message: 'No PIN is set for this account yet. Sign in again to set one.', code: 'PIN_NOT_SET' });
+    }
+
     const isMatch = await bcrypt.compare(safePin, user.pin);
     if (!isMatch) {
       return res.status(400).json({ message: 'Incorrect PIN' });

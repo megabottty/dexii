@@ -107,9 +107,13 @@ export class SecurityService {
     }
   }
 
+  /** Human-readable reason the last PIN check failed (from the server when available). */
+  readonly lastPinError = signal<string | null>(null);
+
   async verifyPin(input: string, shouldNavigate: boolean = true): Promise<boolean> {
     const username = localStorage.getItem('dexii_api_username');
     const token = localStorage.getItem('dexii_api_token');
+    this.lastPinError.set(null);
 
     // 1. Try verifying against backend endpoint
     if (token || username) {
@@ -134,8 +138,18 @@ export class SecurityService {
           }
           return true;
         }
+
+        // Keep the server's reason (e.g. "User not found", "No PIN is set") so
+        // the lock screen can say more than a generic "Incorrect PIN".
+        try {
+          const body = await response.json();
+          if (body?.message && body.message !== 'Incorrect PIN') this.lastPinError.set(String(body.message));
+        } catch {
+          // Non-JSON error body; the generic message is fine.
+        }
       } catch (err) {
         console.error('Verify PIN API error, checking local fallback:', err);
+        this.lastPinError.set('Could not reach Dexii to check your PIN. Check your connection and try again.');
       }
     }
 
