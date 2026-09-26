@@ -278,28 +278,33 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               <!-- Relationship Status -->
               <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
                 <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">Relationship Status</h4>
-                <div class="dashboard-component__s37">
+                <p [style.color]="theme.colors().textSecondary" class="dashboard-relationship-hint">Pick everything that fits. The first one you choose becomes the headline.</p>
+                <div class="dashboard-component__s37" role="group" aria-label="Relationship status">
                   @for (s of getRelationshipStatusOptions(); track s) {
-                    <div (click)="newCrush.relationshipStatus = s"
-                         role="button"
+                    <div (click)="toggleRelationshipLabel(s)"
+                         role="checkbox"
                          tabindex="0"
-                         (keydown.enter)="newCrush.relationshipStatus = s"
-                         (keydown.space)="newCrush.relationshipStatus = s; $event.preventDefault()"
-                         [attr.aria-pressed]="newCrush.relationshipStatus === s"
-                         [style.border]="newCrush.relationshipStatus === s ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                         [style.background-color]="newCrush.relationshipStatus === s ? theme.colors().primary + '10' : 'transparent'"
+                         (keydown.enter)="toggleRelationshipLabel(s)"
+                         (keydown.space)="toggleRelationshipLabel(s); $event.preventDefault()"
+                         [attr.aria-checked]="hasRelationshipLabel(s)"
+                         [style.border]="hasRelationshipLabel(s) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
+                         [style.background-color]="hasRelationshipLabel(s) ? theme.colors().primary + '10' : 'transparent'"
                          class="dashboard-component__s38">
-                      <div [style.border]="'2px solid ' + (newCrush.relationshipStatus === s ? theme.colors().primary : theme.colors().textSecondary)"
-                           class="dashboard-component__s39">
-                         @if (newCrush.relationshipStatus === s) {
-                           <div [style.background-color]="theme.colors().primary" class="dashboard-component__s40"></div>
+                      <div [style.border]="'2px solid ' + (hasRelationshipLabel(s) ? theme.colors().primary : theme.colors().textSecondary)"
+                           [style.background-color]="hasRelationshipLabel(s) ? theme.colors().primary : 'transparent'"
+                           class="dashboard-component__s39 dashboard-relationship-check">
+                         @if (hasRelationshipLabel(s)) {
+                           <span class="dashboard-relationship-check__mark" aria-hidden="true">✓</span>
                          }
                       </div>
                       <span class="dashboard-component__s32">{{s}}</span>
+                      @if (newCrush.relationshipLabels[0] === s && newCrush.relationshipLabels.length > 1) {
+                        <span [style.color]="theme.colors().primary" class="dashboard-relationship-headline">Headline</span>
+                      }
                     </div>
                   }
                 </div>
-                @if (newCrush.relationshipStatus === 'Other') {
+                @if (hasRelationshipLabel('Other')) {
                   <div style="margin-top: 12px;">
                     <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Relationship Notes</label>
                     <textarea [(ngModel)]="newCrush.relationshipNotes"
@@ -311,7 +316,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                               class="dashboard-component__s20"></textarea>
                   </div>
                 }
-                @if (newCrush.relationshipStatus === 'Heartbroken') {
+                @if (hasRelationshipLabel('Heartbroken')) {
                   <div style="margin-top: 12px;">
                     <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Heartbreak Song</label>
                     <input [(ngModel)]="newCrush.heartbreakSong"
@@ -891,6 +896,7 @@ export class DashboardComponent implements OnInit {
       instagram: ''
     },
     relationshipStatus: '',
+    relationshipLabels: [] as string[],
     heartbreakSong: '',
     heartbreakRecovery: '',
     hairNotes: '',
@@ -979,6 +985,23 @@ export class DashboardComponent implements OnInit {
       "We are engaged",
       "Other"
     ];
+  }
+
+  hasRelationshipLabel(label: string): boolean {
+    return this.newCrush.relationshipLabels.includes(label);
+  }
+
+  /** Multi-select: the first label chosen is the headline status shown on cards. */
+  toggleRelationshipLabel(label: string): void {
+    const labels = [...this.newCrush.relationshipLabels];
+    const index = labels.indexOf(label);
+    if (index >= 0) labels.splice(index, 1); else labels.push(label);
+    this.newCrush.relationshipLabels = labels;
+    if (!labels.includes('Other')) this.newCrush.relationshipNotes = '';
+    if (!labels.includes('Heartbroken')) {
+      this.newCrush.heartbreakSong = '';
+      this.newCrush.heartbreakRecovery = '';
+    }
   }
 
   toggleArchived() {
@@ -1082,7 +1105,8 @@ export class DashboardComponent implements OnInit {
       eyes: this.newCrush.eyes,
       build: this.newCrush.build,
       social: { ...this.newCrush.social },
-      relationshipStatus: this.newCrush.relationshipStatus,
+      relationshipStatus: this.newCrush.relationshipLabels.find((label) => label !== 'Other') || '',
+      relationshipLabels: this.newCrush.relationshipLabels.filter((label) => label !== 'Other'),
       heartbreakSong: this.newCrush.heartbreakSong,
       heartbreakRecovery: this.newCrush.heartbreakRecovery,
       customNotes: customNotes.trim(),
@@ -1142,6 +1166,7 @@ export class DashboardComponent implements OnInit {
         instagram: ''
       },
       relationshipStatus: '',
+      relationshipLabels: [] as string[],
       heartbreakSong: '',
       heartbreakRecovery: '',
       hairNotes: '',

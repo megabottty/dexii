@@ -158,6 +158,31 @@
   width: 10px; height: 10px; border-radius: 50%;
 }
 
+.dashboard-relationship-hint {
+  margin: -6px 0 12px;
+  font-size: 12px;
+}
+
+.dashboard-relationship-check {
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.dashboard-relationship-check__mark {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dashboard-relationship-headline {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
 .dashboard-component__s41 {
   display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
 }
