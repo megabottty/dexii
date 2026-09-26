@@ -403,8 +403,11 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                     <span [style.color]="chat.unreadCount > 0 ? theme.colors().text : theme.colors().textSecondary"
                           class="chat-hub__preview">
                       @if (chat.latestMessage.senderId === selfId()) { <span [style.color]="theme.colors().textSecondary">You: </span> }
-                      @if (chat.latestMessage.isSelfDestruct) { 🔥 }
-                      {{ chat.latestMessage.content }}
+                      @if (chat.latestMessage.isSelfDestruct) {
+                        🔒 Private message
+                      } @else {
+                        {{ chat.latestMessage.content }}
+                      }
                     </span>
                   </span>
                   @if ((chat.unreadSelfDestructCount || 0) > 0) {

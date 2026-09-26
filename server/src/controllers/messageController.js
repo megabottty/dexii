@@ -39,6 +39,13 @@ const areFriends = async (userId, otherId) => {
 };
 exports.areFriends = areFriends;
 
+/** Disappearing messages are never previewed outside the conversation itself. */
+const previewSafe = (message) => {
+  if (!message?.isSelfDestruct) return message;
+  const plain = typeof message.toObject === 'function' ? message.toObject() : { ...message };
+  return { ...plain, content: 'Private message' };
+};
+
 async function deleteExpiredMessages(expirableMessages) {
   if (!expirableMessages || expirableMessages.length === 0) return;
   const now = Date.now();
@@ -138,7 +145,7 @@ exports.getConversations = async (req, res) => {
 
         summaries.push({
           friend: friendMap.get(friendId) || { id: friendId, username: friendId, friendCategories: [] },
-          latestMessage: message,
+          latestMessage: previewSafe(message),
           unreadCount: unreadForFriend.length,
           unreadSelfDestructCount: unreadSelfDestruct
         });
@@ -210,7 +217,7 @@ exports.getConversations = async (req, res) => {
       seen.add(friendId);
       summaries.push({
         friend: friendMap.get(friendId) || { id: friendId, username: friendId, friendCategories: [] },
-        latestMessage: message,
+        latestMessage: previewSafe(message),
         unreadCount: unreadCountByFriend.get(friendId) || 0,
         unreadSelfDestructCount: unreadSelfDestructByFriend.get(friendId) || 0
       });
