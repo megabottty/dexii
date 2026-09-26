@@ -707,3 +707,30 @@
   margin: 12px 0 0;
   font-size: 0.8rem;
 }
+
+.settings-build {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.settings-build-check {
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.settings-build-check:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

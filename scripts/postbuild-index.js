@@ -14,6 +14,18 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+
+/** Short git commit for this build: Render sets RENDER_GIT_COMMIT; locally ask git. */
+function buildId() {
+  const fromEnv = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || '';
+  if (fromEnv) return fromEnv.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return 'dev';
+  }
+}
 
 const indexPath = path.resolve(__dirname, '..', 'dist', 'dexii', 'browser', 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
@@ -34,6 +46,9 @@ if (srcs.length === 0) {
 // then add the executing module scripts.
 const loader = `<script>(function(){var p=${JSON.stringify(preloads)},s=${JSON.stringify(srcs)};function go(){var i,e;for(i=0;i<p.length;i++){e=document.createElement('link');e.rel='modulepreload';e.href=p[i];document.head.appendChild(e);}for(i=0;i<s.length;i++){e=document.createElement('script');e.type='module';e.src=s[i];document.head.appendChild(e);}}if(window.requestAnimationFrame){requestAnimationFrame(function(){requestAnimationFrame(go);});}else{setTimeout(go,0);}})();</script>`;
 
-html = html.replace('</body>', `${loader}</body>`);
+const build = buildId();
+html = html.replace('<head>', `<head><meta name="dexii-build" content="${build}">`);
+html = html.replace('</body>', `<script>window.__DEXII_BUILD__=${JSON.stringify(build)};</script>${loader}</body>`);
 fs.writeFileSync(indexPath, html);
+console.log(`postbuild-index: build ${build}`);
 console.log(`postbuild-index: deferred ${srcs.length} module script(s) and ${preloads.length} preload(s) until after first paint`);

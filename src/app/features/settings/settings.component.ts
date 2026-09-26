@@ -13,6 +13,7 @@ import { UserSettings, UserSettingsService } from '../../core/services/user-sett
 import { InstallPromptService } from '../../core/services/install-prompt.service';
 import { WebPushService } from '../../core/services/web-push.service';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
+import { AppUpdateService } from '../../core/services/app-update.service';
 
 interface FriendChoice {
   id: string;
@@ -572,6 +573,22 @@ interface FriendChoice {
               </button>
             </div>
           </div>
+
+          <div class="settings-build" [style.color]="theme.colors().textSecondary">
+            <span>Dexii build {{ appUpdate.build }}</span>
+            <button type="button"
+                    class="settings-build-check"
+                    [style.color]="theme.colors().primary"
+                    [disabled]="appUpdate.checking()"
+                    (click)="appUpdate.checkNow()">
+              @switch (appUpdate.lastCheck()) {
+                @case ('current') { You're up to date }
+                @case ('updating') { Updating… }
+                @case ('unavailable') { Reload the page to update }
+                @default { {{ appUpdate.checking() ? 'Checking…' : 'Check for updates' }} }
+              }
+            </button>
+          </div>
         </section>
       </main>
 
@@ -641,6 +658,7 @@ export class SettingsComponent {
   install = inject(InstallPromptService);
   webPush = inject(WebPushService);
   photoPickerOpen = signal(false);
+  appUpdate = inject(AppUpdateService);
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
   subscription = inject(SubscriptionService);

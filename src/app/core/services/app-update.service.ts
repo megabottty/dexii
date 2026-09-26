@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
@@ -18,6 +18,11 @@ export class AppUpdateService {
   private updates = inject(SwUpdate);
   private router = inject(Router);
   private updateReady = false;
+
+  /** Short commit of the bundle currently running (stamped by scripts/postbuild-index.js). */
+  readonly build: string = (typeof window !== 'undefined' && (window as unknown as { __DEXII_BUILD__?: string }).__DEXII_BUILD__) || 'dev';
+  readonly checking = signal(false);
+  readonly lastCheck = signal<'idle' | 'updating' | 'current' | 'unavailable'>('idle');
 
   constructor() {
     if (!this.updates.isEnabled) return;
@@ -42,6 +47,29 @@ export class AppUpdateService {
           void this.updates.checkForUpdate().catch(() => undefined);
         }
       });
+    }
+  }
+
+  /** Manual "Check for updates": fetch, and if a new version exists apply it right away. */
+  async checkNow(): Promise<void> {
+    if (!this.updates.isEnabled) {
+      this.lastCheck.set('unavailable');
+      return;
+    }
+    this.checking.set(true);
+    try {
+      const found = await this.updates.checkForUpdate();
+      if (found || this.updateReady) {
+        this.lastCheck.set('updating');
+        await this.updates.activateUpdate();
+        document.location.reload();
+      } else {
+        this.lastCheck.set('current');
+      }
+    } catch {
+      this.lastCheck.set('unavailable');
+    } finally {
+      this.checking.set(false);
     }
   }
 
