@@ -56,21 +56,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  class="read-only-chat-card">
               <div>
                 <strong>Want to talk about {{ getCrushDisplayName(c) }}?</strong>
-                @if (existingOwnerChat(); as chat) {
-                  <p [style.color]="theme.colors().textSecondary">
-                    Existing chat: “{{ chat.latestMessage.content }}”
-                  </p>
-                } @else {
-                  <p [style.color]="theme.colors().textSecondary">
-                    Ask {{ friendCrushOwnerName() || 'your friend' }} a question or leave a comment.
-                  </p>
-                }
+                <p [style.color]="theme.colors().textSecondary">
+                  Ask {{ friendCrushOwnerName() || 'your friend' }} a question or leave a comment.
+                </p>
               </div>
               <a [routerLink]="['/chat']"
                  [queryParams]="{ friendId: ownerId, friendName: friendCrushOwnerName() || 'Friend' }"
                  [style.background-color]="theme.colors().primary"
                  class="read-only-chat-button">
-                {{ existingOwnerChat() ? 'Open Existing Chat' : 'Chat About This Crush' }}
+                💬 Chat with {{ friendCrushOwnerName() || 'your friend' }}
               </a>
             </div>
           }
@@ -1200,11 +1194,6 @@ export class ProfileDetailComponent implements OnDestroy {
   /** Whether the "Show more details" section is expanded on the read-only friend view. */
   showFullCrushDetails = signal(false);
 
-  existingOwnerChat = computed(() => {
-    const ownerId = this.friendCrushOwnerId();
-    if (!ownerId) return null;
-    return this.messaging.conversationSummaries().find((summary) => summary.friend.id === ownerId) || null;
-  });
 
   toggleFullCrushDetails(): void {
     this.showFullCrushDetails.update((v) => !v);

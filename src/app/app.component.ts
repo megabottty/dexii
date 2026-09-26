@@ -15,6 +15,7 @@ import { FIRST_LOGIN_TOUR, FIRST_LOGIN_TOUR_KEY } from './core/config/walkthroug
 import { SupportMenuService } from './core/services/support-menu.service';
 import { PushNotificationsService } from './core/services/push-notifications.service';
 import { WebPushService } from './core/services/web-push.service';
+import { AppUpdateService } from './core/services/app-update.service';
 
 interface WalkthroughStep {
   title: string;
@@ -321,6 +322,8 @@ export class AppComponent implements OnInit, OnDestroy {
   // Instantiated here so push registration (native app and browser) starts with the app.
   private push = inject(PushNotificationsService);
   private webPush = inject(WebPushService);
+  // Applies new deploys promptly in the installed app.
+  private appUpdate = inject(AppUpdateService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private navMenuObserver: MutationObserver | null = null;
