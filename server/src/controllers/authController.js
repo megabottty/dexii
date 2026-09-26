@@ -852,9 +852,9 @@ exports.updateThemePreference = async (req, res) => {
 exports.updateProfileSettings = async (req, res) => {
   try {
     const allowedKeys = [
-      'displayName', 'bio', 'avatarUrl', 'relationshipStatus', 'lookingFor',
-      'interestedIn', 'loveLanguage', 'idealDate', 'profileVisibility', 'selectedFriendIds'
-      , 'journalPromptFrequency'
+      'displayName', 'bio', 'avatarUrl', 'avatarConfig', 'relationshipStatus', 'lookingFor',
+      'interestedIn', 'loveLanguage', 'idealDate', 'profileVisibility', 'selectedFriendIds',
+      'journalPromptFrequency'
     ];
     const profileSettings = {};
     for (const key of allowedKeys) {
@@ -870,9 +870,16 @@ exports.updateProfileSettings = async (req, res) => {
       return res.status(400).json({ message: 'Selected friends must be an array.' });
     }
 
+    // The top-level avatarUrl is what friends, chats and the feed display, so
+    // keep it in step with the photo chosen in Settings.
+    const update = { profileSettings };
+    if (Object.prototype.hasOwnProperty.call(profileSettings, 'avatarUrl')) {
+      update.avatarUrl = typeof profileSettings.avatarUrl === 'string' ? profileSettings.avatarUrl : '';
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { $set: { profileSettings } },
+      { $set: update },
       { new: true, runValidators: false }
     ).select('profileSettings');
     if (!user) return res.status(404).json({ message: 'User not found.' });

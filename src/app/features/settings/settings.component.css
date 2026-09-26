@@ -696,3 +696,14 @@
   font-size: 0.85rem;
   color: #dc2626;
 }
+
+.settings-photo-picker {
+  margin: 16px 0 20px;
+  padding: 16px 18px;
+  border-radius: 16px;
+}
+
+.settings-photo-picker-note {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+}

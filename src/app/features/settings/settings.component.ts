@@ -12,6 +12,7 @@ import { FriendsApiService } from '../../core/services/friends-api.service';
 import { UserSettings, UserSettingsService } from '../../core/services/user-settings.service';
 import { InstallPromptService } from '../../core/services/install-prompt.service';
 import { WebPushService } from '../../core/services/web-push.service';
+import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 
 interface FriendChoice {
   id: string;
@@ -23,7 +24,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -52,17 +53,13 @@ interface FriendChoice {
                    [alt]="settings.settings().displayName || username()"
                    class="settings-avatar">
               <div class="settings-photo-actions">
-                <input #photoInput type="file" accept="image/*" (change)="uploadPhoto($event)" hidden>
-                <button (click)="photoInput.click()"
+                <button type="button"
+                        (click)="photoPickerOpen.set(!photoPickerOpen())"
                         [style.background-color]="theme.colors().primary"
+                        [attr.aria-expanded]="photoPickerOpen()"
+                        aria-controls="settings-photo-picker"
                         class="settings-photo-btn settings-action-btn">
-                  Upload / Change Photo
-                </button>
-                <button (click)="clearPhoto()"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.color]="theme.colors().textSecondary"
-                        class="settings-reset-btn settings-action-btn">
-                  Remove Photo
+                  {{ photoPickerOpen() ? 'Done with photo' : 'Change photo or build an avatar' }}
                 </button>
               </div>
             </div>
@@ -79,6 +76,22 @@ interface FriendChoice {
               {{ saveMessage() || 'Save Changes' }}
             </button>
           </div>
+
+          @if (photoPickerOpen()) {
+            <div id="settings-photo-picker"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.background-color]="theme.colors().bg"
+                 class="settings-photo-picker">
+              <app-avatar-picker label="Profile photo"
+                                 [url]="settings.settings().avatarUrl || ''"
+                                 (urlChange)="update('avatarUrl', $event)"
+                                 [config]="settings.settings().avatarConfig"
+                                 (configChange)="update('avatarConfig', $event)"></app-avatar-picker>
+              <p [style.color]="theme.colors().textSecondary" class="settings-photo-picker-note">
+                Tap Save Changes to update what your friends see.
+              </p>
+            </div>
+          }
 
           <div class="settings-grid">
             <label class="settings-field">
@@ -627,6 +640,7 @@ export class SettingsComponent {
   theme = inject(ThemeService);
   install = inject(InstallPromptService);
   webPush = inject(WebPushService);
+  photoPickerOpen = signal(false);
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
   subscription = inject(SubscriptionService);
@@ -735,18 +749,6 @@ export class SettingsComponent {
 
   update<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
     this.settings.updateSettings({ [key]: value } as Partial<UserSettings>);
-  }
-
-  async uploadPhoto(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    await this.settings.setProfileAvatar(file);
-    input.value = '';
-  }
-
-  clearPhoto() {
-    this.settings.updateSettings({ avatarUrl: '' });
   }
 
   async openFriendPicker() {

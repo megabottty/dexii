@@ -1,9 +1,13 @@
+import { AvatarConfig } from '../models/avatar-config.model';
+
 export interface UserSettings {
   username: string;
   displayName: string;
   email: string;
   bio: string;
   avatarUrl: string;
+  /** Builder options when the profile photo was made with the avatar builder. */
+  avatarConfig?: AvatarConfig;
   journalTitle: string;
   journalPrompt: string;
   reminderTime: string;

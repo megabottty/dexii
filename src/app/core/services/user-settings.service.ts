@@ -107,6 +107,7 @@ export class UserSettingsService {
         displayName: settings.displayName,
         bio: settings.bio,
         avatarUrl: settings.avatarUrl,
+        avatarConfig: settings.avatarConfig ?? null,
         relationshipStatus: settings.relationshipStatus,
         lookingFor: settings.lookingFor,
         interestedIn: settings.interestedIn,
