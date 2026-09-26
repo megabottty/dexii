@@ -667,6 +667,26 @@
 }
 
 @media (max-width: 900px) {
+  /* On phones the whole New Crush sheet scrolls (not just the field area),
+     with room at the bottom so Save Crush clears the browser bar. */
+  .dashboard-component__s2 {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .dashboard-component__s3 {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    padding: 28px 18px calc(28px + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+  }
+
+  .dashboard-component__s6 {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
   .dashboard-component__s70 {
     padding: 28px 16px 48px;
   }

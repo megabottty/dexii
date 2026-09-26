@@ -1061,8 +1061,18 @@ select.edit-input-styled {
     padding: 24px 22px;
   }
 
+  /* Keep Save/Cancel visible above the phone's bottom bar while the long
+     form scrolls, instead of only at the very end of the page. */
   .edit-actions-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
     justify-content: stretch;
+    margin: 20px -22px -24px;
+    padding: 14px 22px calc(14px + env(safe-area-inset-bottom));
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.08);
   }
 
   .edit-actions-footer > * {

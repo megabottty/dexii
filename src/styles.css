@@ -66,6 +66,21 @@ textarea {
   textarea {
     font-size: 16px;
   }
+
+  /* Leave room under the last control for the browser's bottom bar and the
+     home indicator, so Save buttons at the end of a page are never covered. */
+  .profile-container,
+  .feed-page,
+  .settings-page,
+  .shared-history-container,
+  .sharing-component__page,
+  .dashboard-component__s1,
+  .friends-list-component__s1,
+  .vault-center-component__s1,
+  .user-profile-component__s1,
+  .friend-profile-component__s1 {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
