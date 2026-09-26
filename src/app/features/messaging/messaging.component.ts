@@ -1,4 +1,5 @@
-import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit } from '@angular/core';
+import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit, HostListener } from '@angular/core';
+import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -186,6 +187,9 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                 <div [style.background-color]="theme.colors().bgSecondary"
                      [style.border]="'1px solid ' + theme.colors().border"
                      class="messaging-reaction-picker"
+                     role="group"
+                     aria-label="Pick a reaction"
+                     (click)="$event.stopPropagation()"
                      [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'">
                   @for (emoji of reactionOptions; track emoji) {
                     <button type="button"
@@ -508,7 +512,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     { label: '1 minute', ms: 60000 },
     { label: '5 minutes', ms: 300000 }
   ];
-  reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🔥'];
+  reactionOptions = REACTION_EMOJIS;
   activeReactionPickerFor = signal<string | null>(null);
   showNewGroup = signal(false);
   newGroupName = '';
@@ -553,7 +557,16 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   }
 
   reactToMessage(messageId: string, emoji: string): void {
+    // Picking an emoji is the end of the interaction: close the picker.
+    this.activeReactionPickerFor.set(null);
     void this.messaging.reactToMessage(messageId, emoji);
+  }
+
+  /** Tapping anywhere outside the picker (or pressing Escape) dismisses it. */
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  closeReactionPicker(): void {
+    if (this.activeReactionPickerFor() !== null) this.activeReactionPickerFor.set(null);
   }
 
   /** Groups a message's raw reactions by emoji for pill rendering (count + "did I react"). */

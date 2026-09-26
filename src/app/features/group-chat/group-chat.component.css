@@ -126,11 +126,14 @@
 }
 
 .group-chat-reaction-picker {
-  display: flex;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 999px;
+  display: grid;
+  grid-template-columns: repeat(6, 36px);
+  gap: 2px;
+  padding: 8px;
+  border-radius: 18px;
   margin-top: 4px;
+  max-width: calc(100vw - 48px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   animation: group-chat-reaction-pop 0.15s ease;
 }
 
@@ -138,12 +141,25 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 20px;
-  transition: transform 0.15s ease;
+  font-size: 22px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.group-chat-reaction-picker__option:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
 }
 
 .group-chat-reaction-picker__option:hover {
-  transform: scale(1.35);
+  transform: scale(1.25);
+  background-color: rgba(127, 127, 127, 0.12);
 }
 
 @keyframes group-chat-reaction-pop {

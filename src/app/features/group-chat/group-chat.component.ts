@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal, HostListener } from '@angular/core';
+import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -44,7 +45,7 @@ import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/service
               <div [style.background-color]="isMine(msg) ? theme.colors().primary : theme.colors().bgSecondary"
                    [style.color]="isMine(msg) ? 'white' : theme.colors().text"
                    [style.border]="isMine(msg) ? 'none' : '1px solid ' + theme.colors().border"
-                   (dblclick)="toggleReactionPicker(msg.id)"
+                   (dblclick)="toggleReactionPicker(msg.id, $event)"
                    class="group-chat-message__bubble">
                 {{ msg.content }}
               </div>
@@ -65,10 +66,10 @@ import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/service
                 </div>
               }
 
-              <button type="button" (click)="toggleReactionPicker(msg.id)" [style.color]="theme.colors().textSecondary" class="group-chat-react-trigger">😀+</button>
+              <button type="button" (click)="toggleReactionPicker(msg.id, $event)" [style.color]="theme.colors().textSecondary" class="group-chat-react-trigger" aria-label="Add a reaction">😀+</button>
 
               @if (activeReactionPickerFor() === msg.id) {
-                <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="group-chat-reaction-picker">
+                <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="group-chat-reaction-picker" role="group" aria-label="Pick a reaction" (click)="$event.stopPropagation()">
                   @for (emoji of reactionOptions; track emoji) {
                     <button type="button" (click)="react(msg.id, emoji)" class="group-chat-reaction-picker__option">{{ emoji }}</button>
                   }
@@ -114,7 +115,7 @@ export class GroupChatComponent implements OnInit, OnDestroy {
   protected messages = signal<GroupMessage[]>([]);
   protected newMessage = '';
   protected activeReactionPickerFor = signal<string | null>(null);
-  protected reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🔥'];
+  protected reactionOptions = REACTION_EMOJIS;
   private groupId = '';
   private unsubscribeGroupMessage: (() => void) | null = null;
   private unsubscribeReaction: (() => void) | null = null;
@@ -190,8 +191,16 @@ export class GroupChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleReactionPicker(messageId: string): void {
+  toggleReactionPicker(messageId: string, event?: Event): void {
+    event?.stopPropagation();
     this.activeReactionPickerFor.set(this.activeReactionPickerFor() === messageId ? null : messageId);
+  }
+
+  /** Tapping anywhere outside the picker (or pressing Escape) dismisses it. */
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  closeReactionPicker(): void {
+    if (this.activeReactionPickerFor() !== null) this.activeReactionPickerFor.set(null);
   }
 
   async react(messageId: string, emoji: string): Promise<void> {
