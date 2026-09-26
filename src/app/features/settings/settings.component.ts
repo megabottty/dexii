@@ -440,26 +440,11 @@ interface FriendChoice {
                 </button>
               }
             </section>
-          } @else if (install.isInstalled()) {
-            <div class="settings-divider"></div>
-
-            <section class="settings-plan-section">
-              <div class="settings-plan-header">
-                <div>
-                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Install</p>
-                  <h2 class="settings-section-title">App Installed</h2>
-                  <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                    You're running Dexii as an installed app. Enjoy the tea.
-                  </p>
-                </div>
-              </div>
-            </section>
           }
 
-          @if (webPush.status() !== 'unsupported') {
-            <div class="settings-divider"></div>
+          <div class="settings-divider"></div>
 
-            <section class="settings-plan-section">
+          <section class="settings-plan-section">
               <div class="settings-plan-header">
                 <div>
                   <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
@@ -469,9 +454,13 @@ interface FriendChoice {
                       @case ('on') { Notifications are on for this device. You'll hear about friend requests and shared crushes even when Dexii is closed. }
                       @case ('blocked') { Notifications are blocked for Dexii in your browser settings. Allow them there, then come back and turn them on. }
                       @case ('needs-install') { On iPhone, notifications work once Dexii is on your Home Screen. Add it using the steps above, open it from there, and turn them on here. }
+                      @case ('unsupported') { {{ webPush.unsupportedReason() || 'Notifications are not available in this browser.' }} }
                       @default { Get a notification on this device when a friend sends a request or shares a crush. }
                     }
                   </p>
+                  @if (webPush.diagnostics()) {
+                    <p class="settings-push-diagnostics" [style.color]="theme.colors().textSecondary">{{ webPush.diagnostics() }}</p>
+                  }
                   @if (webPush.error()) {
                     <p class="settings-push-error">{{ webPush.error() }}</p>
                   }
@@ -497,7 +486,6 @@ interface FriendChoice {
                 </button>
               }
             </section>
-          }
           <div class="settings-divider"></div>
 
           <section class="settings-plan-section">

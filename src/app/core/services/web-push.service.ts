@@ -41,6 +41,10 @@ export class WebPushService {
   readonly supported = computed(() => this.permission() !== 'unsupported');
   readonly isIos = signal(false);
   readonly needsInstall = signal(false);
+  /** One-line technical summary of what this browser reports, for support. */
+  readonly diagnostics = signal('');
+  /** Plain-language reason when push is unavailable here. */
+  readonly unsupportedReason = signal('');
 
   readonly status = computed<WebPushStatus>(() => {
     if (this.needsInstall()) return 'needs-install';
@@ -64,11 +68,30 @@ export class WebPushService {
       (navigator as unknown as { standalone?: boolean }).standalone === true;
     this.isIos.set(ios);
 
-    const hasPushApi = 'Notification' in window && 'PushManager' in window && 'serviceWorker' in navigator;
+    const hasNotification = 'Notification' in window;
+    const hasPushManager = 'PushManager' in window;
+    const hasServiceWorker = 'serviceWorker' in navigator;
+    const hasPushApi = hasNotification && hasPushManager && hasServiceWorker;
+    const secure = window.isSecureContext;
+    this.diagnostics.set(
+      `sw:${hasServiceWorker ? 'yes' : 'no'} swEnabled:${this.swPush.isEnabled ? 'yes' : 'no'} ` +
+      `notification:${hasNotification ? 'yes' : 'no'} pushManager:${hasPushManager ? 'yes' : 'no'} ` +
+      `standalone:${standalone ? 'yes' : 'no'} ios:${ios ? 'yes' : 'no'} secure:${secure ? 'yes' : 'no'}`
+    );
+
     if (ios && !standalone && !hasPushApi) {
       this.needsInstall.set(true);
     }
     if (!hasPushApi || !this.swPush.isEnabled) {
+      if (ios && standalone && !hasPushApi) {
+        this.unsupportedReason.set('This iPhone does not offer web notifications to Home Screen apps. It needs iOS 16.4 or later; check Settings → General → Software Update.');
+      } else if (!secure) {
+        this.unsupportedReason.set('Notifications need a secure (https) connection.');
+      } else if (!this.swPush.isEnabled) {
+        this.unsupportedReason.set('The app\'s background worker is not running in this browser, so it cannot receive notifications. Try reloading; private browsing windows also block it.');
+      } else {
+        this.unsupportedReason.set('This browser does not support web notifications. Chrome, Edge, Firefox and Safari 16.4+ do.');
+      }
       this.readDismissed();
       return;
     }
