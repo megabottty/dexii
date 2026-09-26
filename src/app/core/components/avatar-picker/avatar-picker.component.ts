@@ -105,10 +105,38 @@ import { AvatarBuilderComponent } from '../avatar-builder/avatar-builder.compone
                [style.border]="'1px solid ' + theme.colors().border"
                [style.color]="theme.colors().text"
                class="ap-url"
-               placeholder="https://…">
+               placeholder="https://…"
+               aria-describedby="ap-url-help">
+        <div id="ap-url-help" class="ap-url-help"
+             [style.background-color]="theme.colors().bgSecondary"
+             [style.border]="'1px solid ' + theme.colors().border"
+             [style.color]="theme.colors().textSecondary">
+          <p class="ap-url-help-title" [style.color]="theme.colors().text">How to use an image link</p>
+          <ol class="ap-url-help-steps">
+            <li>Any direct image link works (it usually ends in .png, .jpg or .svg).</li>
+            <li>
+              For a different Avataaars face, paste a DiceBear link like
+              <code class="ap-url-help-code">{{ exampleDiceBearUrl }}</code>
+              and change the name after <code class="ap-url-help-code">seed=</code>. Every name gives a different face.
+            </li>
+            <li>
+              To pick every detail yourself, design one in the
+              <a href="https://www.dicebear.com/playground/?style=avataaars" target="_blank" rel="noopener noreferrer"
+                 [style.color]="theme.colors().primary">DiceBear playground</a>,
+              copy the image URL it shows, and paste it above.
+            </li>
+          </ol>
+          <button type="button" class="ap-btn ap-btn-quiet"
+                  [style.border]="'1px solid ' + theme.colors().border"
+                  [style.color]="theme.colors().text"
+                  (click)="useRandomDiceBearUrl()">Try a random DiceBear link</button>
+        </div>
       }
 
-      <p class="ap-credit" [style.color]="theme.colors().textSecondary">Preset and custom avatars: Avataaars by Pablo Stanley, via DiceBear.</p>
+      <p class="ap-credit" [style.color]="theme.colors().textSecondary">
+        Preset and custom avatars: Avataaars by Pablo Stanley, via
+        <a href="https://www.dicebear.com/styles/avataaars/" target="_blank" rel="noopener noreferrer" [style.color]="theme.colors().textSecondary">DiceBear</a>.
+      </p>
     </div>
 
     @if (builderOpen()) {
@@ -181,6 +209,15 @@ export class AvatarPickerComponent {
         this.thumbs.update((map) => { const next = new Map(map); next.set(preset.id, uri); return next; });
       }).catch(() => undefined);
     }
+  }
+
+  protected readonly exampleDiceBearUrl = 'https://api.dicebear.com/9.x/avataaars/svg?seed=Taylor';
+
+  /** Fills the URL field with a DiceBear link using a random seed, so people see the pattern. */
+  protected useRandomDiceBearUrl(): void {
+    const seed = Math.random().toString(36).slice(2, 8);
+    this.setUrl(`https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}`);
+    this.showUrl.set(true);
   }
 
   protected isDataUrl(): boolean {

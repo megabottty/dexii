@@ -157,6 +157,38 @@
   box-sizing: border-box;
 }
 
+.ap-url-help {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ap-url-help-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.ap-url-help-steps {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.ap-url-help-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  word-break: break-all;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.12);
+}
+
 .ap-credit {
   margin: 10px 0 0;
   font-size: 9px;
