@@ -131,8 +131,10 @@ exports.getSharedCrushById = async (req, res) => {
 // @route   POST /api/crushes
 exports.createCrush = async (req, res) => {
   try {
+    const body = { ...req.body };
+    if (body.status === 'Crushing') body.status = 'Plotting';
     const newCrush = new CrushProfile({
-      ...req.body,
+      ...body,
       userId: req.user.id
     });
 
@@ -172,7 +174,13 @@ exports.updateCrush = async (req, res) => {
         ? req.body.relationshipLabels
         : []
     };
-    crush = await CrushProfile.findByIdAndUpdate(req.params.id, { $set: updatePayload }, { new: true });
+    // "Crushing" was renamed to "Plotting"; accept the old name from stale clients.
+    if (updatePayload.status === 'Crushing') updatePayload.status = 'Plotting';
+    crush = await CrushProfile.findByIdAndUpdate(
+      req.params.id,
+      { $set: updatePayload },
+      { new: true, runValidators: true }
+    );
 
     if (newRecipients.length > 0) {
       try {

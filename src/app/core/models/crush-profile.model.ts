@@ -1,6 +1,8 @@
+import { AvatarConfig } from './avatar-config.model';
+
 export enum CrushStatus {
   Crush = 'Crush',
-  Crushing = 'Crushing',
+  Plotting = 'Plotting',
   Dating = 'Dating',
   Exclusive = 'Exclusive',
   BrokenUp = 'Broken Up',
@@ -16,6 +18,8 @@ export interface CrushProfile {
   fullName?: string;
   displayName?: 'nickname' | 'fullName';
   avatarUrl?: string;
+  /** Builder options when the avatar was made with the in-app avatar builder. */
+  avatarConfig?: AvatarConfig;
   bio?: string;
   status: CrushStatus;
   visibility: string[]; // List of friend IDs who can see basic info

@@ -160,8 +160,10 @@ export class FriendsApiService {
 
   private toCrushStatus(status?: string): CrushStatus {
     switch (status) {
+      case 'Crushing': // legacy name
+        return CrushStatus.Plotting;
       case CrushStatus.Crush:
-      case CrushStatus.Crushing:
+      case CrushStatus.Plotting:
       case CrushStatus.Dating:
       case CrushStatus.Exclusive:
       case CrushStatus.BrokenUp:

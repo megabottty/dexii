@@ -15,6 +15,9 @@ import {
 } from '../../core/config/walkthrough-tours';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { AvatarConfig } from '../../core/models/avatar-config.model';
+import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
+import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { SubscriptionTier } from '../../core/models/user.model';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -24,7 +27,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   selector: 'app-dashboard',
   standalone: true,
   styleUrl: './dashboard.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, AvatarPickerComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="dashboard-component__s1">
@@ -67,55 +70,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                 </div>
               </div>
 
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Avatar (Optional)</label>
-                <div class="dashboard-component__s8">
-                  <button (click)="avatarUpload.click()" [style.border]="'1px solid ' + theme.colors().primary"
-                          [style.color]="theme.colors().primary"
-                          class="dashboard-component__s9">
-                    Upload Photo
-                  </button>
-                  <input #avatarUpload type="file" accept="image/*" (change)="onAvatarFileSelected($event)" class="dashboard-component__s10">
-                  @if (uploadedAvatarName()) {
-                    <span [style.color]="theme.colors().textSecondary" class="dashboard-component__s11">{{ uploadedAvatarName() }}</span>
-                  }
-                </div>
-
-                @if (newCrush.avatarUrl) {
-                  <div class="dashboard-component__s12">
-                    <img [src]="newCrush.avatarUrl" alt="Selected avatar preview" [style.border]="'1px solid ' + theme.colors().border"
-                         class="dashboard-component__s13">
-                    @if (cropSourceImage()) {
-                      <button (click)="showCropModal.set(true)" [style.border]="'1px solid ' + theme.colors().border"
-                              [style.color]="theme.colors().text"
-                              class="dashboard-component__s14">
-                        Re-Crop
-                      </button>
-                    }
-                  </div>
-                }
-
-                <div class="dashboard-component__s15">
-                   @for (avatar of mockAvatars; track avatar) {
-                     <img [src]="avatar" [alt]="'Avatar option ' + ($index + 1)" (click)="newCrush.avatarUrl = avatar"
-                          role="button"
-                          tabindex="0"
-                          (keydown.enter)="newCrush.avatarUrl = avatar"
-                          (keydown.space)="newCrush.avatarUrl = avatar; $event.preventDefault()"
-                          [style.border]="newCrush.avatarUrl === avatar ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                          class="dashboard-component__s16">
-                   }
-                </div>
-                <div style="margin-top: 10px;">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Avatar URL (Optional)</label>
-                  <input [(ngModel)]="newCrush.avatarUrl"
-                         [style.background-color]="theme.colors().bgSecondary"
-                         [style.border]="'1px solid ' + theme.colors().border"
-                         [style.color]="theme.colors().text"
-                         class="dashboard-component__s17"
-                         placeholder="https://...">
-                </div>
-              </div>
+              <app-avatar-picker [(url)]="newCrush.avatarUrl" [(config)]="newCrush.avatarConfig"></app-avatar-picker>
 
               <div>
                 <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Nickname</label>
@@ -131,7 +86,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                 <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Status</label>
                 <select [(ngModel)]="newCrush.status" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s19">
                   <option [value]="statuses.Crush">Crush</option>
-                  <option [value]="statuses.Crushing">Crushing</option>
+                  <option [value]="statuses.Plotting">Plotting</option>
                   <option [value]="statuses.Dating">Dating</option>
                   <option [value]="statuses.Exclusive">Exclusive</option>
                   <option [value]="statuses.BrokenUp">Broken Up</option>
@@ -517,47 +472,6 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
         </div>
       }
 
-      @if (showCropModal() && cropSourceImage()) {
-        <div class="dashboard-component__s44">
-          <div [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border"
-               class="dashboard-component__s45">
-            <h3 class="dashboard-component__s46">Crop Avatar</h3>
-            <div [style.background-color]="theme.colors().bgSecondary" class="dashboard-component__s47">
-              <div class="dashboard-component__s48">
-                <img [src]="cropSourceImage()!" alt="Avatar crop preview"
-                     [style.transform]="cropTransform()"
-                     class="dashboard-component__s49">
-              </div>
-            </div>
-            <div class="dashboard-component__s50">
-              <label class="dashboard-component__s51">
-                Zoom
-                <input type="range" min="1" max="3" step="0.05" [value]="cropZoom()" (input)="cropZoom.set(toNumber($event, 1.5))" class="dashboard-component__s52">
-              </label>
-              <label class="dashboard-component__s51">
-                Horizontal
-                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetX()" (input)="cropOffsetX.set(toNumber($event, 0))" class="dashboard-component__s52">
-              </label>
-              <label class="dashboard-component__s51">
-                Vertical
-                <input type="range" min="-120" max="120" step="1" [value]="cropOffsetY()" (input)="cropOffsetY.set(toNumber($event, 0))" class="dashboard-component__s52">
-              </label>
-            </div>
-            <div class="dashboard-component__s53">
-              <button (click)="cancelCrop()" [style.border]="'1px solid ' + theme.colors().border"
-                      class="dashboard-component__s54">
-                Cancel
-              </button>
-              <button (click)="applyCrop()" [style.background-color]="theme.colors().primary"
-                      class="dashboard-component__s55">
-                Apply Crop
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
-
       <!-- Glamour Decorative Elements -->
       @if (theme.isPearl()) {
         <div class="dashboard-component__s60"></div>
@@ -802,23 +716,11 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private walkthrough = inject(WalkthroughService);
+  private avatarRenderer = inject(AvatarRenderService);
   private friendsApi = inject(FriendsApiService);
 
   showNewEntryModal = signal(false);
-  showCropModal = signal(false);
   statuses = CrushStatus;
-  uploadedAvatarName = signal('');
-  cropSourceImage = signal<string | null>(null);
-  cropZoom = signal(1);
-  cropOffsetX = signal(0);
-  cropOffsetY = signal(0);
-
-  mockAvatars = [
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Anya',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo'
-  ];
 
   showArchived = signal(false);
   selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
@@ -855,7 +757,7 @@ export class DashboardComponent implements OnInit {
     if (filter === 'Dating') {
       return crushes.filter((c: any) => c.status === CrushStatus.Dating || c.status === CrushStatus.Exclusive);
     } else if (filter === 'Prospects') {
-      return crushes.filter((c: any) => c.status === CrushStatus.Crush);
+      return crushes.filter((c: any) => c.status === CrushStatus.Crush || c.status === CrushStatus.Plotting);
     }
 
     return crushes;
@@ -976,6 +878,7 @@ export class DashboardComponent implements OnInit {
     noteVisibility: 'private' as 'private' | 'public',
     visibility: [] as string[],
     avatarUrl: '',
+    avatarConfig: undefined as AvatarConfig | undefined,
     pronouns: 'they' as 'he' | 'she' | 'they',
     hair: [] as string[],
     eyes: [] as string[],
@@ -1107,7 +1010,6 @@ export class DashboardComponent implements OnInit {
 
   closeModal() {
     this.showNewEntryModal.set(false);
-    this.cancelCrop();
     this.resetForm();
   }
 
@@ -1132,7 +1034,7 @@ export class DashboardComponent implements OnInit {
     return !this.newCrush.schoolOrWork || this.newCrush.schoolOrWork === 'working' || this.newCrush.schoolOrWork === 'both';
   }
 
-  saveCrush() {
+  async saveCrush() {
     const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
       this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} active crushes. Archive one or upgrade to add more.`);
@@ -1159,6 +1061,12 @@ export class DashboardComponent implements OnInit {
     if (this.newCrush.relationshipNotes) customNotes += `Other: Relationship - ${this.newCrush.relationshipNotes}\n`;
     if (this.newCrush.privateNotes) customNotes += this.newCrush.privateNotes;
 
+    if (!this.newCrush.avatarUrl) {
+      // No picture chosen: give them a preset that stays stable for this nickname.
+      this.newCrush.avatarConfig = this.avatarRenderer.presetFor(this.newCrush.nickname);
+      this.newCrush.avatarUrl = await this.avatarRenderer.render(this.newCrush.avatarConfig, 256);
+    }
+
     const createdCrush = this.dataService.addCrush({
       nickname: this.newCrush.nickname,
       fullName: this.newCrush.firstName,
@@ -1167,7 +1075,8 @@ export class DashboardComponent implements OnInit {
       initialRating: this.newCrush.initialRating,
       bio: this.newCrush.bio,
       visibility: [],
-      avatarUrl: this.newCrush.avatarUrl || `https://i.pravatar.cc/150?u=${this.newCrush.nickname}`, // Fallback avatar
+      avatarUrl: this.newCrush.avatarUrl,
+      avatarConfig: this.newCrush.avatarConfig,
       pronouns: this.newCrush.pronouns,
       hair: this.newCrush.hair,
       eyes: this.newCrush.eyes,
@@ -1209,73 +1118,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  onAvatarFileSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      this.modal.show('Please upload an image file.');
-      return;
-    }
-
-    this.uploadedAvatarName.set(file.name);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') return;
-      this.cropSourceImage.set(result);
-      this.cropZoom.set(1);
-      this.cropOffsetX.set(0);
-      this.cropOffsetY.set(0);
-      this.showCropModal.set(true);
-    };
-    reader.readAsDataURL(file);
-    input.value = '';
-  }
-
-  cropTransform(): string {
-    return `translate(${this.cropOffsetX()}px, ${this.cropOffsetY()}px) scale(${this.cropZoom()})`;
-  }
-
-  toNumber(event: Event, fallback: number): number {
-    const target = event.target as HTMLInputElement | null;
-    if (!target) return fallback;
-    const parsed = Number(target.value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-
-  cancelCrop() {
-    this.showCropModal.set(false);
-  }
-
-  applyCrop() {
-    const source = this.cropSourceImage();
-    if (!source) return;
-
-    const image = new Image();
-    image.onload = () => {
-      const size = 512;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const coverScale = Math.max(size / image.width, size / image.height);
-      const scale = coverScale * this.cropZoom();
-      const drawWidth = image.width * scale;
-      const drawHeight = image.height * scale;
-      const dx = (size - drawWidth) / 2 + this.cropOffsetX();
-      const dy = (size - drawHeight) / 2 + this.cropOffsetY();
-
-      ctx.drawImage(image, dx, dy, drawWidth, drawHeight);
-
-      this.newCrush.avatarUrl = canvas.toDataURL('image/jpeg', 0.85);
-      this.showCropModal.set(false);
-    };
-    image.src = source;
-  }
-
   resetForm() {
     this.newCrush = {
       nickname: '',
@@ -1287,6 +1129,7 @@ export class DashboardComponent implements OnInit {
       noteVisibility: 'private',
       visibility: [],
       avatarUrl: '',
+    avatarConfig: undefined as AvatarConfig | undefined,
       pronouns: 'they',
       hair: [],
       eyes: [],
@@ -1319,10 +1162,5 @@ export class DashboardComponent implements OnInit {
       memorableMoments: '',
       privateNotes: ''
     };
-    this.uploadedAvatarName.set('');
-    this.cropSourceImage.set(null);
-    this.cropZoom.set(1);
-    this.cropOffsetX.set(0);
-    this.cropOffsetY.set(0);
   }
 }

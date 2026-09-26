@@ -11,6 +11,8 @@ import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier, User } from '../../core/models/user.model';
 import { FriendsApiService } from '../../core/services/friends-api.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { AvatarConfig } from '../../core/models/avatar-config.model';
+import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
@@ -18,7 +20,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, AvatarPickerComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -284,10 +286,10 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             [style.color]="theme.colors().primary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="status-chip-button">
-                      Status: {{ c.status || 'Crushing' }}
+                      Status: {{ c.status || 'Plotting' }}
                     </button>
                     <span class="status-visibility-info"
-                          title="Status tracks where things stand: Crush → Crushing → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
+                          title="Status tracks where things stand: Crush → Plotting → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
                           aria-label="What does changing status do?">ℹ</span>
                     @for (label of c.relationshipLabels || []; track label) {
                       <span [style.color]="theme.colors().textSecondary"
@@ -299,14 +301,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     }
                   } @else {
                     <div class="status-quick-edit">
-                      <select [value]="quickStatusDraft() || c.status || statuses.Crushing"
+                      <select [value]="quickStatusDraft() || c.status || statuses.Plotting"
                               (change)="beginQuickStatusChange(c.id, asSelectValue($event))"
                               [style.background-color]="theme.colors().bg"
                               [style.border]="'1px solid ' + theme.colors().border"
                               [style.color]="theme.colors().text"
                               class="status-quick-select">
                         <option [value]="statuses.Crush">Crush</option>
-                        <option [value]="statuses.Crushing">Crushing</option>
+                        <option [value]="statuses.Plotting">Plotting</option>
                         <option [value]="statuses.Dating">Dating</option>
                         <option [value]="statuses.Exclusive">Exclusive</option>
                         <option [value]="statuses.BrokenUp">Broken Up</option>
@@ -617,7 +619,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Crush Status</label>
                     <select [(ngModel)]="editForm.status" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
                       <option [value]="statuses.Crush">Crush</option>
-                      <option [value]="statuses.Crushing">Crushing</option>
+                      <option [value]="statuses.Plotting">Plotting</option>
                       <option [value]="statuses.Dating">Dating</option>
                       <option [value]="statuses.Exclusive">Exclusive</option>
                       <option [value]="statuses.BrokenUp">Broken Up</option>
@@ -627,22 +629,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     </select>
                     <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">Where things stand right now.</span>
                   </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Avatar URL</label>
-                    <input [(ngModel)]="editForm.avatarUrl" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="https://...">
-                    <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-                      @for (avatar of mockAvatars; track avatar) {
-                        <img [src]="avatar"
-                             [alt]="'Avatar option ' + ($index + 1)"
-                             (click)="editForm.avatarUrl = avatar"
-                             role="button"
-                             tabindex="0"
-                             (keydown.enter)="editForm.avatarUrl = avatar"
-                             (keydown.space)="editForm.avatarUrl = avatar; $event.preventDefault()"
-                             [style.border]="editForm.avatarUrl === avatar ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                             style="width: 42px; height: 42px; border-radius: 10px; object-fit: cover; cursor: pointer;">
-                      }
-                    </div>
+                  <div class="edit-field edit-field--full">
+                    <app-avatar-picker [(url)]="editForm.avatarUrl" [(config)]="editForm.avatarConfig" label="Avatar"></app-avatar-picker>
                   </div>
                   <div class="edit-field edit-field--full">
                     <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Pronouns</label>
@@ -1251,12 +1239,6 @@ export class ProfileDetailComponent implements OnDestroy {
     { label: 'Every 2 days', hours: 48 },
     { label: 'Weekly', hours: 168 }
   ];
-  mockAvatars = [
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Anya',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo'
-  ];
   private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingRedFlagLogs = new Set<string>();
   private draggedRelationshipLabel: string | null = null;
@@ -1295,6 +1277,7 @@ export class ProfileDetailComponent implements OnDestroy {
     memorableMoments: '',
     friends: '',
     avatarUrl: '',
+    avatarConfig: undefined as AvatarConfig | undefined,
     rating: 3,
     initialRating: 3,
     social: {
@@ -1551,7 +1534,7 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   openQuickStatusEditor(crush: CrushProfile): void {
-    this.quickStatusDraft.set(crush.status || this.statuses.Crushing);
+    this.quickStatusDraft.set(crush.status || this.statuses.Plotting);
     this.statusQuickEditOpen.set(true);
   }
 
@@ -1619,7 +1602,7 @@ export class ProfileDetailComponent implements OnDestroy {
     this.pendingStatusValue.set(null);
     this.statusVisibilityMode.set('private');
     this.pendingVisibilityFriendIds.set([]);
-    this.quickStatusDraft.set(crush?.status || this.statuses.Crushing);
+    this.quickStatusDraft.set(crush?.status || this.statuses.Plotting);
   }
 
   ngOnDestroy(): void {
@@ -2329,7 +2312,8 @@ export class ProfileDetailComponent implements OnDestroy {
           memorableMoments: c.memorableMoments || '',
           friends: c.friends ? c.friends.join(', ') : '',
           avatarUrl: c.avatarUrl || '',
-          status: c.status || this.statuses.Crushing,
+          avatarConfig: c.avatarConfig,
+          status: c.status || this.statuses.Plotting,
           rating: c.rating || 3,
           initialRating: c.initialRating || c.rating || 3,
           social: {

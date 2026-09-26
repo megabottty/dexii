@@ -30,7 +30,17 @@ if (enableMongo) {
     serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 5000,
   })
-    .then(() => console.log('MongoDB Connected...'))
+    .then(async () => {
+      console.log('MongoDB Connected...');
+      // One-time data migration: crush status "Crushing" was renamed "Plotting".
+      try {
+        const CrushProfile = require('./models/CrushProfile');
+        const result = await CrushProfile.updateMany({ status: 'Crushing' }, { $set: { status: 'Plotting' } });
+        if (result.modifiedCount) console.log(`Migrated ${result.modifiedCount} crush(es) from "Crushing" to "Plotting".`);
+      } catch (err) {
+        console.warn('Crushing→Plotting migration skipped:', err.message);
+      }
+    })
     .catch((err) => {
       console.warn('MongoDB connection error:', err.message);
       if (err.message.includes('authentication failed')) {

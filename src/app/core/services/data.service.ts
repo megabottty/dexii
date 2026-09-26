@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { MessagingService } from './messaging.service';
 import { AuditService } from './audit.service';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
+import { AvatarConfig } from '../models/avatar-config.model';
 import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
 import { ModalService } from './modal.service';
@@ -16,6 +17,7 @@ interface BackendCrush {
   fullName?: string;
   displayName?: 'nickname' | 'fullName';
   avatarUrl?: string;
+  avatarConfig?: AvatarConfig;
   bio?: string;
   status?: string;
   visibility?: string[];
@@ -278,9 +280,11 @@ export class DataService {
   }
 
   private toCrushStatus(status?: string): CrushStatus {
+    // Legacy value: "Crushing" was renamed to "Plotting".
+    if (status === 'Crushing') return CrushStatus.Plotting;
     if (
       status === CrushStatus.Crush ||
-      status === CrushStatus.Crushing ||
+      status === CrushStatus.Plotting ||
       status === CrushStatus.Dating ||
       status === CrushStatus.Exclusive ||
       status === CrushStatus.BrokenUp ||
@@ -301,6 +305,7 @@ export class DataService {
       fullName: crush.fullName,
       displayName: crush.displayName || 'nickname',
       avatarUrl: crush.avatarUrl,
+      avatarConfig: crush.avatarConfig,
       bio: crush.bio,
       status: this.toCrushStatus(crush.status),
       visibility: (crush.visibility || []).map(String),
@@ -483,6 +488,7 @@ export class DataService {
         nickname: crush.nickname,
         fullName: crush.fullName,
         avatarUrl: crush.avatarUrl,
+        avatarConfig: crush.avatarConfig,
         bio: crush.bio,
         status: crush.status,
         visibility: crush.visibility,
@@ -568,6 +574,7 @@ export class DataService {
         nickname: crush.nickname,
         fullName: crush.fullName,
         avatarUrl: crush.avatarUrl,
+        avatarConfig: crush.avatarConfig ?? null,
         bio: crush.bio,
         status: crush.status,
         visibility: crush.visibility,

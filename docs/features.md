@@ -12,7 +12,7 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 
 ## 🗂 The Rolodex (Dashboard)
 - **Crush Cards**: View your active prospects. Includes "Nickname", "Attraction Rating" (1-5 Stars), and "Last Interaction" date.
-- **New Entry**: Create new profiles with custom avatars (selected from a mock gallery), status, and bios.
+- **New Entry**: Create new profiles with an avatar (upload a photo, pick from the diverse preset gallery, or build a custom cartoon avatar), status (Crush → Plotting → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend), and bios.
 - **Archive**: Move past crushes to the archive to keep your dashboard clean. Toggle between Active and Archived views on the main dashboard.
 - **Vibe Meter**: Visual indicator of the emotional trajectory (1-10) based on entry history.
 - **"Spill the Tea" Simulation**: Quick-action button on the dashboard that simulates receiving a private, secret note from a friend.

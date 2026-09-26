@@ -1,0 +1,241 @@
+.ap {
+  display: block;
+}
+
+.ap-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.ap-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ap-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ap-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ap-preview-empty {
+  font-size: 26px;
+  opacity: 0.35;
+}
+
+.ap-current-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ap-btn {
+  background: transparent;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+
+.ap-btn-primary {
+  border: none;
+  color: #fff;
+}
+
+.ap-btn-quiet {
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  font-size: 10px;
+}
+
+.ap-btn-link {
+  border: none;
+  padding: 6px 4px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.ap-file {
+  display: none;
+}
+
+.ap-filename {
+  margin: 6px 0 0;
+  font-size: 10px;
+}
+
+.ap-upgrade {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.ap-upgrade-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ap-upgrade-copy {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+.ap-section {
+  margin: 14px 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.ap-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 8px;
+}
+
+.ap-preset {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.ap-preset:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.ap-preset-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ap-toggle-url {
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ap-url {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.ap-credit {
+  margin: 10px 0 0;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+}
+
+/* Crop tool */
+.ap-crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 270;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ap-crop-modal {
+  width: 100%;
+  max-width: 520px;
+  padding: 24px;
+  border-radius: 20px;
+}
+
+.ap-crop-title {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 16px;
+}
+
+.ap-crop-stage {
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+}
+
+.ap-crop-circle {
+  width: min(280px, 70vw);
+  height: min(280px, 70vw);
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 50%;
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: #111;
+}
+
+.ap-crop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center center;
+}
+
+.ap-crop-controls {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ap-crop-control {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ap-crop-control input {
+  width: 100%;
+  display: block;
+  margin-top: 4px;
+}
+
+.ap-crop-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}

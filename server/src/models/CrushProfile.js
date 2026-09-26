@@ -17,10 +17,15 @@ const CrushProfileSchema = new mongoose.Schema({
     default: 'nickname'
   },
   avatarUrl: String,
+  // Options used by the in-app avatar builder (see client AvatarConfig).
+  avatarConfig: {
+    type: mongoose.Schema.Types.Mixed,
+    default: undefined
+  },
   bio: String,
   status: {
     type: String,
-    enum: ['Crush', 'Crushing', 'Dating', 'Exclusive', 'Archived', 'Friend'],
+    enum: ['Crush', 'Plotting', 'Dating', 'Exclusive', 'Broken Up', 'Heartbroken', 'Archived', 'Friend'],
     default: 'Crush'
   },
   visibility: {
