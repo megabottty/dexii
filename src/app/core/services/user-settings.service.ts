@@ -114,6 +114,8 @@ export class UserSettingsService {
         loveLanguage: settings.loveLanguage,
         idealDate: settings.idealDate,
         journalPromptFrequency: settings.journalPromptFrequency,
+        notifyChatMessages: settings.notifyChatMessages,
+        notifyFriendRequests: settings.notifyFriendRequests,
         profileVisibility: settings.profileVisibility,
         selectedFriendIds: settings.selectedFriendIds
       })

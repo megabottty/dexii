@@ -73,6 +73,10 @@ const pushCopy = (type, actor, payload = {}) => {
 const notifyDevices = async (notification) => {
   try {
     if (!(await push.isEnabled())) return;
+    if (String(notification.type).startsWith('friend_request')) {
+      const recipient = await User.findById(notification.recipient).select('profileSettings').lean();
+      if (recipient?.profileSettings?.notifyFriendRequests === false) return;
+    }
     const actor = notification.actor
       ? await User.findById(notification.actor).select(ACTOR_FIELDS).lean()
       : null;

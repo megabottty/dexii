@@ -1,6 +1,7 @@
 const GroupChat = require('../models/GroupChat');
 const Message = require('../models/Message');
 const { areFriends } = require('./messageController');
+const chatPush = require('../services/chatPush');
 
 // @route   POST /api/groups
 // @desc    Create a group chat. All invited members must be mutual friends of the creator.
@@ -162,6 +163,9 @@ exports.sendGroupMessage = async (req, res) => {
     }
 
     res.json(message);
+
+    // Wake members' phones; never delays or fails the send.
+    setImmediate(() => { void chatPush.notifyGroupMessage(group, message, senderId); });
   } catch (err) {
     console.error('Send group message error:', err.message);
     res.status(500).send('Server Error');

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const chatPush = require('../services/chatPush');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { readStore, writeStore, ensureUser } = require('../utils/demoFriendStore');
@@ -311,6 +312,9 @@ exports.sendMessage = async (req, res) => {
 
     const message = await newMessage.save();
     res.json(message);
+
+    // Wake the recipient's phone; never delays or fails the send.
+    setImmediate(() => { void chatPush.notifyDirectMessage(message, senderId); });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
