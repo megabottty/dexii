@@ -87,11 +87,55 @@ app.use(express.static(distPath, {
   }
 }));
 
+// Build/deploy identity. Render sets RENDER_GIT_COMMIT / RENDER_GIT_BRANCH at
+// build time; locally we fall back to asking git so the shape is the same.
+const startedAt = new Date();
+const buildInfo = (() => {
+  const gitFallback = (args) => {
+    try {
+      return require('child_process').execSync(`git ${args}`, {
+        cwd: __dirname,
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 2000
+      }).toString().trim();
+    } catch {
+      return null;
+    }
+  };
+  const commit = process.env.RENDER_GIT_COMMIT || gitFallback('rev-parse HEAD');
+  const branch = process.env.RENDER_GIT_BRANCH || gitFallback('rev-parse --abbrev-ref HEAD');
+  const subject = process.env.RENDER_GIT_COMMIT ? null : gitFallback('log -1 --pretty=%s');
+  return {
+    version: require('../package.json').version,
+    commit: commit || null,
+    shortCommit: commit ? commit.slice(0, 7) : null,
+    branch: branch || null,
+    commitMessage: subject,
+    service: process.env.RENDER_SERVICE_NAME || null,
+    instance: process.env.RENDER_INSTANCE_ID || null,
+    url: process.env.RENDER_EXTERNAL_URL || null,
+    node: process.version,
+    environment: process.env.NODE_ENV || 'development',
+    startedAt: startedAt.toISOString()
+  };
+})();
+
 // Lightweight liveness probe for keep-alive pings. Deliberately does no
-// database work so scheduled pings stay fast and cheap.
+// database work so scheduled pings stay fast and cheap. Also reports which
+// build is running so a deploy can be verified at a glance.
+const healthPayload = () => ({
+  status: 'ok',
+  uptime: Math.round(process.uptime()),
+  ...buildInfo,
+  mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+});
 app.get('/api/health', (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ status: 'ok', uptime: Math.round(process.uptime()) });
+  res.json(healthPayload());
+});
+app.get('/api/version', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(healthPayload());
 });
 
 // Basic Route

@@ -5,6 +5,18 @@ integration for friend invites.
 
 ---
 
+## Which version is deployed?
+
+```
+curl https://www.dexii.net/api/version
+```
+
+Returns the running build: `shortCommit`/`commit` and `branch` (from Render's
+`RENDER_GIT_COMMIT` / `RENDER_GIT_BRANCH`), `service`, `startedAt`, `uptime`,
+Node version and whether Mongo is connected. Compare `shortCommit` with
+`git log --oneline -1` to confirm a deploy went out. `/api/health` returns the
+same payload and is what the keep-alive pings hit.
+
 ## Environment variables
 
 | Key | Required | Set where | Notes |
