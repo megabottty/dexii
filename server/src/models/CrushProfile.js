@@ -45,6 +45,12 @@ const CrushProfileSchema = new mongoose.Schema({
     max: 5,
     default: 3
   },
+  // First-impression vibe, set when the crush is created; never overwritten by vibe logs.
+  initialRating: {
+    type: Number,
+    min: 1,
+    max: 5
+  },
   redFlags: {
     type: Number,
     min: 0,
@@ -88,6 +94,11 @@ const CrushProfileSchema = new mongoose.Schema({
   age: Number,
   howWeMet: String,
   whenWeMet: String,
+  schoolOrWork: {
+    type: String,
+    enum: ['school', 'working', 'both', 'neither', ''],
+    default: ''
+  },
   grade: String,
   occupation: String,
   family: String,

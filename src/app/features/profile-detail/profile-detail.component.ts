@@ -11,8 +11,9 @@ import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier, User } from '../../core/models/user.model';
 import { FriendsApiService } from '../../core/services/friends-api.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
-import { AvatarConfig } from '../../core/models/avatar-config.model';
-import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
+import { AvatarRenderService } from '../../core/services/avatar-render.service';
+import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
+import { CrushFormValue, crushFormTextFields, crushToFormValue, emptyCrushFormValue, formValueToCrushPatch, parseCustomNotes } from '../../core/utils/crush-form.util';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
@@ -22,7 +23,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, AvatarPickerComponent, UpgradePromptComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -614,323 +615,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                  class="info-section-card edit-form">
               <h2 [style.color]="theme.colors().primary" class="info-title">Edit Details</h2>
 
-              <!-- Basic Info -->
-              <div class="edit-section">
-                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Basic Info</h3>
-                <div class="edit-fields-grid">
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Nickname</label>
-                    <input [(ngModel)]="editForm.nickname" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">First Name</label>
-                    <input [(ngModel)]="editForm.fullName" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Name shown on cards</label>
-                    <select [(ngModel)]="editForm.displayName" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                      <option value="nickname">Nickname</option>
-                      <option value="fullName">Real name</option>
-                    </select>
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Crush Status</label>
-                    <select [(ngModel)]="editForm.status" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                      <option [value]="statuses.Crush">Crush</option>
-                      <option [value]="statuses.Plotting">Plotting</option>
-                      <option [value]="statuses.Dating">Dating</option>
-                      <option [value]="statuses.Exclusive">Exclusive</option>
-                      <option [value]="statuses.BrokenUp">Broken Up</option>
-                      <option [value]="statuses.Heartbroken">Heartbroken</option>
-                      <option [value]="statuses.Archived">Archived</option>
-                      <option [value]="statuses.Friend">Friend</option>
-                    </select>
-                    <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">Where things stand right now.</span>
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <app-avatar-picker [(url)]="editForm.avatarUrl" [(config)]="editForm.avatarConfig" label="Avatar"></app-avatar-picker>
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Pronouns</label>
-                    <div class="edit-chip-grid">
-                      @for (p of pronounOptions; track p.value) {
-                        <button (click)="editForm.pronouns = p.value"
-                                [style.background-color]="editForm.pronouns === p.value ? theme.colors().primary : 'transparent'"
-                                [style.color]="editForm.pronouns === p.value ? 'white' : theme.colors().text"
-                                [style.border-color]="editForm.pronouns === p.value ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ p.label }}</button>
-                      }
-                    </div>
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <div class="vibe-pair-row">
-                      <div class="vibe-pair-item">
-                        <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Initial Vibe
-                          <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— first impression</span>
-                        </label>
-                        <div class="edit-stars-row">
-                          @for (star of [1,2,3,4,5]; track star) {
-                            <button (click)="editForm.initialRating = star"
-                                    [style.color]="(editForm.initialRating || 3) >= star ? theme.colors().accent : theme.colors().border"
-                                    class="star-btn">★</button>
-                          }
-                        </div>
-                      </div>
-                      <div class="vibe-pair-item">
-                        <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Current Vibe
-                          <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">— how you feel now</span>
-                        </label>
-                        <div class="edit-stars-row">
-                          @for (star of [1,2,3,4,5]; track star) {
-                            <button (click)="editForm.rating = star"
-                                    [style.color]="editForm.rating >= star ? theme.colors().accent : theme.colors().border"
-                                    class="star-btn">★</button>
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- About Them -->
-              <div class="edit-section">
-                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">About Them</h3>
-                <div class="edit-fields-grid">
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Additional relationship labels</label>
-                    <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">The main status is above. Choose any labels that add context.</span>
-                    <div class="relationship-label-order">
-                      <span [style.color]="theme.colors().textSecondary" class="vibe-sub-label">
-                        @if (editForm.relationshipLabels?.length) {
-                          Drag selected labels to customize their order:
-                        } @else {
-                          Select labels below, then drag them here to customize their order.
-                        }
-                      </span>
-                      @if (editForm.relationshipLabels?.length) {
-                        <div class="relationship-label-order__list">
-                          @for (label of editForm.relationshipLabels; track label) {
-                            <button type="button"
-                                    draggable="true"
-                                    (click)="toggleRelationshipLabel(label)"
-                                    (dragstart)="startRelationshipLabelDrag(label, $event)"
-                                    (dragover)="$event.preventDefault()"
-                                    (drop)="dropRelationshipLabel(label, $event)"
-                                    (dragend)="clearRelationshipLabelDrag()"
-                                    [style.background-color]="theme.colors().primary"
-                                    [style.color]="'white'"
-                                    [style.border]="'1px solid ' + theme.colors().primary"
-                                    class="option-btn relationship-label-chip">
-                              {{ label }}
-                            </button>
-                          }
-                        </div>
-                      } @else {
-                        <span [style.color]="theme.colors().textSecondary" class="relationship-label-order__empty">
-                          No additional labels selected yet.
-                        </span>
-                      }
-                    </div>
-                    <div class="edit-chip-grid">
-                      @for (s of getRelationshipStatusOptions(); track s) {
-                        <button (click)="toggleRelationshipLabel(s)"
-                                [style.background-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : 'transparent'"
-                                [style.color]="isRelationshipLabelSelected(s) ? 'white' : theme.colors().text"
-                                [style.border-color]="isRelationshipLabelSelected(s) ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ s === 'Other' ? 'Add custom label' : s }}</button>
-                      }
-                    </div>
-                    @if (isRelationshipLabelSelected('Other')) {
-                      <div class="custom-relationship-label-form">
-                        <input [(ngModel)]="editForm.customRelationshipLabelDraft"
-                               [style.background-color]="theme.colors().bg"
-                               [style.border-color]="theme.colors().border"
-                               [style.color]="theme.colors().text"
-                               class="edit-input-styled"
-                               placeholder="Add a custom label">
-                        <button type="button"
-                                (click)="addCustomRelationshipLabel()"
-                                [style.background-color]="theme.colors().primary"
-                                [style.color]="'white'"
-                                [style.border-color]="theme.colors().primary"
-                                class="option-btn">
-                          Add label
-                        </button>
-                      </div>
-                    }
-                    @if (isRelationshipLabelSelected('Heartbroken')) {
-                      <input [(ngModel)]="editForm.heartbreakSong"
-                             [style.background-color]="theme.colors().bg"
-                             [style.border-color]="theme.colors().border"
-                             [style.color]="theme.colors().text"
-                             class="edit-input-styled"
-                             placeholder="Heartbreak song"
-                             style="margin-top:12px;">
-                      <textarea [(ngModel)]="editForm.heartbreakRecovery"
-                                [style.background-color]="theme.colors().bgSecondary"
-                                [style.border-color]="theme.colors().border"
-                                [style.color]="theme.colors().text"
-                                class="edit-textarea-styled"
-                                rows="2"
-                                placeholder="What you're doing to get over it..."
-                                style="margin-top:12px;"></textarea>
-                    }
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Hair</label>
-                    <div class="edit-chip-grid">
-                      @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
-                        <button (click)="toggleSelection(editForm.hair, h)"
-                                [style.background-color]="editForm.hair.includes(h) ? theme.colors().primary : 'transparent'"
-                                [style.color]="editForm.hair.includes(h) ? 'white' : theme.colors().text"
-                                [style.border-color]="editForm.hair.includes(h) ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ h }}</button>
-                      }
-                    </div>
-                    @if (editForm.hair.includes('Other')) {
-                      <textarea [(ngModel)]="editForm.hairNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their hair..." style="margin-top:12px;"></textarea>
-                    }
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Eyes</label>
-                    <div class="edit-chip-grid">
-                      @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
-                        <button (click)="toggleSelection(editForm.eyes, e)"
-                                [style.background-color]="editForm.eyes.includes(e) ? theme.colors().primary : 'transparent'"
-                                [style.color]="editForm.eyes.includes(e) ? 'white' : theme.colors().text"
-                                [style.border-color]="editForm.eyes.includes(e) ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ e }}</button>
-                      }
-                    </div>
-                    @if (editForm.eyes.includes('Other')) {
-                      <textarea [(ngModel)]="editForm.eyeNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their eyes..." style="margin-top:12px;"></textarea>
-                    }
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Build</label>
-                    <div class="edit-chip-grid">
-                      @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
-                        <button (click)="toggleSelection(editForm.build, b)"
-                                [style.background-color]="editForm.build.includes(b) ? theme.colors().primary : 'transparent'"
-                                [style.color]="editForm.build.includes(b) ? 'white' : theme.colors().text"
-                                [style.border-color]="editForm.build.includes(b) ? theme.colors().primary : theme.colors().border"
-                                class="option-btn">{{ b }}</button>
-                      }
-                    </div>
-                    @if (editForm.build.includes('Other')) {
-                      <textarea [(ngModel)]="editForm.buildNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="2" placeholder="Describe their build..." style="margin-top:12px;"></textarea>
-                    }
-                  </div>
-                </div>
-              </div>
-
-              <!-- Details -->
-              <div class="edit-section">
-                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Details</h3>
-                <div class="edit-fields-grid">
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Location</label>
-                    <input [(ngModel)]="editForm.location" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Age</label>
-                    <input type="date" [(ngModel)]="editForm.dateOfBirth" [max]="todayDate" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">How We Met</label>
-                    <input [(ngModel)]="editForm.howWeMet" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">When We Met</label>
-                    <input [(ngModel)]="editForm.whenWeMet" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Grade</label>
-                    <input [(ngModel)]="editForm.grade" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Occupation</label>
-                    <input [(ngModel)]="editForm.occupation" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Family</label>
-                    <input [(ngModel)]="editForm.family" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Their Friends</label>
-                    <input [(ngModel)]="editForm.friends" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="Comma separated">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Social Handles -->
-              <div class="edit-section">
-                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Social Handles</h3>
-                <div class="edit-fields-grid">
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">👻 Snapchat</label>
-                    <input [(ngModel)]="editForm.social.snapchat" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="Username">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">💬 WhatsApp</label>
-                    <input [(ngModel)]="editForm.social.whatsapp" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="Number">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">🐦 Twitter</label>
-                    <input [(ngModel)]="editForm.social.twitter" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="@username">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">📘 Facebook</label>
-                    <input [(ngModel)]="editForm.social.facebook" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="profile link">
-                  </div>
-                  <div class="edit-field">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">📸 Instagram</label>
-                    <input [(ngModel)]="editForm.social.instagram" [style.background-color]="theme.colors().bg" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-input-styled" placeholder="@username">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Bio & Notes -->
-              <div class="edit-section">
-                <h3 [style.color]="theme.colors().textSecondary" class="edit-section-heading">Bio & Notes</h3>
-                <div class="edit-fields-grid">
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Crush Note (Optional)</label>
-                    <textarea [(ngModel)]="editForm.note"
-                              [style.background-color]="theme.colors().bgSecondary"
-                              [style.border-color]="theme.colors().border"
-                              [style.color]="theme.colors().text"
-                              class="edit-textarea-styled"
-                              rows="3"
-                              placeholder="Add a new note while editing..."></textarea>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                      <button (click)="editForm.noteVisibility = 'private'"
-                              [style.background-color]="editForm.noteVisibility === 'private' ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.noteVisibility === 'private' ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.noteVisibility === 'private' ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">Private</button>
-                      <button (click)="editForm.noteVisibility = 'public'"
-                              [style.background-color]="editForm.noteVisibility === 'public' ? theme.colors().primary : 'transparent'"
-                              [style.color]="editForm.noteVisibility === 'public' ? 'white' : theme.colors().text"
-                              [style.border-color]="editForm.noteVisibility === 'public' ? theme.colors().primary : theme.colors().border"
-                              class="option-btn">Public</button>
-                    </div>
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Bio</label>
-                    <textarea [(ngModel)]="editForm.bio" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="A little about them..."></textarea>
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Memorable Moments</label>
-                    <textarea [(ngModel)]="editForm.memorableMoments" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="4" placeholder="Any moments worth remembering..."></textarea>
-                  </div>
-                  <div class="edit-field edit-field--full">
-                    <label [style.color]="theme.colors().textSecondary" class="edit-field-label">Private Notes</label>
-                    <textarea [(ngModel)]="editForm.customNotes" [style.background-color]="theme.colors().bgSecondary" [style.border-color]="theme.colors().border" [style.color]="theme.colors().text" class="edit-textarea-styled" rows="3" placeholder="Your private thoughts..."></textarea>
-                  </div>
-                </div>
-              </div>
+              <app-crush-form [form]="editForm"></app-crush-form>
 
               <div class="edit-actions-footer">
                 <button (click)="saveEdit(c.id)" class="action-btn-styled primary">Save Changes</button>
@@ -948,30 +633,30 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   <span class="info-label">Hair</span>
                   <span class="info-value">{{ c.hair?.join(', ') || 'N/A' }}</span>
                 </div>
-                @if (getOtherNoteDetail(c.customNotes, 'Hair')) {
+                @if (parsedNotes().hairNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Hair Notes</span>
-                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Hair') }}</span>
+                     <span class="info-value note-text">{{ parsedNotes().hairNotes }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
                   <span class="info-label">Eyes</span>
                   <span class="info-value">{{ c.eyes?.join(', ') || 'N/A' }}</span>
                 </div>
-                @if (getOtherNoteDetail(c.customNotes, 'Eyes')) {
+                @if (parsedNotes().eyeNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Eye Notes</span>
-                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Eyes') }}</span>
+                     <span class="info-value note-text">{{ parsedNotes().eyeNotes }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
                   <span class="info-label">Build</span>
                   <span class="info-value">{{ c.build?.join(', ') || 'N/A' }}</span>
                 </div>
-                @if (getOtherNoteDetail(c.customNotes, 'Build')) {
+                @if (parsedNotes().buildNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Build Notes</span>
-                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Build') }}</span>
+                     <span class="info-value note-text">{{ parsedNotes().buildNotes }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -982,10 +667,10 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   <span class="info-label">Crush Status</span>
                   <span class="info-value">{{ c.status }}</span>
                 </div>
-                @if (getOtherNoteDetail(c.customNotes, 'Relationship')) {
+                @if (parsedNotes().relationshipNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Relationship Notes</span>
-                     <span class="info-value note-text">{{ getOtherNoteDetail(c.customNotes, 'Relationship') }}</span>
+                     <span class="info-value note-text">{{ parsedNotes().relationshipNotes }}</span>
                    </div>
                 }
                 <div class="info-row-styled">
@@ -1041,10 +726,10 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 </div>
               }
 
-              @if (getFilteredNotes(c.customNotes)) {
+              @if (parsedNotes().privateNotes) {
                 <div class="extended-info-section">
                   <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
-                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ getFilteredNotes(c.customNotes) }}</p>
+                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ parsedNotes().privateNotes }}</p>
                 </div>
               }
 
@@ -1209,6 +894,7 @@ export class ProfileDetailComponent implements OnDestroy {
   public gate = inject(FeatureGateService);
   showSafetyUpgrade = signal(false);
   public modal = inject(ModalService);
+  private avatarRenderer = inject(AvatarRenderService);
   private friendsApi = inject(FriendsApiService);
   private router = inject(Router);
 
@@ -1257,57 +943,11 @@ export class ProfileDetailComponent implements OnDestroy {
   ];
   private halfwaySafetyTimer: ReturnType<typeof setTimeout> | null = null;
   private pendingRedFlagLogs = new Set<string>();
-  private draggedRelationshipLabel: string | null = null;
 
-  pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
-    {label: 'He/Him', value: 'he'},
-    {label: 'She/Her', value: 'she'},
-    {label: 'They/Them', value: 'they'}
-  ];
+  editForm: CrushFormValue = emptyCrushFormValue();
 
-  editForm: any = {
-    nickname: '',
-    fullName: '',
-    displayName: 'nickname',
-    bio: '',
-    pronouns: 'they',
-    relationshipStatus: '',
-    relationshipLabels: [] as string[],
-    heartbreakSong: '',
-    heartbreakRecovery: '',
-    relationshipNotes: '',
-    customNotes: '',
-    location: '',
-    age: null,
-    hair: [] as string[],
-    eyes: [] as string[],
-    build: [] as string[],
-    hairNotes: '',
-    eyeNotes: '',
-    buildNotes: '',
-    howWeMet: '',
-    whenWeMet: '',
-    grade: '',
-    occupation: '',
-    family: '',
-    memorableMoments: '',
-    friends: '',
-    avatarUrl: '',
-    avatarConfig: undefined as AvatarConfig | undefined,
-    rating: 3,
-    initialRating: 3,
-    social: {
-      snapchat: '',
-      whatsapp: '',
-      twitter: '',
-      facebook: '',
-      instagram: ''
-    },
-    note: '',
-    noteVisibility: 'private',
-    customLabelMode: false,
-    customRelationshipLabelDraft: ''
-  };
+  /** The "Other" detail notes and private notes, split out of customNotes for the view. */
+  parsedNotes = computed(() => parseCustomNotes(this.crush()?.customNotes));
 
   crush = computed(() => {
     const id = this.crushId();
@@ -1388,78 +1028,6 @@ export class ProfileDetailComponent implements OnDestroy {
   getRelationshipLabels(crush: CrushProfile): string[] {
     const labels = Array.isArray(crush.relationshipLabels) ? crush.relationshipLabels : [];
     return [...new Set(labels.filter((label) => typeof label === 'string' && label.trim().length > 0))];
-  }
-
-  isRelationshipLabelSelected(label: string): boolean {
-    if (label === 'Other') return Boolean(this.editForm.customLabelMode);
-    return (this.editForm.relationshipLabels || []).some((selected: string) =>
-      selected === label
-    );
-  }
-
-  toggleRelationshipLabel(label: string): void {
-    if (label === 'Other') {
-      this.editForm.customLabelMode = !this.editForm.customLabelMode;
-      if (!this.editForm.customLabelMode) {
-        this.editForm.customRelationshipLabelDraft = '';
-      }
-      return;
-    }
-
-    const labels = [...(this.editForm.relationshipLabels || [])];
-    const index = labels.indexOf(label);
-    if (index >= 0) {
-      labels.splice(index, 1);
-    } else {
-      labels.push(label);
-    }
-    this.editForm.relationshipLabels = labels;
-  }
-
-  addCustomRelationshipLabel(): void {
-    const label = (this.editForm.customRelationshipLabelDraft || '').trim();
-    if (!label) return;
-
-    const labels = [...(this.editForm.relationshipLabels || [])];
-    if (!labels.includes(label)) {
-      labels.push(label);
-    }
-    this.editForm.relationshipLabels = labels;
-    this.editForm.customRelationshipLabelDraft = '';
-  }
-
-  startRelationshipLabelDrag(label: string, event: DragEvent): void {
-    if (!this.isRelationshipLabelSelected(label)) {
-      event.preventDefault();
-      return;
-    }
-
-    this.draggedRelationshipLabel = label;
-    event.dataTransfer?.setData('text/plain', label);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-    }
-  }
-
-  clearRelationshipLabelDrag(): void {
-    this.draggedRelationshipLabel = null;
-  }
-
-  dropRelationshipLabel(targetLabel: string, event: DragEvent): void {
-    event.preventDefault();
-    const draggedLabel = this.draggedRelationshipLabel || event.dataTransfer?.getData('text/plain');
-    this.draggedRelationshipLabel = null;
-
-    if (!draggedLabel || draggedLabel === targetLabel) return;
-
-    const labels = [...(this.editForm.relationshipLabels || [])];
-    const fromIndex = labels.indexOf(draggedLabel);
-    const toIndex = labels.indexOf(targetLabel);
-    if (fromIndex < 0 || toIndex < 0) return;
-
-    labels.splice(fromIndex, 1);
-    labels.splice(toIndex, 0, draggedLabel);
-    this.editForm.relationshipLabels = labels;
   }
 
   redFlagEntries = computed(() =>
@@ -1642,30 +1210,6 @@ export class ProfileDetailComponent implements OnDestroy {
     } catch (err) {
       console.error('Failed to load friends', err);
     }
-  }
-
-  getRelationshipStatusOptions(): string[] {
-    const pronoun = this.editForm.pronouns || 'they';
-    const subject = pronoun === 'he' ? 'he' : pronoun === 'she' ? 'she' : 'they';
-    const subjectCap = subject.charAt(0).toUpperCase() + subject.slice(1);
-    const object = pronoun === 'he' ? 'him' : pronoun === 'she' ? 'her' : 'them';
-    const verb = pronoun === 'they' ? "don't" : "doesn't";
-    const likes = pronoun === 'they' ? 'like' : 'likes';
-
-    return [
-      `${subjectCap} ${verb} know I exist`,
-      "Just friends",
-      "Just flirting",
-      "Just sexting",
-      "Seeing where it goes (more than friends, haven't DTR)",
-      "Heartbroken",
-      `I think ${subject} ${likes} me`,
-      "Getting serious",
-      "We are a couple",
-      "Friends With Benefits",
-      "We are engaged",
-      "Other"
-    ];
   }
 
   private getVibePromptSettingsKey(): string {
@@ -2285,74 +1829,13 @@ export class ProfileDetailComponent implements OnDestroy {
     });
   }
 
-  toggleSelection(list: string[], item: string) {
-    const index = list.indexOf(item);
-    if (index > -1) {
-      list.splice(index, 1);
-    } else {
-      list.push(item);
-    }
-  }
-
   toggleEditMode() {
     if (!this.isEditMode()) {
       this.showSafetySetup.set(false);
       // Entering edit mode - populate form
       const c = this.crush();
       if (c) {
-        const savedOtherLabel = c.relationshipLabels?.find((label) => label.startsWith('Other: '));
-        this.editForm = {
-          nickname: c.nickname || '',
-          fullName: c.fullName || '',
-          displayName: c.displayName || 'nickname',
-          bio: c.bio || '',
-          pronouns: c.pronouns || 'they',
-          relationshipStatus: c.relationshipStatus || '',
-          relationshipLabels: c.relationshipLabels
-            ? c.relationshipLabels.map((label) => label.startsWith('Other: ') ? label.slice('Other: '.length) : label)
-            : [],
-          customLabelMode: Boolean(savedOtherLabel),
-          customRelationshipLabelDraft: '',
-          heartbreakSong: c.heartbreakSong || '',
-          heartbreakRecovery: c.heartbreakRecovery || '',
-          relationshipNotes: savedOtherLabel
-            ? savedOtherLabel.slice('Other: '.length)
-            : this.getOtherNoteDetail(c.customNotes, 'Relationship'),
-          customNotes: this.getFilteredNotes(c.customNotes),
-          location: c.location || '',
-          dateOfBirth: c.dateOfBirth ? c.dateOfBirth.slice(0, 10) : '',
-          age: c.age || null,
-          hair: c.hair ? [...c.hair] : [],
-          eyes: c.eyes ? [...c.eyes] : [],
-          build: c.build ? [...c.build] : [],
-          hairNotes: this.getOtherNoteDetail(c.customNotes, 'Hair'),
-          eyeNotes: this.getOtherNoteDetail(c.customNotes, 'Eyes'),
-          buildNotes: this.getOtherNoteDetail(c.customNotes, 'Build'),
-          howWeMet: c.howWeMet || '',
-          whenWeMet: c.whenWeMet || '',
-          grade: c.grade || '',
-          occupation: c.occupation || '',
-          family: c.family || '',
-          memorableMoments: c.memorableMoments || '',
-          friends: c.friends ? c.friends.join(', ') : '',
-          avatarUrl: c.avatarUrl || '',
-          avatarConfig: c.avatarConfig,
-          status: c.status || this.statuses.Plotting,
-          rating: c.rating || 3,
-          initialRating: c.initialRating || c.rating || 3,
-          social: {
-            snapchat: c.social?.snapchat || '',
-            whatsapp: c.social?.whatsapp || '',
-            twitter: c.social?.twitter || '',
-            facebook: c.social?.facebook || '',
-            instagram: c.social?.instagram || ''
-          },
-          note: '',
-          noteVisibility: 'private'
-        };
-        this.editForm.customLabelMode = this.editForm.relationshipLabels.some(
-          (label: string) => !this.getRelationshipStatusOptions().includes(label)
-        ) || Boolean(savedOtherLabel);
+        this.editForm = crushToFormValue(c);
       }
     }
     this.isEditMode.set(!this.isEditMode());
@@ -2399,33 +1882,32 @@ export class ProfileDetailComponent implements OnDestroy {
     return `${selectedFriends[0].username}, ${selectedFriends[1].username}, and ${selectedFriends.length - 2} others`;
   }
 
-  saveEdit(crushId: string) {
-    let customNotes = '';
-    if (this.editForm.hairNotes) customNotes += `Other: Hair - ${this.editForm.hairNotes}\n`;
-    if (this.editForm.eyeNotes) customNotes += `Other: Eyes - ${this.editForm.eyeNotes}\n`;
-    if (this.editForm.buildNotes) customNotes += `Other: Build - ${this.editForm.buildNotes}\n`;
-    if (this.editForm.relationshipNotes) customNotes += `Other: Relationship - ${this.editForm.relationshipNotes}\n`;
-    if (this.editForm.customNotes) customNotes += this.editForm.customNotes;
+  async saveEdit(crushId: string) {
+    const current = this.crush();
+    if (!current) return;
 
-    const updatedCrush = {
-      ...this.crush(),
-      ...this.editForm,
-      hair: Array.isArray(this.editForm.hair) ? this.editForm.hair : [],
-      eyes: Array.isArray(this.editForm.eyes) ? this.editForm.eyes : [],
-      build: Array.isArray(this.editForm.build) ? this.editForm.build : [],
-      relationshipLabels: Array.isArray(this.editForm.relationshipLabels)
-        ? [...this.editForm.relationshipLabels]
-        : [],
-      friends: this.editForm.friends ? this.editForm.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
-      heartbreakSong: this.editForm.heartbreakSong || '',
-      heartbreakRecovery: this.editForm.heartbreakRecovery || '',
-      customNotes: customNotes.trim(),
+    if (!this.editForm.nickname.trim()) {
+      this.modal.show('Please enter a nickname at least!');
+      return;
+    }
+    if (!crushFormTextFields(this.editForm).every((text) => this.security.moderateContent(text))) {
+      this.modal.show('Profile text flagged by AI moderation.');
+      return;
+    }
+
+    if (!this.editForm.avatarUrl) {
+      // No picture chosen: give them a preset that stays stable for this nickname.
+      this.editForm.avatarConfig = this.avatarRenderer.presetFor(this.editForm.nickname);
+      this.editForm.avatarUrl = await this.avatarRenderer.render(this.editForm.avatarConfig, 256);
+    }
+
+    this.dataService.updateCrush({
+      ...current,
+      ...formValueToCrushPatch(this.editForm),
       id: crushId
-    } as CrushProfile;
+    });
 
-    this.dataService.updateCrush(updatedCrush);
-
-    const note = (this.editForm.note || '').trim();
+    const note = this.editForm.note.trim();
     if (note) {
       this.dataService.addEntry({
         crushId,
@@ -2437,36 +1919,5 @@ export class ProfileDetailComponent implements OnDestroy {
       });
     }
     this.isEditMode.set(false);
-  }
-
-  getNoteDetail(notes: string | undefined, key: string): string {
-    if (!notes || !notes.includes(key)) return '';
-    const parts = notes.split(key);
-    if (parts.length < 2) return '';
-    const detailPart = parts[1].split('\n')[0];
-    return detailPart ? detailPart.trim() : '';
-  }
-
-  getOtherNoteDetail(notes: string | undefined, label: 'Hair' | 'Eyes' | 'Build' | 'Relationship'): string {
-    if (!notes) return '';
-
-    const prefixedLine = notes
-      .split('\n')
-      .find((line) => line.startsWith(`Other: ${label} - `));
-    if (prefixedLine) {
-      return prefixedLine.slice(`Other: ${label} - `.length).trim();
-    }
-
-    return this.getNoteDetail(notes, `${label}:`);
-  }
-
-  getFilteredNotes(notes: string | undefined): string {
-    if (!notes) return '';
-    const keys = ['Hair:', 'Eyes:', 'Build:', 'Relationship:'];
-    const otherKeys = ['Hair', 'Eyes', 'Build', 'Relationship'].map((label) => `Other: ${label} - `);
-    return notes.split('\n')
-      .filter(line => !keys.some(key => line.startsWith(key)) && !otherKeys.some(key => line.startsWith(key)))
-      .join('\n')
-      .trim();
   }
 }

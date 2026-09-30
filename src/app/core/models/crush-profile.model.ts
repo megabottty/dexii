@@ -11,6 +11,8 @@ export enum CrushStatus {
   Friend = 'Friend'
 }
 
+export type SchoolOrWork = 'school' | 'working' | 'both' | 'neither';
+
 export interface CrushProfile {
   id: string;
   userId: string; // The owner of this profile
@@ -53,6 +55,8 @@ export interface CrushProfile {
   age?: number;
   howWeMet?: string;
   whenWeMet?: string;
+  /** Whether they are in school, working, both or neither (decides if Grade / Occupation apply). */
+  schoolOrWork?: SchoolOrWork;
   grade?: string;
   occupation?: string;
   family?: string;

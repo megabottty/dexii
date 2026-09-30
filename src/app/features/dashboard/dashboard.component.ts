@@ -14,8 +14,8 @@ import {
 } from '../../core/config/walkthrough-tours';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
-import { AvatarConfig } from '../../core/models/avatar-config.model';
-import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
+import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
+import { CrushFormValue, crushFormTextFields, emptyCrushFormValue, formValueToCrushPatch } from '../../core/utils/crush-form.util';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { SubscriptionTier } from '../../core/models/user.model';
 
@@ -26,7 +26,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   selector: 'app-dashboard',
   standalone: true,
   styleUrl: './dashboard.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, AvatarPickerComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, CrushFormComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="dashboard-component__s1">
@@ -43,430 +43,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
             <h3 class="dashboard-component__s5">New Crush</h3>
 
             <div class="dashboard-component__s6">
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Pronouns</label>
-                <div class="dashboard-component__s28" style="margin-bottom: 20px;">
-                  @for (p of pronounOptions; track p.value) {
-                    <div (click)="newCrush.pronouns = p.value"
-                         role="button"
-                         tabindex="0"
-                         (keydown.enter)="newCrush.pronouns = p.value"
-                         (keydown.space)="newCrush.pronouns = p.value; $event.preventDefault()"
-                         [attr.aria-pressed]="newCrush.pronouns === p.value"
-                         [style.border]="newCrush.pronouns === p.value ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                         [style.background-color]="newCrush.pronouns === p.value ? theme.colors().primary + '10' : 'transparent'"
-                         class="dashboard-component__s29">
-                      <div [style.border]="'2px solid ' + (newCrush.pronouns === p.value ? theme.colors().primary : theme.colors().textSecondary)"
-                           [style.background-color]="newCrush.pronouns === p.value ? theme.colors().primary : 'transparent'"
-                           class="dashboard-component__s30">
-                         @if (newCrush.pronouns === p.value) {
-                           <span class="dashboard-component__s31">✓</span>
-                         }
-                      </div>
-                      <span class="dashboard-component__s32">{{p.label}}</span>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <app-avatar-picker [(url)]="newCrush.avatarUrl" [(config)]="newCrush.avatarConfig"></app-avatar-picker>
-
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Nickname</label>
-                <input [(ngModel)]="newCrush.nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-              </div>
-
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">First Name (Optional)</label>
-                <input [(ngModel)]="newCrush.firstName" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s18">
-              </div>
-
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Status</label>
-                <select [(ngModel)]="newCrush.status" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s19">
-                  <option [value]="statuses.Crush">Crush</option>
-                  <option [value]="statuses.Plotting">Plotting</option>
-                  <option [value]="statuses.Dating">Dating</option>
-                  <option [value]="statuses.Exclusive">Exclusive</option>
-                  <option [value]="statuses.BrokenUp">Broken Up</option>
-                  <option [value]="statuses.Heartbroken">Heartbroken</option>
-                  <option [value]="statuses.Archived">Archived</option>
-                  <option [value]="statuses.Friend">Friend</option>
-                </select>
-              </div>
-
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s7">Crush Note (Optional)</label>
-                <textarea [(ngModel)]="newCrush.note"
-                          [style.background-color]="theme.colors().bgSecondary"
-                          [style.border]="'1px solid ' + theme.colors().border"
-                          [style.color]="theme.colors().text"
-                          rows="4"
-
-                          placeholder="Add your first note about this crush..." class="dashboard-component__s20"></textarea>
-
-                <div class="dashboard-component__s21">
-                  <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s22">
-                    Note Visibility
-                  </p>
-                  <div class="dashboard-component__s23">
-                    <button (click)="newCrush.noteVisibility = 'private'"
-                            [style.background-color]="newCrush.noteVisibility === 'private' ? theme.colors().primary : 'transparent'"
-                            [style.color]="newCrush.noteVisibility === 'private' ? 'white' : theme.colors().text"
-                            [style.border]="'1px solid ' + (newCrush.noteVisibility === 'private' ? theme.colors().primary : theme.colors().border)"
-                            class="dashboard-component__s24">
-                      Private
-                    </button>
-                    <button (click)="newCrush.noteVisibility = 'public'"
-                            [style.background-color]="newCrush.noteVisibility === 'public' ? theme.colors().primary : 'transparent'"
-                            [style.color]="newCrush.noteVisibility === 'public' ? 'white' : theme.colors().text"
-                            [style.border]="'1px solid ' + (newCrush.noteVisibility === 'public' ? theme.colors().primary : theme.colors().border)"
-                            class="dashboard-component__s24">
-                      Public
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- About the Boy Sections -->
-              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
-                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">About the Boy</h4>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Hair</label>
-                  <div class="dashboard-component__s28">
-                    @for (h of ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other']; track h) {
-                      <div (click)="toggleSelection(newCrush.hair, h)"
-                           role="button"
-                           tabindex="0"
-                           (keydown.enter)="toggleSelection(newCrush.hair, h)"
-                           (keydown.space)="toggleSelection(newCrush.hair, h); $event.preventDefault()"
-                           [attr.aria-pressed]="newCrush.hair.includes(h)"
-                           [style.border]="newCrush.hair.includes(h) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                           [style.background-color]="newCrush.hair.includes(h) ? theme.colors().primary + '10' : 'transparent'"
-                           class="dashboard-component__s29">
-                        <div [style.border]="'2px solid ' + (newCrush.hair.includes(h) ? theme.colors().primary : theme.colors().textSecondary)"
-                             [style.background-color]="newCrush.hair.includes(h) ? theme.colors().primary : 'transparent'"
-                             class="dashboard-component__s30">
-                           @if (newCrush.hair.includes(h)) {
-                             <span class="dashboard-component__s31">✓</span>
-                           }
-                        </div>
-                        <span class="dashboard-component__s32">{{h}}</span>
-                      </div>
-                    }
-                  </div>
-                  @if (newCrush.hair.includes('Other')) {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Hair Notes</label>
-                      <textarea [(ngModel)]="newCrush.hairNotes"
-                                [style.background-color]="theme.colors().bgSecondary"
-                                [style.border]="'1px solid ' + theme.colors().border"
-                                [style.color]="theme.colors().text"
-                                rows="2"
-                                placeholder="Describe their hair..."
-                                class="dashboard-component__s20"></textarea>
-                    </div>
-                  }
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Eyes</label>
-                  <div class="dashboard-component__s28">
-                    @for (e of ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other']; track e) {
-                      <div (click)="toggleSelection(newCrush.eyes, e)"
-                           role="button"
-                           tabindex="0"
-                           (keydown.enter)="toggleSelection(newCrush.eyes, e)"
-                           (keydown.space)="toggleSelection(newCrush.eyes, e); $event.preventDefault()"
-                           [attr.aria-pressed]="newCrush.eyes.includes(e)"
-                           [style.border]="newCrush.eyes.includes(e) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                           [style.background-color]="newCrush.eyes.includes(e) ? theme.colors().primary + '10' : 'transparent'"
-                           class="dashboard-component__s29">
-                        <div [style.border]="'2px solid ' + (newCrush.eyes.includes(e) ? theme.colors().primary : theme.colors().textSecondary)"
-                             [style.background-color]="newCrush.eyes.includes(e) ? theme.colors().primary : 'transparent'"
-                             class="dashboard-component__s30">
-                           @if (newCrush.eyes.includes(e)) {
-                             <span class="dashboard-component__s31">✓</span>
-                           }
-                        </div>
-                        <span class="dashboard-component__s32">{{e}}</span>
-                      </div>
-                    }
-                  </div>
-                  @if (newCrush.eyes.includes('Other')) {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Eye Notes</label>
-                      <textarea [(ngModel)]="newCrush.eyeNotes"
-                                [style.background-color]="theme.colors().bgSecondary"
-                                [style.border]="'1px solid ' + theme.colors().border"
-                                [style.color]="theme.colors().text"
-                                rows="2"
-                                placeholder="Describe their eyes..."
-                                class="dashboard-component__s20"></textarea>
-                    </div>
-                  }
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Build</label>
-                  <div class="dashboard-component__s28">
-                    @for (b of ['Skinny', 'Ripped', 'Athletic', 'Tall', 'Short', 'Lots to love', 'Average', 'Other']; track b) {
-                      <div (click)="toggleSelection(newCrush.build, b)"
-                           role="button"
-                           tabindex="0"
-                           (keydown.enter)="toggleSelection(newCrush.build, b)"
-                           (keydown.space)="toggleSelection(newCrush.build, b); $event.preventDefault()"
-                           [attr.aria-pressed]="newCrush.build.includes(b)"
-                           [style.border]="newCrush.build.includes(b) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                           [style.background-color]="newCrush.build.includes(b) ? theme.colors().primary + '10' : 'transparent'"
-                           class="dashboard-component__s29">
-                        <div [style.border]="'2px solid ' + (newCrush.build.includes(b) ? theme.colors().primary : theme.colors().textSecondary)"
-                             [style.background-color]="newCrush.build.includes(b) ? theme.colors().primary : 'transparent'"
-                             class="dashboard-component__s30">
-                           @if (newCrush.build.includes(b)) {
-                             <span class="dashboard-component__s31">✓</span>
-                           }
-                        </div>
-                        <span class="dashboard-component__s32">{{b}}</span>
-                      </div>
-                    }
-                  </div>
-                  @if (newCrush.build.includes('Other')) {
-                    <div style="margin-top: 12px;">
-                      <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Build Notes</label>
-                      <textarea [(ngModel)]="newCrush.buildNotes"
-                                [style.background-color]="theme.colors().bgSecondary"
-                                [style.border]="'1px solid ' + theme.colors().border"
-                                [style.color]="theme.colors().text"
-                                rows="2"
-                                placeholder="Describe their build..."
-                                class="dashboard-component__s20"></textarea>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- Social Handles -->
-              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
-                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">Where I can find them</h4>
-                <div class="dashboard-component__s33">
-                  <div class="dashboard-component__s34">
-                    <span class="dashboard-component__s35">👻</span>
-                    <input placeholder="Snapchat Username" [(ngModel)]="newCrush.social.snapchat" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
-                  </div>
-                  <div class="dashboard-component__s34">
-                    <span class="dashboard-component__s35">💬</span>
-                    <input placeholder="WhatsApp Number" [(ngModel)]="newCrush.social.whatsapp" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
-                  </div>
-                  <div class="dashboard-component__s34">
-                    <span class="dashboard-component__s35">🐦</span>
-                    <input placeholder="Twitter @username" [(ngModel)]="newCrush.social.twitter" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
-                  </div>
-                  <div class="dashboard-component__s34">
-                    <span class="dashboard-component__s35">📘</span>
-                    <input placeholder="Facebook.com/" [(ngModel)]="newCrush.social.facebook" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
-                  </div>
-                  <div class="dashboard-component__s34">
-                    <span class="dashboard-component__s35">📸</span>
-                    <input placeholder="Instagram @username" [(ngModel)]="newCrush.social.instagram" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s36">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Relationship Status -->
-              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
-                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">Relationship Status</h4>
-                <p [style.color]="theme.colors().textSecondary" class="dashboard-relationship-hint">Pick everything that fits. The first one you choose becomes the headline.</p>
-                <div class="dashboard-component__s37" role="group" aria-label="Relationship status">
-                  @for (s of getRelationshipStatusOptions(); track s) {
-                    <div (click)="toggleRelationshipLabel(s)"
-                         role="checkbox"
-                         tabindex="0"
-                         (keydown.enter)="toggleRelationshipLabel(s)"
-                         (keydown.space)="toggleRelationshipLabel(s); $event.preventDefault()"
-                         [attr.aria-checked]="hasRelationshipLabel(s)"
-                         [style.border]="hasRelationshipLabel(s) ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                         [style.background-color]="hasRelationshipLabel(s) ? theme.colors().primary + '10' : 'transparent'"
-                         class="dashboard-component__s38">
-                      <div [style.border]="'2px solid ' + (hasRelationshipLabel(s) ? theme.colors().primary : theme.colors().textSecondary)"
-                           [style.background-color]="hasRelationshipLabel(s) ? theme.colors().primary : 'transparent'"
-                           class="dashboard-component__s39 dashboard-relationship-check">
-                         @if (hasRelationshipLabel(s)) {
-                           <span class="dashboard-relationship-check__mark" aria-hidden="true">✓</span>
-                         }
-                      </div>
-                      <span class="dashboard-component__s32">{{s}}</span>
-                      @if (newCrush.relationshipLabels[0] === s && newCrush.relationshipLabels.length > 1) {
-                        <span [style.color]="theme.colors().primary" class="dashboard-relationship-headline">Headline</span>
-                      }
-                    </div>
-                  }
-                </div>
-                @if (hasRelationshipLabel('Other')) {
-                  <div style="margin-top: 12px;">
-                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Relationship Notes</label>
-                    <textarea [(ngModel)]="newCrush.relationshipNotes"
-                              [style.background-color]="theme.colors().bgSecondary"
-                              [style.border]="'1px solid ' + theme.colors().border"
-                              [style.color]="theme.colors().text"
-                              rows="2"
-                              placeholder="Describe your relationship status..."
-                              class="dashboard-component__s20"></textarea>
-                  </div>
-                }
-                @if (hasRelationshipLabel('Heartbroken')) {
-                  <div style="margin-top: 12px;">
-                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Heartbreak Song</label>
-                    <input [(ngModel)]="newCrush.heartbreakSong"
-                           [style.background-color]="theme.colors().bgSecondary"
-                           [style.border]="'1px solid ' + theme.colors().border"
-                           [style.color]="theme.colors().text"
-                           placeholder="What song are you listening to?"
-                           class="dashboard-component__s17">
-                  </div>
-                  <div style="margin-top: 12px;">
-                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">How I'm Getting Over It</label>
-                    <textarea [(ngModel)]="newCrush.heartbreakRecovery"
-                              [style.background-color]="theme.colors().bgSecondary"
-                              [style.border]="'1px solid ' + theme.colors().border"
-                              [style.color]="theme.colors().text"
-                              rows="2"
-                              placeholder="Gym, journaling, long walks, etc."
-                              class="dashboard-component__s20"></textarea>
-                  </div>
-                }
-              </div>
-
-              <div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41">Initial Vibe (1-5 Stars)</label>
-                <div class="dashboard-component__s42">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    <button type="button" (click)="newCrush.initialRating = star" [attr.aria-label]="'Set initial vibe to ' + star + ' stars'"
-                            [style.color]="newCrush.initialRating >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
-                  }
-                </div>
-                <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s41" style="margin-top: 10px; display: block;">Current Vibe (Optional)</label>
-                <div class="dashboard-component__s42">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    <button type="button" (click)="newCrush.currentRating = star" [attr.aria-label]="'Set current vibe to ' + star + ' stars'"
-                            [style.color]="(newCrush.currentRating ?? 0) >= star ? theme.colors().accent : theme.colors().border" class="dashboard-rating-star">★</button>
-                  }
-                  <button type="button" (click)="newCrush.currentRating = null"
-                          [style.color]="theme.colors().textSecondary"
-                          class="dashboard-rating-star"
-                          aria-label="Skip current vibe">Skip</button>
-                </div>
-              </div>
-
-              <!-- More About Them -->
-              <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-section-top">
-                <h4 [style.color]="theme.colors().primary" class="dashboard-component__s25">More About Them</h4>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Bio</label>
-                  <textarea [(ngModel)]="newCrush.bio"
-                            [style.background-color]="theme.colors().bgSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.color]="theme.colors().text"
-                            rows="3"
-                            placeholder="A little about them..."
-                            class="dashboard-component__s20"></textarea>
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Location</label>
-                  <input [(ngModel)]="newCrush.location" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Age</label>
-                  <input type="date" [(ngModel)]="newCrush.dateOfBirth" [max]="todayDate" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                  <span class="vibe-sub-label">Enter their birthday so the displayed age stays current.</span>
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">How We Met</label>
-                  <input [(ngModel)]="newCrush.howWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">When We Met</label>
-                  <input [(ngModel)]="newCrush.whenWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Are they in school or working?</label>
-                  <div class="dashboard-component__s28">
-                    @for (option of schoolOrWorkOptions; track option.value) {
-                      <div (click)="selectSchoolOrWork(option.value)"
-                           role="button"
-                           tabindex="0"
-                           (keydown.enter)="selectSchoolOrWork(option.value)"
-                           (keydown.space)="selectSchoolOrWork(option.value); $event.preventDefault()"
-                           [attr.aria-pressed]="newCrush.schoolOrWork === option.value"
-                           [style.border]="newCrush.schoolOrWork === option.value ? '1px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                           [style.background-color]="newCrush.schoolOrWork === option.value ? theme.colors().primary + '10' : 'transparent'"
-                           class="dashboard-component__s29">
-                        <div [style.border]="'2px solid ' + (newCrush.schoolOrWork === option.value ? theme.colors().primary : theme.colors().textSecondary)"
-                             [style.background-color]="newCrush.schoolOrWork === option.value ? theme.colors().primary : 'transparent'"
-                             class="dashboard-component__s30">
-                           @if (newCrush.schoolOrWork === option.value) {
-                             <span class="dashboard-component__s31">✓</span>
-                           }
-                        </div>
-                        <span class="dashboard-component__s32">{{option.label}}</span>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                @if (shouldShowGrade()) {
-                  <div class="dashboard-component__s26">
-                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Grade</label>
-                    <input [(ngModel)]="newCrush.grade" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                  </div>
-                }
-
-                @if (shouldShowOccupation()) {
-                  <div class="dashboard-component__s26">
-                    <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Occupation</label>
-                    <input [(ngModel)]="newCrush.occupation" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                  </div>
-                }
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Family</label>
-                  <input [(ngModel)]="newCrush.family" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17">
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Their Friends (comma separated)</label>
-                  <input [(ngModel)]="newCrush.friends" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="dashboard-component__s17" placeholder="e.g. Alex, Jordan, Sam">
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Memorable Moments</label>
-                  <textarea [(ngModel)]="newCrush.memorableMoments"
-                            [style.background-color]="theme.colors().bgSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.color]="theme.colors().text"
-                            rows="3"
-                            placeholder="Any moments worth remembering..."
-                            class="dashboard-component__s20"></textarea>
-                </div>
-
-                <div class="dashboard-component__s26">
-                  <label [style.color]="theme.colors().textSecondary" class="dashboard-component__s27">Private Notes</label>
-                  <textarea [(ngModel)]="newCrush.privateNotes"
-                            [style.background-color]="theme.colors().bgSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.color]="theme.colors().text"
-                            rows="3"
-                            placeholder="Your private thoughts..."
-                            class="dashboard-component__s20"></textarea>
-                </div>
-              </div>
+              <app-crush-form [form]="newCrush"></app-crush-form>
             </div>
 
             <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
@@ -705,7 +282,6 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   `
 })
 export class DashboardComponent implements OnInit {
-  readonly todayDate = new Date().toISOString().slice(0, 10);
   getCrushDisplayName(crush: CrushProfile): string {
     return crush.displayName === 'fullName' && crush.fullName?.trim()
       ? crush.fullName
@@ -723,26 +299,12 @@ export class DashboardComponent implements OnInit {
   private friendsApi = inject(FriendsApiService);
 
   showNewEntryModal = signal(false);
-  statuses = CrushStatus;
 
   showArchived = signal(false);
   selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
   freeTier = SubscriptionTier.Free;
   premiumTier = SubscriptionTier.Premium;
   goldTier = SubscriptionTier.Gold;
-
-  pronounOptions: Array<{label: string, value: 'he' | 'she' | 'they'}> = [
-    {label: 'He/Him', value: 'he'},
-    {label: 'She/Her', value: 'she'},
-    {label: 'They/Them', value: 'they'}
-  ];
-
-  schoolOrWorkOptions: Array<{label: string, value: 'school' | 'working' | 'both' | 'neither'}> = [
-    {label: 'In school', value: 'school'},
-    {label: 'Working', value: 'working'},
-    {label: 'Both', value: 'both'},
-    {label: 'Neither', value: 'neither'}
-  ];
 
   filteredCrushes = computed(() => {
     let crushes = this.dataService.visibleCrushes();
@@ -870,50 +432,7 @@ export class DashboardComponent implements OnInit {
 
   friends = signal<FriendSummary[]>([]);
 
-  newCrush = {
-    nickname: '',
-    firstName: '',
-    status: CrushStatus.Crush,
-    initialRating: 3,
-    currentRating: null as number | null,
-    note: '',
-    noteVisibility: 'private' as 'private' | 'public',
-    visibility: [] as string[],
-    avatarUrl: '',
-    avatarConfig: undefined as AvatarConfig | undefined,
-    pronouns: 'they' as 'he' | 'she' | 'they',
-    hair: [] as string[],
-    eyes: [] as string[],
-    build: [] as string[],
-    social: {
-      snapchat: '',
-      whatsapp: '',
-      twitter: '',
-      facebook: '',
-      instagram: ''
-    },
-    relationshipStatus: '',
-    relationshipLabels: [] as string[],
-    heartbreakSong: '',
-    heartbreakRecovery: '',
-    hairNotes: '',
-    eyeNotes: '',
-    buildNotes: '',
-    relationshipNotes: '',
-    bio: '',
-    location: '',
-    dateOfBirth: '',
-    age: undefined as number | undefined,
-    howWeMet: '',
-    whenWeMet: '',
-    schoolOrWork: '' as '' | 'school' | 'working' | 'both' | 'neither',
-    grade: '',
-    occupation: '',
-    family: '',
-    friends: '',
-    memorableMoments: '',
-    privateNotes: ''
-  };
+  newCrush: CrushFormValue = emptyCrushFormValue();
 
   ngOnInit() {
     this.dataService.setViewer(null);
@@ -949,47 +468,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  getRelationshipStatusOptions(): string[] {
-    const pronoun = this.newCrush.pronouns || 'they';
-    const subject = pronoun === 'he' ? 'he' : pronoun === 'she' ? 'she' : 'they';
-    const subjectCap = subject.charAt(0).toUpperCase() + subject.slice(1);
-    const object = pronoun === 'he' ? 'him' : pronoun === 'she' ? 'her' : 'them';
-    const verb = pronoun === 'they' ? "don't" : "doesn't";
-    const likes = pronoun === 'they' ? 'like' : 'likes';
-
-    return [
-      `${subjectCap} ${verb} know I exist`,
-      "Just friends",
-      "Just flirting",
-      "Just sexting",
-      "Seeing where it goes (more than friends, haven't DTR)",
-      "Heartbroken",
-      `I think ${subject} ${likes} me`,
-      "Getting serious",
-      "We are a couple",
-      "Friends With Benefits",
-      "We are engaged",
-      "Other"
-    ];
-  }
-
-  hasRelationshipLabel(label: string): boolean {
-    return this.newCrush.relationshipLabels.includes(label);
-  }
-
-  /** Multi-select: the first label chosen is the headline status shown on cards. */
-  toggleRelationshipLabel(label: string): void {
-    const labels = [...this.newCrush.relationshipLabels];
-    const index = labels.indexOf(label);
-    if (index >= 0) labels.splice(index, 1); else labels.push(label);
-    this.newCrush.relationshipLabels = labels;
-    if (!labels.includes('Other')) this.newCrush.relationshipNotes = '';
-    if (!labels.includes('Heartbroken')) {
-      this.newCrush.heartbreakSong = '';
-      this.newCrush.heartbreakRecovery = '';
-    }
-  }
-
   toggleArchived() {
     this.showArchived.update(v => !v);
   }
@@ -1022,27 +500,6 @@ export class DashboardComponent implements OnInit {
     this.resetForm();
   }
 
-  toggleSelection(list: string[], item: string) {
-    const index = list.indexOf(item);
-    if (index > -1) {
-      list.splice(index, 1);
-    } else {
-      list.push(item);
-    }
-  }
-
-  selectSchoolOrWork(value: 'school' | 'working' | 'both' | 'neither') {
-    this.newCrush.schoolOrWork = value;
-  }
-
-  shouldShowGrade(): boolean {
-    return !this.newCrush.schoolOrWork || this.newCrush.schoolOrWork === 'school' || this.newCrush.schoolOrWork === 'both';
-  }
-
-  shouldShowOccupation(): boolean {
-    return !this.newCrush.schoolOrWork || this.newCrush.schoolOrWork === 'working' || this.newCrush.schoolOrWork === 'both';
-  }
-
   async saveCrush() {
     const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
@@ -1050,25 +507,14 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    if (!this.newCrush.nickname) {
+    if (!this.newCrush.nickname.trim()) {
       this.modal.show('Please enter a nickname at least!');
       return;
     }
-    if (!this.security.moderateContent(this.newCrush.nickname) ||
-        !this.security.moderateContent(this.newCrush.firstName) ||
-        !this.security.moderateContent(this.newCrush.note) ||
-        !this.security.moderateContent(this.newCrush.privateNotes)) {
+    if (!crushFormTextFields(this.newCrush).every((text) => this.security.moderateContent(text))) {
       this.modal.show('Profile text flagged by AI moderation.');
       return;
     }
-
-    // Combine all "Other" notes into customNotes
-    let customNotes = '';
-    if (this.newCrush.hairNotes) customNotes += `Other: Hair - ${this.newCrush.hairNotes}\n`;
-    if (this.newCrush.eyeNotes) customNotes += `Other: Eyes - ${this.newCrush.eyeNotes}\n`;
-    if (this.newCrush.buildNotes) customNotes += `Other: Build - ${this.newCrush.buildNotes}\n`;
-    if (this.newCrush.relationshipNotes) customNotes += `Other: Relationship - ${this.newCrush.relationshipNotes}\n`;
-    if (this.newCrush.privateNotes) customNotes += this.newCrush.privateNotes;
 
     if (!this.newCrush.avatarUrl) {
       // No picture chosen: give them a preset that stays stable for this nickname.
@@ -1077,35 +523,8 @@ export class DashboardComponent implements OnInit {
     }
 
     const createdCrush = this.dataService.addCrush({
-      nickname: this.newCrush.nickname,
-      fullName: this.newCrush.firstName,
-      status: this.newCrush.status,
-      rating: this.newCrush.currentRating ?? this.newCrush.initialRating,
-      initialRating: this.newCrush.initialRating,
-      bio: this.newCrush.bio,
-      visibility: [],
-      avatarUrl: this.newCrush.avatarUrl,
-      avatarConfig: this.newCrush.avatarConfig,
-      pronouns: this.newCrush.pronouns,
-      hair: this.newCrush.hair,
-      eyes: this.newCrush.eyes,
-      build: this.newCrush.build,
-      social: { ...this.newCrush.social },
-      relationshipStatus: this.newCrush.relationshipLabels.find((label) => label !== 'Other') || '',
-      relationshipLabels: this.newCrush.relationshipLabels.filter((label) => label !== 'Other'),
-      heartbreakSong: this.newCrush.heartbreakSong,
-      heartbreakRecovery: this.newCrush.heartbreakRecovery,
-      customNotes: customNotes.trim(),
-      location: this.newCrush.location,
-      dateOfBirth: this.newCrush.dateOfBirth || undefined,
-      age: this.newCrush.age,
-      howWeMet: this.newCrush.howWeMet,
-      whenWeMet: this.newCrush.whenWeMet,
-      grade: this.newCrush.grade,
-      occupation: this.newCrush.occupation,
-      family: this.newCrush.family,
-      memorableMoments: this.newCrush.memorableMoments,
-      friends: this.newCrush.friends ? this.newCrush.friends.split(',').map((f: string) => f.trim()).filter((f: string) => f) : []
+      ...formValueToCrushPatch(this.newCrush),
+      visibility: []
     });
 
     const note = this.newCrush.note.trim();
@@ -1129,49 +548,6 @@ export class DashboardComponent implements OnInit {
   }
 
   resetForm() {
-    this.newCrush = {
-      nickname: '',
-      firstName: '',
-      status: CrushStatus.Crush,
-      initialRating: 3,
-      currentRating: null,
-      note: '',
-      noteVisibility: 'private',
-      visibility: [],
-      avatarUrl: '',
-    avatarConfig: undefined as AvatarConfig | undefined,
-      pronouns: 'they',
-      hair: [],
-      eyes: [],
-      build: [],
-      social: {
-        snapchat: '',
-        whatsapp: '',
-        twitter: '',
-        facebook: '',
-        instagram: ''
-      },
-      relationshipStatus: '',
-      relationshipLabels: [] as string[],
-      heartbreakSong: '',
-      heartbreakRecovery: '',
-      hairNotes: '',
-      eyeNotes: '',
-      buildNotes: '',
-      relationshipNotes: '',
-      bio: '',
-      location: '',
-      dateOfBirth: '',
-      age: undefined,
-      howWeMet: '',
-      whenWeMet: '',
-      schoolOrWork: '',
-      grade: '',
-      occupation: '',
-      family: '',
-      friends: '',
-      memorableMoments: '',
-      privateNotes: ''
-    };
+    this.newCrush = emptyCrushFormValue();
   }
 }

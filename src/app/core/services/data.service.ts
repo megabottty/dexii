@@ -24,6 +24,7 @@ interface BackendCrush {
   redFlagReason?: string;
   lastInteraction?: string;
   rating?: number;
+  initialRating?: number;
   redFlags?: number;
   vibeHistory?: number[];
   category?: string;
@@ -48,6 +49,7 @@ interface BackendCrush {
   age?: number;
   howWeMet?: string;
   whenWeMet?: string;
+  schoolOrWork?: string;
   grade?: string;
   occupation?: string;
   family?: string;
@@ -312,6 +314,7 @@ export class DataService {
       sharedEntries: [],
       lastInteraction: crush.lastInteraction ? new Date(crush.lastInteraction) : new Date(),
       rating: crush.rating,
+      initialRating: crush.initialRating,
       redFlags: crush.redFlags && crush.redFlags > 0 ? 1 : 0,
       redFlagReason: crush.redFlagReason || '',
       vibeHistory: crush.vibeHistory?.length ? crush.vibeHistory : [5],
@@ -331,6 +334,7 @@ export class DataService {
       age: crush.age,
       howWeMet: crush.howWeMet,
       whenWeMet: crush.whenWeMet,
+      schoolOrWork: (crush.schoolOrWork || undefined) as CrushProfile['schoolOrWork'],
       grade: crush.grade,
       occupation: crush.occupation,
       family: crush.family,
@@ -487,6 +491,7 @@ export class DataService {
       const payload = {
         nickname: crush.nickname,
         fullName: crush.fullName,
+        displayName: crush.displayName,
         avatarUrl: crush.avatarUrl,
         avatarConfig: crush.avatarConfig,
         bio: crush.bio,
@@ -494,6 +499,7 @@ export class DataService {
         visibility: crush.visibility,
         lastInteraction: crush.lastInteraction,
         rating: crush.rating,
+        initialRating: crush.initialRating,
         redFlags: crush.redFlags,
         redFlagReason: crush.redFlagReason,
         vibeHistory: crush.vibeHistory,
@@ -506,12 +512,14 @@ export class DataService {
         relationshipLabels: crush.relationshipLabels || [],
         heartbreakSong: crush.heartbreakSong,
         heartbreakRecovery: crush.heartbreakRecovery,
+        pronouns: crush.pronouns,
         customNotes: crush.customNotes,
         location: crush.location,
         dateOfBirth: crush.dateOfBirth,
         age: crush.age,
         howWeMet: crush.howWeMet,
         whenWeMet: crush.whenWeMet,
+        schoolOrWork: crush.schoolOrWork ?? '',
         grade: crush.grade,
         occupation: crush.occupation,
         family: crush.family,
@@ -573,6 +581,7 @@ export class DataService {
       const payload = {
         nickname: crush.nickname,
         fullName: crush.fullName,
+        displayName: crush.displayName,
         avatarUrl: crush.avatarUrl,
         avatarConfig: crush.avatarConfig ?? null,
         bio: crush.bio,
@@ -580,6 +589,7 @@ export class DataService {
         visibility: crush.visibility,
         lastInteraction: crush.lastInteraction,
         rating: crush.rating,
+        initialRating: crush.initialRating,
         redFlags: crush.redFlags,
         redFlagReason: crush.redFlagReason,
         vibeHistory: crush.vibeHistory,
@@ -599,6 +609,7 @@ export class DataService {
         age: crush.age,
         howWeMet: crush.howWeMet,
         whenWeMet: crush.whenWeMet,
+        schoolOrWork: crush.schoolOrWork ?? '',
         grade: crush.grade,
         occupation: crush.occupation,
         family: crush.family,
