@@ -203,9 +203,16 @@
 .action-buttons-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  /* Every row takes the height of the tallest label, so all buttons match. */
+  grid-auto-rows: 1fr;
   gap: 10px;
   padding-top: 28px;
   border-top: 1px solid var(--border);
+}
+
+.action-buttons-grid > .action-btn-styled {
+  height: 100%;
+  min-height: 44px;
 }
 
 .action-btn-styled {
@@ -239,8 +246,6 @@
   overflow-wrap: anywhere;
   font-size: var(--fs-btn);
   letter-spacing: 0.5px;
-  padding: 7px 8px;
-  min-height: 34px;
 }
 
 .action-btn-styled.primary {
