@@ -48,7 +48,7 @@ export const FIRST_CRUSH_SHARE_TOUR: WalkthroughStep[] = [
   {
     icon: '👥',
     title: 'Sharing starts with a friend',
-    body: 'To share, you first need someone in your circle. Go to Friends and add the person you trust with the tea.'
+    body: 'To share, you first need someone in your circle. Go to Friends and add the person you trust.'
   },
   {
     icon: '🔗',

@@ -462,7 +462,7 @@ interface FriendChoice {
               <div class="settings-plan-header">
                 <div>
                   <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
-                  <h2 class="settings-section-title">Tea on your phone</h2>
+                  <h2 class="settings-section-title">Notifications on your phone</h2>
                   <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
                     @switch (webPush.status()) {
                       @case ('on') { Notifications are on for this device. You'll hear about friend requests and shared crushes even when Dexii is closed. }
@@ -508,7 +508,7 @@ interface FriendChoice {
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
                 <h2 class="settings-section-title">Notification Settings</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  Choose which alerts Dexii shows while you are signed in.
+                  These control which push notifications Dexii sends to your phone.
                 </p>
               </div>
             </div>

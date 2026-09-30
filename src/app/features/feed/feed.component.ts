@@ -1,38 +1,12 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { DataService } from '../../core/services/data.service';
+import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
-import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
-import { CrushProfile } from '../../core/models/crush-profile.model';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
-import { AppNotification, NotificationsService } from '../../core/services/notifications.service';
+import { NotificationsService } from '../../core/services/notifications.service';
 import { WebPushService } from '../../core/services/web-push.service';
-import { ModalService } from '../../core/services/modal.service';
-
-interface FeedItem {
-  id: string;
-  kind: 'entry' | 'crush';
-  ownerId: string;
-  ownerUsername: string;
-  ownerAvatarUrl?: string;
-  crushId: string;
-  crushNickname?: string;
-  crushAvatarUrl?: string;
-  verb: string;
-  content: string;
-  isSensitive: boolean;
-  timestamp: Date;
-}
-
-const ENTRY_TYPE_VERBS: Record<string, string> = {
-  Note: 'shared a note about',
-  Date: 'logged a date with',
-  RedFlag: 'flagged a red flag about',
-  SafetyCheck: 'sent a safety check about',
-  PrivateJournal: 'shared a journal entry about'
-};
+import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed.service';
 
 @Component({
   selector: 'app-feed',
@@ -48,8 +22,8 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
       <div class="feed-container">
         <app-page-hint
           hintKey="feed_inline"
-          title="Feed Hint"
-          message="See everything your friends have shared with you - crushes, notes, and updates - all in one place.">
+          title="Tea"
+          message="Tea is what your friends share with you and requests waiting for you. Accept requests and open shared crushes right from here.">
         </app-page-hint>
 
         @if (webPush.shouldPrompt()) {
@@ -93,249 +67,191 @@ const ENTRY_TYPE_VERBS: Record<string, string> = {
           </div>
         }
 
-        <div class="tea-updates-section"
-             [style.background-color]="theme.colors().bgSecondary"
-             [style.border]="'1px solid ' + theme.colors().border">
-          <div class="tea-updates-header">
-            <div>
-              <h2 [style.color]="theme.colors().text" class="tea-updates-title">🍵 Tea Updates</h2>
-              <p [style.color]="theme.colors().textSecondary" class="tea-updates-subtitle">
-                Fresh nudges and shared crushes.
-              </p>
-            </div>
-            <button type="button"
-                    class="tea-updates-mark-all"
-                    [style.color]="theme.colors().primary"
-                    [disabled]="notifications.unreadCount() === 0"
-                    (click)="markAllNotificationsRead()">
-              Mark all read
-            </button>
-          </div>
-
-          <div class="tea-updates-list">
-            @if (notificationsLoading()) {
-              <div [style.color]="theme.colors().textSecondary" class="tea-updates-empty">
-                Loading tea updates...
-              </div>
-            } @else if (notifications.notifications().length === 0) {
-              <div [style.color]="theme.colors().textSecondary" class="tea-updates-empty">
-                No tea yet. We'll spill it here.
-              </div>
-            } @else {
-              @for (notification of unreadNotifications(); track notification.id) {
-                <div class="tea-update-row"
-                     [style.border-bottom]="'1px solid ' + theme.colors().border">
-                  <div class="tea-update-item"
-                       role="button"
-                       tabindex="0"
-                       [class.tea-update-item--unread]="!notification.read"
-                       (click)="openNotification(notification)"
-                       (keydown.enter)="openNotification(notification)">
-                  <div class="tea-update-copy">
-                    <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
-                    <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
-                  </div>
-                  <span [style.background-color]="theme.colors().primary" class="tea-update-dot"></span>
-                  </div>
-                </div>
-              }
-
-              @if (readNotifications().length > 0) {
-                <button type="button"
-                        class="tea-updates-history-toggle"
-                        [style.color]="theme.colors().textSecondary"
-                        [attr.aria-expanded]="readUpdatesExpanded()"
-                        (click)="toggleReadUpdates()">
-                  <span>{{ readUpdatesExpanded() ? 'Hide earlier tea' : 'Show earlier tea' }}</span>
-                  <span class="tea-updates-history-count">{{ readNotifications().length }}</span>
-                  <span aria-hidden="true">{{ readUpdatesExpanded() ? '▴' : '▾' }}</span>
-                </button>
-
-                @if (readUpdatesExpanded()) {
-                  @for (notification of readNotifications(); track notification.id) {
-                    <div class="tea-update-row"
-                         [style.border-bottom]="'1px solid ' + theme.colors().border">
-                      <div class="tea-update-item tea-update-item--read"
-                           role="button"
-                           tabindex="0"
-                           (click)="openNotification(notification)"
-                           (keydown.enter)="openNotification(notification)">
-                      <div class="tea-update-copy">
-                        <span [style.color]="theme.colors().text">{{ notificationMessage(notification) }}</span>
-                        <span [style.color]="theme.colors().textSecondary">{{ notification.createdAt | date:'short' }}</span>
-                      </div>
-                      </div>
-                      <button type="button"
-                              class="tea-update-mark-unread"
-                              [style.color]="theme.colors().primary"
-                              aria-label="Mark notification as unread"
-                              (click)="markNotificationUnread(notification); $event.stopPropagation()">
-                        Mark as unread
-                      </button>
-                    </div>
-                  }
-                }
-              }
-            }
-          </div>
-        </div>
-
-        <div class="feed-header">
+        <div class="tea-header">
           <div>
-            <h1 class="feed-title">Friend Feed</h1>
+            <h1 class="feed-title">🍵 Tea</h1>
             <p [style.color]="theme.colors().textSecondary" class="feed-subtitle">
-              Updates and entries your friends have shared with you.
+              What your friends share with you, and requests waiting for you.
             </p>
           </div>
+          <button type="button"
+                  class="tea-updates-mark-all"
+                  [style.color]="theme.colors().primary"
+                  [disabled]="notifications.unreadCount() === 0"
+                  (click)="markAllRead()">
+            Mark all read
+          </button>
         </div>
 
-        @if (loading()) {
-          <div [style.border]="'1px dashed ' + theme.colors().border"
-               class="feed-empty-state">
-            <p [style.color]="theme.colors().textSecondary">Loading your feed...</p>
+        <div class="tea-filters" role="tablist" aria-label="Filter Tea">
+          @for (option of filterOptions; track option.value) {
+            <button type="button"
+                    role="tab"
+                    class="tea-filter"
+                    [attr.aria-selected]="tea.filter() === option.value"
+                    [style.background-color]="tea.filter() === option.value ? theme.colors().primary : 'transparent'"
+                    [style.color]="tea.filter() === option.value ? 'white' : theme.colors().text"
+                    [style.border]="'1px solid ' + (tea.filter() === option.value ? theme.colors().primary : theme.colors().border)"
+                    (click)="tea.filter.set(option.value)">
+              {{ option.label }}
+              @if (option.count() > 0) { <span class="tea-filter-count">{{ option.count() }}</span> }
+            </button>
+          }
+        </div>
+
+        @if (tea.loading() && tea.items().length === 0) {
+          <div [style.border]="'1px dashed ' + theme.colors().border" class="feed-empty-state">
+            <p [style.color]="theme.colors().textSecondary">Brewing your tea…</p>
           </div>
-        } @else if (feedItems().length === 0) {
-          <div [style.border]="'1px dashed ' + theme.colors().border"
-               class="feed-empty-state">
+        } @else if (tea.visibleItems().length === 0) {
+          <div [style.border]="'1px dashed ' + theme.colors().border" class="feed-empty-state">
             <p [style.color]="theme.colors().textSecondary">
-              Nothing here yet. Once a friend shares a crush or a note with you, it'll show up in this feed.
+              @switch (tea.filter()) {
+                @case ('requests') { No friend requests waiting. }
+                @case ('shares') { No crushes shared with you yet. When a friend shares one, it lands here. }
+                @case ('notes') { No shared notes yet. }
+                @default { No tea yet. When a friend shares a crush or sends a request, it lands here. }
+              }
             </p>
           </div>
         } @else {
-          <div class="feed-list">
-            @for (item of feedItems(); track item.id) {
-              <button type="button"
-                      (click)="openCrush(item)"
-                      [style.background-color]="theme.colors().bgSecondary"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text"
-                      class="feed-item">
-                <img [src]="item.ownerAvatarUrl || ('https://i.pravatar.cc/150?u=' + item.ownerUsername)"
-                     [alt]="item.ownerUsername"
-                     class="feed-item-avatar">
-                <div class="feed-item-body">
-                  <p class="feed-item-line">
-                    <span class="feed-item-username">{{ item.ownerUsername }}</span>
-                    <span [style.color]="theme.colors().textSecondary"> {{ item.verb }} </span>
-                    @if (item.crushNickname) {
-                      <span [style.color]="theme.colors().primary" class="feed-item-crush">{{ item.crushNickname }}</span>
-                    }
-                  </p>
-                  @if (item.isSensitive) {
-                    <p [style.color]="theme.colors().textSecondary" class="feed-item-content">
-                      🔒 Sensitive entry - open the crush to view details.
-                    </p>
-                  } @else if (item.content) {
-                    <p [style.color]="theme.colors().textSecondary" class="feed-item-content">{{ item.content }}</p>
-                  }
-                  <p [style.color]="theme.colors().textSecondary" class="feed-item-time">{{ timeAgo(item.timestamp) }}</p>
-                </div>
-              </button>
+          <div class="tea-list">
+            @for (item of tea.unreadItems(); track item.key) {
+              <ng-container *ngTemplateOutlet="card; context: { item: item }"></ng-container>
+            }
+
+            @if (tea.earlierItems().length > 0) {
+              @if (tea.unreadItems().length > 0) {
+                <button type="button"
+                        class="tea-updates-history-toggle"
+                        [style.color]="theme.colors().textSecondary"
+                        [attr.aria-expanded]="earlierExpanded()"
+                        (click)="earlierExpanded.set(!earlierExpanded())">
+                  <span>{{ earlierExpanded() ? 'Hide earlier' : 'Show earlier' }}</span>
+                  <span class="tea-updates-history-count">{{ tea.earlierItems().length }}</span>
+                  <span aria-hidden="true">{{ earlierExpanded() ? '▴' : '▾' }}</span>
+                </button>
+              }
+              @if (earlierExpanded() || tea.unreadItems().length === 0) {
+                @for (item of tea.earlierItems(); track item.key) {
+                  <ng-container *ngTemplateOutlet="card; context: { item: item }"></ng-container>
+                }
+              }
             }
           </div>
         }
       </div>
     </div>
+
+    <ng-template #card let-item="item">
+      <article class="tea-card"
+               [class.tea-card--unread]="item.read === false"
+               [style.background-color]="theme.colors().bgSecondary"
+               [style.border]="'1px solid ' + (item.read === false ? theme.colors().accent : theme.colors().border)">
+        <div class="tea-card-main"
+             [attr.role]="item.route ? 'button' : null"
+             [attr.tabindex]="item.route ? 0 : null"
+             (click)="item.route && tea.open(item)"
+             (keydown.enter)="item.route && tea.open(item)">
+          <img [src]="item.actor.avatarUrl || ('https://i.pravatar.cc/150?u=' + (item.actor.username || item.actor.id || 'friend'))"
+               [alt]="item.actor.name"
+               class="feed-item-avatar">
+          <div class="tea-card-body">
+            <p class="tea-card-text" [style.color]="theme.colors().text">
+              {{ item.text }}
+              @if (item.read === false) { <span [style.background-color]="theme.colors().primary" class="tea-update-dot" aria-label="Unread"></span> }
+            </p>
+
+            @if (item.kind === 'crush_shared' && item.crush) {
+              <div class="tea-crush" [style.border]="'1px solid ' + theme.colors().border" [style.background-color]="theme.colors().bg">
+                @if (item.crush.avatarUrl) { <img [src]="item.crush.avatarUrl" [alt]="item.crush.nickname || 'Crush'" class="tea-crush-avatar"> }
+                <div class="tea-crush-copy">
+                  <span class="tea-crush-name" [style.color]="theme.colors().primary">{{ item.crush.nickname || 'A crush' }}</span>
+                  @if (item.crush.bio) { <span class="tea-crush-bio" [style.color]="theme.colors().textSecondary">{{ item.crush.bio }}</span> }
+                </div>
+              </div>
+            }
+
+            @if (item.kind === 'entry_shared' && item.entry) {
+              @if (item.entry.isSensitive) {
+                <p [style.color]="theme.colors().textSecondary" class="feed-item-content">🔒 Sensitive entry - open the crush to view details.</p>
+              } @else if (item.entry.content) {
+                <p [style.color]="theme.colors().textSecondary" class="feed-item-content">{{ item.entry.content }}</p>
+              }
+            }
+
+            <p [style.color]="theme.colors().textSecondary" class="feed-item-time">{{ timeAgo(item.timestamp) }}</p>
+          </div>
+        </div>
+
+        @if (item.kind === 'friend_request' || item.kind === 'nudge') {
+          <div class="tea-card-actions">
+            <button type="button" class="tea-action tea-action--primary"
+                    [style.background-color]="'#16a34a'"
+                    [disabled]="busyKey() === item.key"
+                    (click)="respond(item, 'accept')">Accept</button>
+            <button type="button" class="tea-action"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.color]="theme.colors().textSecondary"
+                    [disabled]="busyKey() === item.key"
+                    (click)="respond(item, 'decline')">Decline</button>
+          </div>
+        } @else if (item.actionLabel && item.route) {
+          <div class="tea-card-actions">
+            <button type="button" class="tea-action tea-action--primary"
+                    [style.background-color]="theme.colors().primary"
+                    (click)="tea.open(item)">{{ item.actionLabel }}</button>
+          </div>
+        }
+
+        @if (item.read === true) {
+          <button type="button"
+                  class="tea-update-mark-unread"
+                  [style.color]="theme.colors().primary"
+                  aria-label="Mark as unread"
+                  (click)="tea.markUnread(item); $event.stopPropagation()">
+            Mark as unread
+          </button>
+        }
+      </article>
+    </ng-template>
   `
 })
 export class FeedComponent implements OnInit {
   protected theme = inject(ThemeService);
   protected notifications = inject(NotificationsService);
   protected webPush = inject(WebPushService);
-  private modal = inject(ModalService);
-  private dataService = inject(DataService);
-  private friendsApi = inject(FriendsApiService);
-  private router = inject(Router);
+  protected tea = inject(TeaFeedService);
 
-  protected loading = signal(true);
-  protected notificationsLoading = signal(true);
-  protected readUpdatesExpanded = signal(false);
-  private friendCrushes = signal<Map<string, CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string }>>(new Map());
-  protected unreadNotifications = computed(() => this.notifications.notifications().filter(notification => !notification.read));
-  protected readNotifications = computed(() => this.notifications.notifications().filter(notification => notification.read));
+  protected earlierExpanded = signal(false);
+  protected busyKey = signal<string | null>(null);
+  protected readonly filterOptions: Array<{ value: TeaFilter; label: string; count: () => number }> = [
+    { value: 'all', label: 'All', count: () => 0 },
+    { value: 'requests', label: 'Requests', count: () => this.tea.counts().requests },
+    { value: 'shares', label: 'Shared crushes', count: () => this.tea.counts().shares },
+    { value: 'notes', label: 'Notes', count: () => this.tea.counts().notes }
+  ];
 
-  async ngOnInit(): Promise<void> {
-    void this.loadTeaUpdates();
+  ngOnInit(): void {
+    void this.tea.load();
+  }
 
-    this.loading.set(true);
+  async respond(item: TeaItem, action: 'accept' | 'decline'): Promise<void> {
+    this.busyKey.set(item.key);
     try {
-      await this.dataService.refreshSharedEntries();
-
-      if (this.friendsApi.isAuthenticated()) {
-        const friends: FriendSummary[] = await this.friendsApi.listFriends();
-        const map = new Map<string, CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string }>();
-
-        const results = await Promise.all(friends.map(async (friend) => {
-          try {
-            const crushes = await this.friendsApi.getFriendSharedCrushes(friend.id);
-            return { friend, crushes };
-          } catch {
-            return { friend, crushes: [] as CrushProfile[] };
-          }
-        }));
-
-        for (const { friend, crushes } of results) {
-          for (const crush of crushes) {
-            map.set(crush.id, {
-              ...crush,
-              ownerId: friend.id,
-              ownerUsername: friend.username,
-              ownerAvatarUrl: friend.avatarUrl
-            });
-          }
-        }
-
-        this.friendCrushes.set(map);
-      }
+      await this.tea.respondToRequest(item, action);
     } finally {
-      this.loading.set(false);
+      this.busyKey.set(null);
     }
   }
 
-  feedItems = computed<FeedItem[]>(() => {
-    const crushMap = this.friendCrushes();
-    const entries = this.dataService.getSharedEntries()();
-
-    const entryItems: FeedItem[] = entries.map((entry) => {
-      const crush = crushMap.get(entry.crushId);
-      return {
-        id: `entry-${entry.id}`,
-        kind: 'entry',
-        ownerId: entry.owner.id,
-        ownerUsername: entry.owner.username || 'Friend',
-        ownerAvatarUrl: entry.owner.avatarUrl,
-        crushId: entry.crushId,
-        crushNickname: crush?.nickname,
-        crushAvatarUrl: crush?.avatarUrl,
-        verb: ENTRY_TYPE_VERBS[entry.type] || 'shared an update about',
-        content: entry.content,
-        isSensitive: !!entry.isSensitive,
-        timestamp: entry.timestamp
-      };
-    });
-
-    const crushItems: FeedItem[] = [...crushMap.values()].map((crush) => ({
-      id: `crush-${crush.id}`,
-      kind: 'crush',
-      ownerId: crush.ownerId,
-      ownerUsername: crush.ownerUsername,
-      ownerAvatarUrl: crush.ownerAvatarUrl,
-      crushId: crush.id,
-      crushNickname: crush.nickname,
-      crushAvatarUrl: crush.avatarUrl,
-      verb: 'shared a crush:',
-      content: crush.bio || '',
-      isSensitive: false,
-      timestamp: crush.lastInteraction ? new Date(crush.lastInteraction) : new Date()
-    }));
-
-    return [...entryItems, ...crushItems].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-  });
-
-  openCrush(item: FeedItem): void {
-    this.router.navigate(['/profile', item.crushId]);
+  async markAllRead(): Promise<void> {
+    try {
+      await this.notifications.markAllRead();
+      this.earlierExpanded.set(false);
+    } catch {
+      // Leave the list as-is so the user can retry.
+    }
   }
 
   timeAgo(date: Date): string {
@@ -350,106 +266,5 @@ export class FeedComponent implements OnInit {
     const weeks = Math.floor(days / 7);
     if (weeks < 5) return `${weeks}w ago`;
     return new Date(date).toLocaleDateString();
-  }
-
-  private async loadTeaUpdates(): Promise<void> {
-    this.notificationsLoading.set(true);
-    try {
-      await this.notifications.loadNotifications();
-      await this.notifications.loadUnreadCount();
-    } finally {
-      this.notificationsLoading.set(false);
-    }
-  }
-
-  async openNotification(notification: AppNotification): Promise<void> {
-    // A "shared a crush" notice can go stale if the share was revoked or the crush
-    // deleted. Check first, and quietly dismiss it instead of opening a dead end.
-    if (notification.type === 'crush_shared' && typeof notification.payload?.crushId === 'string') {
-      const stillShared = await this.friendsApi.getSharedCrush(notification.payload.crushId).catch(() => null);
-      if (!stillShared) {
-        await this.notifications.remove(notification.id);
-        this.modal.show('That crush isn\'t shared with you anymore, so we cleared the notification.');
-        return;
-      }
-    }
-
-    try {
-      if (!notification.read) {
-        await this.notifications.markRead(notification.id);
-        this.readUpdatesExpanded.set(false);
-      }
-    } catch {
-      // Navigation should still work if marking read fails.
-    }
-
-    await this.router.navigate(this.notificationLink(notification), { queryParams: this.notificationQueryParams(notification) });
-  }
-
-  async markAllNotificationsRead(): Promise<void> {
-    try {
-      await this.notifications.markAllRead();
-      this.readUpdatesExpanded.set(false);
-    } catch {
-      // Leave the list as-is so the user can retry.
-    }
-  }
-
-  async markNotificationUnread(notification: AppNotification): Promise<void> {
-    if (!notification.read) return;
-
-    try {
-      await this.notifications.markUnread(notification.id);
-      this.readUpdatesExpanded.set(false);
-    } catch {
-      // Keep the notification in its current state so the user can retry.
-    }
-  }
-
-  toggleReadUpdates(): void {
-    this.readUpdatesExpanded.update(expanded => !expanded);
-  }
-
-  notificationMessage(notification: AppNotification): string {
-    const actorName = this.actorDisplayName(notification.actor);
-    switch (notification.type) {
-      case 'friend_request_nudge':
-        return `${actorName} sent you a nudge on their friend request`;
-      case 'crush_shared':
-        return `${actorName} shared a new crush with you`;
-      case 'invite_accepted':
-        return `${actorName} accepted your invite and joined Dexii! Finish setting up your friendship profile.`;
-      case 'friend_request_received':
-        return `${actorName} sent you a friend request`;
-      case 'friend_request_accepted':
-        return `${actorName} accepted your friend request`;
-      case 'journal_prompt':
-        return 'Your journal prompt is ready in the Vault';
-      default:
-        return `${actorName} sent you an update`;
-    }
-  }
-
-  private actorDisplayName(actor: AppNotification['actor']): string {
-    if (!actor) return 'A friend';
-    const fullName = [actor.firstName, actor.lastName].filter(Boolean).join(' ').trim();
-    return fullName || actor.username || 'A friend';
-  }
-
-  private notificationQueryParams(notification: AppNotification): Record<string, string> {
-    if (notification.type === 'friend_request_nudge' || notification.type === 'friend_request_received') {
-      return { tab: 'incoming' };
-    }
-    return {};
-  }
-
-  private notificationLink(notification: AppNotification): any[] {
-    if (notification.type === 'crush_shared' && typeof notification.payload?.crushId === 'string') {
-      return ['/profile', notification.payload.crushId];
-    }
-    if (notification.type === 'journal_prompt') {
-      return ['/vault'];
-    }
-    return ['/friends'];
   }
 }

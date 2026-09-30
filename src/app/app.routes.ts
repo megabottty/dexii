@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { lockGuard } from './core/guards/lock.guard';
 import { accessGuard } from './core/guards/access.guard';
 
@@ -75,8 +76,7 @@ export const routes: Routes = [
   },
   {
     path: 'shared-history',
-    canActivate: [lockGuard],
-    loadComponent: () => import('./features/shared-history/shared-history.component').then(m => m.SharedHistoryComponent)
+    redirectTo: () => inject(Router).createUrlTree(['/sharing'], { queryParams: { tab: 'history' } })
   },
   {
     path: 'vault',

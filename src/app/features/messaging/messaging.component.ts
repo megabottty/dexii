@@ -33,7 +33,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
           <div>
             <h2 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().username : 'Chats' }}</h2>
             <span [style.color]="theme.colors().primary" class="messaging-component__s6">
-              {{ hasActiveChat() ? 'End-to-End Encrypted Tea' : 'Your private conversations' }}
+              {{ hasActiveChat() ? 'End-to-end encrypted' : 'Your private conversations' }}
             </span>
           </div>
         </div>
@@ -224,8 +224,8 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                 <p [style.color]="theme.colors().primary" class="messaging-component__s6">Your chats</p>
                 <span [style.color]="theme.colors().textSecondary" class="chat-hub__meta">
                   {{ conversationList().length }} conversation{{ conversationList().length === 1 ? '' : 's' }}
-                  @if (messaging.unreadTeaCount() > 0) {
-                    • {{ messaging.unreadTeaCount() }} unread
+                  @if (messaging.unreadMessageCount() > 0) {
+                    • {{ messaging.unreadMessageCount() }} unread
                   }
                 </span>
               </div>
@@ -430,7 +430,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                   @if (chatSearch().trim() && conversationList().length > 0) {
                     <p [style.color]="theme.colors().textSecondary">No conversations match “{{ chatSearch() }}”.</p>
                   } @else {
-                    <p [style.color]="theme.colors().textSecondary">No chats yet. Start one to spill some tea.</p>
+                    <p [style.color]="theme.colors().textSecondary">No chats yet. Start one with a friend.</p>
                     @if (!showNewChat()) {
                       <button type="button"
                               (click)="toggleNewChat()"
@@ -458,7 +458,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
             <div class="messaging-composer__row">
               <input [(ngModel)]="newMessage" (keyup.enter)="send()"
                      [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-                     placeholder="Spill the tea..."
+                     placeholder="Message…"
                      aria-label="Message input"
                      class="messaging-component__s12">
               <button (click)="send()" [style.background-color]="theme.colors().primary"
@@ -788,7 +788,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     this.openChat(friend.id, friend.username);
   }
 
-  /** Conversations sorted so unread tea floats to the top, then most recent. */
+  /** Conversations sorted so unread messages float to the top, then most recent. */
   conversationList = computed(() => {
     return [...this.messaging.conversationSummaries()].sort((a, b) => {
       const aUnread = a.unreadCount > 0 ? 1 : 0;

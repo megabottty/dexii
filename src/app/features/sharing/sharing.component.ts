@@ -10,6 +10,7 @@ import { ModalService } from '../../core/services/modal.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import { DataService } from '../../core/services/data.service';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
+import { SharedHistoryPanelComponent } from './shared-history-panel.component';
 
 /**
  * A dedicated, top-level "Sharing" page (linked directly from the main nav)
@@ -24,7 +25,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 @Component({
   selector: 'app-sharing',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, SharedHistoryPanelComponent],
   styleUrl: './sharing.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="sharing-component__page">
@@ -44,6 +45,30 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           See, share, and manage exactly what each friend can view.
         </p>
 
+        <div class="sharing-tabs" role="tablist" aria-label="Sharing sections">
+          <button type="button"
+                  role="tab"
+                  (click)="setTab('controls')"
+                  [attr.aria-selected]="activeTab() === 'controls'"
+                  [style.background-color]="activeTab() === 'controls' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'controls' ? '#fff' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'controls' ? theme.colors().primary : theme.colors().border)"
+                  class="sharing-tab">
+            Controls
+          </button>
+          <button type="button"
+                  role="tab"
+                  (click)="setTab('history')"
+                  [attr.aria-selected]="activeTab() === 'history'"
+                  [style.background-color]="activeTab() === 'history' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'history' ? '#fff' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'history' ? theme.colors().primary : theme.colors().border)"
+                  class="sharing-tab">
+            History
+          </button>
+        </div>
+
+        @if (activeTab() === 'controls') {
         <div class="sharing-component__layout">
           <!-- Friend picker -->
           <aside [style.background-color]="theme.colors().cardBg"
@@ -209,6 +234,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
             </p>
           }
         </section>
+        } @else {
+          <app-shared-history-panel></app-shared-history-panel>
+        }
       </main>
     </div>
   `
@@ -223,6 +251,7 @@ export class SharingComponent implements OnInit {
   public modal = inject(ModalService);
   public messaging = inject(MessagingService);
 
+  activeTab = signal<'controls' | 'history'>('controls');
   friends = signal<FriendSummary[]>([]);
   friendSearch = signal('');
   selectedFriend = signal<FriendSummary | null>(null);
@@ -257,6 +286,10 @@ export class SharingComponent implements OnInit {
   }
 
   async ngOnInit() {
+    if (this.route.snapshot.queryParamMap.get('tab') === 'history') {
+      this.activeTab.set('history');
+    }
+
     await this.loadFriends();
 
     const friendId = this.route.snapshot.queryParamMap.get('friendId');
@@ -280,6 +313,16 @@ export class SharingComponent implements OnInit {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { friendId: friend.id },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  setTab(tab: 'controls' | 'history'): void {
+    this.activeTab.set(tab);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
       queryParamsHandling: 'merge',
       replaceUrl: true
     });

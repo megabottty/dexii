@@ -338,35 +338,6 @@
   animation: flame-button-glow 2.5s infinite ease-in-out;
 }
 
-.dashboard-tea-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  font-size: var(--fs-micro);
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  animation: tea-badge-pulse 2s infinite ease-in-out;
-}
-
-.dashboard-tea-badge--flame {
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
-}
-
-@keyframes tea-badge-pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
-}
-
 @keyframes flame-button-glow {
   0%, 100% {
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
@@ -802,45 +773,3 @@
   }
 }
 
-.dashboard-tea-sender {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 14px;
-  margin-bottom: 14px;
-}
-
-.dashboard-tea-sender__avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex: 0 0 auto;
-}
-
-.dashboard-tea-sender__copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.dashboard-tea-sender__label {
-  font-size: var(--fs-label);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.dashboard-tea-sender__name {
-  font-size: 17px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-tea-sender__time {
-  font-size: var(--fs-micro);
-  letter-spacing: 1px;
-}

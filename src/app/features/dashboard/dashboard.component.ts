@@ -1,11 +1,10 @@
-import { Component, signal, inject, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../core/services/data.service';
 import { SecurityService } from '../../core/services/security.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { MessagingService } from '../../core/services/messaging.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { WalkthroughService } from '../../core/services/walkthrough.service';
@@ -715,7 +714,6 @@ export class DashboardComponent implements OnInit {
   public dataService = inject(DataService);
   public security = inject(SecurityService);
   public theme = inject(ThemeService);
-  public messaging = inject(MessagingService);
   public modal = inject(ModalService);
   public subscription = inject(SubscriptionService);
   private router = inject(Router);
@@ -871,7 +869,6 @@ export class DashboardComponent implements OnInit {
   );
 
   friends = signal<FriendSummary[]>([]);
-  private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   newCrush = {
     nickname: '',
@@ -920,11 +917,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.dataService.setViewer(null);
-    void this.messaging.loadConversationSummaries();
     void this.loadFriends();
-    this.refreshTimer = setInterval(() => {
-      void this.messaging.loadConversationSummaries();
-    }, 10000);
     setTimeout(() => {
       void this.walkthrough.startFirstLogin();
     }, 150);
@@ -953,13 +946,6 @@ export class DashboardComponent implements OnInit {
       this.friends.set(await this.friendsApi.listFriends());
     } catch {
       this.friends.set([]);
-    }
-  }
-
-  ngOnDestroy() {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
     }
   }
 

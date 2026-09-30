@@ -332,7 +332,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
         @if (activeTab() === 'friends') {
           <div class="header-actions" style="margin-bottom: 14px; text-align: right;">
-            <a routerLink="/shared-history" [style.color]="theme.colors().primary"
+            <a routerLink="/sharing" [queryParams]="{ tab: 'history' }" [style.color]="theme.colors().primary"
                style="text-decoration: none; font-weight: 500; font-family: 'Times New Roman', serif; font-size: 1.1rem; border: 1px solid currentColor; padding: 6px 12px; border-radius: 4px;">
               📜 Shared History
             </a>
@@ -766,7 +766,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     trustLevel: 'Medium',
     notes: ''
   });
-  private hasInitializedIncoming = false;
   private incomingPollTimer: ReturnType<typeof setInterval> | null = null;
 
   allCrushes = this.dataService.getAllCrushes();
@@ -787,7 +786,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         this.outgoingRequests.set([]);
         this.friendsError.set('');
         this.searchError.set('');
-        this.hasInitializedIncoming = false;
         this.stopIncomingRequestPolling();
       }
     });
@@ -936,77 +934,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     localStorage.setItem(this.getArchivedFriendsStorageKey(), JSON.stringify(Array.from(ids)));
   }
 
-  private getSeenIncomingStorageKey(): string {
-    return `dexii_seen_incoming_requests_${this.getUserStorageSuffix()}`;
-  }
-
-  private readSeenIncomingRequestIds(): Set<string> {
-    try {
-      const raw = localStorage.getItem(this.getSeenIncomingStorageKey());
-      if (!raw) return new Set<string>();
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return new Set<string>();
-      return new Set(parsed.filter((id: unknown): id is string => typeof id === 'string'));
-    } catch {
-      return new Set<string>();
-    }
-  }
-
-  private writeSeenIncomingRequestIds(ids: Set<string>): void {
-    localStorage.setItem(this.getSeenIncomingStorageKey(), JSON.stringify(Array.from(ids)));
-  }
-
-  private async showIncomingRequestBrowserNotification(message: string): Promise<void> {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-
-    if (Notification.permission === 'granted') {
-      const notification = new Notification('New Friend Request', {
-        body: message,
-        tag: 'dexii-friend-request'
-      });
-      notification.onclick = () => {
-        window.focus();
-        this.activeTab.set('incoming');
-        notification.close();
-      };
-      return;
-    }
-
-    if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        void this.showIncomingRequestBrowserNotification(message);
-      }
-    }
-  }
-
-  private async notifyForNewIncomingRequests(requests: FriendRequestItem[]): Promise<void> {
-    const idsInResponse = new Set(requests.map((req) => req.id));
-    const seenIds = this.readSeenIncomingRequestIds();
-
-    if (!this.hasInitializedIncoming) {
-      this.hasInitializedIncoming = true;
-      idsInResponse.forEach((id) => seenIds.add(id));
-      this.writeSeenIncomingRequestIds(seenIds);
-      return;
-    }
-
-    const newRequests = requests.filter((req) => !seenIds.has(req.id));
-    if (newRequests.length === 0) return;
-
-    newRequests.forEach((req) => seenIds.add(req.id));
-    this.writeSeenIncomingRequestIds(seenIds);
-
-    const names = newRequests.map((req) => req.from).slice(0, 3).join(', ');
-    const extraCount = newRequests.length > 3 ? ` +${newRequests.length - 3} more` : '';
-    const message = newRequests.length === 1
-      ? `${newRequests[0].from} sent you a friend request.`
-      : `${newRequests.length} new friend requests: ${names}${extraCount}.`;
-
-    this.modal.show(message);
-    await this.showIncomingRequestBrowserNotification(message);
-  }
-
   private startIncomingRequestPolling(): void {
     if (this.incomingPollTimer) return;
     this.incomingPollTimer = setInterval(() => {
@@ -1050,7 +977,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.isLoadingIncoming.set(true);
     try {
       const data = (await this.friendsApi.incomingRequests()).map((req) => this.mapRequest(req));
-      await this.notifyForNewIncomingRequests(data);
       this.incomingRequests.set(data);
     } catch (error: any) {
       const message = error?.message || 'Unable to load incoming requests.';

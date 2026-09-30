@@ -57,37 +57,36 @@ import { SupportMenuService } from '../../services/support-menu.service';
         <span aria-hidden="true">💬</span>
         <span class="navbar-quick-link-label">Chat</span>
         </a>
-        @if (notifications.unreadCount() > 0) {
-          <a routerLink="/feed"
-             class="navbar-quick-link navbar-quick-link--tea"
-             [style.color]="theme.colors().text"
-             [style.border]="'1px solid ' + theme.colors().accent"
-             aria-label="Open new Tea updates">
-             <span class="navbar-tea-icon-wrap">
-               <span aria-hidden="true">🍵</span>
+        <a routerLink="/feed"
+           class="navbar-quick-link"
+           [class.navbar-quick-link--tea]="notifications.unreadCount() > 0"
+           [style.color]="theme.colors().text"
+           [style.border]="'1px solid ' + (notifications.unreadCount() > 0 ? theme.colors().accent : theme.colors().border)"
+           aria-label="Open Tea">
+           <span class="navbar-tea-icon-wrap">
+             <span aria-hidden="true">🍵</span>
+             @if (notifications.unreadCount() > 0) {
                <span [style.background-color]="theme.colors().accent"
                      [style.--navbar-badge-ring]="theme.colors().bg"
                      class="navbar-quick-link-badge"
-                     aria-label="Unread Tea updates">
+                     aria-label="Unread Tea">
                  {{ notifications.unreadCount() }}
                </span>
-             </span>
-             <span class="navbar-quick-link-label">Tea</span>
-          </a>
-        }
+             }
+           </span>
+           <span class="navbar-quick-link-label">Tea</span>
+        </a>
 
-        @if (notifications.unreadCount() === 0) {
-          <button type="button"
-                class="navbar-help-button"
-                [style.color]="theme.colors().text"
-                [style.border]="'1px solid ' + theme.colors().border"
-                aria-label="Open help tools"
-                [attr.aria-expanded]="supportMenu.open()"
-                aria-controls="app-support-menu"
-                (click)="toggleSupportMenu(); $event.stopPropagation()">
+        <button type="button"
+              class="navbar-help-button"
+              [style.color]="theme.colors().text"
+              [style.border]="'1px solid ' + theme.colors().border"
+              aria-label="Open help tools"
+              [attr.aria-expanded]="supportMenu.open()"
+              aria-controls="app-support-menu"
+              (click)="toggleSupportMenu(); $event.stopPropagation()">
           ?
-          </button>
-        }
+        </button>
 
         <button type="button"
               class="navbar-menu-toggle"
@@ -172,7 +171,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
              [style.color]="theme.colors().text"
              class="navbar-link">
             Chat
-            @if (messaging.unreadTeaCount() > 0) {
+            @if (messaging.unreadMessageCount() > 0) {
               <span [style.background]="messaging.unreadSelfDestructCount() > 0 ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : theme.colors().primary"
                     class="navbar-unread-badge"
                     [class.navbar-unread-badge--flame]="messaging.unreadSelfDestructCount() > 0"
@@ -180,7 +179,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
                 @if (messaging.unreadSelfDestructCount() > 0) {
                   <span class="navbar-unread-badge-icon">🔥</span>
                 }
-                {{ messaging.unreadTeaCount() }}
+                {{ messaging.unreadMessageCount() }}
               </span>
             }
           </a>

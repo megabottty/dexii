@@ -10,7 +10,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   readAt?: Date;
-  relatedCrushId?: string; // Optional context: sharing tea about someone
+  relatedCrushId?: string; // Optional context: the crush this message is about
   relatedEntryId?: string; // Link to specific entry/note
   isSelfDestruct?: boolean;
   selfDestructDurationMs?: number;

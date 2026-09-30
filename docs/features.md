@@ -10,6 +10,11 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Private Journal**: A strictly private section in the Vault Center for thoughts that are never shared, even with friends.
 - **PIN Recovery/Setup**: First-time users are prompted to set a 4-digit PIN stored locally.
 
+## 🍵 Tea (inbox)
+- **One stream**: everything friends do toward you — shared crushes (with the crush inline), shared notes, friend requests (Accept/Decline inline), nudges, invites accepted, journal prompts. Unread first, filters for Requests / Shared crushes / Notes, "Show earlier" for read items.
+- **Tea = what your friends share with you and requests waiting for you.** Chat is only conversations. Notifications are push alerts about Tea and Chat; there are no in-app pop-ups.
+- Sharing has two tabs: Controls (what each friend can see) and History (the log of what you've shared, with viewed status).
+
 ## 🗂 The Rolodex (Dashboard)
 - **Crush Cards**: View your active prospects. Includes "Nickname", "Attraction Rating" (1-5 Stars), and "Last Interaction" date.
 - **New Entry**: Create new profiles with an avatar (upload a photo, pick from the diverse preset gallery, or build a custom cartoon avatar), status (Crush → Plotting → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend), and bios.

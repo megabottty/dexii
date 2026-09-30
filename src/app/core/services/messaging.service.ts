@@ -51,11 +51,13 @@ export class MessagingService {
     const server = this._conversationSummaries().reduce((total, chat) => total + (chat.unreadSelfDestructCount || 0), 0);
     return Math.max(local, server);
   });
-  public unreadTeaCount = computed(() => {
+  public unreadMessageCount = computed(() => {
     const localCount = this.getAllUnreadForCurrentUser().length;
     const serverCount = this.totalUnreadCount();
     return Math.max(localCount, serverCount);
   });
+  /** @deprecated use unreadMessageCount */
+  public readonly unreadTeaCount = this.unreadMessageCount;
 
   constructor() {
     effect(() => {
