@@ -30,4 +30,7 @@ router.put('/:id/read', notificationController.markRead);
 // @route   PUT /api/notifications/:id/unread
 router.put('/:id/unread', notificationController.markUnread);
 
+// @route   DELETE /api/notifications/:id  (dismiss one of your own notifications)
+router.delete('/:id', notificationController.deleteNotification);
+
 module.exports = router;

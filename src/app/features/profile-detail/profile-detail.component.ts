@@ -1189,9 +1189,10 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
       } @else if (friendCrushNotFound()) {
         <div style="padding: 48px; text-align: center;">
           <p [style.color]="theme.colors().text" style="font-weight: 700; margin-bottom: 8px;">This crush isn't available.</p>
-          <p [style.color]="theme.colors().textSecondary">
+          <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 18px;">
             It may have been removed, or it's no longer shared with you.
           </p>
+          <a routerLink="/feed" [style.background-color]="theme.colors().primary" class="action-btn-styled" style="color: #fff; display: inline-flex; width: auto; padding: 10px 22px; border: none; border-radius: 999px;">Back to Tea</a>
         </div>
       }
     </div>

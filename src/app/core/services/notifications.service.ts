@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { getApiBaseUrl } from '../config/api-config';
 import { SecurityService } from './security.service';
+import { RealtimeService } from './realtime.service';
 
 export type NotificationType =
   | 'friend_request_nudge'
@@ -41,6 +42,7 @@ export interface AppNotification {
 export class NotificationsService {
   private http = inject(HttpClient, { optional: true });
   private security = inject(SecurityService);
+  private realtime = inject(RealtimeService);
   private apiBase = `${getApiBaseUrl()}/notifications`;
   private unreadCountPoller: ReturnType<typeof setInterval> | null = null;
 
@@ -67,6 +69,25 @@ export class NotificationsService {
     this.unreadCountPoller = setInterval(() => {
       void this.loadUnreadCount();
     }, 15000);
+
+    // Instant refresh when the server adds or takes back a notification.
+    this.realtime.onNotificationsChanged(() => {
+      void this.loadUnreadCount();
+      if (this._notifications().length) void this.loadNotifications();
+    });
+  }
+
+  /** Dismisses one notification everywhere (server + this list + badge). */
+  async remove(id: string): Promise<void> {
+    if (!id || !this.canRequest()) return;
+    const wasUnread = this._notifications().some((n) => n.id === id && !n.read);
+    this._notifications.update((list) => list.filter((n) => n.id !== id));
+    if (wasUnread) this._unreadCount.update((count) => Math.max(0, count - 1));
+    try {
+      await this.request<{ ok: boolean }>(`/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch {
+      // Already gone on the server, or offline; the local list is what the user sees.
+    }
   }
 
   async loadUnreadCount(): Promise<number> {
@@ -154,7 +175,7 @@ export class NotificationsService {
     };
   }
 
-  private async request<T>(path: string, init: { method?: 'GET' | 'PUT' | 'POST'; body?: unknown } = {}): Promise<T> {
+  private async request<T>(path: string, init: { method?: 'GET' | 'PUT' | 'POST' | 'DELETE'; body?: unknown } = {}): Promise<T> {
     const method = init.method || 'GET';
     const url = `${this.apiBase}${path}`;
 
@@ -164,6 +185,9 @@ export class NotificationsService {
       }
       if (method === 'PUT') {
         return firstValueFrom(this.http.put<T>(url, init.body ?? {}, { headers: this.buildHeaders() }));
+      }
+      if (method === 'DELETE') {
+        return firstValueFrom(this.http.delete<T>(url, { headers: this.buildHeaders() }));
       }
       return firstValueFrom(this.http.get<T>(url, { headers: this.buildHeaders() }));
     }

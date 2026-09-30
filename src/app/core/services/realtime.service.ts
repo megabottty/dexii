@@ -46,6 +46,7 @@ export class RealtimeService {
   private safetyHandlers = new Set<SafetyHandler>();
   private reactionHandlers = new Set<ReactionHandler>();
   private groupMessageHandlers = new Set<GroupMessageHandler>();
+  private notificationHandlers = new Set<() => void>();
 
   private _connected = signal(false);
   public connected = this._connected.asReadonly();
@@ -122,6 +123,10 @@ export class RealtimeService {
     this.socket.on('receiveGroupMessage', (data: any) => {
       this.groupMessageHandlers.forEach((handler) => handler(data));
     });
+
+    this.socket.on('notificationsChanged', () => {
+      this.notificationHandlers.forEach((handler) => handler());
+    });
   }
 
   emitMessage(payload: IncomingSocketMessage): void {
@@ -150,6 +155,12 @@ export class RealtimeService {
   onReactionUpdate(handler: ReactionHandler): () => void {
     this.reactionHandlers.add(handler);
     return () => this.reactionHandlers.delete(handler);
+  }
+
+  /** Fired when the server adds or retracts notifications for this user. */
+  onNotificationsChanged(handler: () => void): () => void {
+    this.notificationHandlers.add(handler);
+    return () => this.notificationHandlers.delete(handler);
   }
 
   onGroupMessage(handler: GroupMessageHandler): () => void {

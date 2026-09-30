@@ -37,5 +37,6 @@ const NotificationSchema = new mongoose.Schema({
 });
 
 NotificationSchema.index({ recipient: 1, read: 1 });
+NotificationSchema.index({ type: 1, 'payload.crushId': 1 });
 
 module.exports = mongoose.model('Notification', NotificationSchema);

@@ -9,6 +9,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { AppNotification, NotificationsService } from '../../core/services/notifications.service';
 import { WebPushService } from '../../core/services/web-push.service';
+import { ModalService } from '../../core/services/modal.service';
 
 interface FeedItem {
   id: string;
@@ -241,6 +242,7 @@ export class FeedComponent implements OnInit {
   protected theme = inject(ThemeService);
   protected notifications = inject(NotificationsService);
   protected webPush = inject(WebPushService);
+  private modal = inject(ModalService);
   private dataService = inject(DataService);
   private friendsApi = inject(FriendsApiService);
   private router = inject(Router);
@@ -361,6 +363,17 @@ export class FeedComponent implements OnInit {
   }
 
   async openNotification(notification: AppNotification): Promise<void> {
+    // A "shared a crush" notice can go stale if the share was revoked or the crush
+    // deleted. Check first, and quietly dismiss it instead of opening a dead end.
+    if (notification.type === 'crush_shared' && typeof notification.payload?.crushId === 'string') {
+      const stillShared = await this.friendsApi.getSharedCrush(notification.payload.crushId).catch(() => null);
+      if (!stillShared) {
+        await this.notifications.remove(notification.id);
+        this.modal.show('That crush isn\'t shared with you anymore, so we cleared the notification.');
+        return;
+      }
+    }
+
     try {
       if (!notification.read) {
         await this.notifications.markRead(notification.id);

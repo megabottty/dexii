@@ -93,6 +93,67 @@ const notifyDevices = async (notification) => {
   }
 };
 
+/** Tells each user's open sessions to refetch their notifications (badge + Tea list). */
+const emitNotificationsChanged = (io, recipients) => {
+  if (!io) return;
+  for (const recipient of new Set((recipients || []).map(String))) {
+    try { io.to(recipient).emit('notificationsChanged'); } catch { /* ignore */ }
+  }
+};
+exports.emitNotificationsChanged = emitNotificationsChanged;
+
+/**
+ * Removes "shared a crush" notifications that no longer point at something the
+ * recipient can open: the share was revoked, the crush was deleted, or the two
+ * users are no longer friends. Never throws; callers fire-and-forget.
+ *   retractCrushShares({ io, crushId })                      -> every recipient of that crush
+ *   retractCrushShares({ io, crushId, recipients: [ids] })   -> only those recipients
+ *   retractCrushShares({ io, betweenUsers: [a, b] })         -> both directions, any crush
+ */
+exports.retractCrushShares = async ({ io, crushId, recipients, betweenUsers } = {}) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return 0;
+    let query;
+    if (betweenUsers && betweenUsers.length === 2) {
+      const [a, b] = betweenUsers.map(String);
+      query = { type: 'crush_shared', $or: [{ recipient: a, actor: b }, { recipient: b, actor: a }] };
+    } else if (crushId) {
+      query = { type: 'crush_shared', 'payload.crushId': String(crushId) };
+      if (Array.isArray(recipients)) {
+        if (recipients.length === 0) return 0;
+        query.recipient = { $in: recipients.map(String) };
+      }
+    } else {
+      return 0;
+    }
+    const affected = await Notification.find(query).select('recipient').lean();
+    if (!affected.length) return 0;
+    await Notification.deleteMany({ _id: { $in: affected.map((n) => n._id) } });
+    emitNotificationsChanged(io, affected.map((n) => n.recipient));
+    return affected.length;
+  } catch (err) {
+    console.warn('Retracting crush share notifications failed:', err.message);
+    return 0;
+  }
+};
+
+exports.deleteNotification = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Notification not found.' });
+    }
+    const result = await Notification.deleteOne({ _id: req.params.id, recipient: req.user.id });
+    if (!result.deletedCount) {
+      return res.status(404).json({ message: 'Notification not found.' });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 exports.createNotification = async ({ recipient, actor, type, payload = {} }) => {
   if (!recipient || !type || mongoose.connection.readyState !== 1) {
     return null;

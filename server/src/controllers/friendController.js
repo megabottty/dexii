@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const sendEmail = require('../utils/sendEmail');
 const sendSms = require('../utils/sendSms');
 const { buildInviteEmail } = require('../utils/inviteEmail');
-const { createNotification } = require('./notificationController');
+const { createNotification , retractCrushShares } = require('./notificationController');
 
 const INVITE_DAILY_LIMIT = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -200,6 +200,9 @@ exports.removeFriend = async (req, res) => {
     ]);
 
     res.json(user.friends);
+
+    // No longer friends: neither side can open the other's shared crushes.
+    setImmediate(() => { void retractCrushShares({ io: req.app.get('io'), betweenUsers: [user._id, friendId] }); });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

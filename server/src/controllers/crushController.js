@@ -2,14 +2,11 @@ const mongoose = require('mongoose');
 const CrushProfile = require('../models/CrushProfile');
 const Entry = require('../models/Entry');
 const User = require('../models/User');
-const { createNotification } = require('./notificationController');
+const { createNotification , retractCrushShares } = require('./notificationController');
 
-const resolveNewVisibilityRecipients = async (ownerId, previousVisibility, nextVisibility) => {
-  const previousSet = new Set((previousVisibility || []).map((value) => String(value)));
-  const targets = [...new Set((nextVisibility || [])
-    .map((value) => String(value))
-    .filter((value) => value && value !== 'public' && !previousSet.has(value)))];
-
+/** Maps visibility entries (user ids or usernames) to the owner's friends' user ids. */
+const resolveVisibilityUserIds = async (ownerId, values) => {
+  const targets = [...new Set((values || []).map((value) => String(value)).filter((value) => value && value !== 'public'))];
   if (targets.length === 0) return [];
 
   const owner = await User.findById(ownerId)
@@ -17,16 +14,28 @@ const resolveNewVisibilityRecipients = async (ownerId, previousVisibility, nextV
     .select('friends')
     .lean();
 
-  const resolvedRecipients = new Set();
+  const resolved = new Set();
   for (const friend of owner?.friends || []) {
     const friendId = String(friend._id || friend.id);
     const username = typeof friend.username === 'string' ? friend.username : '';
     if (targets.includes(friendId) || (username && targets.includes(username))) {
-      resolvedRecipients.add(friendId);
+      resolved.add(friendId);
     }
   }
+  return [...resolved];
+};
 
-  return [...resolvedRecipients];
+const resolveNewVisibilityRecipients = async (ownerId, previousVisibility, nextVisibility) => {
+  const previousSet = new Set((previousVisibility || []).map((value) => String(value)));
+  const added = (nextVisibility || []).map((value) => String(value)).filter((value) => !previousSet.has(value));
+  return resolveVisibilityUserIds(ownerId, added);
+};
+
+/** Friends who were in the old visibility list but not the new one. */
+const resolveRemovedVisibilityRecipients = async (ownerId, previousVisibility, nextVisibility) => {
+  const nextSet = new Set((nextVisibility || []).map((value) => String(value)));
+  const removed = (previousVisibility || []).map((value) => String(value)).filter((value) => !nextSet.has(value));
+  return resolveVisibilityUserIds(ownerId, removed);
 };
 
 // @desc    Get all crush profiles for a user
@@ -163,9 +172,13 @@ exports.updateCrush = async (req, res) => {
 
     const previousVisibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
     let newRecipients = [];
+    let removedRecipients = [];
 
     if (Array.isArray(req.body.visibility)) {
-      newRecipients = await resolveNewVisibilityRecipients(req.user.id, previousVisibility, req.body.visibility);
+      [newRecipients, removedRecipients] = await Promise.all([
+        resolveNewVisibilityRecipients(req.user.id, previousVisibility, req.body.visibility),
+        resolveRemovedVisibilityRecipients(req.user.id, previousVisibility, req.body.visibility)
+      ]);
     }
 
     const updatePayload = {
@@ -199,6 +212,11 @@ exports.updateCrush = async (req, res) => {
     }
 
     res.json(crush);
+
+    // Unshared with someone: take back their "shared a crush" notification.
+    if (removedRecipients.length > 0) {
+      setImmediate(() => { void retractCrushShares({ io: req.app.get('io'), crushId: crush._id, recipients: removedRecipients }); });
+    }
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -224,6 +242,9 @@ exports.deleteCrush = async (req, res) => {
     await Entry.deleteMany({ crushId: req.params.id });
 
     res.json({ message: 'Crush deleted', id: req.params.id });
+
+    // The crush is gone: nobody should still hold a notification pointing at it.
+    setImmediate(() => { void retractCrushShares({ io: req.app.get('io'), crushId: req.params.id }); });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
