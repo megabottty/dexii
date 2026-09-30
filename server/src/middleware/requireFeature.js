@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const { PREMIUM_FEATURES, effectiveTier, tierAllows } = require('../config/premiumFeatures');
+const { PREMIUM_FEATURES, effectiveAccess, tierAllows } = require('../config/premiumFeatures');
 
 /**
  * Gates a route behind a premium feature. `predicate(req)` (optional) limits
@@ -17,7 +17,7 @@ module.exports = function requireFeature(featureKey, predicate) {
       if (mongoose.connection.readyState !== 1 || req.user?.isDemo) return next();
 
       const user = await User.findById(req.user.id).select('username subscriptionTier isSuperAdmin').lean();
-      if (tierAllows(effectiveTier(user), featureKey)) return next();
+      if (tierAllows(effectiveAccess(user), featureKey)) return next();
 
       return res.status(402).json({
         message: `This is a ${feature.minTier} feature.`,

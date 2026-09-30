@@ -15,6 +15,8 @@ import { WebPushService } from '../../core/services/web-push.service';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 import { AppUpdateService } from '../../core/services/app-update.service';
 import { AdminApiService, SuperAdminSummary } from '../../core/services/admin-api.service';
+import { FeatureGateService } from '../../core/services/feature-gate.service';
+import { ACCESS_LABELS, ACCESS_LEVELS, AccessLevel, PREMIUM_FEATURES, PremiumFeatureKey, accessAllows } from '../../core/config/premium-features';
 
 interface FriendChoice {
   id: string;
@@ -522,16 +524,35 @@ interface FriendChoice {
 
           <div class="settings-divider"></div>
 
-          @if (subscription.isSuperAdmin()) {
+          @if (gate.canManageSuperAdmins()) {
             <section class="settings-plan-section">
               <div class="settings-plan-header">
                 <div>
                   <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Super admin</p>
                   <h2 class="settings-section-title">Super admins</h2>
                   <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                    Super admins get every premium feature and can add other super admins. Only visible to you and other super admins.
+                    You have <strong>Super admin</strong> access: everything in Gold, plus the tools below. The ladder is Free → Premium → Gold → Super admin. Only visible to super admins.
                   </p>
                 </div>
+              </div>
+
+              <div class="settings-tier-matrix" role="table" aria-label="What each tier unlocks">
+                <div class="settings-tier-matrix__row settings-tier-matrix__row--head" role="row">
+                  <span role="columnheader">Feature</span>
+                  @for (level of accessLevels; track level) { <span role="columnheader">{{ accessLabel(level) }}</span> }
+                </div>
+                <div class="settings-tier-matrix__row" role="row">
+                  <span role="cell">Active crushes</span>
+                  @for (level of accessLevels; track level) { <span role="cell">{{ subscription.crushLimitLabel(level) }}</span> }
+                </div>
+                @for (feature of featureMatrix; track feature.key) {
+                  <div class="settings-tier-matrix__row" role="row">
+                    <span role="cell">{{ feature.title }}@if (!feature.enabled) { <em [style.color]="theme.colors().textSecondary"> (not gated yet)</em> }</span>
+                    @for (level of accessLevels; track level) {
+                      <span role="cell" [style.color]="feature.allowed(level) ? theme.colors().primary : theme.colors().textSecondary">{{ feature.allowed(level) ? '✓' : '—' }}</span>
+                    }
+                  </div>
+                }
               </div>
 
               <div class="settings-admin-add">
@@ -590,7 +611,7 @@ interface FriendChoice {
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Subscription</p>
                 <h2 class="settings-section-title">Crush Plan</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  Current tier: {{ subscription.tier() }}. @if (subscription.crushLimitLabel() === 'Unlimited') { Unlimited crushes. } @else { You can track up to {{ subscription.crushLimitLabel() }} crushes. }
+                  Your access: {{ subscription.accessLabel() }}@if (subscription.isSuperAdmin()) { (includes everything in Gold) }. @if (subscription.crushLimitLabel() === 'Unlimited') { Unlimited crushes. } @else { You can track up to {{ subscription.crushLimitLabel() }} crushes. }
                 </p>
               </div>
             </div>
@@ -716,12 +737,21 @@ export class SettingsComponent {
   photoPickerOpen = signal(false);
   appUpdate = inject(AppUpdateService);
   private adminApi = inject(AdminApiService);
+  gate = inject(FeatureGateService);
+  readonly accessLevels = ACCESS_LEVELS;
+  readonly featureMatrix = (Object.keys(PREMIUM_FEATURES) as PremiumFeatureKey[]).map((key) => ({
+    key,
+    title: PREMIUM_FEATURES[key].title,
+    enabled: PREMIUM_FEATURES[key].enabled,
+    allowed: (level: AccessLevel) => accessAllows(level, key)
+  }));
+  accessLabel(level: AccessLevel): string { return ACCESS_LABELS[level]; }
   superAdmins = signal<SuperAdminSummary[]>([]);
   superAdminsLoaded = signal(false);
   superAdminDraft = signal('');
   superAdminBusy = signal(false);
   private superAdminLoader = effect(() => {
-    if (this.subscription.isSuperAdmin()) void this.loadSuperAdmins();
+    if (this.gate.canManageSuperAdmins()) void this.loadSuperAdmins();
   });
   modal = inject(ModalService);
   settings = inject(UserSettingsService);

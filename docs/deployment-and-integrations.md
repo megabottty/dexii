@@ -5,7 +5,12 @@ integration for friend invites.
 
 ---
 
-## Premium features and the founder override
+## Access tiers and premium features
+
+Ladder, lowest to highest: **Free → Premium → Gold → Super admin**. Free/Premium/Gold are
+Stripe plans; Super admin is a role that sits above Gold (everything Gold has, plus admin
+tools). Each feature in the registry names the lowest rung that unlocks it; crush limits
+are Free 3, Premium 8, Gold and Super admin unlimited.
 
 Premium gates are defined in `src/app/core/config/premium-features.ts` (client copy and
 flags) and mirrored in `server/src/config/premiumFeatures.js` (server enforcement via

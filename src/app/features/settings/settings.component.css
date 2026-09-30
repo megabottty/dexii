@@ -900,3 +900,41 @@
   background: transparent;
 }
 
+
+.settings-tier-matrix {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 18px;
+  font-size: var(--fs-small);
+}
+
+.settings-tier-matrix__row {
+  display: grid;
+  grid-template-columns: minmax(140px, 2fr) repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(127, 127, 127, 0.06);
+}
+
+.settings-tier-matrix__row > span:not(:first-child) {
+  text-align: center;
+  font-weight: 700;
+}
+
+.settings-tier-matrix__row--head {
+  background: transparent;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .settings-tier-matrix__row {
+    grid-template-columns: minmax(110px, 1.6fr) repeat(4, minmax(0, 1fr));
+    padding: 8px 6px;
+    font-size: var(--fs-label);
+  }
+}

@@ -23,13 +23,15 @@ import { PREMIUM_FEATURES, PremiumFeatureKey } from '../../config/premium-featur
       <div class="up-icon" aria-hidden="true">✨</div>
       <h3 class="up-title" [style.color]="theme.colors().text">{{ entry().title }}</h3>
       <p class="up-body" [style.color]="theme.colors().textSecondary">{{ entry().body }}</p>
-      <button type="button"
-              class="up-btn"
-              [style.background-color]="theme.colors().primary"
-              [disabled]="busy()"
-              (click)="upgrade()">
-        {{ busy() ? 'Opening checkout…' : 'Upgrade to ' + entry().minTier }}
-      </button>
+      @if (entry().minTier !== 'SuperAdmin') {
+        <button type="button"
+                class="up-btn"
+                [style.background-color]="theme.colors().primary"
+                [disabled]="busy()"
+                (click)="upgrade()">
+          {{ busy() ? 'Opening checkout…' : 'Upgrade to ' + entry().minTier }}
+        </button>
+      }
     </div>
   `
 })
@@ -46,7 +48,9 @@ export class UpgradePromptComponent {
   protected async upgrade(): Promise<void> {
     this.busy.set(true);
     try {
-      await this.subscription.upgrade(this.entry().minTier);
+      const target = this.entry().minTier;
+      if (target === 'SuperAdmin') return;
+      await this.subscription.upgrade(target);
     } catch (err: any) {
       this.modal.show(err?.message || 'Paid plans are not available yet.');
     } finally {

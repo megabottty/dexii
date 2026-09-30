@@ -1,7 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { SubscriptionTier } from '../models/user.model';
 import { getApiBaseUrl } from '../config/api-config';
-import { CRUSH_LIMITS, crushLimitLabel } from '../config/premium-features';
+import { ACCESS_LABELS, AccessLevel, CRUSH_LIMITS, crushLimitLabel } from '../config/premium-features';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +13,9 @@ export class SubscriptionService {
   private _isSuperAdmin = signal(false);
   /** Super admins get every premium feature and can promote others (Settings). */
   public isSuperAdmin = this._isSuperAdmin.asReadonly();
+  /** Where this account sits on the ladder: Free < Premium < Gold < SuperAdmin. */
+  public accessLevel = computed<AccessLevel>(() => (this._isSuperAdmin() ? 'SuperAdmin' : this._tier()));
+  public accessLabel = computed(() => ACCESS_LABELS[this.accessLevel()]);
   private readonly crushLimits = CRUSH_LIMITS;
 
   async upgrade(tier: SubscriptionTier): Promise<void> {
@@ -64,16 +67,16 @@ export class SubscriptionService {
   }
 
   isPremium(): boolean {
-    return this._tier() !== SubscriptionTier.Free;
+    return this.accessLevel() !== SubscriptionTier.Free;
   }
 
   getCrushLimit(): number {
-    return this.crushLimits[this._tier()];
+    return this.crushLimits[this.accessLevel()];
   }
 
-  /** "3", "8" or "Unlimited" for the given tier (defaults to the current one). */
-  crushLimitLabel(tier: SubscriptionTier = this._tier()): string {
-    return crushLimitLabel(this.crushLimits[tier]);
+  /** "3", "8" or "Unlimited" for the given level (defaults to the current one). */
+  crushLimitLabel(level: AccessLevel = this.accessLevel()): string {
+    return crushLimitLabel(this.crushLimits[level]);
   }
 
   checkLimit(currentCount: number, limit?: number): boolean {
