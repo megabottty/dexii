@@ -73,45 +73,47 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                style="border-radius: 16px; padding: 24px; display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <div class="profile-avatar-wrap">
               <img [src]="c.avatarUrl || 'https://i.pravatar.cc/150?u=' + c.nickname"
                    [alt]="c.nickname"
                    style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span [style.color]="theme.colors().accent" aria-label="Rating">
-                  @for (star of [1,2,3,4,5]; track star) { {{ (c.rating || 0) >= star ? '★' : '☆' }} }
-                </span>
-                @if ((c.redFlags || 0) > 0) {
-                  <button type="button" (click)="showRedFlagReason(c)" class="status-chip-button red-flag-chip-button" aria-label="Red flagged">🚩</button>
-                } @else {
-                  <span [style.color]="'#22c55e'" aria-label="No red flags">⚑</span>
-                }
-              </div>
             </div>
             <div style="flex: 1; min-width: 200px;">
               <h2 style="margin: 0 0 4px 0; font-size: 22px;">{{ getCrushDisplayName(c) }}</h2>
               @if (c.fullName) {
                 <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
               }
-              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
-                <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: var(--fs-label);">
-                  Main status: {{ c.status }}
+              <div class="profile-rating-row" aria-label="Rating">
+                <span class="profile-rating-stars" [style.color]="theme.colors().accent">
+                  @for (star of [1,2,3,4,5]; track star) { {{ (c.rating || 0) >= star ? '★' : '☆' }} }
                 </span>
-                @if (getRelationshipLabels(c).length) {
-                  <span class="profile-relationship-label-list read-only-relationship-labels" aria-label="Additional relationship labels">
-                    @for (label of getRelationshipLabels(c); track label) {
-                      <span [style.color]="theme.colors().textSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.background-color]="theme.colors().bg"
-                            class="profile-relationship-status profile-relationship-labels">
-                        {{ label }}
-                      </span>
-                    }
-                  </span>
+                @if ((c.redFlags || 0) > 0) {
+                  <button type="button" (click)="showRedFlagReason(c)"
+                          [style.color]="'#ef4444'" [style.border]="'1px solid #ef4444'"
+                          class="profile-pill red-flag-chip-button" aria-label="Red flagged">🚩 Red flag</button>
+                } @else {
+                  <span [style.color]="'#22c55e'" [style.border]="'1px solid #22c55e'" class="profile-pill" aria-label="No red flags">⚑ No flags</span>
                 }
               </div>
+              <div class="profile-status-row">
+                <span [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="profile-pill profile-pill--status">
+                  Status: {{ c.status }}
+                </span>
+              </div>
+              @if (getRelationshipLabels(c).length) {
+                <div class="profile-labels-row" aria-label="Additional relationship labels">
+                  @for (label of getRelationshipLabels(c); track label) {
+                    <span [style.color]="theme.colors().text"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.background-color]="theme.colors().bg"
+                          class="profile-pill profile-relationship-labels">
+                      {{ label }}
+                    </span>
+                  }
+                </div>
+              }
               @if (c.location || getCrushAge(c)) {
-                <p [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: var(--fs-label);">
+                <p [style.color]="theme.colors().primary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">
                   {{ c.location || 'Location Unknown' }}{{ getCrushAge(c) ? ' • ' + getCrushAge(c) + ' years' : '' }}
                 </p>
               }
