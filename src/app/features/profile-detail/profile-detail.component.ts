@@ -249,8 +249,12 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'"
                      [alt]="c.nickname"
                      class="profile-avatar">
-                <div class="profile-avatar-stars" style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
-                  <span [style.color]="theme.colors().accent">
+              </div>
+              <div class="profile-title-section">
+                <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
+
+                <div class="profile-rating-row" aria-label="Vibe rating">
+                  <span class="profile-rating-stars" [style.color]="theme.colors().accent">
                     @for (star of [1,2,3,4,5]; track star) {
                       {{ (c.rating || 0) >= star ? '★' : '☆' }}
                     }
@@ -260,41 +264,32 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                             (click)="showRedFlagReason(c)"
                             [style.color]="'#ef4444'"
                             [style.border]="'1px solid #ef4444'"
-                            class="status-chip-button red-flag-chip-button">
-                      🚩
+                            class="profile-pill red-flag-chip-button"
+                            title="Red flag logged">
+                      🚩 Red flag
                     </button>
                   } @else {
-                    <span
-                      [style.color]="'#22c55e'"
-                      [style.border]="'1px solid #22c55e'"
-                      style="padding: 2px 8px; border-radius: 999px; font-size: var(--fs-label); font-weight: 600; line-height: 1.2;">
-                      ⚑
+                    <span [style.color]="'#22c55e'"
+                          [style.border]="'1px solid #22c55e'"
+                          class="profile-pill"
+                          title="No red flags">
+                      ⚑ No flags
                     </span>
                   }
                 </div>
-              </div>
-              <div class="profile-title-section">
-                <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
-                <p style="margin: 10px 0 0 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+
+                <div class="profile-status-row">
                   @if (!statusQuickEditOpen()) {
                     <button type="button"
                             (click)="openQuickStatusEditor(c)"
                             [style.color]="theme.colors().primary"
                             [style.border]="'1px solid ' + theme.colors().primary"
-                            class="status-chip-button">
+                            class="profile-pill profile-pill--status status-chip-button">
                       Status: {{ c.status || 'Plotting' }}
                     </button>
                     <span class="status-visibility-info"
                           title="Status tracks where things stand: Crush → Plotting → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
                           aria-label="What does changing status do?">ℹ</span>
-                    @for (label of c.relationshipLabels || []; track label) {
-                      <span [style.color]="theme.colors().textSecondary"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.background-color]="theme.colors().bg"
-                            class="profile-relationship-status profile-relationship-labels">
-                        {{ label }}
-                      </span>
-                    }
                   } @else {
                     <div class="status-quick-edit">
                       <select [value]="quickStatusDraft() || c.status || statuses.Plotting"
@@ -321,7 +316,20 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                       </button>
                     </div>
                   }
-                </p>
+                </div>
+
+                @if ((c.relationshipLabels || []).length > 0) {
+                  <div class="profile-labels-row" aria-label="Relationship labels">
+                    @for (label of c.relationshipLabels || []; track label) {
+                      <span [style.color]="theme.colors().text"
+                            [style.border]="'1px solid ' + theme.colors().border"
+                            [style.background-color]="theme.colors().bg"
+                            class="profile-pill profile-relationship-labels">
+                        {{ label }}
+                      </span>
+                    }
+                  </div>
+                }
                 <p [style.color]="theme.colors().primary" class="profile-subtitle">
                   {{ c.location || 'Location Unknown' }} • {{ getCrushAge(c) ? getCrushAge(c) + ' years' : 'Age Unknown' }}
                 </p>
