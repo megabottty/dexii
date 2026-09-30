@@ -104,6 +104,11 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
+  // Super admins get every premium feature and can promote other super admins.
+  isSuperAdmin: {
+    type: Boolean,
+    default: false
+  },
   // One-time onboarding flags, kept on the account so they follow the user
   // across browsers, the PWA and the native apps.
   onboarding: {

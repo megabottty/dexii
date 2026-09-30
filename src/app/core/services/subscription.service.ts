@@ -9,6 +9,9 @@ export class SubscriptionService {
   private readonly apiBase = getApiBaseUrl();
   private _tier = signal<SubscriptionTier>(SubscriptionTier.Free);
   public tier = this._tier.asReadonly();
+  private _isSuperAdmin = signal(false);
+  /** Super admins get every premium feature and can promote others (Settings). */
+  public isSuperAdmin = this._isSuperAdmin.asReadonly();
   private readonly crushLimits: Record<SubscriptionTier, number> = {
     [SubscriptionTier.Free]: 5,
     [SubscriptionTier.Premium]: 25,
@@ -53,6 +56,7 @@ export class SubscriptionService {
     const data = await response.json();
     // /auth/me returns the tier at the top level; older shapes nested it under user.
     this.setTier(data?.subscriptionTier ?? data?.user?.subscriptionTier);
+    this._isSuperAdmin.set(Boolean(data?.isSuperAdmin));
   }
 
   /** Records the tier from any auth response so gates work right after sign-in. */

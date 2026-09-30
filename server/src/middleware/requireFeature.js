@@ -16,7 +16,7 @@ module.exports = function requireFeature(featureKey, predicate) {
       if (typeof predicate === 'function' && !predicate(req)) return next();
       if (mongoose.connection.readyState !== 1 || req.user?.isDemo) return next();
 
-      const user = await User.findById(req.user.id).select('username subscriptionTier').lean();
+      const user = await User.findById(req.user.id).select('username subscriptionTier isSuperAdmin').lean();
       if (tierAllows(effectiveTier(user), featureKey)) return next();
 
       return res.status(402).json({

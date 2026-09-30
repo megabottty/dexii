@@ -587,7 +587,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                        (change)="skipFriendshipProfile.set($any($event.target).checked)">
                 Skip the friendship profile for now
               </span>
-              <small>You can add details later from their profile. The invite still goes out.</small>
+              <small>You can finish it later from Pending Sent or your Friends list.</small>
             </label>
 
             <div class="friends-list-add-modal-grid">
@@ -1133,10 +1133,25 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.addFriendNotes.set('');
     this.addFriendInviteMethod.set(inviteMethod);
     this.addFriendInviteContact.set(inviteContact);
-    this.addFriendInviteMessage.set(
-      `Hey ${displayName}! I added you in my Dexii circle. Make your own account and we can connect there.`
-    );
+    this.addFriendInviteMessage.set(this.defaultInviteMessage(candidate, displayName));
     this.skipFriendshipProfile.set(false);
+  }
+
+  /** Friendly greeting name: first name, else a name-like username, else the part of an email before @. */
+  private inviteGreetingName(candidate: FriendSearchResult, displayName: string): string {
+    const first = (candidate.firstName || '').trim();
+    if (first) return first;
+    const raw = (displayName || candidate.username || '').trim();
+    if (this.looksLikePhone(raw)) return 'there';
+    const local = this.looksLikeEmail(raw) ? raw.split('@')[0] : raw;
+    const cleaned = local.replace(/[._\-+]+/g, ' ').replace(/\d+/g, '').trim();
+    if (!cleaned) return 'there';
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  private defaultInviteMessage(candidate: FriendSearchResult, displayName: string): string {
+    const name = this.inviteGreetingName(candidate, displayName);
+    return `Hey ${name}! I added you on my Dexii inner circle. Make your own account and we can connect there and share our love life adventures!`;
   }
 
   private looksLikeEmail(value: string): boolean {
@@ -1248,7 +1263,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   private buildInviteMessage(username: string): string {
     const custom = this.addFriendInviteMessage().trim();
-    const base = custom || `Hey! I added you in my Dexii circle.`;
+    const base = custom || `Hey! I added you on my Dexii inner circle. Make your own account and we can connect there and share our love life adventures!`;
     const appUrl = typeof window !== 'undefined' ? `${window.location.origin}/signup-profile` : '/signup-profile';
     const from = this.currentUsername ? `@${this.currentUsername}` : 'me';
     return `${base}\n\nMake your own Dexii account: ${appUrl}\nThen search for me: ${from}`;

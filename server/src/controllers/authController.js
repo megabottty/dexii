@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const { effectiveTier } = require('../config/premiumFeatures');
+const { effectiveTier, isSuperAdminUser } = require('../config/premiumFeatures');
 const sendEmail = require('../utils/sendEmail');
 const { ensureUser, readStore } = require('../utils/demoFriendStore');
 const loginAttempts = new Map();
@@ -786,7 +786,8 @@ exports.getProfile = async (req, res) => {
       avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
       themePreference: user.themePreference || null,
-      firstLoginTourSeen: Boolean(user.onboarding?.firstLoginTourSeenAt)
+      firstLoginTourSeen: Boolean(user.onboarding?.firstLoginTourSeenAt),
+      isSuperAdmin: isSuperAdminUser(user)
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

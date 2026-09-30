@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { InstallPromptService } from '../../core/services/install-prompt.service
 import { WebPushService } from '../../core/services/web-push.service';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 import { AppUpdateService } from '../../core/services/app-update.service';
+import { AdminApiService, SuperAdminSummary } from '../../core/services/admin-api.service';
 
 interface FriendChoice {
   id: string;
@@ -517,6 +518,68 @@ interface FriendChoice {
 
           <div class="settings-divider"></div>
 
+          @if (subscription.isSuperAdmin()) {
+            <section class="settings-plan-section">
+              <div class="settings-plan-header">
+                <div>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Super admin</p>
+                  <h2 class="settings-section-title">Super admins</h2>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
+                    Super admins get every premium feature and can add other super admins. Only visible to you and other super admins.
+                  </p>
+                </div>
+              </div>
+
+              <div class="settings-admin-add">
+                <input [value]="superAdminDraft()"
+                       (input)="superAdminDraft.set(inputValue($event))"
+                       (keyup.enter)="addSuperAdmin()"
+                       [style.background-color]="theme.colors().bg"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text"
+                       class="settings-admin-input"
+                       placeholder="@username to promote">
+                <button type="button"
+                        (click)="addSuperAdmin()"
+                        [disabled]="superAdminBusy() || !superAdminDraft().trim()"
+                        [style.background-color]="theme.colors().primary"
+                        class="settings-photo-btn settings-action-btn">
+                  {{ superAdminBusy() ? 'Working…' : 'Make super admin' }}
+                </button>
+              </div>
+
+              @if (superAdmins().length) {
+                <ul class="settings-admin-list">
+                  @for (admin of superAdmins(); track admin.id) {
+                    <li [style.border]="'1px solid ' + theme.colors().border" class="settings-admin-row">
+                      <span class="settings-admin-name">
+                        <strong>@{{ admin.username }}</strong>
+                        @if (admin.firstName || admin.lastName) { <span [style.color]="theme.colors().textSecondary">{{ admin.firstName }} {{ admin.lastName }}</span> }
+                        @if (admin.seeded) { <span [style.color]="theme.colors().textSecondary" class="settings-admin-tag">set by server</span> }
+                      </span>
+                      @if (!admin.seeded && admin.username !== username()) {
+                        <button type="button"
+                                (click)="removeSuperAdmin(admin)"
+                                [disabled]="superAdminBusy()"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().textSecondary"
+                                class="settings-reset-btn settings-action-btn">
+                          Remove
+                        </button>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else if (superAdminsLoaded()) {
+                <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">No super admins found yet.</p>
+              }
+            </section>
+
+            <div class="settings-divider"></div>
+          }
+
+          
+
           <section class="settings-plan-section">
             <div class="settings-plan-header">
               <div>
@@ -647,6 +710,14 @@ export class SettingsComponent {
   webPush = inject(WebPushService);
   photoPickerOpen = signal(false);
   appUpdate = inject(AppUpdateService);
+  private adminApi = inject(AdminApiService);
+  superAdmins = signal<SuperAdminSummary[]>([]);
+  superAdminsLoaded = signal(false);
+  superAdminDraft = signal('');
+  superAdminBusy = signal(false);
+  private superAdminLoader = effect(() => {
+    if (this.subscription.isSuperAdmin()) void this.loadSuperAdmins();
+  });
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
   subscription = inject(SubscriptionService);
@@ -721,6 +792,46 @@ export class SettingsComponent {
   applyCustomTheme(): void {
     this.theme.setCustomColors({ ...this.customColorDraft });
     this.update('themeMode', 'custom');
+  }
+
+  async loadSuperAdmins(): Promise<void> {
+    try {
+      this.superAdmins.set(await this.adminApi.listSuperAdmins());
+    } catch {
+      this.superAdmins.set([]);
+    } finally {
+      this.superAdminsLoaded.set(true);
+    }
+  }
+
+  async addSuperAdmin(): Promise<void> {
+    const username = this.superAdminDraft().trim().replace(/^@/, '');
+    if (!username) return;
+    this.superAdminBusy.set(true);
+    try {
+      await this.adminApi.addSuperAdmin(username);
+      this.superAdminDraft.set('');
+      await this.loadSuperAdmins();
+      this.modal.show(`@${username} is now a super admin and has every premium feature.`);
+    } catch (err: any) {
+      this.modal.show(err?.message || 'Unable to add super admin.');
+    } finally {
+      this.superAdminBusy.set(false);
+    }
+  }
+
+  removeSuperAdmin(admin: SuperAdminSummary): void {
+    this.modal.confirm(`Remove @${admin.username} as a super admin?`, async () => {
+      this.superAdminBusy.set(true);
+      try {
+        await this.adminApi.removeSuperAdmin(admin.username);
+        await this.loadSuperAdmins();
+      } catch (err: any) {
+        this.modal.show(err?.message || 'Unable to remove super admin.');
+      } finally {
+        this.superAdminBusy.set(false);
+      }
+    });
   }
 
   async installApp() {

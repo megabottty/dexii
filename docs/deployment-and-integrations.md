@@ -9,9 +9,11 @@ integration for friend invites.
 
 Premium gates are defined in `src/app/core/config/premium-features.ts` (client copy and
 flags) and mirrored in `server/src/config/premiumFeatures.js` (server enforcement via
-`requireFeature`). To use gated features on your own account without a Stripe
-purchase, set `PREMIUM_OVERRIDE_USERNAMES` in Render (comma-separated usernames); those
-accounts are treated as Gold everywhere the tier is read.
+`requireFeature`). Super admins get every premium feature (treated as Gold) and can promote other
+accounts from Settings → Super admins. Seed the first one by setting
+`SUPER_ADMIN_USERNAMES` in Render (comma-separated usernames; `PREMIUM_OVERRIDE_USERNAMES`
+is accepted as an alias). Seeded admins cannot be removed in-app; promoted ones can.
+API: `GET/POST /api/admin/super-admins`, `DELETE /api/admin/super-admins/:username`.
 
 ## Which version is deployed?
 
