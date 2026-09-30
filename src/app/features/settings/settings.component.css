@@ -736,6 +736,50 @@
   cursor: default;
 }
 
+.settings-push-checklist {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-label);
+}
+
+.settings-push-check {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+}
+
+.settings-push-check__label {
+  font-weight: 700;
+}
+
+.settings-push-check--fail .settings-push-check__label {
+  color: #b91c1c;
+}
+
+.settings-push-check__hint {
+  font-weight: 400;
+}
+
+.settings-push-details-toggle {
+  display: inline-block;
+  min-height: var(--tap-min);
+  margin: 4px 0 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .settings-push-diagnostics {
   margin: 8px 0 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

@@ -1,10 +1,17 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, isDevMode, signal } from '@angular/core';
 import { SwPush } from '@angular/service-worker';
 import { getApiBaseUrl, isNativeApp } from '../config/api-config';
 import { NotificationsService } from './notifications.service';
 import { SecurityService } from './security.service';
 
 const DISMISSED_KEY = 'dexii_web_push_prompt_dismissed';
+
+/** One plain-language requirement for notifications, with what to do when it fails. */
+export interface WebPushCheck {
+  label: string;
+  ok: boolean;
+  hint?: string;
+}
 
 export type WebPushStatus =
   | 'unsupported'      // no service worker / Push API here (or native app, which uses APNs/FCM)
@@ -45,6 +52,22 @@ export class WebPushService {
   readonly diagnostics = signal('');
   /** Plain-language reason when push is unavailable here. */
   readonly unsupportedReason = signal('');
+  /** Requirements that depend only on the browser/device (set once at startup). */
+  private readonly deviceChecks = signal<WebPushCheck[]>([]);
+
+  /** Every requirement, in plain words, including the browser permission once it is known. */
+  readonly checks = computed<WebPushCheck[]>(() => {
+    const permission = this.permission();
+    if (permission === 'unsupported') return this.deviceChecks();
+    const permissionCheck: WebPushCheck = permission === 'granted'
+      ? { label: 'Allowed in your browser', ok: true }
+      : permission === 'denied'
+        ? { label: 'Allowed in your browser', ok: false, hint: 'Allow notifications for dexii.net in your browser settings, then come back here.' }
+        : { label: 'Allowed in your browser', ok: false, hint: 'Tap "Turn on notifications" below and choose Allow.' };
+    return [...this.deviceChecks(), permissionCheck];
+  });
+  /** Only the requirements that are not met right now. */
+  readonly failingChecks = computed(() => this.checks().filter((check) => !check.ok));
 
   readonly status = computed<WebPushStatus>(() => {
     if (this.needsInstall()) return 'needs-install';
@@ -79,6 +102,31 @@ export class WebPushService {
       `standalone:${standalone ? 'yes' : 'no'} ios:${ios ? 'yes' : 'no'} secure:${secure ? 'yes' : 'no'}`
     );
 
+    // The service worker is switched off in the dev build (see app.config.ts), so don't
+    // blame private browsing for that.
+    const workerHint = isDevMode()
+      ? 'Notifications are switched off in the development build.'
+      : 'Reload the page. Private browsing windows block it.';
+    const checks: WebPushCheck[] = [
+      { label: 'Secure connection (https)', ok: secure, hint: 'Open Dexii at https://www.dexii.net.' },
+      {
+        label: 'Browser can show notifications',
+        ok: hasNotification && hasPushManager,
+        hint: ios && !standalone
+          ? 'On iPhone, add Dexii to your Home Screen first (Share menu, then "Add to Home Screen") and open it from there.'
+          : 'Use Chrome, Edge, Firefox, or Safari 16.4 or newer.'
+      },
+      { label: 'Background worker running', ok: hasServiceWorker && this.swPush.isEnabled, hint: workerHint }
+    ];
+    if (ios) {
+      checks.push({
+        label: 'Added to Home Screen',
+        ok: standalone,
+        hint: 'On iPhone, notifications only work once Dexii is on your Home Screen. Use the Share menu, "Add to Home Screen", then open it from there.'
+      });
+    }
+    this.deviceChecks.set(checks);
+
     if (ios && !standalone && !hasPushApi) {
       this.needsInstall.set(true);
     }
@@ -88,7 +136,9 @@ export class WebPushService {
       } else if (!secure) {
         this.unsupportedReason.set('Notifications need a secure (https) connection.');
       } else if (!this.swPush.isEnabled) {
-        this.unsupportedReason.set('The app\'s background worker is not running in this browser, so it cannot receive notifications. Try reloading; private browsing windows also block it.');
+        this.unsupportedReason.set(isDevMode()
+          ? 'Notifications are switched off in the development build.'
+          : 'The app\'s background worker is not running in this browser, so it cannot receive notifications. Reload the page; private browsing windows also block it.');
       } else {
         this.unsupportedReason.set('This browser does not support web notifications. Chrome, Edge, Firefox and Safari 16.4+ do.');
       }

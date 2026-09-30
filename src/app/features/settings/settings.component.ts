@@ -472,8 +472,36 @@ interface FriendChoice {
                       @default { Get a notification on this device when a friend sends a request or shares a crush. }
                     }
                   </p>
+                  @if (webPush.status() !== 'on' && webPush.status() !== 'off' && webPush.failingChecks().length) {
+                    <ul class="settings-push-checklist" aria-label="What's missing">
+                      @for (check of webPush.failingChecks(); track check.label) {
+                        <li class="settings-push-check settings-push-check--fail">
+                          <span class="settings-push-check__label">✕ {{ check.label }}</span>
+                          @if (check.hint) {
+                            <span class="settings-push-check__hint" [style.color]="theme.colors().textSecondary">{{ check.hint }}</span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
                   @if (webPush.diagnostics()) {
-                    <p class="settings-push-diagnostics" [style.color]="theme.colors().textSecondary">{{ webPush.diagnostics() }}</p>
+                    <button type="button"
+                            class="settings-push-details-toggle"
+                            [style.color]="theme.colors().textSecondary"
+                            [attr.aria-expanded]="showPushDetails()"
+                            (click)="togglePushDetails()">
+                      {{ showPushDetails() ? 'Hide details' : 'Details' }}
+                    </button>
+                    @if (showPushDetails()) {
+                      <ul class="settings-push-checklist" aria-label="Notification checks">
+                        @for (check of webPush.checks(); track check.label) {
+                          <li class="settings-push-check" [class.settings-push-check--fail]="!check.ok">
+                            <span class="settings-push-check__label">{{ check.ok ? '✓' : '✕' }} {{ check.label }}</span>
+                          </li>
+                        }
+                      </ul>
+                      <p class="settings-push-diagnostics" [style.color]="theme.colors().textSecondary">{{ webPush.diagnostics() }}</p>
+                    }
                   }
                   @if (webPush.error()) {
                     <p class="settings-push-error">{{ webPush.error() }}</p>
@@ -683,6 +711,11 @@ export class SettingsComponent {
   theme = inject(ThemeService);
   install = inject(InstallPromptService);
   webPush = inject(WebPushService);
+  /** Technical notification checks, hidden unless the person asks for them. */
+  showPushDetails = signal(false);
+  togglePushDetails(): void {
+    this.showPushDetails.update((open) => !open);
+  }
   photoPickerOpen = signal(false);
   appUpdate = inject(AppUpdateService);
   gate = inject(FeatureGateService);
