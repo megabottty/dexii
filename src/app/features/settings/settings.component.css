@@ -938,3 +938,12 @@
     font-size: var(--fs-label);
   }
 }
+
+.settings-admin-link {
+  text-decoration: none;
+  color: #fff;
+}
+
+.settings-locked-banner {
+  margin: 0 0 18px;
+}

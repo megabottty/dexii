@@ -45,7 +45,28 @@ export class SubscriptionService {
     window.location.assign(data.url);
   }
 
+  private readyResolve: (() => void) | null = null;
+  private readonly readyPromise = new Promise<void>((resolve) => { this.readyResolve = resolve; });
+
+  /**
+   * Resolves once the first tier load has finished (or been skipped because
+   * there is no session). Route guards await this so a super admin isn't
+   * bounced off an admin URL during the split second before /auth/me answers.
+   */
+  ready(): Promise<void> {
+    return this.readyPromise;
+  }
+
   async refreshFromBackend(): Promise<void> {
+    try {
+      await this.loadFromBackend();
+    } finally {
+      this.readyResolve?.();
+      this.readyResolve = null;
+    }
+  }
+
+  private async loadFromBackend(): Promise<void> {
     const token = localStorage.getItem('dexii_api_token');
     if (!token) return;
 

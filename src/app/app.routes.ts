@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { lockGuard } from './core/guards/lock.guard';
+import { accessGuard } from './core/guards/access.guard';
 
 export const routes: Routes = [
   {
@@ -86,6 +87,12 @@ export const routes: Routes = [
     path: 'settings',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
+  },
+  {
+    // Super admin tools. accessGuard blocks the URL for anyone below that rung.
+    path: 'admin',
+    canActivate: [lockGuard, accessGuard('manageSuperAdmins')],
+    loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent)
   },
   {
     path: '**',

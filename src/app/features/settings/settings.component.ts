@@ -14,9 +14,10 @@ import { InstallPromptService } from '../../core/services/install-prompt.service
 import { WebPushService } from '../../core/services/web-push.service';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 import { AppUpdateService } from '../../core/services/app-update.service';
-import { AdminApiService, SuperAdminSummary } from '../../core/services/admin-api.service';
 import { FeatureGateService } from '../../core/services/feature-gate.service';
-import { ACCESS_LABELS, ACCESS_LEVELS, AccessLevel, PREMIUM_FEATURES, PremiumFeatureKey, accessAllows } from '../../core/config/premium-features';
+import { PREMIUM_FEATURES, PremiumFeatureKey } from '../../core/config/premium-features';
+import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
+import { ActivatedRoute } from '@angular/router';
 
 interface FriendChoice {
   id: string;
@@ -28,7 +29,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -58,6 +59,12 @@ interface FriendChoice {
                    class="settings-avatar">
             </div>
           </div>
+
+          @if (lockedFeature(); as locked) {
+            <div class="settings-locked-banner">
+              <app-upgrade-prompt [feature]="locked" [compact]="true"></app-upgrade-prompt>
+            </div>
+          }
 
           <div class="settings-actions">
             <button (click)="saveChanges()"
@@ -529,75 +536,17 @@ interface FriendChoice {
               <div class="settings-plan-header">
                 <div>
                   <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Super admin</p>
-                  <h2 class="settings-section-title">Super admins</h2>
+                  <h2 class="settings-section-title">Admin tools</h2>
                   <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                    You have <strong>Super admin</strong> access: everything in Gold, plus the tools below. The ladder is Free → Premium → Gold → Super admin. Only visible to super admins.
+                    You have <strong>Super admin</strong> access: everything in Gold plus admin tools. See what each level unlocks and manage other super admins.
                   </p>
                 </div>
               </div>
-
-              <div class="settings-tier-matrix" role="table" aria-label="What each tier unlocks">
-                <div class="settings-tier-matrix__row settings-tier-matrix__row--head" role="row">
-                  <span role="columnheader">Feature</span>
-                  @for (level of accessLevels; track level) { <span role="columnheader">{{ accessLabel(level) }}</span> }
-                </div>
-                <div class="settings-tier-matrix__row" role="row">
-                  <span role="cell">Active crushes</span>
-                  @for (level of accessLevels; track level) { <span role="cell">{{ subscription.crushLimitLabel(level) }}</span> }
-                </div>
-                @for (feature of featureMatrix; track feature.key) {
-                  <div class="settings-tier-matrix__row" role="row">
-                    <span role="cell">{{ feature.title }}@if (!feature.enabled) { <em [style.color]="theme.colors().textSecondary"> (not gated yet)</em> }</span>
-                    @for (level of accessLevels; track level) {
-                      <span role="cell" [style.color]="feature.allowed(level) ? theme.colors().primary : theme.colors().textSecondary">{{ feature.allowed(level) ? '✓' : '—' }}</span>
-                    }
-                  </div>
-                }
-              </div>
-
-              <div class="settings-admin-add">
-                <input [value]="superAdminDraft()"
-                       (input)="superAdminDraft.set(inputValue($event))"
-                       (keyup.enter)="addSuperAdmin()"
-                       [style.background-color]="theme.colors().bg"
-                       [style.border]="'1px solid ' + theme.colors().border"
-                       [style.color]="theme.colors().text"
-                       class="settings-admin-input"
-                       placeholder="@username to promote">
-                <button type="button"
-                        (click)="addSuperAdmin()"
-                        [disabled]="superAdminBusy() || !superAdminDraft().trim()"
-                        [style.background-color]="theme.colors().primary"
-                        class="settings-photo-btn settings-action-btn">
-                  {{ superAdminBusy() ? 'Working…' : 'Make super admin' }}
-                </button>
-              </div>
-
-              @if (superAdmins().length) {
-                <ul class="settings-admin-list">
-                  @for (admin of superAdmins(); track admin.id) {
-                    <li [style.border]="'1px solid ' + theme.colors().border" class="settings-admin-row">
-                      <span class="settings-admin-name">
-                        <strong>@{{ admin.username }}</strong>
-                        @if (admin.firstName || admin.lastName) { <span [style.color]="theme.colors().textSecondary">{{ admin.firstName }} {{ admin.lastName }}</span> }
-                        @if (admin.seeded) { <span [style.color]="theme.colors().textSecondary" class="settings-admin-tag">set by server</span> }
-                      </span>
-                      @if (!admin.seeded && admin.username !== username()) {
-                        <button type="button"
-                                (click)="removeSuperAdmin(admin)"
-                                [disabled]="superAdminBusy()"
-                                [style.border]="'1px solid ' + theme.colors().border"
-                                [style.color]="theme.colors().textSecondary"
-                                class="settings-reset-btn settings-action-btn">
-                          Remove
-                        </button>
-                      }
-                    </li>
-                  }
-                </ul>
-              } @else if (superAdminsLoaded()) {
-                <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">No super admins found yet.</p>
-              }
+              <a routerLink="/admin"
+                 [style.background-color]="theme.colors().primary"
+                 class="settings-photo-btn settings-action-btn settings-admin-link">
+                Open admin tools
+              </a>
             </section>
 
             <div class="settings-divider"></div>
@@ -736,22 +685,13 @@ export class SettingsComponent {
   webPush = inject(WebPushService);
   photoPickerOpen = signal(false);
   appUpdate = inject(AppUpdateService);
-  private adminApi = inject(AdminApiService);
   gate = inject(FeatureGateService);
-  readonly accessLevels = ACCESS_LEVELS;
-  readonly featureMatrix = (Object.keys(PREMIUM_FEATURES) as PremiumFeatureKey[]).map((key) => ({
-    key,
-    title: PREMIUM_FEATURES[key].title,
-    enabled: PREMIUM_FEATURES[key].enabled,
-    allowed: (level: AccessLevel) => accessAllows(level, key)
-  }));
-  accessLabel(level: AccessLevel): string { return ACCESS_LABELS[level]; }
-  superAdmins = signal<SuperAdminSummary[]>([]);
-  superAdminsLoaded = signal(false);
-  superAdminDraft = signal('');
-  superAdminBusy = signal(false);
-  private superAdminLoader = effect(() => {
-    if (this.gate.canManageSuperAdmins()) void this.loadSuperAdmins();
+  private route = inject(ActivatedRoute);
+  /** Set when a route guard sent the user here because a screen needs a higher level. */
+  lockedFeature = signal<PremiumFeatureKey | null>(null);
+  private lockedWatcher = effect(() => {
+    const raw = this.route.snapshot.queryParamMap.get('locked');
+    this.lockedFeature.set(raw && raw in PREMIUM_FEATURES ? (raw as PremiumFeatureKey) : null);
   });
   modal = inject(ModalService);
   settings = inject(UserSettingsService);
@@ -822,46 +762,6 @@ export class SettingsComponent {
   applyCustomTheme(): void {
     this.theme.setCustomColors({ ...this.customColorDraft });
     this.update('themeMode', 'custom');
-  }
-
-  async loadSuperAdmins(): Promise<void> {
-    try {
-      this.superAdmins.set(await this.adminApi.listSuperAdmins());
-    } catch {
-      this.superAdmins.set([]);
-    } finally {
-      this.superAdminsLoaded.set(true);
-    }
-  }
-
-  async addSuperAdmin(): Promise<void> {
-    const username = this.superAdminDraft().trim().replace(/^@/, '');
-    if (!username) return;
-    this.superAdminBusy.set(true);
-    try {
-      await this.adminApi.addSuperAdmin(username);
-      this.superAdminDraft.set('');
-      await this.loadSuperAdmins();
-      this.modal.show(`@${username} is now a super admin and has every premium feature.`);
-    } catch (err: any) {
-      this.modal.show(err?.message || 'Unable to add super admin.');
-    } finally {
-      this.superAdminBusy.set(false);
-    }
-  }
-
-  removeSuperAdmin(admin: SuperAdminSummary): void {
-    this.modal.confirm(`Remove @${admin.username} as a super admin?`, async () => {
-      this.superAdminBusy.set(true);
-      try {
-        await this.adminApi.removeSuperAdmin(admin.username);
-        await this.loadSuperAdmins();
-      } catch (err: any) {
-        this.modal.show(err?.message || 'Unable to remove super admin.');
-      } finally {
-        this.superAdminBusy.set(false);
-      }
-    });
   }
 
   async installApp() {
