@@ -517,7 +517,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               }.
             </p>
             <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
-              {{ subscription.tier() }} tier: up to {{ subscription.getCrushLimit() }} crushes.
+              {{ subscription.tier() }} tier: {{ subscription.crushLimitLabel() === 'Unlimited' ? 'unlimited crushes' : 'up to ' + subscription.crushLimitLabel() + ' crushes' }}.
             </p>
           </div>
           <div class="dashboard-component__s76">
@@ -554,21 +554,21 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                         [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
                         [style.border]="'1px solid ' + (subscription.tier() === freeTier ? theme.colors().primary : theme.colors().border)"
                         style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
-                  Free (5)
+                  Free ({{ subscription.crushLimitLabel(freeTier) }})
                 </button>
                 <button (click)="subscription.upgrade(premiumTier)"
                         [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
                         [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
                         [style.border]="'1px solid ' + (subscription.tier() === premiumTier ? theme.colors().primary : theme.colors().border)"
                         style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
-                  Premium (25)
+                  Premium ({{ subscription.crushLimitLabel(premiumTier) }})
                 </button>
                 <button (click)="subscription.upgrade(goldTier)"
                         [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
                         [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
                         [style.border]="'1px solid ' + (subscription.tier() === goldTier ? theme.colors().primary : theme.colors().border)"
                         style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
-                  Gold (100)
+                  Gold ({{ subscription.crushLimitLabel(goldTier) }})
                 </button>
               </div>
             </div>
@@ -1025,7 +1025,7 @@ export class DashboardComponent implements OnInit {
   openNewEntryModal() {
     const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
-      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} active crushes. Archive one or upgrade to add more.`);
+      this.modal.show(`${this.subscription.tier()} tier allows up to ${this.subscription.crushLimitLabel()} active crushes. Archive one or upgrade to add more.`);
       return;
     }
     this.showNewEntryModal.set(true);
@@ -1060,7 +1060,7 @@ export class DashboardComponent implements OnInit {
   async saveCrush() {
     const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
-      this.modal.show(`${this.subscription.tier()} tier allows up to ${crushLimit} active crushes. Archive one or upgrade to add more.`);
+      this.modal.show(`${this.subscription.tier()} tier allows up to ${this.subscription.crushLimitLabel()} active crushes. Archive one or upgrade to add more.`);
       return;
     }
 

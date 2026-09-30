@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { SubscriptionTier } from '../models/user.model';
 import { getApiBaseUrl } from '../config/api-config';
+import { CRUSH_LIMITS, crushLimitLabel } from '../config/premium-features';
 
 @Injectable({
   providedIn: 'root'
@@ -12,11 +13,7 @@ export class SubscriptionService {
   private _isSuperAdmin = signal(false);
   /** Super admins get every premium feature and can promote others (Settings). */
   public isSuperAdmin = this._isSuperAdmin.asReadonly();
-  private readonly crushLimits: Record<SubscriptionTier, number> = {
-    [SubscriptionTier.Free]: 5,
-    [SubscriptionTier.Premium]: 25,
-    [SubscriptionTier.Gold]: 100
-  };
+  private readonly crushLimits = CRUSH_LIMITS;
 
   async upgrade(tier: SubscriptionTier): Promise<void> {
     if (tier === SubscriptionTier.Free) {
@@ -72,6 +69,11 @@ export class SubscriptionService {
 
   getCrushLimit(): number {
     return this.crushLimits[this._tier()];
+  }
+
+  /** "3", "8" or "Unlimited" for the given tier (defaults to the current one). */
+  crushLimitLabel(tier: SubscriptionTier = this._tier()): string {
+    return crushLimitLabel(this.crushLimits[tier]);
   }
 
   checkLimit(currentCount: number, limit?: number): boolean {

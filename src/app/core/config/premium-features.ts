@@ -39,6 +39,16 @@ export const PREMIUM_FEATURES = {
 
 export type PremiumFeatureKey = keyof typeof PREMIUM_FEATURES;
 
+/** Active-crush allowance per tier. Infinity = unlimited. */
+export const CRUSH_LIMITS: Record<SubscriptionTier, number> = {
+  [SubscriptionTier.Free]: 3,
+  [SubscriptionTier.Premium]: 8,
+  [SubscriptionTier.Gold]: Number.POSITIVE_INFINITY
+};
+
+export const crushLimitLabel = (limit: number): string =>
+  Number.isFinite(limit) ? String(limit) : 'Unlimited';
+
 export const TIER_RANK: Record<SubscriptionTier, number> = {
   [SubscriptionTier.Free]: 0,
   [SubscriptionTier.Premium]: 1,

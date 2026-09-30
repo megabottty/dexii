@@ -117,7 +117,8 @@ const buildInfo = (() => {
   const branch = process.env.RENDER_GIT_BRANCH || gitFallback('rev-parse --abbrev-ref HEAD');
   const subject = process.env.RENDER_GIT_COMMIT ? null : gitFallback('log -1 --pretty=%s');
   return {
-    version: require('../package.json').version,
+    version: (() => { try { return require('../../package.json').version; } catch { return require('../package.json').version; } })(),
+    serverVersion: require('../package.json').version,
     commit: commit || null,
     shortCommit: commit ? commit.slice(0, 7) : null,
     branch: branch || null,

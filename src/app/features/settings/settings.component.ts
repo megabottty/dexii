@@ -586,7 +586,7 @@ interface FriendChoice {
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Subscription</p>
                 <h2 class="settings-section-title">Crush Plan</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  Current tier: {{ subscription.tier() }}. You can track up to {{ subscription.getCrushLimit() }} crushes.
+                  Current tier: {{ subscription.tier() }}. @if (subscription.crushLimitLabel() === 'Unlimited') { Unlimited crushes. } @else { You can track up to {{ subscription.crushLimitLabel() }} crushes. }
                 </p>
               </div>
             </div>
@@ -602,7 +602,7 @@ interface FriendChoice {
                         type="button">
                   <span class="settings-plan-tier">{{ tier }}</span>
                   <span class="settings-plan-price">{{ planPrice(tier) }}</span>
-                  <span class="settings-plan-limit">Up to {{ crushLimitFor(tier) }} crushes</span>
+                  <span class="settings-plan-limit">{{ crushLimitFor(tier) === 'Unlimited' ? 'Unlimited crushes' : 'Up to ' + crushLimitFor(tier) + ' crushes' }}</span>
                   @if (subscription.tier() === tier) {
                     <span class="settings-plan-active">Active</span>
                   }
@@ -626,7 +626,7 @@ interface FriendChoice {
           </div>
 
           <div class="settings-build" [style.color]="theme.colors().textSecondary">
-            <span>Dexii build {{ appUpdate.build }}</span>
+            <span>Dexii v{{ appUpdate.version }} · build {{ appUpdate.build }}</span>
             <button type="button"
                     class="settings-build-check"
                     [style.color]="theme.colors().primary"
@@ -736,11 +736,6 @@ export class SettingsComponent {
     { label: 'Other', value: 'Other' }
   ];
   subscriptionTiers = Object.values(SubscriptionTier);
-  private readonly crushLimits: Record<SubscriptionTier, number> = {
-    [SubscriptionTier.Free]: 5,
-    [SubscriptionTier.Premium]: 25,
-    [SubscriptionTier.Gold]: 100
-  };
 
   constructor() {
     void this.subscription.refreshFromBackend();
@@ -838,8 +833,8 @@ export class SettingsComponent {
     await this.install.promptInstall();
   }
 
-  crushLimitFor(tier: SubscriptionTier): number {
-    return this.crushLimits[tier];
+  crushLimitFor(tier: SubscriptionTier): string {
+    return this.subscription.crushLimitLabel(tier);
   }
 
   planPrice(tier: SubscriptionTier): string {

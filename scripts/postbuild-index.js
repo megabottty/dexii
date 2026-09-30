@@ -47,8 +47,9 @@ if (srcs.length === 0) {
 const loader = `<script>(function(){var p=${JSON.stringify(preloads)},s=${JSON.stringify(srcs)};function go(){var i,e;for(i=0;i<p.length;i++){e=document.createElement('link');e.rel='modulepreload';e.href=p[i];document.head.appendChild(e);}for(i=0;i<s.length;i++){e=document.createElement('script');e.type='module';e.src=s[i];document.head.appendChild(e);}}if(window.requestAnimationFrame){requestAnimationFrame(function(){requestAnimationFrame(go);});}else{setTimeout(go,0);}})();</script>`;
 
 const build = buildId();
-html = html.replace('<head>', `<head><meta name="dexii-build" content="${build}">`);
-html = html.replace('</body>', `<script>window.__DEXII_BUILD__=${JSON.stringify(build)};</script>${loader}</body>`);
+const version = require(path.resolve(__dirname, '..', 'package.json')).version || '0.0.0';
+html = html.replace('<head>', `<head><meta name="dexii-version" content="${version}"><meta name="dexii-build" content="${build}">`);
+html = html.replace('</body>', `<script>window.__DEXII_VERSION__=${JSON.stringify(version)};window.__DEXII_BUILD__=${JSON.stringify(build)};</script>${loader}</body>`);
 fs.writeFileSync(indexPath, html);
-console.log(`postbuild-index: build ${build}`);
+console.log(`postbuild-index: version ${version} build ${build}`);
 console.log(`postbuild-index: deferred ${srcs.length} module script(s) and ${preloads.length} preload(s) until after first paint`);
