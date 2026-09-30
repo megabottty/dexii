@@ -113,11 +113,18 @@ const buildInfo = (() => {
       return null;
     }
   };
-  const commit = process.env.RENDER_GIT_COMMIT || gitFallback('rev-parse HEAD');
-  const branch = process.env.RENDER_GIT_BRANCH || gitFallback('rev-parse --abbrev-ref HEAD');
-  const subject = process.env.RENDER_GIT_COMMIT ? null : gitFallback('log -1 --pretty=%s');
+  // `npm run build` writes server/build-info.json (scripts/build-info.js) with the
+  // auto-bumped version the client was stamped with. Absent when the server was
+  // started without a build, in which case we fall back to env/git/package.json.
+  let fromBuild = null;
+  try { fromBuild = require('../build-info.json'); } catch { /* no build yet */ }
+  const commit = fromBuild?.commit || process.env.RENDER_GIT_COMMIT || gitFallback('rev-parse HEAD');
+  const branch = fromBuild?.branch || process.env.RENDER_GIT_BRANCH || gitFallback('rev-parse --abbrev-ref HEAD');
+  const subject = fromBuild?.commitMessage ?? (process.env.RENDER_GIT_COMMIT ? null : gitFallback('log -1 --pretty=%s'));
   return {
-    version: (() => { try { return require('../../package.json').version; } catch { return require('../package.json').version; } })(),
+    version: fromBuild?.version || (() => { try { return require('../../package.json').version; } catch { return require('../package.json').version; } })(),
+    buildNumberSource: fromBuild?.buildNumberSource || null,
+    buildTime: fromBuild?.buildTime || null,
     serverVersion: require('../package.json').version,
     commit: commit || null,
     shortCommit: commit ? commit.slice(0, 7) : null,

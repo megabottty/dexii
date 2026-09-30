@@ -26,11 +26,27 @@ API: `GET/POST /api/admin/super-admins`, `DELETE /api/admin/super-admins/:userna
 curl https://www.dexii.net/api/version
 ```
 
-Returns the running build: `shortCommit`/`commit` and `branch` (from Render's
-`RENDER_GIT_COMMIT` / `RENDER_GIT_BRANCH`), `service`, `startedAt`, `uptime`,
-Node version and whether Mongo is connected. Compare `shortCommit` with
-`git log --oneline -1` to confirm a deploy went out. `/api/health` returns the
-same payload and is what the keep-alive pings hit.
+Returns the running build: `version`, `shortCommit`/`commit` and `branch` (from
+Render's `RENDER_GIT_COMMIT` / `RENDER_GIT_BRANCH`), `buildTime`, `service`,
+`startedAt`, `uptime`, Node version and whether Mongo is connected. Compare
+`shortCommit` with `git log --oneline -1` to confirm a deploy went out.
+`/api/health` returns the same payload and is what the keep-alive pings hit.
+
+### Version numbers
+
+The version is `MAJOR.MINOR.BUILD`, for example `1.0.214`:
+
+- `MAJOR.MINOR` come from `package.json` (`1.0`). Bump them by hand for a real release.
+- `BUILD` is generated on every `npm run build` by `scripts/build-info.js`: the
+  number of commits on the built branch, so it goes up with each deploy and
+  nobody has to edit `package.json`. The script writes `server/build-info.json`
+  (gitignored) and `scripts/postbuild-index.js` stamps the same values into
+  `index.html`, so the Settings footer ("Dexii v1.0.214 · build 9a3251e") and
+  `/api/version` always agree.
+- `buildNumberSource` says where `BUILD` came from. `"commits"` is the normal
+  case. `"timestamp"` (a 12-digit `YYYYMMDDHHMM` number) means the build ran on
+  a shallow git clone that could not be unshallowed, so the commit count was not
+  available. The `build` short commit next to the version is always exact.
 
 ## Environment variables
 

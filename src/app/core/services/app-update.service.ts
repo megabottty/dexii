@@ -24,7 +24,7 @@ export class AppUpdateService {
 
   /** Short commit of the bundle currently running (stamped by scripts/postbuild-index.js). */
   readonly build: string = (typeof window !== 'undefined' && (window as unknown as { __DEXII_BUILD__?: string }).__DEXII_BUILD__) || 'dev';
-  /** Semantic version from package.json (bump it for releases). */
+  /** MAJOR.MINOR from package.json plus an automatic BUILD number (commit count) per build; see scripts/build-info.js. */
   readonly version: string = (typeof window !== 'undefined' && (window as unknown as { __DEXII_VERSION__?: string }).__DEXII_VERSION__) || 'dev';
   readonly checking = signal(false);
   readonly lastCheck = signal<'idle' | 'updating' | 'current' | 'unavailable'>('idle');

@@ -47,6 +47,8 @@ Thumbs.db
 .env
 server/node_modules/
 server/data/*.json
+# Written by `npm run build` (scripts/build-info.js); read by /api/version
+/server/build-info.json
 LOCAL_TESTING_NOTES.md
 
 # Firebase config files for the native apps (download from the Firebase console)

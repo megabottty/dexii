@@ -14,18 +14,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
-
-/** Short git commit for this build: Render sets RENDER_GIT_COMMIT; locally ask git. */
-function buildId() {
-  const fromEnv = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || '';
-  if (fromEnv) return fromEnv.slice(0, 7);
-  try {
-    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-  } catch {
-    return 'dev';
-  }
-}
+const { writeBuildInfo } = require('./build-info');
 
 const indexPath = path.resolve(__dirname, '..', 'dist', 'dexii', 'browser', 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
@@ -37,19 +26,20 @@ const preloads = [];
 html = html.replace(tagRe, (_, src) => { srcs.push(src); return ''; });
 html = html.replace(preloadRe, (_, href) => { preloads.push(href); return ''; });
 
-if (srcs.length === 0) {
-  console.log('postbuild-index: no module scripts found, nothing to do');
-  process.exit(0);
-}
-
 // After the first frame: start the chunk downloads in parallel (modulepreload),
 // then add the executing module scripts.
-const loader = `<script>(function(){var p=${JSON.stringify(preloads)},s=${JSON.stringify(srcs)};function go(){var i,e;for(i=0;i<p.length;i++){e=document.createElement('link');e.rel='modulepreload';e.href=p[i];document.head.appendChild(e);}for(i=0;i<s.length;i++){e=document.createElement('script');e.type='module';e.src=s[i];document.head.appendChild(e);}}if(window.requestAnimationFrame){requestAnimationFrame(function(){requestAnimationFrame(go);});}else{setTimeout(go,0);}})();</script>`;
+let loader = '';
+if (srcs.length === 0) {
+  console.log('postbuild-index: no module scripts found, skipping first-paint deferral');
+} else {
+  loader = `<script>(function(){var p=${JSON.stringify(preloads)},s=${JSON.stringify(srcs)};function go(){var i,e;for(i=0;i<p.length;i++){e=document.createElement('link');e.rel='modulepreload';e.href=p[i];document.head.appendChild(e);}for(i=0;i<s.length;i++){e=document.createElement('script');e.type='module';e.src=s[i];document.head.appendChild(e);}}if(window.requestAnimationFrame){requestAnimationFrame(function(){requestAnimationFrame(go);});}else{setTimeout(go,0);}})();</script>`;
+}
 
-const build = buildId();
-const version = require(path.resolve(__dirname, '..', 'package.json')).version || '0.0.0';
+// Version + build stamp; the same info is written to server/build-info.json so
+// /api/version reports exactly what the client shows.
+const { version, build, buildNumberSource } = writeBuildInfo();
 html = html.replace('<head>', `<head><meta name="dexii-version" content="${version}"><meta name="dexii-build" content="${build}">`);
 html = html.replace('</body>', `<script>window.__DEXII_VERSION__=${JSON.stringify(version)};window.__DEXII_BUILD__=${JSON.stringify(build)};</script>${loader}</body>`);
 fs.writeFileSync(indexPath, html);
-console.log(`postbuild-index: version ${version} build ${build}`);
+console.log(`postbuild-index: version ${version} (${buildNumberSource}) build ${build}`);
 console.log(`postbuild-index: deferred ${srcs.length} module script(s) and ${preloads.length} preload(s) until after first paint`);
