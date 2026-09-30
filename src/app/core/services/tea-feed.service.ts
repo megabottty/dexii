@@ -301,9 +301,9 @@ export class TeaFeedService {
         return false;
       }
     }
-    // Mark this and any sibling (request + nudge for the same request) as read.
-    const siblings = this.items().filter((i) => i.friendRequestId === item.friendRequestId && i.notificationId && i.read === false);
-    await Promise.all(siblings.map((s) => this.notifications.markRead(s.notificationId!).catch(() => undefined)));
+    // The request is handled, so its card (and any nudge for the same request) leaves Tea.
+    const siblings = this.items().filter((i) => i.friendRequestId === item.friendRequestId && i.notificationId);
+    await Promise.all(siblings.map((s) => this.notifications.remove(s.notificationId!).catch(() => undefined)));
     await this.notifications.loadNotifications().catch(() => undefined);
     this.requestsChanged.update((n) => n + 1);
     if (action === 'accept') this.modal.show(`You and ${item.actor.name} are now friends.`);

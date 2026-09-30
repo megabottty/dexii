@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const sendEmail = require('../utils/sendEmail');
 const sendSms = require('../utils/sendSms');
 const { buildInviteEmail } = require('../utils/inviteEmail');
-const { createNotification , retractCrushShares } = require('./notificationController');
+const { createNotification, retractCrushShares, retractFriendRequestNotifications } = require('./notificationController');
 
 const INVITE_DAILY_LIMIT = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -601,6 +601,7 @@ exports.sendFriendRequest = async (req, res) => {
       reverse.status = 'accepted';
       reverse.respondedAt = new Date();
       await reverse.save();
+      setImmediate(() => { void retractFriendRequestNotifications({ io: req.app.get('io'), requestId: reverse._id, recipient: reverse.to }); });
       await linkFriends(req.user.id, toUserId);
       try {
         await createNotification({
@@ -708,6 +709,8 @@ exports.respondToRequest = async (req, res) => {
     request.status = action === 'accept' ? 'accepted' : 'declined';
     request.respondedAt = new Date();
     await request.save();
+    // The recipient's Tea card for this request is no longer actionable.
+    setImmediate(() => { void retractFriendRequestNotifications({ io: req.app.get('io'), requestId: request._id, recipient: request.to }); });
 
     if (action === 'accept') {
       await linkFriends(request.from, request.to);
@@ -756,6 +759,7 @@ exports.cancelRequest = async (req, res) => {
     request.status = 'cancelled';
     request.respondedAt = new Date();
     await request.save();
+    setImmediate(() => { void retractFriendRequestNotifications({ io: req.app.get('io'), requestId: request._id, recipient: request.to }); });
 
     res.json({ message: 'Request cancelled.', id: String(request._id) });
   } catch (err) {

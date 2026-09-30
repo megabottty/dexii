@@ -137,6 +137,29 @@ exports.retractCrushShares = async ({ io, crushId, recipients, betweenUsers } = 
   }
 };
 
+const FRIEND_REQUEST_TYPES = ['friend_request_received', 'friend_request_nudge'];
+
+/**
+ * Removes the recipient's "sent you a friend request" / "nudged you" notifications once the
+ * request is no longer pending (accepted, declined or cancelled), so Tea stops offering
+ * Accept / Decline for it. Never throws; callers fire-and-forget.
+ */
+exports.retractFriendRequestNotifications = async ({ io, requestId, recipient } = {}) => {
+  try {
+    if (mongoose.connection.readyState !== 1 || !requestId) return 0;
+    const query = { type: { $in: FRIEND_REQUEST_TYPES }, 'payload.friendRequestId': String(requestId) };
+    if (recipient) query.recipient = String(recipient);
+    const affected = await Notification.find(query).select('recipient').lean();
+    if (!affected.length) return 0;
+    await Notification.deleteMany({ _id: { $in: affected.map((n) => n._id) } });
+    emitNotificationsChanged(io, affected.map((n) => n.recipient));
+    return affected.length;
+  } catch (err) {
+    console.warn('Retracting friend request notifications failed:', err.message);
+    return 0;
+  }
+};
+
 exports.deleteNotification = async (req, res) => {
   try {
     if (!requireDb(res)) return;
@@ -289,6 +312,29 @@ exports.removePushToken = async (req, res) => {
   }
 };
 
+/**
+ * Drops request / nudge notifications whose friend request has already been handled.
+ * Older rows were never cleaned up, so this keeps them out of Tea until they age out.
+ */
+const withoutHandledRequests = async (notifications) => {
+  const ids = [...new Set(notifications
+    .filter((n) => FRIEND_REQUEST_TYPES.includes(n.type) && typeof n.payload?.friendRequestId === 'string')
+    .map((n) => n.payload.friendRequestId)
+    .filter((id) => mongoose.isValidObjectId(id)))];
+  if (!ids.length) return notifications;
+  try {
+    const FriendRequest = require('../models/FriendRequest');
+    const requests = await FriendRequest.find({ _id: { $in: ids } }).select('status').lean();
+    const pending = new Set(requests.filter((r) => r.status === 'pending').map((r) => String(r._id)));
+    return notifications.filter((n) =>
+      !FRIEND_REQUEST_TYPES.includes(n.type) || pending.has(String(n.payload?.friendRequestId))
+    );
+  } catch (err) {
+    console.warn('Checking friend request status for notifications failed:', err.message);
+    return notifications;
+  }
+};
+
 exports.listNotifications = async (req, res) => {
   try {
     if (!requireDb(res)) return;
@@ -299,7 +345,7 @@ exports.listNotifications = async (req, res) => {
       .limit(50)
       .lean();
 
-    res.json(notifications.map(shapeNotification));
+    res.json((await withoutHandledRequests(notifications)).map(shapeNotification));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
