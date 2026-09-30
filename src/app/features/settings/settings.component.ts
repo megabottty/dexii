@@ -54,28 +54,30 @@ interface FriendChoice {
               <img [src]="settings.settings().avatarUrl || defaultAvatar()"
                    [alt]="settings.settings().displayName || username()"
                    class="settings-avatar">
-              <div class="settings-photo-actions">
-                <button type="button"
-                        (click)="photoPickerOpen.set(!photoPickerOpen())"
-                        [style.background-color]="theme.colors().primary"
-                        [attr.aria-expanded]="photoPickerOpen()"
-                        aria-controls="settings-photo-picker"
-                        class="settings-photo-btn settings-action-btn">
-                  {{ photoPickerOpen() ? 'Done with photo' : 'Change photo or build an avatar' }}
-                </button>
-              </div>
             </div>
-            <button (click)="settings.resetSettings()"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().textSecondary"
-                    class="settings-reset-btn settings-action-btn">
-              Reset Defaults
-            </button>
+          </div>
+
+          <div class="settings-actions">
             <button (click)="saveChanges()"
                     [style.background-color]="theme.colors().primary"
                     class="settings-photo-btn settings-action-btn"
                     type="button">
               {{ saveMessage() || 'Save Changes' }}
+            </button>
+            <button type="button"
+                    (click)="photoPickerOpen.set(!photoPickerOpen())"
+                    [style.border]="'1px solid ' + theme.colors().primary"
+                    [style.color]="theme.colors().primary"
+                    [attr.aria-expanded]="photoPickerOpen()"
+                    aria-controls="settings-photo-picker"
+                    class="settings-reset-btn settings-action-btn">
+              {{ photoPickerOpen() ? 'Done with photo' : 'Change photo' }}
+            </button>
+            <button (click)="settings.resetSettings()"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.color]="theme.colors().textSecondary"
+                    class="settings-reset-btn settings-action-btn">
+              Reset Defaults
             </button>
           </div>
 
@@ -400,10 +402,12 @@ interface FriendChoice {
                   <input type="color" [(ngModel)]="customColorDraft.accent" (ngModelChange)="onCustomColorChange()" aria-label="Accent color">
                   <span [style.color]="theme.colors().text">Accent</span>
                 </label>
+              </div>
+              <div class="settings-custom-theme-actions">
                 <button type="button"
                         (click)="applyCustomTheme()"
                         [style.background-color]="theme.colors().primary"
-                        class="settings-custom-theme-apply">
+                        class="settings-custom-theme-apply settings-photo-btn settings-action-btn">
                   Apply Custom Theme
                 </button>
               </div>
@@ -618,7 +622,7 @@ interface FriendChoice {
             <div class="settings-footer-actions">
               <button (click)="saveChanges()"
                       [style.background-color]="theme.colors().primary"
-                      class="settings-photo-btn"
+                      class="settings-photo-btn settings-action-btn"
                       type="button">
                 Save Changes
               </button>
@@ -628,7 +632,8 @@ interface FriendChoice {
           <div class="settings-build" [style.color]="theme.colors().textSecondary">
             <span>Dexii v{{ appUpdate.version }} · build {{ appUpdate.build }}</span>
             <button type="button"
-                    class="settings-build-check"
+                    class="settings-reset-btn settings-action-btn settings-build-check"
+                    [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().primary"
                     [disabled]="appUpdate.checking()"
                     (click)="appUpdate.checkNow()">
@@ -693,7 +698,7 @@ interface FriendChoice {
             <div class="settings-modal-actions">
               <button (click)="saveFriendSelection()"
                       [style.background-color]="theme.colors().primary"
-                      class="settings-photo-btn"
+                      class="settings-photo-btn settings-action-btn"
                       type="button">
                 Save Selection
               </button>
