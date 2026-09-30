@@ -91,6 +91,8 @@
 
 .settings-photo-btn {
   border: none;
+  /* Solid buttons sit on the theme's primary colour, so their text is always white. */
+  color: #fff;
 }
 
 .settings-photo-btn,
@@ -100,6 +102,7 @@
 
 .settings-photo-btn--ghost {
   background: transparent;
+  color: inherit;
 }
 
 .settings-photo-actions .settings-reset-btn {
