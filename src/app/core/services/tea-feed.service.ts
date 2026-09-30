@@ -215,8 +215,22 @@ export class TeaFeedService {
     this.dataService.getSharedEntries()()
   ));
   readonly visibleItems = computed(() => this.items().filter((item) => matchesTeaFilter(item, this.filter())));
-  readonly unreadItems = computed(() => this.visibleItems().filter((item) => item.read === false));
-  readonly earlierItems = computed(() => this.visibleItems().filter((item) => item.read !== false));
+
+  /**
+   * Which group each card sat in when the page was opened. Marking something
+   * read while you look at it clears its highlight but does not move it, so the
+   * list stays still until the next visit. Cards that arrive later go on top.
+   */
+  private groupSnapshot = signal<Map<string, 'new' | 'earlier'>>(new Map());
+  private groupOf(item: TeaItem): 'new' | 'earlier' {
+    const snap = this.groupSnapshot().get(item.key);
+    if (snap) return snap;
+    return item.read === false ? 'new' : 'earlier';
+  }
+  readonly unreadItems = computed(() => this.visibleItems().filter((item) => this.groupOf(item) === 'new'));
+  readonly earlierItems = computed(() => this.visibleItems().filter((item) => this.groupOf(item) === 'earlier'));
+  /** Live unread count among the cards on the page (for the highlight/dot). */
+  readonly unseenCount = computed(() => this.items().filter((item) => item.read === false).length);
   readonly counts = computed(() => ({
     requests: this.items().filter((i) => i.kind === 'friend_request' || i.kind === 'nudge').length,
     shares: this.items().filter((i) => i.kind === 'crush_shared').length,
@@ -233,8 +247,27 @@ export class TeaFeedService {
         this.loadSharedCrushes()
       ]);
     } finally {
+      this.snapshotGroups();
       this.loading.set(false);
     }
+  }
+
+  /** Freezes the new/earlier split for this visit. */
+  snapshotGroups(): void {
+    const snap = new Map<string, 'new' | 'earlier'>();
+    for (const item of this.items()) snap.set(item.key, item.read === false ? 'new' : 'earlier');
+    this.groupSnapshot.set(snap);
+  }
+
+  /**
+   * Inbox behaviour: everything currently shown counts as seen. Clears the
+   * highlight and the badge; cards keep their place until the next visit.
+   * Requests stay actionable (their buttons don't depend on unread state).
+   */
+  async markShownAsSeen(): Promise<void> {
+    const pending = this.items().filter((item) => item.notificationId && item.read === false);
+    if (!pending.length) return;
+    await Promise.all(pending.map((item) => this.notifications.markRead(item.notificationId!).catch(() => undefined)));
   }
 
   private async loadSharedCrushes(): Promise<void> {

@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
@@ -116,6 +116,11 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
           </div>
         } @else {
           <div class="tea-list">
+            @if (tea.unreadItems().length > 0) {
+              <p class="tea-group-label" [style.color]="theme.colors().textSecondary">
+                {{ tea.unseenCount() > 0 ? 'New' : 'Seen this visit' }}
+              </p>
+            }
             @for (item of tea.unreadItems(); track item.key) {
               <ng-container *ngTemplateOutlet="card; context: { item: item }"></ng-container>
             }
@@ -226,7 +231,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
     </ng-template>
   `
 })
-export class FeedComponent implements OnInit {
+export class FeedComponent implements OnInit, OnDestroy {
   protected theme = inject(ThemeService);
   protected notifications = inject(NotificationsService);
   protected webPush = inject(WebPushService);
@@ -245,8 +250,19 @@ export class FeedComponent implements OnInit {
     { value: 'notes', label: 'Notes', count: () => this.tea.counts().notes }
   ];
 
+  private seenTimer: ReturnType<typeof setTimeout> | null = null;
+
   ngOnInit(): void {
-    void this.tea.load();
+    void this.tea.load().then(() => {
+      // Give the eye a moment on the new cards, then treat them as seen.
+      this.seenTimer = setTimeout(() => { void this.tea.markShownAsSeen(); }, 2500);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.seenTimer) clearTimeout(this.seenTimer);
+    // Leaving the page counts as having looked at it.
+    void this.tea.markShownAsSeen();
   }
 
   async respond(item: TeaItem, action: 'accept' | 'decline'): Promise<void> {
@@ -261,6 +277,7 @@ export class FeedComponent implements OnInit {
   async markAllRead(): Promise<void> {
     try {
       await this.notifications.markAllRead();
+      this.tea.snapshotGroups();
       this.earlierExpanded.set(false);
     } catch {
       // Leave the list as-is so the user can retry.

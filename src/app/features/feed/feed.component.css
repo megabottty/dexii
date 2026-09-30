@@ -489,3 +489,11 @@
   text-transform: uppercase;
   cursor: pointer;
 }
+
+.tea-group-label {
+  margin: 4px 0 -4px;
+  font-size: var(--fs-label);
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
