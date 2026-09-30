@@ -9,6 +9,7 @@ import { SubscriptionTier } from '../../models/user.model';
 import { AvatarConfig } from '../../models/avatar-config.model';
 import { AVATAR_PRESETS, AvatarPreset } from '../../data/avatar-presets';
 import { AvatarBuilderComponent } from '../avatar-builder/avatar-builder.component';
+import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.component';
 
 /**
  * Everything to do with picking a crush's picture, shared by the new-crush
@@ -25,7 +26,7 @@ import { AvatarBuilderComponent } from '../avatar-builder/avatar-builder.compone
   selector: 'app-avatar-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AvatarBuilderComponent],
+  imports: [FormsModule, AvatarBuilderComponent, UpgradePromptComponent],
   styleUrl: './avatar-picker.component.css',
   template: `
     <div class="ap">
@@ -68,12 +69,8 @@ import { AvatarBuilderComponent } from '../avatar-builder/avatar-builder.compone
       }
 
       @if (!gate.canUseAvatarBuilder()) {
-        <div [style.border]="'1px dashed ' + theme.colors().border" class="ap-upgrade">
-          <p class="ap-upgrade-title">Custom avatars are a Premium feature</p>
-          <p [style.color]="theme.colors().textSecondary" class="ap-upgrade-copy">Build a cartoon lookalike for every crush on Premium and Gold.</p>
-          <button type="button" (click)="subscription.upgrade(premiumTier)"
-                  [style.background-color]="theme.colors().primary"
-                  class="ap-btn ap-btn-primary">Upgrade to Premium</button>
+        <div class="ap-upgrade">
+          <app-upgrade-prompt feature="avatarBuilder" [compact]="true"></app-upgrade-prompt>
         </div>
       }
 

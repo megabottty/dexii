@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const requireFeature = require('../middleware/requireFeature');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -37,7 +38,7 @@ const upload = multer({
 // @route   POST /api/vault/upload
 // @desc    Upload an image to the vault
 // @access  Private
-router.post('/upload', auth, upload.single('image'), (req, res) => {
+router.post('/upload', auth, requireFeature('photoVault'), upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ msg: 'No file uploaded' });
   }

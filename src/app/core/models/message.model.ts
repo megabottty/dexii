@@ -14,6 +14,8 @@ export interface Message {
   relatedEntryId?: string; // Link to specific entry/note
   isSelfDestruct?: boolean;
   selfDestructDurationMs?: number;
+  /** Safety Check messages: pushed as "safety alert" without revealing the text. */
+  isSafetyAlert?: boolean;
   reactions?: MessageReaction[];
 }
 

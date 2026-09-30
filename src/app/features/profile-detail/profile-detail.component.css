@@ -15,7 +15,7 @@
   top: 24px;
   left: 24px;
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--fs-btn);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -84,7 +84,7 @@
   border-radius: 999px;
   padding: 9px 14px;
   text-decoration: none;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.7px;
@@ -138,7 +138,7 @@
   margin: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: var(--fs-label);
   font-weight: 600;
   letter-spacing: 0.4px;
 }
@@ -160,7 +160,7 @@
 .status-chip-button {
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: var(--fs-btn);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -193,7 +193,7 @@
 .status-quick-select {
   padding: 6px 10px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: var(--fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -210,7 +210,7 @@
 
 .action-btn-styled {
   text-decoration: none;
-  font-size: 10px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.9px;
@@ -237,7 +237,7 @@
 .share-dating-status-button {
   white-space: normal;
   overflow-wrap: anywhere;
-  font-size: 9px;
+  font-size: var(--fs-btn);
   letter-spacing: 0.5px;
   padding: 7px 8px;
   min-height: 34px;
@@ -309,7 +309,7 @@
 }
 
 .info-title {
-  font-size: 13px;
+  font-size: var(--fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2.5px;
@@ -342,7 +342,7 @@
 }
 
 .info-label {
-  font-size: 11px;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.2px;
@@ -382,7 +382,7 @@
 }
 
 .extended-info-title {
-  font-size: 12px;
+  font-size: var(--fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -421,7 +421,7 @@
 }
 
 .social-icon-item span {
-  font-size: 12px;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -455,7 +455,7 @@
 }
 
 .edit-section-heading {
-  font-size: 10px;
+  font-size: var(--fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2.5px;
@@ -481,7 +481,7 @@
 }
 
 .edit-field-label {
-  font-size: 11px;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -518,7 +518,7 @@
 }
 
 .relationship-label-order__empty {
-  font-size: 12px;
+  font-size: var(--fs-label);
   font-style: italic;
 }
 
@@ -530,7 +530,7 @@
 }
 
 .option-btn {
-  font-size: 11px;
+  font-size: var(--fs-btn);
   font-weight: 600;
   padding: 8px 16px;
   border: 1.5px solid var(--border);
@@ -719,7 +719,7 @@ select.edit-input-styled {
 }
 
 .friend-status {
-  font-size: 12px;
+  font-size: var(--fs-label);
   font-weight: 500;
 }
 
@@ -793,7 +793,7 @@ select.edit-input-styled {
 }
 
 .status-visibility-option__copy {
-  font-size: 0.82rem;
+  font-size: var(--fs-label);
   line-height: 1.4;
 }
 
@@ -804,7 +804,7 @@ select.edit-input-styled {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 0.72rem;
+  font-size: var(--fs-label);
   font-weight: 700;
   border: 1px solid currentColor;
   cursor: help;
@@ -826,7 +826,7 @@ select.edit-input-styled {
 
 .status-visibility-private__title {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--fs-label);
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -842,7 +842,7 @@ select.edit-input-styled {
 
 .status-visibility-empty {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-label);
   line-height: 1.5;
 }
 
@@ -924,7 +924,7 @@ select.edit-input-styled {
 }
 
 .vibe-banner-sub {
-  font-size: 12px;
+  font-size: var(--fs-label);
   opacity: 0.7;
 }
 
@@ -974,7 +974,7 @@ select.edit-input-styled {
   .back-link {
     left: 16px;
     top: 16px;
-    font-size: 11px;
+    font-size: var(--fs-btn);
   }
 
   .profile-main-content {
@@ -1158,7 +1158,7 @@ select.edit-input-styled {
 }
 
 .vibe-log-label {
-  font-size: 13px;
+  font-size: var(--fs-label);
   min-width: 140px;
 }
 
@@ -1182,7 +1182,7 @@ select.edit-input-styled {
 }
 
 .vibe-history-label {
-  font-size: 12px;
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1203,7 +1203,7 @@ select.edit-input-styled {
 }
 
 .vibe-entry-num {
-  font-size: 11px;
+  font-size: var(--fs-label);
   min-width: 30px;
   opacity: 0.6;
 }
@@ -1228,7 +1228,7 @@ select.edit-input-styled {
 }
 
 .vibe-sub-label {
-  font-size: 10px;
+  font-size: var(--fs-label);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;

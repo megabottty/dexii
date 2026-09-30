@@ -8,6 +8,8 @@ import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
+import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
+import { FeatureGateService } from '../../core/services/feature-gate.service';
 import { SubscriptionTier } from '../../core/models/user.model';
 import { Entry } from '../../core/models/entry.model';
 import { PageHintComponent } from '../../core/components/page-hint.component';
@@ -18,7 +20,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
   selector: 'app-vault-center',
   standalone: true,
   styleUrl: './vault-center.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, UpgradePromptComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="vault-center-component__s1">
@@ -210,13 +212,8 @@ import { NotificationsService } from '../../core/services/notifications.service'
 
         <!-- Photo Vault Tab -->
         @if (activeTab() === 'photos') {
-          @if (!subscription.isPremium()) {
-            <div [style.border]="'1px dashed ' + theme.colors().border" class="vault-upgrade-box">
-              <h3 class="vault-center-component__s22">Premium Vault Feature</h3>
-              <p [style.color]="theme.colors().textSecondary" class="vault-center-component__s23">18+ Photo Vault is available on Premium and Gold tiers.</p>
-              <button (click)="subscription.upgrade(premiumTier)" [style.background-color]="theme.colors().primary"
-                      class="vault-center-component__s24">Upgrade to Premium</button>
-            </div>
+          @if (!gate.can('photoVault')) {
+            <app-upgrade-prompt feature="photoVault"></app-upgrade-prompt>
           } @else if (!security.isVerified18()) {
             <div [style.border]="'1px dashed ' + theme.colors().border" class="vault-upgrade-box">
                <h3 class="vault-center-component__s22">18+ Restricted Area</h3>
@@ -268,6 +265,7 @@ export class VaultCenterComponent implements OnDestroy {
   public settings = inject(UserSettingsService);
   private notifications = inject(NotificationsService);
   premiumTier = SubscriptionTier.Premium;
+  gate = inject(FeatureGateService);
 
   activeTab = signal<'journal' | 'photos'>('journal');
   newJournalEntry = '';

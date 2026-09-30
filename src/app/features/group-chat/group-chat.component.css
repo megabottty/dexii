@@ -14,7 +14,7 @@
 
 .group-chat-back {
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--fs-btn);
   text-transform: uppercase;
   letter-spacing: 1px;
   white-space: nowrap;
@@ -39,7 +39,7 @@
 }
 
 .group-chat-header__members {
-  font-size: 11px;
+  font-size: var(--fs-label);
   margin: 2px 0 0;
   white-space: nowrap;
   overflow: hidden;
@@ -50,7 +50,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -71,7 +71,7 @@
 }
 
 .group-chat-message__sender {
-  font-size: 10px;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 2px;
@@ -83,7 +83,7 @@
 }
 
 .group-chat-message__time {
-  font-size: 8px;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 4px;
@@ -103,7 +103,7 @@
   padding: 3px 9px;
   border-radius: 999px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-btn);
   animation: group-chat-reaction-pop 0.25s ease;
 }
 
@@ -115,7 +115,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   opacity: 0.6;
   margin-top: 2px;
   align-self: flex-start;

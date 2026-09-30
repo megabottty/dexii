@@ -23,11 +23,11 @@
 }
 
 .friends-list-component__s7 {
-  background: transparent; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+  background: transparent; padding: 8px 12px; font-size: var(--fs-btn); text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
 }
 
 .friends-list-component__s8 {
-  color: white; border: none; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+  color: white; border: none;
 }
 
 .friends-list-component__s9 {
@@ -59,7 +59,7 @@
 }
 
 .friends-list-component__s16 {
-  margin: 0; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+  margin: 0; font-size: var(--fs-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
 }
 
 .friends-list-component__s17 {
@@ -91,11 +91,11 @@
 }
 
 .friends-list-component__s24 {
-  font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+  font-size: var(--fs-label); font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
 }
 
 .friends-list-component__s25 {
-  padding: 6px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.3s;
+  padding: 6px 16px; font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.3s;
 }
 
 .friends-list-component__s26 {
@@ -111,7 +111,7 @@
 }
 
 .friends-list-component__s27 {
-  font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;
+  font-size: var(--fs-label); font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;
 }
 
 .friends-list-component__s28 {
@@ -127,7 +127,7 @@
 }
 
 .friends-list-component__s31 {
-  font-size: 11px; font-style: italic;
+  font-size: var(--fs-label); font-style: italic;
 }
 
 .friends-list-component__s32 {
@@ -139,11 +139,11 @@
 }
 
 .friends-list-component__s34 {
-  font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0;
+  font-size: var(--fs-label); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px 0;
 }
 
 .friends-list-component__s35 {
-  padding: 8px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+  padding: 8px 14px; font-size: var(--fs-btn); text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
 }
 
 .friends-list-component__s36 {
@@ -163,7 +163,7 @@
 }
 
 .friends-list-component__s40 {
-  color: white; border: none; padding: 10px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+  color: white; border: none;
 }
 
 .friends-list-component__s41 {
@@ -239,15 +239,15 @@
 }
 
 .friends-list-component__s49 {
-  display: flex; gap: 8px;
+  display: flex; gap: 8px; flex-wrap: wrap;
 }
 
 .friends-list-component__s50 {
-  color: white; border: none; padding: 6px 10px; font-size: 10px; cursor: pointer;
+  color: white; border: none;
 }
 
 .friends-list-component__s51 {
-  margin: 14px 0 0 0; font-size: 12px; font-style: italic;
+  margin: 14px 0 0 0; font-size: var(--fs-label); font-style: italic;
 }
 
 .friends-list-component__s52 {
@@ -275,7 +275,7 @@
 }
 
 .friends-list-component__s58 {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
 }
 
 .friends-list-component__s59 {
@@ -294,7 +294,7 @@
 .friends-list-nav-link {
   text-decoration: none;
   padding: 8px 12px;
-  font-size: 10px;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -335,9 +335,14 @@
   background: none;
 }
 
+/* Every button on the Friends page shares one size. */
 .friends-list-action-link,
 .friends-list-action-btn,
-.friends-list-component__s60 {
+.friends-list-component__s60,
+.friends-list-component__s8,
+.friends-list-component__s40,
+.friends-list-component__s50,
+.friends-list-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -346,13 +351,64 @@
   min-height: 38px;
   padding: 8px 12px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 1px;
   line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.friends-list-tab {
+  min-width: auto;
+  border-radius: 999px;
+  text-transform: none;
+  letter-spacing: 0.2px;
+}
+
+.friends-list-nudge-chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.friends-list-search-empty__hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-label);
+}
+
+.friends-list-add-modal-skip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px dashed currentColor;
+  border-radius: 12px;
+  font-size: var(--fs-small);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.friends-list-add-modal-skip span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.friends-list-add-modal-skip input {
+  width: 18px;
+  height: 18px;
 }
 
 .friends-list-auth-state {
@@ -393,7 +449,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -441,7 +497,7 @@
 }
 
 .friends-list-profile-label {
-  font-size: 10px;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 1px;
   opacity: 0.7;
@@ -486,6 +542,17 @@
   .friends-list-component__s60 {
     min-height: 44px;
     width: 100%;
+  }
+
+  .friends-list-component__s8,
+  .friends-list-component__s50,
+  .friends-list-tab {
+    min-height: 44px;
+  }
+
+  /* Request-row actions share the row in equal halves; an odd one spans the width. */
+  .friends-list-component__s49 > * {
+    flex: 1 1 calc(50% - 4px);
   }
 
   .friends-list-component__s10 {

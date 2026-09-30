@@ -63,7 +63,7 @@
   }
 
   .alert-modal-component__s5 {
-    font-size: 12px;
+    font-size: var(--fs-label);
     margin-bottom: 16px;
   }
 

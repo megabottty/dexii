@@ -15,12 +15,14 @@ import { AvatarConfig } from '../../core/models/avatar-config.model';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
+import { FeatureGateService } from '../../core/services/feature-gate.service';
 
 @Component({
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, AvatarPickerComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, AvatarPickerComponent, UpgradePromptComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -41,7 +43,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <div class="profile-main-content">
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
-               style="border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;"
+               style="border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;"
                [style.color]="theme.colors().primary">
             @if (friendCrushOwnerName()) {
               Shared by {{ friendCrushOwnerName() }} · Read-only
@@ -92,7 +94,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
               }
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
-                <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">
+                <span [style.color]="theme.colors().primary" style="font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: var(--fs-label);">
                   Main status: {{ c.status }}
                 </span>
                 @if (getRelationshipLabels(c).length) {
@@ -109,7 +111,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 }
               </div>
               @if (c.location || getCrushAge(c)) {
-                <p [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 13px;">
+                <p [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: var(--fs-label);">
                   {{ c.location || 'Location Unknown' }}{{ getCrushAge(c) ? ' • ' + getCrushAge(c) + ' years' : '' }}
                 </p>
               }
@@ -122,7 +124,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         (click)="toggleFullCrushDetails()"
                         [style.color]="theme.colors().primary"
                         [style.border]="'1px solid ' + theme.colors().primary"
-                        style="margin-top: 14px; background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        style="margin-top: 14px; background: transparent; border-radius: 999px; padding: 6px 14px; font-size: var(--fs-label); font-weight: 700; cursor: pointer;">
                   {{ showFullCrushDetails() ? 'Show less ▲' : 'Show more details ▼' }}
                 </button>
 
@@ -197,7 +199,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
                  style="border-radius: 16px; padding: 20px; margin-top: 16px;">
-              <h3 [style.color]="theme.colors().textSecondary" style="margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
+              <h3 [style.color]="theme.colors().textSecondary" style="margin: 0 0 12px 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px;">
                 Shared with you
               </h3>
               <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -205,7 +207,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div [style.border]="'1px solid ' + theme.colors().border"
                        style="border-radius: 10px; padding: 10px 12px;">
                     <p style="margin: 0; line-height: 1.5;">{{ entry.content }}</p>
-                    <span [style.color]="theme.colors().textSecondary" style="font-size: 11px;">
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                       {{ entry.timestamp | date:'MMM d, h:mm a' }}
                     </span>
                   </div>
@@ -226,7 +228,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   @if (safetyState() === 'Safe') { ✅ Safety Check Resolved }
                   @if (safetyState() === 'Urgent') { 🚨 Emergency Mode Active }
                 </div>
-                <div [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem; margin-top: 2px;">
+                <div [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label); margin-top: 2px;">
                   Contacts: {{ selectedSafetyContactNames() || 'None selected' }} • Interval: {{ safetyDurationMinutes() }} min
                 </div>
               </div>
@@ -265,7 +267,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     <span
                       [style.color]="'#22c55e'"
                       [style.border]="'1px solid #22c55e'"
-                      style="padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; line-height: 1.2;">
+                      style="padding: 2px 8px; border-radius: 999px; font-size: var(--fs-label); font-weight: 600; line-height: 1.2;">
                       ⚑
                     </span>
                   }
@@ -335,9 +337,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="openShareSelector(c.id)" class="action-btn-styled primary">🔗 Share</button>
                 <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary share-dating-status-button">📣 Share Dating Status</button>
-                <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
-                  {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
-                </button>
+                @if (gate.canUseSafetyCheck()) {
+                  <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
+                    {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
+                  </button>
+                } @else {
+                  <button (click)="showSafetyUpgrade.set(!showSafetyUpgrade())" class="action-btn-styled safety">
+                    🛡️ Safety Check · Premium
+                  </button>
+                }
 
                 <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
                   {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
@@ -351,14 +359,20 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
             }
 
-            @if (!isEditMode() && showSafetySetup()) {
+            @if (!isEditMode() && showSafetyUpgrade() && !gate.canUseSafetyCheck()) {
+              <div style="margin-top: 14px;">
+                <app-upgrade-prompt feature="safetyCheck"></app-upgrade-prompt>
+              </div>
+            }
+
+            @if (!isEditMode() && showSafetySetup() && gate.canUseSafetyCheck()) {
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bg"
                    style="margin-top: 14px; border-radius: 10px; padding: 12px;">
                 <h3 [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 1rem;">Safety Check-In Setup</h3>
 
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 10px;">
-                  <label [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem;">Check-in interval</label>
+                  <label [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">Check-in interval</label>
                   <select [ngModel]="safetyDurationMinutes()"
                           (ngModelChange)="setSafetyDuration($event)"
                           [style.background-color]="theme.colors().bgSecondary"
@@ -369,23 +383,23 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <option [ngValue]="minutes">{{ minutes }} min</option>
                     }
                   </select>
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: 0.78rem;">
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                     We’ll pop a halfway check-in prompt automatically.
                   </span>
                 </div>
 
-                <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0; font-size: 0.85rem;">Share with trusted friends:</p>
+                <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0; font-size: var(--fs-label);">Share with trusted friends:</p>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                   @for (friend of friends(); track friend.id) {
                     <button (click)="toggleSafetyContact(friend.id)"
                             [style.background-color]="isSafetyContact(friend.id) ? theme.colors().primary : 'transparent'"
                             [style.color]="isSafetyContact(friend.id) ? 'white' : theme.colors().text"
                             [style.border]="'1px solid ' + (isSafetyContact(friend.id) ? theme.colors().primary : theme.colors().border)"
-                            style="padding: 5px 10px; border-radius: 999px; cursor: pointer; font-size: 0.8rem;">
+                            style="padding: 5px 10px; border-radius: 999px; cursor: pointer; font-size: var(--fs-btn);">
                       {{ isSafetyContact(friend.id) ? '✓ ' : '' }}{{ friend.username }}
                     </button>
                   } @empty {
-                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.82rem;">No friends found. Add friends first.</span>
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">No friends found. Add friends first.</span>
                   }
                 </div>
 
@@ -434,11 +448,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <h3>{{ shareSelectorMode() === 'dating' ? 'Share dating status' : (pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend') }}</h3>
                   <div style="display: flex; gap: 8px; align-items: center;">
                     @if (shareSelectorMode() === 'dating') {
-                      <button class="action-btn-styled secondary" style="padding: 6px 10px; font-size: 10px;" (click)="toggleSelectAllDatingShareFriends()">
+                      <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllDatingShareFriends()">
                         {{ areAllDatingShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
                       </button>
                     } @else {
-                      <button class="action-btn-styled secondary" style="padding: 6px 10px; font-size: 10px;" (click)="toggleSelectAllShareFriends()">
+                      <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllShareFriends()">
                         {{ areAllShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
                       </button>
                     }
@@ -540,7 +554,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         <p class="status-visibility-private__title">Choose specific friends</p>
                         @if (friends().length > 0) {
                           <button class="action-btn-styled secondary"
-                                  style="padding: 6px 10px; font-size: 10px;"
+                                  style="padding: 6px 10px;"
                                   (click)="toggleAllPendingVisibilityFriends()">
                             {{ areAllPendingVisibilityFriendsSelected() ? 'Deselect All' : 'Select All' }}
                           </button>
@@ -1028,7 +1042,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <div class="extended-info-section">
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                     <h3 [style.color]="'#ef4444'" class="extended-info-title" style="margin: 0;">🚩 Red Flag Entries</h3>
-                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem;">{{ redFlagEntries().length }} total</span>
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ redFlagEntries().length }} total</span>
                   </div>
 
                   <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
@@ -1037,10 +1051,10 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                            [style.background-color]="theme.colors().bg"
                            style="padding: 12px; border-radius: 8px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                          <span [style.color]="'#ef4444'" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                          <span [style.color]="'#ef4444'" style="font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             🚩 Red Flag
                           </span>
-                          <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                          <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                             {{ entry.timestamp | date:'MMM d, h:mm a' }}
                           </span>
                         </div>
@@ -1054,7 +1068,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div class="extended-info-section">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                   <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">Added Notes</h3>
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: 0.85rem;">{{ noteEntries().length }} total</span>
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ noteEntries().length }} total</span>
                 </div>
 
                 @if (noteEntries().length > 0) {
@@ -1067,21 +1081,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <span [style.color]="noteVisibility(entry).color"
                                   [style.border]="'1px solid ' + noteVisibility(entry).color"
-                                  style="padding: 3px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;">
+                                  style="padding: 3px 8px; border-radius: 999px; font-size: var(--fs-label); font-weight: 700;">
                               {{ noteVisibility(entry).label }}
                             </span>
-                            <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                            <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                               {{ entry.timestamp | date:'MMM d, h:mm a' }}
                             </span>
                           </div>
                           <button (click)="startSharingNote(entry.id)"
                                   [style.background-color]="theme.colors().primary"
-                                  style="border: none; color: white; border-radius: 999px; padding: 4px 10px; font-size: 0.78rem; cursor: pointer;">
+                                  style="border: none; color: white; border-radius: 999px; padding: 4px 10px; font-size: var(--fs-label); cursor: pointer;">
                             Share note
                           </button>
                         </div>
                         <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
-                        <p [style.color]="theme.colors().textSecondary" style="margin: 8px 0 0; font-size: 0.78rem;">
+                        <p [style.color]="theme.colors().textSecondary" style="margin: 8px 0 0; font-size: var(--fs-label);">
                           {{ noteVisibility(entry).detail }}
                         </p>
                       </div>
@@ -1099,12 +1113,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                   <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <span [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">Ask me</span>
+                    <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">Ask me</span>
                     <select [ngModel]="vibePromptFrequencyHours()" (ngModelChange)="setVibePromptFrequency($event)"
                             [style.background-color]="theme.colors().bg"
                             [style.border]="'1px solid ' + theme.colors().border"
                             [style.color]="theme.colors().text"
-                            style="padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
+                            style="padding: 4px 8px; border-radius: 6px; font-size: var(--fs-label);">
                       @for (option of vibePromptOptions; track option.hours) {
                         <option [ngValue]="option.hours">{{ option.label }}</option>
                       }
@@ -1181,6 +1195,8 @@ export class ProfileDetailComponent implements OnDestroy {
   public theme = inject(ThemeService);
   public security = inject(SecurityService);
   public subscription = inject(SubscriptionService);
+  public gate = inject(FeatureGateService);
+  showSafetyUpgrade = signal(false);
   public modal = inject(ModalService);
   private friendsApi = inject(FriendsApiService);
   private router = inject(Router);
@@ -1905,6 +1921,7 @@ export class ProfileDetailComponent implements OnDestroy {
             this.messaging.sendMessage({
               senderId: 'me',
               receiverId: friend.id,
+        isSafetyAlert: true,
               content: `Halfway check-in: I'm safe and having fun with ${this.crush()?.nickname || 'my date'}.`
             });
             this.dataService.addEntry({
@@ -1927,6 +1944,10 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   async startSafetyCheck(id: string): Promise<void> {
+    if (!this.gate.canUseSafetyCheck()) {
+      this.showSafetyUpgrade.set(true);
+      return;
+    }
     const contacts = this.getSafetyContacts();
     if (contacts.length === 0) {
       this.modal.show('Choose at least one trusted friend for this safety check.');
@@ -1950,6 +1971,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.messaging.sendMessage({
         senderId: 'me',
         receiverId: friend.id,
+        isSafetyAlert: true,
         content: `Safety check started for ${this.crush()?.nickname || 'my date'}. Check-in interval: ${this.safetyDurationMinutes()} minutes.`
       });
     });
@@ -1984,6 +2006,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.messaging.sendMessage({
         senderId: 'me',
         receiverId: friend.id,
+        isSafetyAlert: true,
         content: `Safety check resolved: I'm safe and good.`
       });
     });
@@ -2006,6 +2029,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.messaging.sendMessage({
         senderId: 'me',
         receiverId: friend.id,
+        isSafetyAlert: true,
         content: `🚨 Emergency mode enabled for ${this.crush()?.nickname || 'my date'}. Please check in now.`
       });
     });

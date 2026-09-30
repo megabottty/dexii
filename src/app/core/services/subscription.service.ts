@@ -51,7 +51,12 @@ export class SubscriptionService {
     });
     if (!response.ok) return;
     const data = await response.json();
-    const tier = data?.user?.subscriptionTier;
+    // /auth/me returns the tier at the top level; older shapes nested it under user.
+    this.setTier(data?.subscriptionTier ?? data?.user?.subscriptionTier);
+  }
+
+  /** Records the tier from any auth response so gates work right after sign-in. */
+  setTier(tier: unknown): void {
     if (tier === SubscriptionTier.Free || tier === SubscriptionTier.Premium || tier === SubscriptionTier.Gold) {
       this._tier.set(tier);
     }

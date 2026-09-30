@@ -5,6 +5,14 @@ integration for friend invites.
 
 ---
 
+## Premium features and the founder override
+
+Premium gates are defined in `src/app/core/config/premium-features.ts` (client copy and
+flags) and mirrored in `server/src/config/premiumFeatures.js` (server enforcement via
+`requireFeature`). To use gated features on your own account without a Stripe
+purchase, set `PREMIUM_OVERRIDE_USERNAMES` in Render (comma-separated usernames); those
+accounts are treated as Gold everywhere the tier is read.
+
 ## Which version is deployed?
 
 ```

@@ -88,6 +88,7 @@ export interface FriendRequestSummary {
   message?: string;
   createdAt?: string;
   nudgeCount?: number;
+  lastNudgedAt?: string;
   from?: FriendSummary;
   to?: FriendSummary;
 }

@@ -209,7 +209,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
     .form-label {
-      font-size: 0.75rem;
+      font-size: var(--fs-label);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;

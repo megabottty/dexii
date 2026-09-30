@@ -25,7 +25,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.72rem;
+  font-size: var(--fs-btn);
   letter-spacing: 1px;
   text-transform: uppercase;
   padding: 4px;
@@ -78,7 +78,7 @@
 }
 
 .walkthrough-step-count {
-  font-size: 0.78rem;
+  font-size: var(--fs-label);
   letter-spacing: 0.5px;
 }
 

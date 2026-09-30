@@ -23,15 +23,15 @@
 }
 
 .lock-screen-component__s7 {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 18px;
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; margin-bottom: 18px;
 }
 
 .lock-screen-component__s8 {
-  font-size: 11px; margin-bottom: 42px; min-height: 18px;
+  font-size: var(--fs-label); margin-bottom: 42px; min-height: 18px;
 }
 
 .lock-screen-component__s9 {
-  color: #ef4444; font-size: 11px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
+  color: #ef4444; font-size: var(--fs-label); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
 }
 
 .lock-screen-component__s10 {
@@ -39,7 +39,7 @@
 }
 
 .lock-screen-component__s11 {
-  display: block; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
+  display: block; font-size: var(--fs-label); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
 }
 
 .lock-screen-component__s12 {
@@ -51,7 +51,7 @@
 }
 
 .lock-screen-component__s14 {
-  color: white; border: none; padding: 10px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+  color: white; border: none; padding: 10px 14px; font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
 }
 
 .lock-screen-component__s15 {
@@ -88,11 +88,11 @@
 }
 
 .lock-screen-component__s18 {
-  background: none; border: none; font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+  background: none; border: none; font-size: var(--fs-btn); font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
 }
 
 .lock-screen-component__s20 {
-  background: none; border: none; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+  background: none; border: none; font-size: var(--fs-btn); font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
 }
 
 .lock-screen-component__s21 {
@@ -104,7 +104,7 @@
 }
 
 .lock-screen-component__s23 {
-  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 4px;
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 4px;
 }
 
 .lock-screen-pin-dot {
@@ -150,7 +150,7 @@
 .lock-screen-aux-btn {
   background: none;
   padding: 8px 14px;
-  font-size: 10px;
+  font-size: var(--fs-btn);
   text-transform: uppercase;
   letter-spacing: 1px;
   cursor: pointer;

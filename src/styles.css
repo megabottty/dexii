@@ -28,6 +28,25 @@ textarea {
   outline-offset: 2px;
 }
 
+/* Type scale. Rule of thumb: if it fits bigger, make it bigger. Nothing in the
+   app should render text below --fs-micro. */
+:root {
+  --fs-micro: 11px;   /* badges, timestamps, counters */
+  --fs-label: 12px;   /* eyebrows, field labels, helper and meta text, tab labels */
+  --fs-btn: 13px;     /* every button and chip-as-button */
+  --fs-small: 13px;   /* secondary copy */
+  --fs-body: 15px;    /* body copy */
+  --fs-h-sm: 16px;
+  --fs-h-md: 18px;
+  --fs-h-lg: 24px;
+  --fs-h-xl: 28px;
+  --tap-min: 44px;    /* minimum touch target on phones */
+}
+
+body {
+  font-size: var(--fs-body);
+}
+
 @media (max-width: 900px) {
   html,
   body {
@@ -81,6 +100,9 @@ textarea {
   .friend-profile-component__s1 {
     padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
   }
+
+  /* Mobile tap target: every button and button-role element is at least --tap-min tall. */
+  button:not(.ab-swatch):not(.ab-option):not(.ap-preset):not(.messaging-reaction-picker__option):not(.group-chat-reaction-picker__option):not(.navbar-menu-toggle), [role="button"] { min-height: var(--tap-min); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -118,7 +140,7 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 6px 10px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--fs-label);
   line-height: 1.4;
   white-space: normal;
   width: max-content;

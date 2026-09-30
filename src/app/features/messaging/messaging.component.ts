@@ -461,7 +461,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
               </button>
             </div>
             <div class="messaging-composer__options">
-              <label [style.color]="theme.colors().textSecondary" style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+              <label [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px;">
                 Self-destruct after
               </label>
               <select [(ngModel)]="selfDestructDurationMs"
@@ -473,7 +473,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                   <option [ngValue]="option.ms">{{ option.label }}</option>
                 }
               </select>
-              <span [style.color]="theme.colors().textSecondary" style="font-size: 11px;">
+              <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                 Type “secret” to trigger the timer.
               </span>
             </div>

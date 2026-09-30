@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const { effectiveTier } = require('../config/premiumFeatures');
 const sendEmail = require('../utils/sendEmail');
 const { ensureUser, readStore } = require('../utils/demoFriendStore');
 const loginAttempts = new Map();
@@ -313,7 +314,7 @@ exports.verifyEmail = async (req, res) => {
           lastName: user.lastName || '',
           phoneE164: user.phoneE164 || '',
           bio: user.bio || '',
-          subscriptionTier: user.subscriptionTier || 'Free'
+          subscriptionTier: effectiveTier(user)
         }
       });
     }
@@ -380,7 +381,7 @@ exports.verifyEmail = async (req, res) => {
         phoneE164: user.phoneE164,
         email: user.email,
         bio: user.bio,
-        subscriptionTier: user.subscriptionTier,
+        subscriptionTier: effectiveTier(user),
         avatarUrl: user.avatarUrl
       }
     });
@@ -532,7 +533,7 @@ exports.login = async (req, res) => {
            phoneE164: user.phoneE164 || '',
            email: user.email || '',
            bio: user.bio || '',
-           subscriptionTier: user.subscriptionTier || 'Free'
+           subscriptionTier: effectiveTier(user)
          }
        });
     }
@@ -578,7 +579,7 @@ exports.login = async (req, res) => {
         phoneE164: user.phoneE164,
         email: user.email,
         bio: user.bio,
-        subscriptionTier: user.subscriptionTier,
+        subscriptionTier: effectiveTier(user),
         avatarUrl: user.avatarUrl
       }
     });
@@ -762,7 +763,7 @@ exports.getProfile = async (req, res) => {
         lastName: user.lastName || '',
         phoneE164: user.phoneE164 || '',
         bio: user.bio || '',
-        subscriptionTier: user.subscriptionTier || 'Free',
+        subscriptionTier: effectiveTier(user),
         avatarUrl: user.avatarUrl,
         themePreference: user.themePreference || null,
         firstLoginTourSeen: Boolean(user.firstLoginTourSeen)
@@ -781,7 +782,7 @@ exports.getProfile = async (req, res) => {
       phoneE164: user.phoneE164,
       email: user.email,
       bio: user.bio,
-      subscriptionTier: user.subscriptionTier,
+      subscriptionTier: effectiveTier(user),
       avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
       themePreference: user.themePreference || null,

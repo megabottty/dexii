@@ -290,7 +290,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             <button (click)="auditLogView.set(!auditLogView())"
                     [style.color]="theme.colors().primary"
                     [style.border]="'1px solid ' + theme.colors().primary"
-                    style="background: transparent; padding: 6px 12px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    style="background: transparent; padding: 6px 12px; border-radius: 12px; font-size: var(--fs-btn); cursor: pointer; display: flex; align-items: center; gap: 4px;">
               📜 {{ auditLogView() ? 'Close History' : 'Shared History' }}
             </button>
           </div>
@@ -314,14 +314,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <span style="font-weight: 600; font-size: 0.85rem;" [style.color]="entry.isFromMe ? theme.colors().primary : '#10b981'">
                         {{ entry.isFromMe ? 'You sent' : entry.friendName + ' sent' }}
                       </span>
-                      <span [style.color]="theme.colors().textSecondary" style="font-size: 0.75rem;">
+                      <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                         {{ entry.timestamp | date:'short' }}
                       </span>
                     </div>
                     @if (entry.type === 'entry-share') {
                       <div style="margin-bottom: 0.4rem;">
                         <span [style.color]="theme.colors().primary"
-                              style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid currentColor; padding: 2px 6px; border-radius: 999px;">
+                              style="font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid currentColor; padding: 2px 6px; border-radius: 999px;">
                           Specific entry shared
                         </span>
                       </div>
@@ -337,11 +337,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     @if (entry.isFromMe) {
                       <div style="margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
                         @if (entry.readAt) {
-                          <span style="font-size: 0.75rem; color: #10b981; display: flex; align-items: center; gap: 2px;">
+                          <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
                             <span style="font-size: 0.9rem;">👁️</span> Viewed {{ entry.readAt | date:'shortTime' }}
                           </span>
                         } @else {
-                          <span style="font-size: 0.75rem;" [style.color]="theme.colors().textSecondary" title="Pending view">
+                          <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary" title="Pending view">
                             <span style="font-size: 0.9rem;">⌛👁️</span> Pending...
                           </span>
                         }

@@ -109,27 +109,27 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   [style.background-color]="activeTab() === 'friends' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'friends' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'friends' ? theme.colors().primary : theme.colors().border)"
-                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Friends ({{ friends().length }})</button>
+                  class="friends-list-tab">Friends ({{ friends().length }})</button>
           <button (click)="activeTab.set('find')"
                   [style.background-color]="activeTab() === 'find' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'find' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'find' ? theme.colors().primary : theme.colors().border)"
-                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Add Friend</button>
+                  class="friends-list-tab">Add Friend</button>
           <button (click)="activeTab.set('incoming')"
                   [style.background-color]="activeTab() === 'incoming' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'incoming' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'incoming' ? theme.colors().primary : theme.colors().border)"
-                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Incoming ({{ incomingRequests().length }})</button>
+                  class="friends-list-tab">Incoming ({{ incomingRequests().length }})</button>
           <button (click)="activeTab.set('sent')"
                   [style.background-color]="activeTab() === 'sent' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'sent' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'sent' ? theme.colors().primary : theme.colors().border)"
-                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Pending Sent ({{ outgoingRequests().length }})</button>
+                  class="friends-list-tab">Pending Sent ({{ outgoingRequests().length }})</button>
           <button (click)="activeTab.set('archived'); loadArchivedFriendsView()"
                   [style.background-color]="activeTab() === 'archived' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'archived' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'archived' ? theme.colors().primary : theme.colors().border)"
-                  style="padding: 6px 12px; border-radius: 999px; cursor: pointer;">Archived ({{ archivedFriendIdsCount() }})</button>
+                  class="friends-list-tab">Archived ({{ archivedFriendIdsCount() }})</button>
         </div>
 
         @if (activeTab() === 'find') {
@@ -207,15 +207,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 }
               </div>
             } @else if (didSearch()) {
-              <div class="friends-list-search-empty" role="alert" aria-live="assertive">
-                <div class="friends-list-search-empty__icon" aria-hidden="true">⚠️</div>
+              <div class="friends-list-search-empty" role="status" aria-live="polite">
+                <div class="friends-list-search-empty__icon" aria-hidden="true">💌</div>
                 <div class="friends-list-search-empty__content">
-                  <p class="friends-list-search-empty__title">No matching user found</p>
+                  <p class="friends-list-search-empty__title">We couldn't find them yet</p>
                   <p class="friends-list-search-empty__message">
                     @if (searchQuery().trim()) {
-                      No Dexii user matched “{{ searchQuery().trim() }}”. You can invite them to connect instead.
+                      No one on Dexii matches “{{ searchQuery().trim() }}” — but that's an easy fix. Send an invite and we'll add them to your friends automatically when they join.
                     } @else {
-                      No Dexii user matched your search. Try another term, or invite them to connect instead.
+                      Nothing matched that search. Try a name, username, email or phone number — or invite a friend and we'll connect you as soon as they join.
                     }
                   </p>
                 </div>
@@ -226,6 +226,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                     Invite {{ searchQuery().trim() }}
                   </button>
                 }
+                <p [style.color]="theme.colors().textSecondary" class="friends-list-search-empty__hint">
+                  Invites go out by email or text — you choose on the next step.
+                </p>
               </div>
             }
           </div>
@@ -243,7 +246,17 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div class="friends-list-component__s48">
                 @for (req of incomingRequests(); track req.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
-                    <span>{{ req.from }} wants to connect</span>
+                    <span>
+                      {{ req.from }} wants to connect
+                      @if (req.lastNudgedAt) {
+                        <span [style.background-color]="theme.colors().accent + '22'"
+                              [style.color]="theme.colors().text"
+                              class="friends-list-nudge-chip"
+                              [title]="'Nudged you ' + (req.lastNudgedAt | date:'MMM d, h:mm a')">
+                          Nudged you · {{ req.lastNudgedAt | date:'MMM d' }}
+                        </span>
+                      }
+                    </span>
                     <div class="friends-list-component__s49">
                       <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#16a34a'" class="friends-list-component__s50">Accept</button>
                       <button (click)="respondToRequest(req, 'decline')" [style.background-color]="'#ef4444'" class="friends-list-component__s50">Decline</button>
@@ -300,9 +313,12 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                         Delete Request
                       </button>
                       <button (click)="nudgeRequest(req)"
+                              [disabled]="nudgeCooldownMs(req) > 0 || nudgingRequestId() === req.id"
+                              [style.opacity]="nudgeCooldownMs(req) > 0 ? '0.6' : '1'"
                               [style.background-color]="theme.colors().primary"
+                              [title]="nudgeCooldownMs(req) > 0 ? 'You can nudge again in ' + nudgeCooldownLabel(req) : 'Send a gentle reminder'"
                               class="friends-list-component__s50">
-                        Nudge
+                        {{ nudgingRequestId() === req.id ? 'Nudging…' : (nudgeCooldownMs(req) > 0 ? nudgedAgoLabel(req) : 'Nudge') }}
                       </button>
                     </div>
                   </div>
@@ -564,7 +580,18 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               Create a friendship profile and send an invite to {{ addFriendCandidate()?.username }}.
             </p>
 
+            <label class="friends-list-add-modal-skip" [style.color]="theme.colors().textSecondary">
+              <span [style.color]="theme.colors().text">
+                <input type="checkbox"
+                       [checked]="skipFriendshipProfile()"
+                       (change)="skipFriendshipProfile.set($any($event.target).checked)">
+                Skip the friendship profile for now
+              </span>
+              <small>You can add details later from their profile. The invite still goes out.</small>
+            </label>
+
             <div class="friends-list-add-modal-grid">
+              @if (!skipFriendshipProfile()) {
               <label class="friends-list-add-modal-label">
                 Friendship Name
                 <input [value]="addFriendRelationshipName()"
@@ -627,6 +654,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           class="friends-list-add-modal-textarea"
                           placeholder="Anything helpful to remember before connecting"></textarea>
               </label>
+              }
 
               <label class="friends-list-add-modal-label">
                 Invite Method
@@ -666,17 +694,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           placeholder="Message they’ll receive"></textarea>
               </label>
 
-              <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
-                <span>
-                  <input type="checkbox"
-                         [checked]="skipFriendshipProfile()"
-                         (change)="skipFriendshipProfile.set($any($event.target).checked)">
-                  Skip the friendship profile for now
-                </span>
-                <small [style.color]="theme.colors().textSecondary">
-                  You can finish it later from Pending Sent or your Friends list.
-                </small>
-              </label>
             </div>
 
             <div class="friends-list-add-modal-actions">
@@ -1541,15 +1558,54 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return this.readArchivedFriendIds().size;
   }
 
+  private static readonly NUDGE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  nudgingRequestId = signal<string | null>(null);
+
+  /** Milliseconds until this request can be nudged again (0 when allowed). */
+  nudgeCooldownMs(req: FriendRequestItem): number {
+    if (!req.lastNudgedAt) return 0;
+    const elapsed = Date.now() - new Date(req.lastNudgedAt).getTime();
+    if (!Number.isFinite(elapsed) || elapsed < 0) return 0;
+    return Math.max(0, FriendsListComponent.NUDGE_COOLDOWN_MS - elapsed);
+  }
+
+  nudgeCooldownLabel(req: FriendRequestItem): string {
+    const hours = Math.ceil(this.nudgeCooldownMs(req) / (60 * 60 * 1000));
+    return hours <= 1 ? 'about an hour' : `${hours} hours`;
+  }
+
+  nudgedAgoLabel(req: FriendRequestItem): string {
+    if (!req.lastNudgedAt) return 'Nudge';
+    const minutes = Math.floor((Date.now() - new Date(req.lastNudgedAt).getTime()) / 60000);
+    if (minutes < 60) return 'Nudged just now';
+    return `Nudged ${Math.floor(minutes / 60)}h ago`;
+  }
+
   async nudgeRequest(req: FriendRequestItem) {
+    if (this.nudgeCooldownMs(req) > 0) {
+      this.modal.show(`Already nudged — you can nudge ${req.to} again in ${this.nudgeCooldownLabel(req)}.`);
+      return;
+    }
+    this.nudgingRequestId.set(req.id);
     try {
       await this.friendsApi.nudgeRequest(req.id);
       await this.loadOutgoingRequests();
-      this.modal.show(`Nudge sent to ${req.to}.`);
+      this.modal.show(`Nudge sent to ${req.to}. They'll get a notification.`);
     } catch (error: any) {
+      if (error?.status === 409 && error?.body?.lastNudgedAt) {
+        this.outgoingRequests.update((list) => list.map((item) =>
+          item.id === req.id ? { ...item, lastNudgedAt: error.body.lastNudgedAt, nudgeCount: error.body.nudgeCount ?? item.nudgeCount } : item
+        ));
+        this.modal.show(`Already nudged — you can nudge ${req.to} again in ${this.nudgeCooldownLabel({ ...req, lastNudgedAt: error.body.lastNudgedAt })}.`);
+        return;
+      }
       this.modal.show(error?.message || 'Unable to send nudge right now.');
+    } finally {
+      this.nudgingRequestId.set(null);
     }
   }
+
+  // TODO(copy): friend-request wording ("{{ req.from }} wants to connect", request popups) — awaiting decision.
 
   async cancelOutgoingRequest(req: FriendRequestItem) {
     this.modal.confirm(`Delete the pending request to ${req.to}?`, async () => {

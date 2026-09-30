@@ -19,7 +19,7 @@ import { Component, Input, signal } from '@angular/core';
                       class="page-hint-component__s5">✕</button>
               <button (click)="dismiss()"
                       aria-label="Never show this hint again"
-                      style="font-size: 8px; opacity: 0.6; background: none; border: none; cursor: pointer; padding: 0; text-transform: uppercase;">
+                      style="font-size: var(--fs-btn); opacity: 0.6; background: none; border: none; cursor: pointer; padding: 0; text-transform: uppercase;">
                 Dismiss
               </button>
             </div>

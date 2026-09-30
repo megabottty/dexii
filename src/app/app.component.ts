@@ -16,6 +16,7 @@ import { SupportMenuService } from './core/services/support-menu.service';
 import { PushNotificationsService } from './core/services/push-notifications.service';
 import { WebPushService } from './core/services/web-push.service';
 import { AppUpdateService } from './core/services/app-update.service';
+import { SubscriptionService } from './core/services/subscription.service';
 
 interface WalkthroughStep {
   title: string;
@@ -324,6 +325,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private webPush = inject(WebPushService);
   // Applies new deploys promptly in the installed app.
   private appUpdate = inject(AppUpdateService);
+  private subscription = inject(SubscriptionService);
   private dismissedHints = signal<Record<string, boolean>>(this.readDismissedHints());
   private onboardingRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private navMenuObserver: MutationObserver | null = null;
@@ -404,6 +406,10 @@ export class AppComponent implements OnInit, OnDestroy {
   protected readonly title = signal('dexii');
 
   ngOnInit() {
+    // Premium gates depend on the real tier, so fetch it as soon as a session exists.
+    if (this.security.isLoggedIn()) {
+      void this.subscription.refreshFromBackend().catch(() => undefined);
+    }
     console.log('AppComponent initialized, isLocked:', this.security.isLocked(), 'isLoggedIn:', this.security.isLoggedIn());
 
     // Initial routing logic based on auth/lock status.

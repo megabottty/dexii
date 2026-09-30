@@ -42,7 +42,7 @@
 }
 
 .navbar-username {
-  font-size: 11px;
+  font-size: var(--fs-label);
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -99,7 +99,7 @@
 }
 
 .navbar-drawer-subtitle {
-  font-size: 12px;
+  font-size: var(--fs-label);
   line-height: 1.4;
 }
 
@@ -132,7 +132,7 @@
 .navbar-section-title {
   display: block;
   margin: 0 4px 4px;
-  font-size: 10px;
+  font-size: var(--fs-label);
   font-weight: 700;
   letter-spacing: 2.6px;
   text-transform: uppercase;
@@ -154,14 +154,14 @@
 }
 
 .navbar-links-section--primary .navbar-link {
-  font-size: 13px;
+  font-size: var(--fs-btn);
   letter-spacing: 1.6px;
   font-weight: 700;
 }
 
 .navbar-links-section--account .navbar-btn-outline,
 .navbar-links-section--account .navbar-btn-primary {
-  font-size: 10px;
+  font-size: var(--fs-btn);
   letter-spacing: 1.7px;
 }
 
@@ -215,7 +215,7 @@
   padding: 0 10px;
   border-radius: 12px;
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -244,7 +244,7 @@
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   line-height: 1;
   /* Ring in the page colour so the badge reads as sitting on the shell's edge. */
@@ -348,7 +348,7 @@
 
 .navbar-link {
   text-decoration: none;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -372,7 +372,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   line-height: 1;
   letter-spacing: 0;
   font-weight: 700;
@@ -384,7 +384,7 @@
 }
 
 .navbar-unread-badge-icon {
-  font-size: 9px;
+  font-size: var(--fs-micro);
   margin-right: 2px;
 }
 
@@ -396,7 +396,7 @@
 .navbar-btn-outline {
   padding: 10px 20px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   cursor: pointer;
   text-transform: uppercase;
@@ -408,7 +408,7 @@
   border: none;
   padding: 10px 24px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   cursor: pointer;
   text-transform: uppercase;
@@ -429,7 +429,7 @@
   text-decoration: none;
   padding: 10px 24px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   cursor: pointer;
   text-transform: uppercase;

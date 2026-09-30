@@ -7,7 +7,7 @@
 }
 
 .user-profile-component__s3 {
-  position: absolute; top: 16px; left: 16px; text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+  position: absolute; top: 16px; left: 16px; text-decoration: none; font-size: var(--fs-btn); text-transform: uppercase; letter-spacing: 2px;
 }
 
 .user-profile-component__s4 {
@@ -66,18 +66,18 @@
 }
 
 .user-profile-component__s13 {
-  margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+  margin: 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 2px;
 }
 
 .user-profile-component__s13--detail {
   margin-top: 6px;
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.5px;
   text-transform: none;
 }
 
 .user-profile-component__s14 {
-  text-decoration: none; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+  text-decoration: none; font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
 }
 
 .user-profile-component__s15 {
@@ -101,7 +101,7 @@
 }
 
 .user-profile-component__s20 {
-  margin: 0; font-size: 11px;
+  margin: 0; font-size: var(--fs-label);
 }
 
 .user-profile-component__s21 {
@@ -109,7 +109,7 @@
   color: white;
   padding: 5px 8px;
   border-radius: 999px;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 1px;
   text-align: center;
 }
 
@@ -124,7 +124,7 @@
   border: 1px solid;
   border-radius: 999px;
   padding: 3px 7px;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.3px;
 }
 
@@ -373,7 +373,7 @@
   }
 
   .user-profile-component__s20 {
-    font-size: 10px;
+    font-size: var(--fs-label);
   }
 
   .section-title {

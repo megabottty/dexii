@@ -11,11 +11,11 @@
 }
 
 .page-hint-component__s3 {
-  margin: 0 0 4px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900;
+  margin: 0 0 4px 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px; font-weight: 900;
 }
 
 .page-hint-component__s4 {
-  margin: 0; font-size: 12px; line-height: 1.4;
+  margin: 0; font-size: var(--fs-label); line-height: 1.4;
 }
 
 .page-hint-component__s5 {
@@ -68,7 +68,7 @@
   }
 
   .page-hint-component__s4 {
-    font-size: 11px;
+    font-size: var(--fs-label);
   }
 
   .page-hint-toggle {

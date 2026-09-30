@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ModalService } from './modal.service';
 import { getApiBaseUrl } from '../config/api-config';
 import { promotePendingSettings } from './user-settings.storage';
+import { SubscriptionService } from './subscription.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ import { promotePendingSettings } from './user-settings.storage';
 export class SecurityService {
   private router = inject(Router);
   private modal = inject(ModalService);
+  private subscription = inject(SubscriptionService);
   private apiBase = getApiBaseUrl();
 
   private _isVerified18 = signal<boolean>(false);
@@ -98,6 +100,7 @@ export class SecurityService {
       localStorage.setItem('dexii_api_token', data.token);
       localStorage.setItem('dexii_api_username', data.user?.username || trimmedUser);
       this.storeUserId(data?.user?.id);
+      this.subscription.setTier(data?.user?.subscriptionTier);
       this._currentUser.set(data.user?.username || trimmedUser);
       this._isLoggedIn.set(true);
       return true;

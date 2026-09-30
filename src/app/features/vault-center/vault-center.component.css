@@ -2,13 +2,13 @@
   min-height: 100vh; font-family: 'Times New Roman', serif; padding: 60px 40px;
   /* Consistent type scale used throughout the Vault, replacing the previous
      ad-hoc mix of 8px-32px sizes for similar-purpose text. */
-  --vault-fs-micro: 11px;    /* uppercase meta/labels/timestamps/buttons */
-  --vault-fs-small: 13px;    /* secondary copy, form fields, action buttons */
-  --vault-fs-body: 15px;     /* journal/paragraph content */
-  --vault-fs-heading-sm: 14px;
-  --vault-fs-heading-md: 18px;
-  --vault-fs-heading-lg: 24px;
-  --vault-fs-heading-xl: 28px;
+  --vault-fs-micro: var(--fs-micro);    /* uppercase meta/labels/timestamps/buttons */
+  --vault-fs-small: var(--fs-small);    /* secondary copy, form fields, action buttons */
+  --vault-fs-body: var(--fs-body);     /* journal/paragraph content */
+  --vault-fs-heading-sm: var(--fs-h-sm);
+  --vault-fs-heading-md: var(--fs-h-md);
+  --vault-fs-heading-lg: var(--fs-h-lg);
+  --vault-fs-heading-xl: var(--fs-h-xl);
 }
 
 .vault-center-component__s2 {
@@ -213,7 +213,7 @@
 
 .journal-prompt-label {
   display: block;
-  font-size: 10px;
+  font-size: var(--fs-label);
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -237,7 +237,7 @@
   border-radius: 999px;
   padding: 8px 12px;
   color: white;
-  font-size: 10px;
+  font-size: var(--fs-btn);
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;

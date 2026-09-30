@@ -364,7 +364,8 @@ export class MessagingService {
           crushId: message.relatedCrushId,
           relatedEntryId: message.relatedEntryId,
           isSelfDestruct: message.isSelfDestruct,
-          selfDestructDurationMs: message.selfDestructDurationMs
+          selfDestructDurationMs: message.selfDestructDurationMs,
+          isSafetyAlert: message.isSafetyAlert || undefined
         })
       });
 

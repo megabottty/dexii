@@ -49,7 +49,7 @@ const pushCopy = (type, actor, payload = {}) => {
   const name = actorDisplayName(actor);
   switch (type) {
     case 'friend_request_nudge':
-      return { title: 'Friend request nudge', body: `${name} sent you a nudge on their friend request`, route: '/friends' };
+      return { title: 'Friend request nudge', body: `${name} sent you a nudge on their friend request`, route: '/friends?tab=incoming' };
     case 'crush_shared':
       return {
         title: 'New crush shared',
@@ -59,7 +59,7 @@ const pushCopy = (type, actor, payload = {}) => {
     case 'invite_accepted':
       return { title: 'Invite accepted', body: `${name} joined Dexii! Finish setting up your friendship profile.`, route: '/friends' };
     case 'friend_request_received':
-      return { title: 'Friend request', body: `${name} sent you a friend request`, route: '/friends' };
+      return { title: 'Friend request', body: `${name} sent you a friend request`, route: '/friends?tab=incoming' };
     case 'friend_request_accepted':
       return { title: 'Friend request accepted', body: `${name} accepted your friend request`, route: '/friends' };
     case 'journal_prompt':

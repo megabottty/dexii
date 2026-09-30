@@ -784,6 +784,20 @@ exports.nudgeRequest = async (req, res) => {
       return res.status(400).json({ message: 'This request was already handled.' });
     }
 
+    // One nudge per request per day keeps it a gentle reminder, not spam.
+    const NUDGE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    if (request.lastNudgedAt) {
+      const elapsed = Date.now() - new Date(request.lastNudgedAt).getTime();
+      if (elapsed >= 0 && elapsed < NUDGE_COOLDOWN_MS) {
+        return res.status(409).json({
+          message: 'You already nudged this request recently.',
+          retryAfterMs: NUDGE_COOLDOWN_MS - elapsed,
+          lastNudgedAt: request.lastNudgedAt,
+          nudgeCount: request.nudgeCount || 1
+        });
+      }
+    }
+
     request.nudgeCount = (request.nudgeCount || 0) + 1;
     request.lastNudgedAt = new Date();
     await request.save();

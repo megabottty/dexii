@@ -226,7 +226,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       margin: 12px 0 0 0;
       padding: 10px 16px;
       border-radius: 9999px;
-      font-size: 12px;
+      font-size: var(--fs-label);
       letter-spacing: 1px;
       text-align: center;
     }
@@ -292,7 +292,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       gap: 16px;
     }
     .form-label {
-      font-size: 0.75rem;
+      font-size: var(--fs-label);
       font-weight: 600;
       text-transform: uppercase;
     }
@@ -332,7 +332,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .password-hint {
       margin: -8px 0 0;
-      font-size: 0.75rem;
+      font-size: var(--fs-label);
       line-height: 1.4;
     }
     .love-life-section {

@@ -370,7 +370,7 @@ export class FeedComponent implements OnInit {
       // Navigation should still work if marking read fails.
     }
 
-    await this.router.navigate(this.notificationLink(notification));
+    await this.router.navigate(this.notificationLink(notification), { queryParams: this.notificationQueryParams(notification) });
   }
 
   async markAllNotificationsRead(): Promise<void> {
@@ -421,6 +421,13 @@ export class FeedComponent implements OnInit {
     if (!actor) return 'A friend';
     const fullName = [actor.firstName, actor.lastName].filter(Boolean).join(' ').trim();
     return fullName || actor.username || 'A friend';
+  }
+
+  private notificationQueryParams(notification: AppNotification): Record<string, string> {
+    if (notification.type === 'friend_request_nudge' || notification.type === 'friend_request_received') {
+      return { tab: 'incoming' };
+    }
+    return {};
   }
 
   private notificationLink(notification: AppNotification): any[] {

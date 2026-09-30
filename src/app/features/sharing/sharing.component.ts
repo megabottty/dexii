@@ -174,7 +174,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                           <button (click)="addAndShareQuickEntry(crush.id)"
                                   [disabled]="!quickEntryDraft(crush.id).trim()"
                                   [style.background-color]="theme.colors().primary"
-                                  style="color:white; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">
+                                  style="color:white; border:none; border-radius:6px; padding:6px 12px; font-size:var(--fs-btn); cursor:pointer;">
                             Share
                           </button>
                         </div>
