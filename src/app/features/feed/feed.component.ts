@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
@@ -92,7 +92,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
                     [style.background-color]="tea.filter() === option.value ? theme.colors().primary : 'transparent'"
                     [style.color]="tea.filter() === option.value ? 'white' : theme.colors().text"
                     [style.border]="'1px solid ' + (tea.filter() === option.value ? theme.colors().primary : theme.colors().border)"
-                    (click)="tea.filter.set(option.value)">
+                    (click)="tea.filter.set(option.value); earlierLimit.set(PAGE)">
               {{ option.label }}
               @if (option.count() > 0) { <span class="tea-filter-count">{{ option.count() }}</span> }
             </button>
@@ -133,8 +133,17 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
                 </button>
               }
               @if (earlierExpanded() || tea.unreadItems().length === 0) {
-                @for (item of tea.earlierItems(); track item.key) {
+                @for (item of earlierVisible(); track item.key) {
                   <ng-container *ngTemplateOutlet="card; context: { item: item }"></ng-container>
+                }
+                @if (earlierVisible().length < tea.earlierItems().length) {
+                  <button type="button"
+                          class="tea-load-more"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          [style.color]="theme.colors().text"
+                          (click)="earlierLimit.set(earlierLimit() + PAGE)">
+                    Load more ({{ tea.earlierItems().length - earlierVisible().length }} more)
+                  </button>
                 }
               }
             }
@@ -225,6 +234,10 @@ export class FeedComponent implements OnInit {
 
   protected earlierExpanded = signal(false);
   protected busyKey = signal<string | null>(null);
+  /** Earlier (read) items are paged so a long history doesn't swamp the page. */
+  protected readonly PAGE = 10;
+  protected earlierLimit = signal(this.PAGE);
+  protected earlierVisible = computed(() => this.tea.earlierItems().slice(0, this.earlierLimit()));
   protected readonly filterOptions: Array<{ value: TeaFilter; label: string; count: () => number }> = [
     { value: 'all', label: 'All', count: () => 0 },
     { value: 'requests', label: 'Requests', count: () => this.tea.counts().requests },
