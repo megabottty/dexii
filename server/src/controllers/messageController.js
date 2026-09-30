@@ -335,27 +335,38 @@ exports.markAsRead = async (req, res) => {
   try {
     const friendId = req.params.friendId;
     const userId = req.user.id;
+    const readAt = new Date();
+    // Read receipt: the sender's open sessions learn their messages were seen.
+    const notifySender = () => {
+      const io = req.app.get('io');
+      if (!io) return;
+      try { io.to(String(friendId)).emit('messagesRead', { readerId: String(userId), readAt: readAt.toISOString() }); } catch { /* ignore */ }
+    };
 
     if (mongoose.connection.readyState !== 1 || req.user.isDemo) {
       const { state, messages } = await getDemoMessages();
-      const now = new Date().toISOString();
+      const now = readAt.toISOString();
+      let changed = 0;
       for (const m of messages) {
         if (m.sender === friendId && m.recipient === userId && !m.isRead) {
           m.isRead = true;
           m.readAt = now;
           m.updatedAt = now;
+          changed++;
         }
       }
       await writeStore(state);
+      if (changed) notifySender();
       return res.json({ msg: 'Messages marked as read' });
     }
 
-    await Message.updateMany(
+    const result = await Message.updateMany(
       { sender: friendId, recipient: userId, isRead: false },
-      { $set: { isRead: true, readAt: new Date() } }
+      { $set: { isRead: true, readAt } }
     );
 
     res.json({ msg: 'Messages marked as read' });
+    if (result.modifiedCount) notifySender();
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

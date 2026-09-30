@@ -587,3 +587,9 @@
 .messaging-crush-picker-toggle:hover {
   transform: translateY(-1px);
 }
+
+.messaging-receipt {
+  margin-left: 4px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}

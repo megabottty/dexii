@@ -47,6 +47,7 @@ export class RealtimeService {
   private reactionHandlers = new Set<ReactionHandler>();
   private groupMessageHandlers = new Set<GroupMessageHandler>();
   private notificationHandlers = new Set<() => void>();
+  private messagesReadHandlers = new Set<(data: { readerId: string; readAt: string }) => void>();
 
   private _connected = signal(false);
   public connected = this._connected.asReadonly();
@@ -124,6 +125,10 @@ export class RealtimeService {
       this.groupMessageHandlers.forEach((handler) => handler(data));
     });
 
+    this.socket.on('messagesRead', (data: { readerId: string; readAt: string }) => {
+      this.messagesReadHandlers.forEach((handler) => handler(data));
+    });
+
     this.socket.on('notificationsChanged', () => {
       this.notificationHandlers.forEach((handler) => handler());
     });
@@ -155,6 +160,12 @@ export class RealtimeService {
   onReactionUpdate(handler: ReactionHandler): () => void {
     this.reactionHandlers.add(handler);
     return () => this.reactionHandlers.delete(handler);
+  }
+
+  /** Fired when a friend opens the chat and reads the messages you sent them. */
+  onMessagesRead(handler: (data: { readerId: string; readAt: string }) => void): () => void {
+    this.messagesReadHandlers.add(handler);
+    return () => this.messagesReadHandlers.delete(handler);
   }
 
   /** Fired when the server adds or retracts notifications for this user. */

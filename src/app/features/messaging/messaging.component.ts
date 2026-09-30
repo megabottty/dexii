@@ -1,3 +1,4 @@
+import { Message } from '../../core/models/message.model';
 import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit, HostListener } from '@angular/core';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule } from '@angular/common';
@@ -203,6 +204,11 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
 
               <span [style.color]="theme.colors().textSecondary" [style.text-align]="isMine(msg) ? 'right' : 'left'" class="messaging-time">
                 {{ msg.timestamp | date:'h:mm a' }}
+                @if (isMine(msg) && isLatestOwnMessage(msg)) {
+                  <span class="messaging-receipt" [style.color]="msg.readAt ? theme.colors().primary : theme.colors().textSecondary">
+                    @if (msg.readAt) { · Read {{ msg.readAt | date:'h:mm a' }} } @else { · Sent }
+                  </span>
+                }
               </span>
             </div>
           } @empty {
@@ -550,6 +556,12 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   selfId = computed(() => this.security.currentUserId() || 'me');
 
   /** True when the message was sent by the signed-in user. */
+  /** Only the newest message I sent shows a receipt, iMessage-style. */
+  isLatestOwnMessage(msg: Message): boolean {
+    const mine = this.activeMessages().filter((m) => this.isMine(m));
+    return mine.length > 0 && mine[mine.length - 1].id === msg.id;
+  }
+
   isMine(msg: { senderId: string }): boolean {
     return msg.senderId === this.selfId();
   }

@@ -142,6 +142,7 @@ export class MessagingService {
 
     this.realtime.onMessage((incoming) => this.ingestRealtimeMessage(incoming));
     this.realtime.onReactionUpdate((update) => this.ingestReactionUpdate(update));
+    this.realtime.onMessagesRead(({ readerId, readAt }) => this.applyReadReceipt(readerId, readAt));
   }
 
   private ingestReactionUpdate(update: { _id?: string; id?: string; reactions?: Array<{ user: string; emoji: string }> }): void {
@@ -615,6 +616,22 @@ export class MessagingService {
     );
     this.persistMessages();
     updatedMessages.filter((m) => m.isSelfDestruct).forEach((m) => this.scheduleSelfDestruct(m));
+  }
+
+  /** A friend read everything I sent them: stamp readAt on those messages. */
+  private applyReadReceipt(readerId: string, readAtIso: string): void {
+    const selfId = this.security.currentUserId();
+    if (!selfId || !readerId) return;
+    const readAt = new Date(readAtIso || Date.now());
+    let changed = false;
+    this._messages.update((msgs) => msgs.map((m) => {
+      if (m.senderId === selfId && m.receiverId === readerId && !m.readAt) {
+        changed = true;
+        return { ...m, readAt };
+      }
+      return m;
+    }));
+    if (changed) this.persistMessages();
   }
 
   markConversationAsRead(userId: string, friendId: string): void {
