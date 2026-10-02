@@ -179,7 +179,7 @@
 }
 
 .friends-list-component__s44 {
-  font-size: 14px;
+  font-size: var(--fs-small);
 }
 
 .friends-list-component__s45 {
@@ -218,7 +218,7 @@
 
 .friends-list-search-empty__message {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-small);
   line-height: 1.4;
 }
 
@@ -316,7 +316,7 @@
 
 .shared-history-link {
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   font-variant: small-caps;
   font-weight: bold;
   letter-spacing: 0.03em;
@@ -430,7 +430,7 @@
 
 .friends-list-auth-state__message {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-small);
   line-height: 1.4;
 }
 

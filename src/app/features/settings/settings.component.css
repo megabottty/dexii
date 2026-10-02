@@ -241,7 +241,7 @@
 }
 
 .settings-plan-tier {
-  font-size: 14px;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 
@@ -374,7 +374,7 @@
 }
 
 .settings-theme-name {
-  font-size: 15px;
+  font-size: var(--fs-body);
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -657,7 +657,7 @@
   color: #ffffff;
   cursor: pointer;
   box-sizing: border-box;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 0.85rem 1.8rem;
@@ -676,7 +676,7 @@
 .settings-install-steps {
   border-radius: 14px;
   display: grid;
-  font-size: 0.9rem;
+  font-size: var(--fs-body);
   gap: 0.6rem;
   line-height: 1.5;
   margin: 0;
@@ -687,7 +687,7 @@
   background: transparent;
   border-radius: 999px;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   font-weight: 600;
   padding: 0.8rem 1.6rem;
 }

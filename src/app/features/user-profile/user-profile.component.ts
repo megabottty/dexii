@@ -218,7 +218,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                             style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0;">×</button>
                   </div>
 
-                  <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 1rem; font-size: 0.9rem;">Tap Share next to any crush. {{ profileDisplayName() }} will see its profile and whatever you share about it.</p>
+                  <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 1rem; font-size: var(--fs-body);">Tap Share next to any crush. {{ profileDisplayName() }} will see its profile and whatever you share about it.</p>
 
                   <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
                     @for (crush of myCrushes(); track crush.id) {
@@ -330,7 +330,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                         </span>
                       </div>
                     }
-                    <p style="margin: 0; font-size: 0.95rem;">
+                    <p style="margin: 0; font-size: var(--fs-body);">
                       {{ entry.content }}
                       @if (entry.crushId) {
                         <a [routerLink]="['/profile', entry.crushId]" [style.color]="theme.colors().primary" style="text-decoration: underline; margin-left: 4px;">
@@ -343,18 +343,18 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                         @if (entry.type === 'message') {
                           @if (entry.readAt) {
                             <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
-                              <span style="font-size: 0.9rem;">✓</span> Read {{ entry.readAt | date:'shortTime' }}
+                              <span style="font-size: var(--fs-body);">✓</span> Read {{ entry.readAt | date:'shortTime' }}
                             </span>
                           } @else {
                             <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary">Sent</span>
                           }
                         } @else if (entry.seenAt) {
                           <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
-                            <span style="font-size: 0.9rem;">👁️</span> Seen {{ entry.seenAt | date:'MMM d, shortTime' }}
+                            <span style="font-size: var(--fs-body);">👁️</span> Seen {{ entry.seenAt | date:'MMM d, shortTime' }}
                           </span>
                         } @else {
                           <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary">
-                            <span style="font-size: 0.9rem;">👁️‍🗨️</span> Not seen yet
+                            <span style="font-size: var(--fs-body);">👁️‍🗨️</span> Not seen yet
                           </span>
                         }
                       </div>

@@ -577,7 +577,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
             @if (viewingFriendProfile()?.invite; as invite) {
               <div [style.border-top]="'1px solid ' + theme.colors().border" style="margin-top: 18px; padding-top: 18px;">
-                <p [style.color]="theme.colors().primary" style="margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Invite Details</p>
+                <p [style.color]="theme.colors().primary" style="margin: 0 0 10px 0; font-size: var(--fs-body); text-transform: uppercase; letter-spacing: 1px;">Invite Details</p>
                 <div class="friends-list-profile-grid">
                   <div class="friends-list-profile-row">
                     <span class="friends-list-profile-label">Method</span>

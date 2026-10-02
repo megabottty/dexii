@@ -190,14 +190,14 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       height: 80%;
     }
     .login-subtitle {
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-top: 8px;
     }
     .error-message {
       color: #ef4444;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       text-align: center;
     }
     .login-form {
@@ -271,7 +271,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       display: flex;
       justify-content: center;
       gap: 8px;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       margin-top: 8px;
     }
     .signup-link {

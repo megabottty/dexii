@@ -176,7 +176,7 @@
 }
 
 .dashboard-component__s74 {
-  margin: 0; font-size: 14px; letter-spacing: 1px; font-style: italic;
+  margin: 0; font-size: var(--fs-small); letter-spacing: 1px; font-style: italic;
 }
 
 .dashboard-component__s75 {
@@ -491,7 +491,7 @@
 }
 
 .dashboard-rolodex-mini-title {
-  font-size: 14px;
+  font-size: var(--fs-small);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 6px;

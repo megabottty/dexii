@@ -45,7 +45,7 @@
 
 .walkthrough-body {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   line-height: 1.55;
 }
 

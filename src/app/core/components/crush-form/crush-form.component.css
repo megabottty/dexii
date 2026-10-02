@@ -21,7 +21,7 @@
 }
 
 .cf-section-title {
-  font-size: 14px;
+  font-size: var(--fs-small);
   text-transform: uppercase;
   letter-spacing: 3px;
   text-align: center;
@@ -113,8 +113,8 @@
 }
 
 .cf-check {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 5px;
   display: flex;
   align-items: center;

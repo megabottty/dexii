@@ -139,7 +139,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       height: 80%;
     }
     .confirmation-subtitle {
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-top: 8px;
@@ -150,7 +150,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .error-message {
       color: #ef4444;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
     }
     .code-inputs {
       display: flex;
@@ -191,7 +191,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       border: none;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
     }
   `]
 })

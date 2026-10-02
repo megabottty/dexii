@@ -107,7 +107,7 @@
   padding: 10px;
   border: 1px solid var(--border);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-small);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -121,7 +121,7 @@
 }
 
 .friend-profile-component__s11 {
-  width: 100%; padding: 12px; resize: vertical; font-family: 'Times New Roman', serif; font-size: 15px; margin-bottom: 12px;
+  width: 100%; padding: 12px; resize: vertical; font-family: 'Times New Roman', serif; font-size: var(--fs-body); margin-bottom: 12px;
 }
 
 .friend-profile-component__s12 {
@@ -161,7 +161,7 @@
 }
 
 .friend-profile-component__s21 {
-  margin: 0; font-size: 14px; line-height: 1.5;
+  margin: 0; font-size: var(--fs-small); line-height: 1.5;
 }
 
 .friend-profile-component__s22 {
@@ -194,7 +194,7 @@
 }
 
 .friend-profile-friendship-value {
-  font-size: 14px;
+  font-size: var(--fs-small);
   white-space: pre-wrap;
   text-align: right;
 }

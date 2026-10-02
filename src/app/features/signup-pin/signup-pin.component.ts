@@ -146,18 +146,18 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       height: 80%;
     }
     .pin-subtitle {
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-top: 8px;
     }
     .error-message {
       color: #ef4444;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       text-align: center;
     }
     .success-message {
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       text-align: center;
       font-weight: 600;
     }
@@ -244,7 +244,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       background: transparent;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
     }
   `]
 })

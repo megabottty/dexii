@@ -16,7 +16,7 @@
 }
 
 .sharing-component__subtitle {
-  font-size: 14px;
+  font-size: var(--fs-small);
   margin-bottom: 20px;
 }
 
@@ -166,7 +166,7 @@
 }
 
 .sharing-component__crush-name {
-  font-size: 14px;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 
@@ -193,7 +193,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-small);
   line-height: 1;
   padding: 0;
 }
@@ -261,7 +261,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-small);
 }
 
 .sharing-component__entries-empty {

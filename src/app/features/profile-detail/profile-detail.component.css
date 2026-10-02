@@ -114,7 +114,7 @@
 .profile-bio {
   margin: 16px 0 0 0;
   max-width: 600px;
-  font-size: 15px;
+  font-size: var(--fs-body);
   line-height: 1.6;
   opacity: 0.9;
 }
@@ -354,7 +354,7 @@
 }
 
 .note-text {
-  font-size: 15px;
+  font-size: var(--fs-body);
   font-style: italic;
   line-height: 1.7;
   color: var(--text-secondary);
@@ -397,7 +397,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--fs-small);
   padding: 10px 20px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -568,7 +568,7 @@
 .empty-state a {
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--fs-small);
 }
 
 .status-visibility-card {
@@ -584,7 +584,7 @@
 
 .status-visibility-description {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   line-height: 1.5;
 }
 
@@ -616,7 +616,7 @@
   gap: 6px;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 
@@ -747,7 +747,7 @@
 }
 
 .vibe-banner-title {
-  font-size: 14px;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 
@@ -846,11 +846,11 @@
   }
 
   .profile-subtitle {
-    font-size: 15px;
+    font-size: var(--fs-body);
   }
 
   .profile-bio {
-    font-size: 14px;
+    font-size: var(--fs-small);
   }
 
   .action-buttons-grid {

@@ -137,7 +137,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 @if (showFullCrushDetails()) {
                   <div [style.border]="'1px solid ' + theme.colors().border"
                        class="read-only-details-panel"
-                       style="border-radius: 10px; padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+                       style="border-radius: 10px; padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: var(--fs-small);">
                     @if (c.customNotes) {
                       <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
                     }

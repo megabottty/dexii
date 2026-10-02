@@ -28,34 +28,23 @@ textarea {
   outline-offset: 2px;
 }
 
-/* Type scale. Rule of thumb: if it fits bigger, make it bigger. Nothing in the
-   app should render text below --fs-micro. */
+/* Type scale. Rule of thumb: if it fits bigger, make it bigger. The floor is
+   1rem (16px): nothing in the app renders text smaller than that. */
 :root {
-  --fs-micro: 11px;   /* badges, timestamps, counters */
-  --fs-label: 12px;   /* eyebrows, field labels, helper and meta text, tab labels */
-  --fs-btn: 13px;     /* every button and chip-as-button */
-  --fs-small: 13px;   /* secondary copy */
-  --fs-body: 15px;    /* body copy */
-  --fs-h-sm: 16px;
-  --fs-h-md: 18px;
-  --fs-h-lg: 24px;
-  --fs-h-xl: 28px;
+  --fs-micro: 1rem;      /* badges, timestamps, counters: never below 1rem */
+  --fs-label: 1rem;      /* eyebrows, field labels, helper and meta text, tab labels */
+  --fs-btn: 1rem;        /* every button and chip-as-button */
+  --fs-small: 1rem;      /* secondary copy */
+  --fs-body: 1.0625rem;  /* body copy */
+  --fs-h-sm: 1.125rem;
+  --fs-h-md: 1.25rem;
+  --fs-h-lg: 1.5rem;
+  --fs-h-xl: 1.75rem;
   --tap-min: 44px;    /* minimum touch target on phones */
 }
 
 body {
   font-size: var(--fs-body);
-}
-
-/* Phones: nothing people read sits below 14px. Only --fs-micro stays smaller,
-   for the 18px icon badges, chip counts and timestamps that have no room. */
-@media (max-width: 600px) {
-  :root {
-    --fs-micro: 12px;
-    --fs-label: 14px;
-    --fs-btn: 14px;
-    --fs-small: 14px;
-  }
 }
 
 @media (max-width: 900px) {

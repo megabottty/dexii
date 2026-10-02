@@ -221,7 +221,7 @@
 
 .journal-prompt-text {
   margin: 6px 0;
-  font-size: 15px;
+  font-size: var(--fs-body);
   line-height: 1.4;
 }
 

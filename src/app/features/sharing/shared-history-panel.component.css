@@ -12,7 +12,7 @@
 
 .shared-history-panel__filter-label {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--fs-small);
 }
 
 .shared-history-panel__filter {
@@ -65,7 +65,7 @@
 
 .shared-history-panel__entry {
   margin: 2px 0 0;
-  font-size: 14px;
+  font-size: var(--fs-small);
   line-height: 1.4;
 }
 

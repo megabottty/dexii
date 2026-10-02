@@ -274,14 +274,14 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       height: 80%;
     }
     .signup-subtitle {
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-top: 8px;
     }
     .error-message {
       color: #ef4444;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       text-align: center;
     }
     .signup-form {
@@ -362,7 +362,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 0.875rem;
+      font-size: var(--fs-small);
       margin-top: 8px;
     }
   `]

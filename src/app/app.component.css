@@ -47,7 +47,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-small);
   padding: 0;
 }
 
@@ -203,7 +203,7 @@
 
 .app-component__s16 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-small);
   line-height: 1.45;
 }
 
