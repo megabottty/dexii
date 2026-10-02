@@ -190,7 +190,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
             <div class="user-profile-component__s12" style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <h2 class="section-title">Crushes You've Shared</h2>
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13">
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0; line-height: 1.5;">
                   Crushes from your list that {{ profileDisplayName() }} can see ({{ sharedWithThem().length }}). Share another with the button, or unshare any time.
                 </p>
               </div>

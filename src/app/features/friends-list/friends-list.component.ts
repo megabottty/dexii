@@ -358,7 +358,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             </p>
           </div>
 
-          @if (friends().length > 3) {
+          @if (friends().length > 2) {
             <label class="friends-list-filter">
               <span class="friends-list-filter__icon" aria-hidden="true">🔍</span>
               <input type="search"
