@@ -117,7 +117,7 @@
 }
 
 .friend-profile-component__s10 {
-  margin: 0 0 16px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 3px;
+  margin: 0 0 16px 0; font-size: var(--fs-small); text-transform: uppercase; letter-spacing: 3px;
 }
 
 .friend-profile-component__s11 {

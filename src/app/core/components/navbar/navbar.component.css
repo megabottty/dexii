@@ -555,8 +555,27 @@
   }
 }
 
-/* Narrow phones: the logo mark alone is the brand; a truncated "D…" is worse than none. */
+/* Narrow phones: the D logo is the brand mark, and the space next to it shows
+   who is signed in. The "Dexii" word only comes back on bigger screens. */
 @media (max-width: 480px) {
+  .navbar-brand-copy--has-username .navbar-title {
+    display: none;
+  }
+
+  .navbar-brand-copy--has-username .navbar-username {
+    font-size: var(--fs-btn);
+    letter-spacing: 1px;
+    max-width: 120px;
+  }
+
+  .navbar-title {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+}
+
+/* Very narrow phones (≤340px): even the username has no room; the D logo alone is the brand. */
+@media (max-width: 340px) {
   .navbar-brand-copy {
     display: none;
   }

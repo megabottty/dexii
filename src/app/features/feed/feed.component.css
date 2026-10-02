@@ -42,7 +42,7 @@
 
 .tea-push-banner-error {
   margin: 6px 0 0;
-  font-size: 0.82rem;
+  font-size: var(--fs-small);
   color: #dc2626;
 }
 
@@ -58,7 +58,7 @@
   border-radius: 999px;
   color: #fff;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--fs-small);
   font-weight: 700;
   padding: 0.7rem 1.2rem;
   white-space: nowrap;
@@ -73,7 +73,7 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: var(--fs-small);
   font-weight: 700;
   padding: 0.5rem 0.25rem;
 }
@@ -99,7 +99,7 @@
 }
 
 .tea-updates-subtitle {
-  font-size: 0.85rem;
+  font-size: var(--fs-small);
   margin: 4px 0 0;
 }
 

@@ -11,12 +11,13 @@ import { FriendProfileDetails, FriendSummary, FriendsApiService } from '../../co
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+import { BackLinkComponent } from '../../core/components/back-link.component';
 
 @Component({
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent],
+  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -24,10 +25,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
       <app-navbar></app-navbar>
 
       <div class="user-profile-component__s4">
+        @if (!isSelf()) {
+          <app-back-link label="Back to Friends" fallback="/friends"></app-back-link>
+        }
         <app-page-hint
           hintKey="user_profile_inline"
           title="Profile Hint"
-          message="This page shows the user's crush list. Open any crush card to view details and notes.">
+          message="This page is your sharing overview with a friend: the crushes they let you see, and the crushes of yours they can see. Open any crush card for details and notes.">
         </app-page-hint>
 
         <div [style.background-color]="theme.colors().bgSecondary"
@@ -69,7 +73,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <a [routerLink]="['/chat']"
                      [queryParams]="{ friendId: routeUserId(), friendName: profileDisplayName() }"
                      [style.background-color]="theme.colors().primary"
-                     style="display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none; padding: 6px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; margin-top: 10px;">
+                     style="display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none; padding: 6px 14px; border-radius: 999px; font-size: var(--fs-small); font-weight: 600; margin-top: 10px;">
                     💬 Chat with {{ profileDisplayName() }}
                   </a>
                 }
@@ -174,7 +178,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           } @else {
             <div [style.border]="'1px dashed ' + theme.colors().border"
                  class="user-profile-component__s22">
-              <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">No crush profiles found for this user yet.</p>
+              <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">{{ isSelf() ? 'You have no crush profiles yet.' : profileDisplayName() + " hasn't shared any crushes with you yet." }}</p>
             </div>
           }
         </div>
@@ -187,15 +191,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               <div>
                 <h2 class="section-title">Crushes You've Shared</h2>
                 <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13">
-                  {{ sharedWithThem().length }} crushes
+                  Crushes from your list that {{ profileDisplayName() }} can see ({{ sharedWithThem().length }}). Share another with the button, or unshare any time.
                 </p>
               </div>
-              <button (click)="showShareSelector.set(!showShareSelector())"
+              <button type="button"
+                      (click)="showShareSelector.set(!showShareSelector())"
                       [style.background-color]="showShareSelector() ? theme.colors().bg : theme.colors().primary"
                       [style.color]="showShareSelector() ? theme.colors().text : 'white'"
                       [style.border]="'1px solid ' + theme.colors().primary"
-                      style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; transition: all 0.2s;">
-                +
+                      class="user-profile-share-btn">
+                <span aria-hidden="true">+</span> Share a crush
               </button>
             </div>
 
@@ -207,13 +212,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                      (click)="$event.stopPropagation()">
 
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: bold;">Share Tea with {{ profileDisplayName() }}</h3>
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: bold;">Share a crush with {{ profileDisplayName() }}</h3>
                     <button (click)="showShareSelector.set(false)"
                             [style.color]="theme.colors().textSecondary"
                             style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0;">×</button>
                   </div>
 
-                  <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 1rem; font-size: 0.9rem;">Select crushes to share with your friend:</p>
+                  <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 1rem; font-size: 0.9rem;">Tap Share next to any crush. {{ profileDisplayName() }} will see its profile and whatever you share about it.</p>
 
                   <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
                     @for (crush of myCrushes(); track crush.id) {
@@ -225,14 +230,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                           <div>
                             <p style="margin: 0; font-weight: 500;">{{ crush.nickname }}</p>
-                            <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: 0.8rem;">{{ crush.fullName }}</p>
+                            <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: var(--fs-small);">{{ crush.fullName }}</p>
                           </div>
                         </div>
                         <button (click)="toggleShare(crush.id)"
                                 [style.background-color]="isShared(crush) ? theme.colors().primary : 'transparent'"
                                 [style.color]="isShared(crush) ? 'white' : theme.colors().text"
                                 [style.border]="'1px solid ' + (isShared(crush) ? theme.colors().primary : theme.colors().border)"
-                                style="padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s;">
+                                style="padding: 6px 16px; border-radius: 20px; font-size: var(--fs-small); cursor: pointer; font-weight: 500; transition: all 0.2s;">
                           {{ isShared(crush) ? 'Shared' : 'Share' }}
                         </button>
                       </div>
@@ -261,17 +266,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <div>
                         <p class="user-profile-component__s19">{{ crush.nickname }}</p>
                         <div class="user-profile-component__s20" style="display: flex; align-items: center; gap: 0.5rem;">
-                           <span [style.color]="theme.colors().textSecondary">Visible to {{ profileDisplayName() }}</span>
                            @if (crush.viewedByFriend) {
-                             <span class="status-icon viewed" title="Viewed" style="font-size: 0.8rem;">👁️</span>
+                             <span class="status-icon viewed" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️</span> Seen by {{ profileDisplayName() }}</span>
                            } @else {
-                             <span class="status-icon pending" title="Pending" style="font-size: 0.8rem;">👁️‍🗨️</span>
+                             <span class="status-icon pending" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️‍🗨️</span> Not seen yet</span>
                            }
                         </div>
                       </div>
                     </a>
                     <button (click)="unshare(crush.id)"
-                            style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                            style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 10px; border-radius: 4px; font-size: var(--fs-small); cursor: pointer;">
                       Unshare
                     </button>
                   </div>
@@ -279,7 +283,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
             } @else {
               <div [style.border]="'1px dashed ' + theme.colors().border" class="user-profile-component__s22">
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">You haven't shared any crushes with this friend yet.</p>
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">You haven't shared any crushes with {{ profileDisplayName() }} yet. Use “Share a crush” to pick one.</p>
               </div>
             }
           </div>
@@ -300,9 +304,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="user-profile-component__s11" style="margin-top: 1rem; animation: slideDown 0.3s ease-out;">
               <div class="user-profile-component__s12" style="border-bottom: 1px solid {{theme.colors().border}}; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                <h2 class="section-title">Audit Log: History with {{ profileDisplayName() }}</h2>
+                <h2 class="section-title">Shared history with {{ profileDisplayName() }}</h2>
                 <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13">
-                  Tracking all shared tea and interactions
+                  Everything you two have shared, newest first.
                 </p>
               </div>
 
@@ -311,7 +315,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div [style.border-left]="'3px solid ' + (entry.isFromMe ? theme.colors().primary : '#10b981')"
                        style="padding: 0.75rem 1rem; background: rgba(0,0,0,0.02); border-radius: 0 8px 8px 0;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem;">
-                      <span style="font-weight: 600; font-size: 0.85rem;" [style.color]="entry.isFromMe ? theme.colors().primary : '#10b981'">
+                      <span style="font-weight: 600; font-size: var(--fs-small);" [style.color]="entry.isFromMe ? theme.colors().primary : '#10b981'">
                         {{ entry.isFromMe ? 'You sent' : entry.friendName + ' sent' }}
                       </span>
                       <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">

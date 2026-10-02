@@ -142,7 +142,7 @@
   min-height: 96px;
   margin-bottom: 28px;
   border-radius: 16px;
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 600;
 }
 
@@ -390,7 +390,7 @@
 }
 
 .dashboard-component__s95 {
-  font-size: 13px; line-height: 1.8; margin: 0 0 24px 0; height: 48px; overflow: hidden; font-style: italic;
+  font-size: var(--fs-small); line-height: 1.8; margin: 0 0 24px 0; height: 48px; overflow: hidden; font-style: italic;
 }
 
 .dashboard-component__s96 {
@@ -464,7 +464,7 @@
 }
 
 .dashboard-empty-crushes-copy {
-  font-size: 13px;
+  font-size: var(--fs-small);
   max-width: 360px;
   line-height: 1.7;
   margin: 0;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+import { BackLinkComponent } from '../../core/components/back-link.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
@@ -25,13 +26,14 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
 @Component({
   selector: 'app-sharing',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, SharedHistoryPanelComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, SharedHistoryPanelComponent, BackLinkComponent],
   styleUrl: './sharing.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="sharing-component__page">
       <app-navbar></app-navbar>
 
       <main class="sharing-component__main">
+        <app-back-link label="Back to Friends" fallback="/friends"></app-back-link>
         <app-page-hint
           hintKey="sharing_page_inline"
           title="Sharing Hint"
@@ -195,7 +197,7 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
                                  [style.color]="theme.colors().text"
                                  placeholder="Type a quick note to share..."
                                  [attr.aria-label]="'Quick note to share about ' + crush.nickname"
-                                 style="flex:1; border-radius:6px; padding:6px 8px; font-size:13px;">
+                                 style="flex:1; border-radius:6px; padding:6px 8px; font-size: var(--fs-small);">
                           <button (click)="addAndShareQuickEntry(crush.id)"
                                   [disabled]="!quickEntryDraft(crush.id).trim()"
                                   [style.background-color]="theme.colors().primary"

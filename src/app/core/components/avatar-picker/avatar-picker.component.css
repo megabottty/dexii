@@ -95,7 +95,7 @@
 
 .ap-upgrade-title {
   margin: 0 0 4px;
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 

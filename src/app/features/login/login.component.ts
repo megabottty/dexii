@@ -286,12 +286,12 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       border: none;
       color: inherit;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: var(--fs-small);
       text-decoration: underline;
     }
     .reset-message {
       margin: 0;
-      font-size: 0.8rem;
+      font-size: var(--fs-small);
       line-height: 1.4;
     }
     .reset-button {

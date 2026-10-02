@@ -15,7 +15,7 @@
 }
 
 .alert-modal-component__s5 {
-  font-size: 13px; line-height: 1.6; margin: 0 0 20px;
+  font-size: var(--fs-small); line-height: 1.6; margin: 0 0 20px;
 }
 
 .alert-modal-component__s6 {

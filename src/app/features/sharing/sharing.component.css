@@ -102,7 +102,7 @@
 .sharing-component__friend-name {
   flex: 1;
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .sharing-component__friend-count {
@@ -253,7 +253,7 @@
 }
 
 .sharing-component__entry-text {
-  font-size: 13px;
+  font-size: var(--fs-small);
   flex: 1;
 }
 
@@ -271,7 +271,7 @@
 }
 
 .sharing-component__empty {
-  font-size: 13px;
+  font-size: var(--fs-small);
   padding: 12px 4px;
 }
 
@@ -337,7 +337,7 @@
 
 .sharing-component__overview-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .sharing-component__overview-friends {

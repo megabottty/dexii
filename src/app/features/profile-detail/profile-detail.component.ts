@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
+import { Location } from '@angular/common';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
@@ -39,7 +40,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
       <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + '22, ' + theme.colors().accent + '22)'"
            class="header-gradient-container">
-        <a routerLink="/dashboard" [style.color]="theme.colors().text" class="back-link">← Back to Dashboard</a>
+        <a href="#" (click)="goBack($event)" [style.color]="theme.colors().text" class="back-link">← {{ isReadOnlyFriendView() || friendCrushLoading() || friendCrushNotFound() || friendCrushError() ? 'Back' : 'Back to Dashboard' }}</a>
       </div>
 
       @if (isReadOnlyFriendView() && crush(); as c) {
@@ -917,6 +918,7 @@ export class ProfileDetailComponent implements OnDestroy {
   /** The shared-crush request failed for a reason other than "not shared" (offline, server error). */
   friendCrushError = signal(false);
   private destroyRef = inject(DestroyRef);
+  private location = inject(Location);
   /** Whether the "Show more details" section is expanded on the read-only friend view. */
   showFullCrushDetails = signal(false);
 
@@ -1112,6 +1114,18 @@ export class ProfileDetailComponent implements OnDestroy {
    * "friend shared a new crush" notification, or a link from a friend's profile page),
    * fetch it as a read-only shared crush instead of showing a blank page.
    */
+  /** Back to where this crush was opened from (Tea, chat, a friend's page); else a sensible home. */
+  goBack(event: Event): void {
+    event.preventDefault();
+    const state = (typeof history !== 'undefined' ? history.state : null) as { navigationId?: number } | null;
+    if (state?.navigationId && state.navigationId > 1) {
+      this.location.back();
+      return;
+    }
+    const friendView = this.isReadOnlyFriendView() || this.friendCrushNotFound() || this.friendCrushError();
+    void this.router.navigate([friendView ? '/friends' : '/dashboard']);
+  }
+
   async loadFriendCrushIfNeeded(): Promise<void> {
     const id = this.crushId();
     if (!id) return;

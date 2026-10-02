@@ -39,7 +39,7 @@
 
 .app-component__s5 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-small);
   line-height: 1.4;
 }
 
@@ -180,7 +180,7 @@
 
 .app-component__s12 {
   margin: 0 0 20px 0;
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .app-component__s13 {

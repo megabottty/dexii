@@ -34,7 +34,7 @@
 
 .user-profile-username {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .user-profile-component__s8 {
@@ -258,7 +258,7 @@
   }
 
   .user-profile-component__s10 {
-    font-size: 13px;
+    font-size: var(--fs-small);
   }
 
   .section-title {
@@ -414,4 +414,20 @@
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+.user-profile-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
 }

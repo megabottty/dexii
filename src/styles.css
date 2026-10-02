@@ -47,6 +47,17 @@ body {
   font-size: var(--fs-body);
 }
 
+/* Phones: nothing people read sits below 14px. Only --fs-micro stays smaller,
+   for the 18px icon badges, chip counts and timestamps that have no room. */
+@media (max-width: 600px) {
+  :root {
+    --fs-micro: 12px;
+    --fs-label: 14px;
+    --fs-btn: 14px;
+    --fs-small: 14px;
+  }
+}
+
 @media (max-width: 900px) {
   html,
   body {

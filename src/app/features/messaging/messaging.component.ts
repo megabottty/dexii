@@ -1,7 +1,7 @@
 import { Message } from '../../core/models/message.model';
 import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit, HostListener } from '@angular/core';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MessagingService } from '../../core/services/messaging.service';
@@ -26,9 +26,10 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
       <header [style.background-color]="theme.colors().bgSecondary" [style.border-bottom]="'1px solid ' + theme.colors().border"
               class="messaging-component__s2">
         <div class="messaging-component__s3">
-          <a [routerLink]="hasActiveChat() ? '/chat' : '/friends'"
+          <a href="#"
+             (click)="goBack($event)"
              [style.color]="theme.colors().textSecondary"
-             [attr.aria-label]="hasActiveChat() ? 'Back to all chats' : 'Back to friends'"
+             [attr.aria-label]="hasActiveChat() ? 'Back' : 'Back to friends'"
              class="messaging-component__s4">←</a>
           <div>
             <h2 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().username : 'Chats' }}</h2>
@@ -489,7 +490,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
         <div [style.background-color]="theme.colors().bgSecondary" [style.border-top]="'1px solid ' + theme.colors().border"
              [style.color]="theme.colors().textSecondary"
              class="messaging-component__s11"
-             style="text-align: center; padding: 16px; font-size: 13px;">
+             style="text-align: center; padding: 16px; font-size: var(--fs-small);">
           Messaging is disabled because you're no longer friends with {{ currentChatPartner().username }}.
         </div>
       }
@@ -501,6 +502,18 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private location = inject(Location);
+
+  /** Back to wherever this chat was opened from (a friend's card, Tea), else the chat list / friends. */
+  goBack(event: Event): void {
+    event.preventDefault();
+    const state = (typeof history !== 'undefined' ? history.state : null) as { navigationId?: number } | null;
+    if (state?.navigationId && state.navigationId > 1) {
+      this.location.back();
+      return;
+    }
+    void this.router.navigate([this.hasActiveChat() ? '/chat' : '/friends']);
+  }
   public messaging = inject(MessagingService);
   public theme = inject(ThemeService);
   public security = inject(SecurityService);

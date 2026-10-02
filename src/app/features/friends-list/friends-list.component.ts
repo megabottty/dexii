@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
+import { computed, Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -179,7 +179,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <img [src]="candidate.avatarUrl || 'https://i.pravatar.cc/150?u=' + candidate.username" [alt]="candidate.username + ' avatar'" class="friends-list-component__s43">
                       <div>
                         <span class="friends-list-component__s44">{{ candidateDisplayName(candidate) }}</span>
-                        <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">@{{ candidate.username }}</div>
+                        <div [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-small);">@{{ candidate.username }}</div>
                       </div>
                     </div>
                     <div class="friends-list-component__s49">
@@ -192,11 +192,22 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           class="friends-list-component__s8">
                           {{ candidateActionLabel(candidate) }}
                         </button>
+                      } @else if (candidate.relationship === 'request_sent') {
+                        <span class="friends-list-pending-chip"
+                              [style.color]="theme.colors().primary"
+                              [style.border]="'1px solid ' + theme.colors().primary">⏳ Request pending</span>
+                        @if (outgoingRequestFor(candidate); as pending) {
+                          <button type="button"
+                                  (click)="cancelOutgoingRequest(pending)"
+                                  [style.color]="theme.colors().textSecondary"
+                                  [style.border]="'1px solid ' + theme.colors().border"
+                                  class="friends-list-action-btn">Cancel request</button>
+                        }
                       } @else {
                         <button
                           (click)="sendFriendRequest(candidate)"
-                          [disabled]="candidate.relationship === 'friends' || candidate.relationship === 'request_sent' || isSubmittingFriendAction()"
-                          [style.opacity]="candidate.relationship === 'friends' || candidate.relationship === 'request_sent' || isSubmittingFriendAction() ? '0.5' : '1'"
+                          [disabled]="candidate.relationship === 'friends' || isSubmittingFriendAction()"
+                          [style.opacity]="candidate.relationship === 'friends' || isSubmittingFriendAction() ? '0.5' : '1'"
                           [style.background-color]="theme.colors().primary"
                          class="friends-list-component__s8">
                           {{ candidateActionLabel(candidate) }}
@@ -284,14 +295,14 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
                     <div>
                       <div style="font-weight: 600;">To: {{ req.to }}</div>
-                      <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem;">
+                      <div [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-small);">
                         Sent {{ req.createdAt | date:'MMM d, h:mm a' }}
                         @if (req.lastNudgedAt) {
                           • Nudged {{ req.lastNudgedAt | date:'MMM d, h:mm a' }} ({{ req.nudgeCount || 1 }})
                         }
                       </div>
                       @if (req.friendshipProfile) {
-                        <div [style.color]="theme.colors().textSecondary" style="font-size: 0.8rem; margin-top: 6px;">
+                        <div [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-small); margin-top: 6px;">
                           {{ req.friendshipProfile.relationshipType || 'Friendship profile saved' }}
                           @if (req.friendshipProfile.relationshipName) {
                             • {{ req.friendshipProfile.relationshipName }}
@@ -345,6 +356,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
             </p>
           </div>
 
+          @if (friends().length > 3) {
+            <label class="friends-list-filter">
+              <span class="friends-list-filter__icon" aria-hidden="true">🔍</span>
+              <input type="search"
+                     [ngModel]="friendSearch()"
+                     (ngModelChange)="friendSearch.set($event)"
+                     [style.background-color]="theme.colors().bgSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     [style.color]="theme.colors().text"
+                     class="friends-list-filter__input"
+                     placeholder="Search your friends"
+                     aria-label="Search your friends">
+            </label>
+          }
+
           <div class="friends-list-component__s53">
             @if (isLoadingFriends()) {
               <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading your live friends…</p>
@@ -357,7 +383,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 </div>
               </div>
             } @else {
-            @for (friend of friends(); track friend.id) {
+            @for (friend of visibleFriends(); track friend.id) {
               <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
                    class="friends-list-component__s54">
 
@@ -371,10 +397,10 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
                 <div class="friends-list-component__s59">
                   <a [routerLink]="['/user', friend.id]"
-                     [attr.aria-label]="'View ' + friend.username + ' profile and dating overview'"
+                     [attr.aria-label]="'Open the sharing overview with ' + friend.username"
                      [style.color]="theme.colors().text"
                      [style.border]="'1px solid ' + theme.colors().border"
-                     class="friends-list-action-link">Dating Overview</a>
+                     class="friends-list-action-link">Sharing overview</a>
                   <button (click)="openFriendProfileFromFriend(friend)"
                           [style.color]="theme.colors().primary"
                           [style.border]="'1px solid ' + theme.colors().primary"
@@ -383,7 +409,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </button>
                   <a [routerLink]="['/sharing']" [queryParams]="{ friendId: friend.id }"
                      [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
-                     class="friends-list-action-link">Sharing</a>
+                     class="friends-list-action-link">Sharing controls</a>
                   <a routerLink="/chat"
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
@@ -397,7 +423,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
               </div>
             } @empty {
               <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
+                 @if (friendSearch().trim()) {
+                   <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">No friends match “{{ friendSearch().trim() }}”.</p>
+                 } @else {
                  <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">Your inner circle is currently empty.</p>
+                 }
               </div>
             }
             }
@@ -733,6 +763,17 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   activeTab = signal<'friends' | 'find' | 'incoming' | 'sent' | 'archived'>('friends');
   friends = signal<FriendCardView[]>([]);
+  /** Text typed into the "Search your friends" box on the Friends tab. */
+  friendSearch = signal('');
+  visibleFriends = computed(() => {
+    const query = this.friendSearch().trim().toLowerCase();
+    const list = this.friends();
+    if (!query) return list;
+    return list.filter((friend) =>
+      [friend.username, friend.firstName, friend.lastName, `${friend.firstName} ${friend.lastName}`]
+        .some((value) => (value || '').toLowerCase().includes(query))
+    );
+  });
   archivedFriends = signal<FriendCardView[]>([]);
   isLoadingArchived = signal(false);
   searchQuery = signal('');
@@ -832,9 +873,14 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return this.friendsApi.isAuthenticated();
   }
 
+  /** The sent-but-unanswered request behind a search result, if we have it loaded. */
+  outgoingRequestFor(candidate: FriendSearchResult): FriendRequestItem | null {
+    return this.outgoingRequests().find((req) => req.toId === candidate.id || req.to === candidate.username) || null;
+  }
+
   candidateActionLabel(candidate: FriendSearchResult): string {
     if (candidate.relationship === 'friends') return 'Already friends';
-    if (candidate.relationship === 'request_sent') return 'Pending Sent';
+    if (candidate.relationship === 'request_sent') return 'Request pending';
     if (candidate.relationship === 'request_received') return 'Accept';
     return 'Add Friend';
   }

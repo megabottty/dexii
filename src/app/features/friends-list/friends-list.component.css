@@ -47,7 +47,7 @@
 }
 
 .friends-list-component__s13 {
-  font-size: 12px; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 40px;
+  font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 40px;
 }
 
 .friends-list-component__s14 {
@@ -119,7 +119,7 @@
 }
 
 .friends-list-component__s29 {
-  font-size: 13px; font-style: italic; opacity: 0.8;
+  font-size: var(--fs-small); font-style: italic; opacity: 0.8;
 }
 
 .friends-list-component__s30 {
@@ -151,7 +151,7 @@
 }
 
 .friends-list-component__s37 {
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-top: 0;
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-top: 0;
 }
 
 .friends-list-component__s38 {
@@ -183,7 +183,7 @@
 }
 
 .friends-list-component__s45 {
-  margin: 0 0 10px 0; font-size: 12px; font-style: italic;
+  margin: 0 0 10px 0; font-size: var(--fs-label); font-style: italic;
 }
 
 .friends-list-search-empty {
@@ -231,7 +231,7 @@
 }
 
 .friends-list-component__s47 {
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0;
 }
 
 .friends-list-component__s48 {
@@ -504,7 +504,7 @@
 }
 
 .friends-list-profile-value {
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-align: right;
   white-space: pre-wrap;
 }
@@ -584,4 +584,36 @@
   .friends-list-profile-value {
     text-align: left;
   }
+}
+
+/* Search within the friends you already have */
+.friends-list-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.friends-list-filter__icon {
+  font-size: 18px;
+}
+
+.friends-list-filter__input {
+  flex: 1;
+  min-height: var(--tap-min);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: var(--fs-body);
+  outline: none;
+}
+
+.friends-list-pending-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  white-space: nowrap;
 }

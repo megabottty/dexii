@@ -120,7 +120,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
               <div>
                 <p style="margin: 0; font-weight: 600;">Crush Plan</p>
-                <p [style.color]="theme.colors().textSecondary" style="margin: 4px 0 0 0; font-size: 0.85rem;">
+                <p [style.color]="theme.colors().textSecondary" style="margin: 4px 0 0 0; font-size: var(--fs-small);">
                   Friends are unlimited. Plans only change crush capacity.
                 </p>
               </div>

@@ -21,7 +21,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
       <div class="navbar-brand">
         <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + ', ' + theme.colors().accent + ')'"
              class="navbar-logo">D</div>
-        <div class="navbar-brand-copy">
+        <div class="navbar-brand-copy" [class.navbar-brand-copy--has-username]="settings.settings().showUsername">
           <span class="navbar-title">Dexii</span>
           @if (settings.settings().showUsername) {
             <span [style.color]="theme.colors().textSecondary" class="navbar-username">
@@ -32,13 +32,23 @@ import { SupportMenuService } from '../../services/support-menu.service';
       </div>
 
       <div class="navbar-right">
-        <a routerLink="/user/me"
-           aria-label="View your profile"
-           [style.border]="'2px solid ' + theme.colors().border"
-           class="navbar-profile-avatar">
-          <img [src]="settings.settings().avatarUrl || ('https://i.pravatar.cc/150?u=' + (security.currentUser() || 'guest'))"
-               alt="Your profile photo"
-               class="navbar-profile-avatar-img">
+        <a routerLink="/friends"
+           class="navbar-quick-link"
+           [style.color]="theme.colors().text"
+           [style.border]="'1px solid ' + (incomingFriendRequestCount() > 0 ? theme.colors().accent : theme.colors().border)"
+           aria-label="Open your friends">
+          <span class="navbar-tea-icon-wrap">
+            <span aria-hidden="true">👥</span>
+            @if (incomingFriendRequestCount() > 0) {
+              <span [style.background-color]="theme.colors().accent"
+                    [style.--navbar-badge-ring]="theme.colors().bg"
+                    class="navbar-quick-link-badge"
+                    aria-label="Friend requests waiting">
+                {{ incomingFriendRequestCount() }}
+              </span>
+            }
+          </span>
+          <span class="navbar-quick-link-label">Friends</span>
         </a>
 
         <a routerLink="/dashboard"
