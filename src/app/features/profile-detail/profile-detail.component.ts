@@ -1,4 +1,5 @@
-import { Component, signal, inject, computed, OnDestroy } from '@angular/core';
+import { Component, signal, inject, computed, OnDestroy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
@@ -14,6 +15,7 @@ import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
 import { CrushFormValue, crushFormTextFields, crushToFormValue, emptyCrushFormValue, formValueToCrushPatch, parseCustomNotes } from '../../core/utils/crush-form.util';
+import { CRUSH_FORM_FIELDS } from '../../core/services/crush-payload';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
@@ -516,13 +518,13 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                    [style.border]="'1px solid ' + theme.colors().border"
                    (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3>Who can see this status?</h3>
+                  <h3>Share this update with more friends?</h3>
                   <button class="close-btn" (click)="cancelQuickStatusChange()">✕</button>
                 </div>
 
                 <div class="status-visibility-body">
                   <p [style.color]="theme.colors().textSecondary" class="status-visibility-description">
-                    Choose visibility for the new <strong>{{ pendingStatusValue() || quickStatusDraft() }}</strong> update.
+                    Friends who already see this crush will see the new <strong>{{ pendingStatusValue() || quickStatusDraft() }}</strong> status. Pick anyone else you'd like to add.
                   </p>
 
                   <div class="status-visibility-options">
@@ -532,13 +534,13 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                             [style.background-color]="statusVisibilityMode() === 'private' ? theme.colors().primary + '14' : theme.colors().bgSecondary"
                             class="status-visibility-option">
                       <span class="status-visibility-option__title">
-                        Private
+                        Keep current sharing
                         <span class="status-visibility-info"
-                              title="Only the friends you specifically select can see this update."
-                              aria-label="Only the friends you specifically select can see this update.">ℹ</span>
+                              title="Nobody new is added unless you pick them below."
+                              aria-label="Nobody new is added unless you pick them below.">ℹ</span>
                       </span>
                       <span [style.color]="theme.colors().textSecondary" class="status-visibility-option__copy">
-                        Only selected friends can see it.
+                        Same friends as today, plus anyone you pick below.
                       </span>
                     </button>
 
@@ -548,13 +550,13 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                             [style.background-color]="statusVisibilityMode() === 'public' ? theme.colors().primary + '14' : theme.colors().bgSecondary"
                             class="status-visibility-option">
                       <span class="status-visibility-option__title">
-                        Public
+                        Everyone
                         <span class="status-visibility-info"
-                              title="Everyone in your friends list can see this status update."
-                              aria-label="Everyone in your friends list can see this status update.">ℹ</span>
+                              title="Shares this crush with every friend in your list."
+                              aria-label="Shares this crush with every friend in your list.">ℹ</span>
                       </span>
                       <span [style.color]="theme.colors().textSecondary" class="status-visibility-option__copy">
-                        Everyone in your friends list can see it.
+                        Share this crush with all of your friends.
                       </span>
                     </button>
                   </div>
@@ -562,7 +564,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   @if (statusVisibilityMode() === 'private') {
                     <div class="status-visibility-private">
                       <div class="status-visibility-private__header">
-                        <p class="status-visibility-private__title">Choose specific friends</p>
+                        <p class="status-visibility-private__title">Add friends</p>
                         @if (friends().length > 0) {
                           <button class="action-btn-styled secondary"
                                   style="padding: 6px 10px;"
@@ -585,7 +587,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                                 <span class="friend-name">{{ friend.username }}</span>
                                 <span class="friend-status"
                                       [style.color]="isPendingVisibilityFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary">
-                                  {{ isPendingVisibilityFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
+                                  {{ isAlreadySharedWith(friend.id) ? '✓ Already shared' : (isPendingVisibilityFriendSelected(friend.id) ? '✓ Will be added' : 'Tap to add') }}
                                 </span>
                               </div>
                             </div>
@@ -593,7 +595,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                         </div>
                       } @else {
                         <p [style.color]="theme.colors().textSecondary" class="status-visibility-empty">
-                          No friends yet. Private will keep this update visible only to your current selected list.
+                          No friends yet. Add friends to share this crush with them.
                         </p>
                       }
                     </div>
@@ -871,6 +873,14 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
         <div style="padding: 48px; text-align: center;">
           <p [style.color]="theme.colors().textSecondary">Loading shared crush…</p>
         </div>
+      } @else if (friendCrushError()) {
+        <div style="padding: 48px; text-align: center;">
+          <p [style.color]="theme.colors().text" style="font-weight: 700; margin-bottom: 8px;">Couldn't load this crush.</p>
+          <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 18px;">
+            Check your connection and try again. It's still shared with you.
+          </p>
+          <button type="button" (click)="loadFriendCrushIfNeeded()" [style.background-color]="theme.colors().primary" class="action-btn-styled" style="color: #fff; display: inline-flex; width: auto; padding: 10px 22px; border: none; border-radius: 999px;">Try again</button>
+        </div>
       } @else if (friendCrushNotFound()) {
         <div style="padding: 48px; text-align: center;">
           <p [style.color]="theme.colors().text" style="font-weight: 700; margin-bottom: 8px;">This crush isn't available.</p>
@@ -904,6 +914,9 @@ export class ProfileDetailComponent implements OnDestroy {
   friendCrushOwnerName = signal<string | null>(null);
   friendCrushLoading = signal(false);
   friendCrushNotFound = signal(false);
+  /** The shared-crush request failed for a reason other than "not shared" (offline, server error). */
+  friendCrushError = signal(false);
+  private destroyRef = inject(DestroyRef);
   /** Whether the "Show more details" section is expanded on the read-only friend view. */
   showFullCrushDetails = signal(false);
 
@@ -1077,12 +1090,21 @@ export class ProfileDetailComponent implements OnDestroy {
   });
 
   constructor() {
-    this.crushId.set(this.route.snapshot.paramMap.get('id'));
     this.loadFriends();
     this.loadVibePromptFrequency();
     this.refreshVibePromptVisibility();
     void this.messaging.loadConversationSummaries();
-    this.loadFriendCrushIfNeeded();
+    // The same page instance is reused when going from one crush straight to
+    // another (e.g. two Tea cards in a row), so follow the id rather than read it once.
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.crushId.set(params.get('id'));
+      this.friendCrush.set(null);
+      this.friendCrushOwnerId.set(null);
+      this.friendCrushOwnerName.set(null);
+      this.friendCrushNotFound.set(false);
+      this.friendCrushError.set(false);
+      void this.loadFriendCrushIfNeeded();
+    });
   }
 
   /**
@@ -1090,23 +1112,26 @@ export class ProfileDetailComponent implements OnDestroy {
    * "friend shared a new crush" notification, or a link from a friend's profile page),
    * fetch it as a read-only shared crush instead of showing a blank page.
    */
-  private async loadFriendCrushIfNeeded(): Promise<void> {
+  async loadFriendCrushIfNeeded(): Promise<void> {
     const id = this.crushId();
     if (!id) return;
     if (this.dataService.visibleCrushes().find(c => c.id === id)) return;
 
     this.friendCrushLoading.set(true);
+    this.friendCrushNotFound.set(false);
+    this.friendCrushError.set(false);
     try {
       const result = await this.friendsApi.getSharedCrush(id);
-      if (result) {
+      if (id !== this.crushId()) return; // navigated on while loading
+      if (result.kind === 'ok') {
         this.friendCrush.set(result.crush);
         this.friendCrushOwnerId.set(result.ownerId);
         this.friendCrushOwnerName.set(result.ownerName);
+      } else if (result.kind === 'error') {
+        this.friendCrushError.set(true);
       } else {
         this.friendCrushNotFound.set(true);
       }
-    } catch {
-      this.friendCrushNotFound.set(true);
     } finally {
       this.friendCrushLoading.set(false);
     }
@@ -1146,7 +1171,8 @@ export class ProfileDetailComponent implements OnDestroy {
     const isPublic = allFriendIds.length > 0 && sharedFriendIds.length === allFriendIds.length;
 
     this.pendingStatusValue.set(nextStatus);
-    this.pendingVisibilityFriendIds.set(sharedFriendIds);
+    // Only new picks live here; friends already shared with are shown as such.
+    this.pendingVisibilityFriendIds.set([]);
     this.statusVisibilityMode.set(isPublic ? 'public' : 'private');
     this.showStatusVisibilityModal.set(true);
   }
@@ -1155,29 +1181,40 @@ export class ProfileDetailComponent implements OnDestroy {
     this.statusVisibilityMode.set(mode);
   }
 
+  /** Friends who already see this crush; the status modal can't take them off. */
+  isAlreadySharedWith(friendId: string): boolean {
+    const crush = this.crush();
+    return Boolean(crush && this.isShared(crush, friendId));
+  }
+
   isPendingVisibilityFriendSelected(friendId: string): boolean {
-    return this.pendingVisibilityFriendIds().includes(friendId);
+    return this.isAlreadySharedWith(friendId) || this.pendingVisibilityFriendIds().includes(friendId);
   }
 
   togglePendingVisibilityFriend(friendId: string): void {
+    if (this.isAlreadySharedWith(friendId)) return;
     this.pendingVisibilityFriendIds.update((ids) =>
       ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
     );
   }
 
+  private selectableVisibilityFriendIds(): string[] {
+    return this.friends().map((friend) => friend.id).filter((id) => !this.isAlreadySharedWith(id));
+  }
+
   areAllPendingVisibilityFriendsSelected(): boolean {
-    const allFriendIds = this.friends().map((friend) => friend.id);
-    return allFriendIds.length > 0 && this.pendingVisibilityFriendIds().length === allFriendIds.length;
+    const selectable = this.selectableVisibilityFriendIds();
+    return selectable.length > 0 && selectable.every((id) => this.pendingVisibilityFriendIds().includes(id));
   }
 
   toggleAllPendingVisibilityFriends(): void {
-    const allFriendIds = this.friends().map((friend) => friend.id);
-    if (allFriendIds.length === 0) return;
+    const selectable = this.selectableVisibilityFriendIds();
+    if (selectable.length === 0) return;
     if (this.areAllPendingVisibilityFriendsSelected()) {
       this.pendingVisibilityFriendIds.set([]);
       return;
     }
-    this.pendingVisibilityFriendIds.set(allFriendIds);
+    this.pendingVisibilityFriendIds.set(selectable);
   }
 
   cancelQuickStatusChange(): void {
@@ -1339,7 +1376,7 @@ export class ProfileDetailComponent implements OnDestroy {
       const history = [...(c.vibeHistory || [])];
       if (history.length >= 10) history.shift();
       history.push(num);
-      this.dataService.updateCrush({ ...c, rating: num, vibeHistory: history });
+      this.dataService.updateCrush({ ...c, rating: num, vibeHistory: history }, { fields: ['rating', 'vibeHistory'] });
     }
     localStorage.setItem(this.getVibeCheckedKey(id), String(Date.now()));
     this.showVibeBanner.set(false);
@@ -1600,7 +1637,7 @@ export class ProfileDetailComponent implements OnDestroy {
       () => {
         const newStatus = isRestoring ? CrushStatus.Crush : CrushStatus.Archived;
         const updatedCrush = { ...crush, status: newStatus };
-        this.dataService.updateCrush(updatedCrush);
+        this.dataService.updateCrush(updatedCrush, { fields: ['status'] });
         this.modal.show(isRestoring ? 'Crush restored from archive.' : 'Crush archived.');
       }
     );
@@ -1853,17 +1890,15 @@ export class ProfileDetailComponent implements OnDestroy {
       return;
     }
 
-    const currentFriendIds = this.friends().map((friend) => friend.id);
-    const preservedVisibility = (crush.visibility || []).filter((id) => !currentFriendIds.includes(id));
-    const nextVisibility = this.statusVisibilityMode() === 'public'
-      ? [...new Set([...preservedVisibility, ...currentFriendIds])]
-      : [...new Set([...preservedVisibility, ...this.pendingVisibilityFriendIds()])];
-
-    this.dataService.updateCrush({
-      ...crush,
-      status: nextStatus,
-      visibility: nextVisibility
-    });
+    // The status is saved on its own. Sharing can only grow from here: friends who
+    // already see this crush keep seeing it, and any new picks are added on the
+    // server, so nothing shared from another device is lost.
+    this.dataService.updateCrush({ ...crush, status: nextStatus }, { fields: ['status'] });
+    const wanted = this.statusVisibilityMode() === 'public'
+      ? this.friends().map((friend) => friend.id)
+      : this.pendingVisibilityFriendIds();
+    const added = wanted.filter((id) => !this.isShared(crush, id));
+    if (added.length > 0) void this.dataService.shareCrushWith(crush.id, added);
     this.showStatusVisibilityModal.set(false);
     this.pendingStatusValue.set(null);
     this.pendingVisibilityFriendIds.set([]);
@@ -1905,7 +1940,7 @@ export class ProfileDetailComponent implements OnDestroy {
       ...current,
       ...formValueToCrushPatch(this.editForm),
       id: crushId
-    });
+    }, { fields: CRUSH_FORM_FIELDS, silent: false });
 
     const note = this.editForm.note.trim();
     if (note) {

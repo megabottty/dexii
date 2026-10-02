@@ -5,6 +5,13 @@ import { SecurityService } from './security.service';
 
 export type FriendRelationship = 'none' | 'friends' | 'request_sent' | 'request_received';
 
+/** Outcome of asking for a crush a friend shared with you. */
+export type SharedCrushResult =
+  | { kind: 'ok'; crush: CrushProfile; ownerId: string | null; ownerName: string | null }
+  | { kind: 'not_shared' }
+  | { kind: 'not_found' }
+  | { kind: 'error'; message: string };
+
 export interface FriendSearchResult {
   id: string;
   username: string;
@@ -281,23 +288,25 @@ export class FriendsApiService {
   /**
    * Fetches a single crush that belongs to a friend and has been shared with the
    * current user (e.g. via a "friend shared a new crush" notification deep-link).
-   * Returns null if the crush doesn't exist, isn't shared with the caller, or the
-   * caller isn't friends with its owner.
+   * Tells "not shared" and "gone" apart from a temporary failure, so callers never
+   * treat a network blip as the friend taking the crush back.
    */
-  async getSharedCrush(crushId: string): Promise<{ crush: CrushProfile; ownerId: string | null; ownerName: string | null } | null> {
+  async getSharedCrush(crushId: string): Promise<SharedCrushResult> {
     try {
       const result = await this.request<{ crush: BackendCrushProfile; owner: { id: string; username: string; firstName?: string; lastName?: string } | null }>(
         `/shared/${encodeURIComponent(crushId)}`,
         {},
         'crushes'
       );
-      if (!result?.crush) return null;
+      if (!result?.crush) return { kind: 'not_found' };
       const ownerName = result.owner
         ? ([result.owner.firstName, result.owner.lastName].filter(Boolean).join(' ') || result.owner.username || null)
         : null;
-      return { crush: this.mapCrush(result.crush), ownerId: result.owner?.id ? String(result.owner.id) : null, ownerName };
-    } catch {
-      return null;
+      return { kind: 'ok', crush: this.mapCrush(result.crush), ownerId: result.owner?.id ? String(result.owner.id) : null, ownerName };
+    } catch (err: any) {
+      if (err?.status === 403) return { kind: 'not_shared' };
+      if (err?.status === 404) return { kind: 'not_found' };
+      return { kind: 'error', message: String(err?.message || 'Could not load this crush.') };
     }
   }
 

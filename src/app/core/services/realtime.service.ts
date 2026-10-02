@@ -35,6 +35,13 @@ type SafetyHandler = (update: SafetyUpdate) => void;
 type ReactionHandler = (update: MessageReactionUpdate) => void;
 type GroupMessageHandler = (message: any) => void;
 
+/** A friend opened a crush you shared with them. */
+export interface CrushViewedEvent {
+  crushId: string;
+  viewerId: string;
+  at: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -48,6 +55,8 @@ export class RealtimeService {
   private groupMessageHandlers = new Set<GroupMessageHandler>();
   private notificationHandlers = new Set<() => void>();
   private messagesReadHandlers = new Set<(data: { readerId: string; readAt: string }) => void>();
+  private crushesChangedHandlers = new Set<(data: { crushId?: string }) => void>();
+  private crushViewedHandlers = new Set<(data: CrushViewedEvent) => void>();
 
   private _connected = signal(false);
   public connected = this._connected.asReadonly();
@@ -132,6 +141,14 @@ export class RealtimeService {
     this.socket.on('notificationsChanged', () => {
       this.notificationHandlers.forEach((handler) => handler());
     });
+
+    this.socket.on('crushesChanged', (data: { crushId?: string }) => {
+      this.crushesChangedHandlers.forEach((handler) => handler(data || {}));
+    });
+
+    this.socket.on('crushViewed', (data: CrushViewedEvent) => {
+      this.crushViewedHandlers.forEach((handler) => handler(data));
+    });
   }
 
   emitMessage(payload: IncomingSocketMessage): void {
@@ -172,6 +189,18 @@ export class RealtimeService {
   onNotificationsChanged(handler: () => void): () => void {
     this.notificationHandlers.add(handler);
     return () => this.notificationHandlers.delete(handler);
+  }
+
+  /** Fired when one of your crushes was saved from another tab or device. */
+  onCrushesChanged(handler: (data: { crushId?: string }) => void): () => void {
+    this.crushesChangedHandlers.add(handler);
+    return () => this.crushesChangedHandlers.delete(handler);
+  }
+
+  /** Fired when a friend opens a crush you shared with them. */
+  onCrushViewed(handler: (data: CrushViewedEvent) => void): () => void {
+    this.crushViewedHandlers.add(handler);
+    return () => this.crushViewedHandlers.delete(handler);
   }
 
   onGroupMessage(handler: GroupMessageHandler): () => void {

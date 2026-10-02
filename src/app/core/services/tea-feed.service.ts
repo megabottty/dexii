@@ -313,11 +313,16 @@ export class TeaFeedService {
   /** Opens the thing a card points at; stale crush shares are cleared instead. */
   async open(item: TeaItem): Promise<void> {
     if (item.kind === 'crush_shared' && item.crush?.id) {
-      const stillShared = await this.friendsApi.getSharedCrush(item.crush.id).catch(() => null);
-      if (!stillShared) {
+      const result = await this.friendsApi.getSharedCrush(item.crush.id);
+      if (result.kind === 'not_shared' || result.kind === 'not_found') {
         if (item.notificationId) await this.notifications.remove(item.notificationId);
         this.sharedCrushes.update((list) => list.filter((c) => c.id !== item.crush!.id));
         this.modal.show('That crush isn\'t shared with you anymore, so we cleared it.');
+        return;
+      }
+      if (result.kind === 'error') {
+        // A bad connection is not the friend taking the crush back: keep the card.
+        this.modal.show('Couldn\'t load that crush right now. Check your connection and try again.');
         return;
       }
     }

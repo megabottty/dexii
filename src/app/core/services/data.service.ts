@@ -9,6 +9,8 @@ import { ModalService } from './modal.service';
 import { SecurityService } from './security.service';
 import { EntriesApiService, SharedEntry } from './entries-api.service';
 import { ThemeService } from './theme.service';
+import { RealtimeService } from './realtime.service';
+import { CrushField, pickCrushPayload } from './crush-payload';
 
 interface BackendCrush {
   _id: string;
@@ -82,6 +84,11 @@ export class DataService {
   private security = inject(SecurityService);
   private entriesApi = inject(EntriesApiService);
   private theme = inject(ThemeService);
+  private realtime = inject(RealtimeService);
+  /** When the crush list was last fetched, so focus refreshes stay cheap. */
+  private lastCrushFetchAt = 0;
+  /** Saves in flight; a refresh waits for them so it can't revert an optimistic edit. */
+  private pendingCrushSaves = 0;
 
   constructor() {
     effect(() => {
@@ -89,6 +96,27 @@ export class DataService {
       if (!owner || owner === this._activeOwner()) return;
       void this.syncUserData(owner);
     }, { allowSignalWrites: true });
+
+    // Another tab or device saved one of our crushes: pick it up right away.
+    this.realtime.onCrushesChanged(() => { void this.refreshCrushes({ force: true }); });
+    // Coming back to the app after a while: make sure we're not editing stale data.
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && this.security.isLoggedIn() && !this.security.isLocked()) {
+          void this.refreshCrushes();
+        }
+      });
+    }
+  }
+
+  /**
+   * Re-fetches the crush list from the server. Skipped when it was fetched in the
+   * last 30 seconds (unless forced) or while a save is still in flight.
+   */
+  public async refreshCrushes({ force = false }: { force?: boolean } = {}): Promise<void> {
+    if (!this._hasLoaded() || this.pendingCrushSaves > 0) return;
+    if (!force && Date.now() - this.lastCrushFetchAt < 30_000) return;
+    await this.hydrateCrushesFromBackend();
   }
 
   private persistEntries(): void {
@@ -484,6 +512,7 @@ export class DataService {
     }
 
     this._allCrushes.set(crushes.map((crush) => this.mapBackendCrush(crush)));
+    this.lastCrushFetchAt = Date.now();
   }
 
   private async persistNewCrush(localId: string, crush: CrushProfile): Promise<void> {
@@ -569,56 +598,22 @@ export class DataService {
     }
   }
 
-  public updateCrush(crush: CrushProfile): void {
+  /**
+   * Saves a crush. `fields` names what this action changed; only those fields are
+   * sent, so an action can never overwrite data it didn't touch (sharing, photo,
+   * edits made on another device). The edit form passes CRUSH_FORM_FIELDS.
+   */
+  public updateCrush(crush: CrushProfile, options: { fields: readonly CrushField[]; silent?: boolean }): void {
     this._allCrushes.update(crushes => crushes.map(c =>
       c.id === crush.id ? crush : c
     ));
-    void this.persistCrushUpdate(crush);
+    void this.persistCrushUpdate(crush.id, pickCrushPayload(crush, options.fields), options.silent ?? true);
   }
 
-  private async persistCrushUpdate(crush: CrushProfile, silent = false): Promise<void> {
+  private async persistCrushUpdate(crushId: string, payload: Record<string, unknown>, silent = true): Promise<void> {
+    this.pendingCrushSaves++;
     try {
-      const payload = {
-        nickname: crush.nickname,
-        fullName: crush.fullName,
-        displayName: crush.displayName,
-        avatarUrl: crush.avatarUrl,
-        avatarConfig: crush.avatarConfig ?? null,
-        bio: crush.bio,
-        status: crush.status,
-        visibility: crush.visibility,
-        lastInteraction: crush.lastInteraction,
-        rating: crush.rating,
-        initialRating: crush.initialRating,
-        redFlags: crush.redFlags,
-        redFlagReason: crush.redFlagReason,
-        vibeHistory: crush.vibeHistory,
-        category: crush.category,
-        hair: crush.hair,
-        eyes: crush.eyes,
-        build: crush.build,
-        social: crush.social,
-        relationshipStatus: crush.relationshipStatus,
-        relationshipLabels: crush.relationshipLabels || [],
-        heartbreakSong: crush.heartbreakSong,
-        heartbreakRecovery: crush.heartbreakRecovery,
-        pronouns: crush.pronouns,
-        customNotes: crush.customNotes,
-        location: crush.location,
-        dateOfBirth: crush.dateOfBirth,
-        age: crush.age,
-        howWeMet: crush.howWeMet,
-        whenWeMet: crush.whenWeMet,
-        schoolOrWork: crush.schoolOrWork ?? '',
-        grade: crush.grade,
-        occupation: crush.occupation,
-        family: crush.family,
-        memorableMoments: crush.memorableMoments,
-        friends: crush.friends,
-        sortOrder: crush.sortOrder
-      };
-
-      let response = await this.authenticatedFetch(`/crushes/${crush.id}`, {
+      let response = await this.authenticatedFetch(`/crushes/${crushId}`, {
         method: 'PUT',
         body: JSON.stringify(payload)
       });
@@ -626,7 +621,7 @@ export class DataService {
       // Only retry against the demo store when there was no authenticated
       // request at all (no token / network failure) - see hydrateCrushesFromBackend.
       if (!response) {
-        response = await this.demoFetch(`/crushes/${crush.id}`, {
+        response = await this.demoFetch(`/crushes/${crushId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -646,19 +641,24 @@ export class DataService {
         return;
       }
 
-      const savedCrush = await response.json() as BackendCrush;
-      const mapped = this.mapBackendCrush(savedCrush);
-
-      this._allCrushes.update(crushes =>
-        crushes.map((existing) => existing.id === crush.id ? mapped : existing)
-      );
+      this.applySavedCrush(crushId, await response.json() as BackendCrush);
       if (!silent) {
         this.modal.show('Profile updated successfully!');
       }
     } catch (err) {
       console.error('Error persisting crush update:', err);
       this.modal.show('Connection error. Could not update profile.');
+    } finally {
+      this.pendingCrushSaves--;
     }
+  }
+
+  /** Replaces the local copy with what the server saved (the server copy is the truth). */
+  private applySavedCrush(crushId: string, saved: BackendCrush): void {
+    const mapped = this.mapBackendCrush(saved);
+    this._allCrushes.update(crushes =>
+      crushes.map((existing) => existing.id === crushId ? mapped : existing)
+    );
   }
 
   public getEntriesForCrush(crushId: string) {
@@ -754,7 +754,7 @@ export class DataService {
     this._allCrushes.update(crushes => crushes.map(c =>
       c.id === crushId ? updated : c
     ));
-    void this.persistCrushUpdate(updated);
+    void this.persistCrushUpdate(crushId, pickCrushPayload(updated, ['redFlags', 'redFlagReason']));
   }
 
   public setRedFlag(crushId: string, reason: string) {
@@ -765,7 +765,7 @@ export class DataService {
     this._allCrushes.update(crushes => crushes.map(c =>
       c.id === crushId ? updated : c
     ));
-    void this.persistCrushUpdate(updated);
+    void this.persistCrushUpdate(crushId, pickCrushPayload(updated, ['redFlags', 'redFlagReason']));
   }
 
   public clearRedFlag(crushId: string) {
@@ -776,7 +776,7 @@ export class DataService {
     this._allCrushes.update(crushes => crushes.map(c =>
       c.id === crushId ? updated : c
     ));
-    void this.persistCrushUpdate(updated);
+    void this.persistCrushUpdate(crushId, pickCrushPayload(updated, ['redFlags', 'redFlagReason']));
   }
 
   public updateVibe(crushId: string, score: number) {
@@ -917,6 +917,7 @@ export class DataService {
    */
   public reorderCrushes(orderedIds: string[]): void {
     const orderIndex = new Map(orderedIds.map((id, index) => [id, index]));
+    const previous = new Map(this._allCrushes().map((c) => [c.id, c.sortOrder]));
 
     this._allCrushes.update(crushes =>
       crushes.map((c) =>
@@ -924,10 +925,11 @@ export class DataService {
       )
     );
 
+    // Only the crushes whose position changed, and only their position.
     for (const id of orderedIds) {
       const crush = this._allCrushes().find((c) => c.id === id);
-      if (crush) {
-        void this.persistCrushUpdate(crush, true);
+      if (crush && previous.get(id) !== crush.sortOrder) {
+        void this.persistCrushUpdate(id, pickCrushPayload(crush, ['sortOrder']));
       }
     }
   }
@@ -974,44 +976,94 @@ export class DataService {
     );
   }
 
+  /** Shares or unshares one crush with one friend (the Sharing page toggle). */
   public toggleCrushVisibility(crushId: string, friendId: string): void {
-    let justShared = false;
-    let sharedCrush: any = null;
+    const crush = this._allCrushes().find((c) => c.id === crushId);
+    if (!crush) return;
+    if (this.isCrushSharedWith(crush, friendId)) {
+      void this.unshareCrushWith(crushId, friendId);
+    } else {
+      void this.shareCrushWith(crushId, [friendId]);
+    }
+  }
+
+  /**
+   * Shares a crush with more friends. The server adds to the sharing list instead
+   * of replacing it, so friends shared from another device are never dropped.
+   */
+  public async shareCrushWith(crushId: string, friendIds: string[]): Promise<void> {
+    const crush = this._allCrushes().find((c) => c.id === crushId);
+    if (!crush) return;
+    const added = [...new Set(friendIds)].filter((id) => id && !this.isCrushSharedWith(crush, id));
+    if (added.length === 0) return;
+
     const me = this.getUserId();
-
-    this._allCrushes.update(crushes => crushes.map(c => {
-      if (c.id === crushId) {
-        sharedCrush = c;
-        const hasFriend = this.isCrushSharedWith(c, friendId);
-        justShared = !hasFriend;
-        const newVisibility = hasFriend
-          ? c.visibility.filter(id => !(
-              id === friendId ||
-              (this.isMe(friendId) && (id === 'me' || id === me)) ||
-              id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
-            ))
-          : [...c.visibility, friendId];
-
-        return { ...c, visibility: newVisibility };
-      }
-      return c;
-    }));
-
-    if (justShared && sharedCrush) {
-      this.audit.logEvent(me, friendId, `Shared a crush: ${sharedCrush.nickname}`, crushId);
-    } else if (!justShared) {
-       // Optional: Log an unshare message or just let it be.
-       // The user requested an "unshare toggle", we have it now via visibility filter.
+    this._allCrushes.update(crushes => crushes.map(c =>
+      c.id === crushId ? { ...c, visibility: [...c.visibility, ...added] } : c
+    ));
+    for (const friendId of added) {
+      this.audit.logEvent(me, friendId, `Shared a crush: ${crush.nickname}`, crushId);
     }
 
-    // Persist change if backend exists
-    const finalCrush = this._allCrushes().find(c => c.id === crushId);
-    if (finalCrush) {
-      // Silent: a blocking "Profile updated" modal here would cover the
-      // sharing-controls UI (e.g. the quick-note input that appears right
-      // after sharing a crush), so we skip the success confirmation for
-      // this lightweight visibility toggle. Errors are still shown.
-      void this.persistCrushUpdate(finalCrush, true);
+    await this.persistSharingChange(crushId, () => this.authenticatedFetch(`/crushes/${crushId}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ friendIds: added })
+    }));
+  }
+
+  /** Stops sharing a crush with one friend. */
+  public async unshareCrushWith(crushId: string, friendId: string): Promise<void> {
+    const crush = this._allCrushes().find((c) => c.id === crushId);
+    if (!crush || !this.isCrushSharedWith(crush, friendId)) return;
+
+    const me = this.getUserId();
+    this._allCrushes.update(crushes => crushes.map(c => {
+      if (c.id !== crushId) return c;
+      return {
+        ...c,
+        visibility: c.visibility.filter(id => !(
+          id === friendId ||
+          (this.isMe(friendId) && (id === 'me' || id === me)) ||
+          id.toLowerCase().replace(/\s+/g, '_') === friendId.toLowerCase().replace(/\s+/g, '_')
+        ))
+      };
+    }));
+
+    await this.persistSharingChange(crushId, () => this.authenticatedFetch(
+      `/crushes/${crushId}/share/${encodeURIComponent(friendId)}`,
+      { method: 'DELETE' }
+    ));
+  }
+
+  /**
+   * Runs a share/unshare request. With no backend session (demo mode) it falls back
+   * to saving the full sharing list, which is fine on a single device. Errors are
+   * shown; success is silent so the sharing UI isn't covered by a modal.
+   */
+  private async persistSharingChange(crushId: string, send: () => Promise<Response | null>): Promise<void> {
+    this.pendingCrushSaves++;
+    try {
+      let response = await send();
+      if (!response) {
+        const crush = this._allCrushes().find((c) => c.id === crushId);
+        if (!crush) return;
+        response = await this.demoFetch(`/crushes/${crushId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...pickCrushPayload(crush, ['visibility']), owner: this.getDemoOwner() })
+        });
+      }
+      if (!response || !response.ok) {
+        console.error('Failed to update sharing:', response?.status);
+        this.modal.show('Could not update sharing right now. Please try again.');
+        return;
+      }
+      this.applySavedCrush(crushId, await response.json() as BackendCrush);
+    } catch (err) {
+      console.error('Error updating sharing:', err);
+      this.modal.show('Connection error. Could not update sharing.');
+    } finally {
+      this.pendingCrushSaves--;
     }
   }
 

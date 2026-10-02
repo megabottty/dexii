@@ -102,6 +102,13 @@ const emitNotificationsChanged = (io, recipients) => {
 };
 exports.emitNotificationsChanged = emitNotificationsChanged;
 
+/** Sends one event to every open session of a user (their other tabs and devices). */
+const emitToUser = (io, userId, event, payload) => {
+  if (!io || !userId) return;
+  try { io.to(String(userId)).emit(event, payload); } catch { /* ignore */ }
+};
+exports.emitToUser = emitToUser;
+
 /**
  * Removes "shared a crush" notifications that no longer point at something the
  * recipient can open: the share was revoked, the crush was deleted, or the two

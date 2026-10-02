@@ -2,7 +2,40 @@ const mongoose = require('mongoose');
 const CrushProfile = require('../models/CrushProfile');
 const Entry = require('../models/Entry');
 const User = require('../models/User');
-const { createNotification , retractCrushShares } = require('./notificationController');
+const { createNotification, retractCrushShares, emitToUser } = require('./notificationController');
+
+/**
+ * Fields a client may change through PUT /crushes/:id. Ownership, sharing and
+ * read receipts are managed by their own endpoints, never by a plain update.
+ */
+const UPDATABLE_CRUSH_FIELDS = [
+  'nickname', 'fullName', 'displayName', 'avatarUrl', 'avatarConfig', 'bio', 'status',
+  'lastInteraction', 'rating', 'initialRating', 'redFlags', 'redFlagReason', 'vibeHistory',
+  'category', 'hair', 'eyes', 'build', 'social', 'relationshipStatus', 'relationshipLabels',
+  'heartbreakSong', 'heartbreakRecovery', 'pronouns', 'customNotes', 'location', 'dateOfBirth',
+  'age', 'howWeMet', 'whenWeMet', 'schoolOrWork', 'grade', 'occupation', 'family',
+  'memorableMoments', 'friends', 'sortOrder'
+];
+
+/** True when the crush's visibility list names this friend (by id or legacy username). */
+const visibilityIncludes = (crush, friendId, username) => {
+  const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
+  return visibility.includes(String(friendId)) || (username && visibility.includes(username));
+};
+
+const notifyCrushShared = async (ownerId, crush, recipients) => {
+  if (!recipients.length) return;
+  try {
+    await Promise.allSettled(recipients.map((recipient) => createNotification({
+      recipient,
+      actor: ownerId,
+      type: 'crush_shared',
+      payload: { crushId: String(crush._id), crushNickname: crush.nickname }
+    })));
+  } catch (notificationErr) {
+    console.error('Crush share notification failed:', notificationErr.message);
+  }
+};
 
 /** Maps visibility entries (user ids or usernames) to the owner's friends' user ids. */
 const resolveVisibilityUserIds = async (ownerId, values) => {
@@ -181,41 +214,98 @@ exports.updateCrush = async (req, res) => {
       ]);
     }
 
-    const updatePayload = {
-      ...req.body,
-      relationshipLabels: Array.isArray(req.body.relationshipLabels)
-        ? req.body.relationshipLabels
-        : []
-    };
+    // Clients send only the fields they changed (a red flag, a reorder, the edit
+    // form…), so a stale device can no longer overwrite everything else.
+    const updatePayload = {};
+    for (const field of UPDATABLE_CRUSH_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) updatePayload[field] = req.body[field];
+    }
+    if (Object.prototype.hasOwnProperty.call(updatePayload, 'relationshipLabels') && !Array.isArray(updatePayload.relationshipLabels)) {
+      updatePayload.relationshipLabels = [];
+    }
+    // Replacing the whole sharing list is still allowed (demo fallback and older
+    // clients); new clients use POST/DELETE /crushes/:id/share instead.
+    if (Array.isArray(req.body.visibility)) updatePayload.visibility = req.body.visibility;
     // "Crushing" was renamed to "Plotting"; accept the old name from stale clients.
     if (updatePayload.status === 'Crushing') updatePayload.status = 'Plotting';
-    crush = await CrushProfile.findByIdAndUpdate(
-      req.params.id,
-      { $set: updatePayload },
-      { new: true, runValidators: true }
-    );
-
-    if (newRecipients.length > 0) {
-      try {
-        await Promise.allSettled(newRecipients.map((recipient) => createNotification({
-          recipient,
-          actor: req.user.id,
-          type: 'crush_shared',
-          payload: {
-            crushId: String(crush._id),
-            crushNickname: crush.nickname
-          }
-        })));
-      } catch (notificationErr) {
-        console.error('Crush share notification failed:', notificationErr.message);
-      }
+    if (Object.keys(updatePayload).length > 0) {
+      crush = await CrushProfile.findByIdAndUpdate(
+        req.params.id,
+        { $set: updatePayload },
+        { new: true, runValidators: true }
+      );
     }
+
+    await notifyCrushShared(req.user.id, crush, newRecipients);
 
     res.json(crush);
 
+    const io = req.app.get('io');
+    emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(crush._id) });
     // Unshared with someone: take back their "shared a crush" notification.
     if (removedRecipients.length > 0) {
-      setImmediate(() => { void retractCrushShares({ io: req.app.get('io'), crushId: crush._id, recipients: removedRecipients }); });
+      setImmediate(() => { void retractCrushShares({ io, crushId: crush._id, recipients: removedRecipients }); });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Share a crush with more friends (adds to the sharing list; never removes)
+// @route   POST /api/crushes/:id/share   body: { friendIds: string[] }
+exports.shareCrush = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Crush not found' });
+    }
+    const crush = await CrushProfile.findById(req.params.id);
+    if (!crush) return res.status(404).json({ message: 'Crush not found' });
+    if (crush.userId.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    const requested = Array.isArray(req.body.friendIds) ? req.body.friendIds : [];
+    const friendIds = await resolveVisibilityUserIds(req.user.id, requested);
+    const added = friendIds.filter((id) => !visibilityIncludes(crush, id));
+
+    const updated = added.length
+      ? await CrushProfile.findByIdAndUpdate(req.params.id, { $addToSet: { visibility: { $each: added } } }, { new: true })
+      : crush;
+
+    await notifyCrushShared(req.user.id, updated, added);
+    res.json(updated);
+    if (added.length) emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(updated._id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Stop sharing a crush with one friend
+// @route   DELETE /api/crushes/:id/share/:friendId
+exports.unshareCrush = async (req, res) => {
+  try {
+    const { id, friendId } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ message: 'Crush not found' });
+    }
+    const crush = await CrushProfile.findById(id);
+    if (!crush) return res.status(404).json({ message: 'Crush not found' });
+    if (crush.userId.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    // Older entries may hold the friend's username instead of their id.
+    const friend = mongoose.isValidObjectId(friendId) ? await User.findById(friendId).select('username').lean() : null;
+    const values = [String(friendId)];
+    if (friend?.username) values.push(friend.username);
+
+    const updated = await CrushProfile.findByIdAndUpdate(id, { $pull: { visibility: { $in: values } } }, { new: true });
+    res.json(updated);
+
+    const io = req.app.get('io');
+    emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(updated._id) });
+    if (friend) {
+      setImmediate(() => { void retractCrushShares({ io, crushId: updated._id, recipients: [String(friend._id)] }); });
     }
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
