@@ -107,6 +107,14 @@ const CrushProfileSchema = new mongoose.Schema({
   sortOrder: {
     type: Number,
     default: 0
+  },
+  // Friends who have opened this shared crush, with the latest time. Owner-only.
+  viewedBy: {
+    type: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      at: { type: Date, required: true }
+    }],
+    default: []
   }
 }, { timestamps: true });
 

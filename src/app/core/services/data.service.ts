@@ -58,6 +58,7 @@ interface BackendCrush {
   memorableMoments?: string;
   friends?: string[];
   sortOrder?: number;
+  viewedBy?: Array<{ user: string; at: string }>;
 }
 
 @Injectable({
@@ -99,6 +100,14 @@ export class DataService {
 
     // Another tab or device saved one of our crushes: pick it up right away.
     this.realtime.onCrushesChanged(() => { void this.refreshCrushes({ force: true }); });
+    // A friend opened a crush we shared: show "Seen" without a refetch.
+    this.realtime.onCrushViewed(({ crushId, viewerId, at }) => {
+      this._allCrushes.update((crushes) => crushes.map((crush) => {
+        if (crush.id !== crushId) return crush;
+        const others = (crush.viewedBy || []).filter((view) => view.userId !== viewerId);
+        return { ...crush, viewedBy: [...others, { userId: viewerId, at: new Date(at) }] };
+      }));
+    });
     // Coming back to the app after a while: make sure we're not editing stale data.
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -368,7 +377,10 @@ export class DataService {
       family: crush.family,
       memorableMoments: crush.memorableMoments,
       friends: crush.friends || [],
-      sortOrder: crush.sortOrder ?? 0
+      sortOrder: crush.sortOrder ?? 0,
+      viewedBy: Array.isArray(crush.viewedBy)
+        ? crush.viewedBy.map((view) => ({ userId: String(view.user), at: new Date(view.at) }))
+        : []
     };
   }
 

@@ -63,4 +63,22 @@ export interface CrushProfile {
   memorableMoments?: string;
   friends?: string[];
   sortOrder?: number; // Manual drag-and-drop ordering on the dashboard (lower = earlier)
+  /** Friends who have opened this crush after you shared it (owner only). */
+  viewedBy?: CrushView[];
+}
+
+export interface CrushView {
+  userId: string;
+  at: Date;
+}
+
+/** When `friendId` last opened this crush, or null if they haven't. */
+export function crushSeenAt(crush: Pick<CrushProfile, 'viewedBy'> | null | undefined, friendId: string): Date | null {
+  if (!crush?.viewedBy || !friendId) return null;
+  let latest: Date | null = null;
+  for (const view of crush.viewedBy) {
+    if (view.userId !== friendId) continue;
+    if (!latest || view.at.getTime() > latest.getTime()) latest = view.at;
+  }
+  return latest;
 }

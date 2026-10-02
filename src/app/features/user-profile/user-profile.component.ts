@@ -6,7 +6,7 @@ import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import { AuditService } from '../../core/services/audit.service';
 import { UserSettingsService } from '../../core/services/user-settings.service';
-import { CrushProfile } from '../../core/models/crush-profile.model';
+import { CrushProfile, crushSeenAt } from '../../core/models/crush-profile.model';
 import { FriendProfileDetails, FriendSummary, FriendsApiService } from '../../core/services/friends-api.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
@@ -266,8 +266,8 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                       <div>
                         <p class="user-profile-component__s19">{{ crush.nickname }}</p>
                         <div class="user-profile-component__s20" style="display: flex; align-items: center; gap: 0.5rem;">
-                           @if (crush.viewedByFriend) {
-                             <span class="status-icon viewed" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️</span> Seen by {{ profileDisplayName() }}</span>
+                           @if (crush.seenAt) {
+                             <span class="status-icon viewed" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️</span> Seen {{ crush.seenAt | date:'MMM d, h:mm a' }}</span>
                            } @else {
                              <span class="status-icon pending" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️‍🗨️</span> Not seen yet</span>
                            }
@@ -340,13 +340,21 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                     </p>
                     @if (entry.isFromMe) {
                       <div style="margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
-                        @if (entry.readAt) {
+                        @if (entry.type === 'message') {
+                          @if (entry.readAt) {
+                            <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
+                              <span style="font-size: 0.9rem;">✓</span> Read {{ entry.readAt | date:'shortTime' }}
+                            </span>
+                          } @else {
+                            <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary">Sent</span>
+                          }
+                        } @else if (entry.seenAt) {
                           <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
-                            <span style="font-size: 0.9rem;">👁️</span> Viewed {{ entry.readAt | date:'shortTime' }}
+                            <span style="font-size: 0.9rem;">👁️</span> Seen {{ entry.seenAt | date:'MMM d, shortTime' }}
                           </span>
                         } @else {
-                          <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary" title="Pending view">
-                            <span style="font-size: 0.9rem;">⌛👁️</span> Pending...
+                          <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary">
+                            <span style="font-size: 0.9rem;">👁️‍🗨️</span> Not seen yet
                           </span>
                         }
                       </div>
@@ -463,9 +471,13 @@ export class UserProfileComponent {
     return this.friendSharedCrushes();
   });
 
+  /** My crushes this friend can see, with when they last opened each one. */
   sharedWithThem = computed(() => {
     const friendId = this.routeUserId();
-    return this.audit.getSentCrushesStatus(friendId, this.dataService)();
+    if (!friendId || this.dataService.isMe(friendId)) return [] as Array<CrushProfile & { seenAt: Date | null }>;
+    return this.dataService.getAllCrushes()()
+      .filter((crush) => this.dataService.isCrushSharedWith(crush, friendId))
+      .map((crush) => ({ ...crush, seenAt: crushSeenAt(crush, friendId) }));
   });
 
   auditLog = computed(() => {

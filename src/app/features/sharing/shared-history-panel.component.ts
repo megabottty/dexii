@@ -22,7 +22,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       <app-page-hint
         hintKey="shared_history"
         title="Shared History Hint"
-        message="Keep track of every crush profile you've sent. The eyeball icon indicates if your friend has viewed the shared content. Filter by friend to see your history with them.">
+        message="Keep track of every crush profile you've shared. “Seen” shows when your friend has actually opened the crush. Filter by friend to see your history with them.">
       </app-page-hint>
 
       <div class="shared-history-panel__filters">
@@ -74,10 +74,10 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                         class="shared-history-panel__unshare">Unshare</button>
 
                 <div class="shared-history-panel__status">
-                  @if (item.readAt) {
-                    <span class="shared-history-panel__status-icon" title="Viewed" aria-label="Viewed">👁️</span>
+                  @if (item.seenAt) {
+                    <span class="shared-history-panel__status-icon" [attr.title]="'Seen ' + (item.seenAt | date:'MMM d, h:mm a')" [attr.aria-label]="'Seen ' + (item.seenAt | date:'MMM d, h:mm a')">👁️ Seen</span>
                   } @else {
-                    <span class="shared-history-panel__status-icon" title="Pending" aria-label="Pending" [style.color]="theme.colors().textSecondary">⌛👁️</span>
+                    <span class="shared-history-panel__status-icon" title="Not seen yet" aria-label="Not seen yet" [style.color]="theme.colors().textSecondary">👁️‍🗨️ Not seen yet</span>
                   }
                 </div>
               </div>

@@ -3,6 +3,7 @@ const CrushProfile = require('../models/CrushProfile');
 const Entry = require('../models/Entry');
 const User = require('../models/User');
 const { createNotification, retractCrushShares, emitToUser } = require('./notificationController');
+const { isPausedBy } = require('../services/pauseState');
 
 /**
  * Fields a client may change through PUT /crushes/:id. Ownership, sharing and
@@ -104,7 +105,7 @@ exports.getFriendSharedCrushes = async (req, res) => {
     const myId = String(req.user.id);
     const myUsername = typeof me.username === 'string' ? me.username : '';
 
-    const crushes = await CrushProfile.find({ userId: friendId });
+    const crushes = await CrushProfile.find({ userId: friendId }).select('-viewedBy');
     const shared = crushes.filter((crush) => {
       const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
       return visibility.includes(myId) || (myUsername && visibility.includes(myUsername));
@@ -158,14 +159,38 @@ exports.getSharedCrushById = async (req, res) => {
 
     const owner = await User.findById(crush.userId).select('username firstName lastName').lean();
 
+    const plain = crush.toObject();
+    delete plain.viewedBy;
     res.json({
-      crush,
+      crush: plain,
       owner: owner
         ? { id: String(owner._id), username: owner.username, firstName: owner.firstName, lastName: owner.lastName }
         : null
     });
+
+    // "Seen": remember that this friend opened the crush and tell the owner. A viewer
+    // who has paused the owner leaves no trace, the same as chat read receipts.
+    setImmediate(() => { void recordCrushViewed(req.app.get('io'), crush, myId); });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+const recordCrushViewed = async (io, crush, viewerId) => {
+  try {
+    const ownerId = String(crush.userId);
+    if (await isPausedBy(viewerId, ownerId)) return;
+    const at = new Date();
+    const updated = await CrushProfile.updateOne(
+      { _id: crush._id, 'viewedBy.user': viewerId },
+      { $set: { 'viewedBy.$.at': at } }
+    );
+    if (!updated.matchedCount) {
+      await CrushProfile.updateOne({ _id: crush._id }, { $push: { viewedBy: { user: viewerId, at } } });
+    }
+    emitToUser(io, ownerId, 'crushViewed', { crushId: String(crush._id), viewerId: String(viewerId), at: at.toISOString() });
+  } catch (err) {
+    console.warn('Recording crush view failed:', err.message);
   }
 };
 

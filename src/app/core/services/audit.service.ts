@@ -1,6 +1,7 @@
 import { Injectable, inject, computed } from '@angular/core';
 import { MessagingService } from './messaging.service';
 import { DataService } from './data.service';
+import { crushSeenAt } from '../models/crush-profile.model';
 
 export interface AuditEntry {
   id: string;
@@ -11,7 +12,10 @@ export interface AuditEntry {
   crushId?: string;
   entryId?: string;
   isFromMe: boolean;
+  /** Chat read receipt (plain messages only). */
   readAt?: Date;
+  /** For shares: when the friend actually opened the crush. */
+  seenAt?: Date | null;
   friendName: string;
 }
 
@@ -51,7 +55,7 @@ export class AuditService {
             entryId: m.relatedEntryId,
             entryContent: m.content,
             timestamp: m.timestamp,
-            readAt: m.readAt
+            seenAt: crushSeenAt(crush, m.receiverId)
           };
         })
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -89,37 +93,13 @@ export class AuditService {
             crushId: crushId,
             entryId: m.relatedEntryId,
             isFromMe,
-            readAt: m.readAt,
+            readAt: crushId ? undefined : m.readAt,
+            seenAt: crushId ? crushSeenAt(crush, friendId) : undefined,
             friendName: isFromMe ? (dataService.isMe(friendId) ? myId : friendId) : m.senderId
           };
           return entry;
         })
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    });
-  }
-
-  getSentCrushesStatus(friendId: string, dataService: any) {
-    return computed(() => {
-      const all = dataService.getAllCrushes()();
-      const msgs = this.messaging.messages();
-
-      if (dataService.isMe(friendId)) return [];
-
-      return all
-        .filter((c: any) => dataService.isCrushSharedWith(c, friendId))
-        .map((c: any) => {
-          // Find if there's a message for this sharing
-          const shareMsg = msgs.find(m =>
-            dataService.isMe(m.senderId) &&
-            (m.receiverId === friendId || (dataService.isMe(friendId) && dataService.isMe(m.receiverId))) &&
-            m.relatedCrushId === c.id
-          );
-          return {
-            ...c,
-            viewedByFriend: !!shareMsg?.readAt,
-            readAt: shareMsg?.readAt
-          };
-        });
     });
   }
 }
