@@ -320,6 +320,12 @@ export class AvatarPickerComponent {
       this.selectedPresetId.set(null);
       this.showCropModal.set(false);
     };
+    image.onerror = () => {
+      // HEIC/HEIF from an iPhone camera roll can't be decoded by most browsers.
+      this.showCropModal.set(false);
+      this.cropSourceImage.set(null);
+      this.modal.show('That photo format can\'t be used here (usually HEIC from an iPhone). Please choose a JPG or PNG, or set your camera to "Most Compatible".');
+    };
     image.src = source;
   }
 }

@@ -14,6 +14,40 @@ import {
 
 export type { UserSettings } from './user-settings.storage';
 
+/** The settings the server keeps (the allow-list of PUT /auth/profile-settings). */
+export const SERVER_BACKED_KEYS: readonly (keyof UserSettings)[] = [
+  'displayName', 'bio', 'avatarUrl', 'avatarConfig', 'relationshipStatus', 'lookingFor',
+  'interestedIn', 'loveLanguage', 'idealDate', 'profileVisibility', 'selectedFriendIds',
+  'journalPromptFrequency', 'notifyChatMessages', 'notifyFriendRequests'
+];
+
+/** What /auth/me returns that matters here. */
+export interface ServerProfile {
+  avatarUrl?: string | null;
+  avatarConfig?: UserSettings['avatarConfig'] | null;
+  profileSettings?: Partial<Record<keyof UserSettings, unknown>> | null;
+}
+
+/**
+ * Lays the server's copy of the profile over what this device remembered. The
+ * server wins for every server-backed key it has a value for; keys it doesn't
+ * know (and device-only preferences such as the theme) keep their local value.
+ */
+export function mergeServerSettings(local: UserSettings, me: ServerProfile | null | undefined): UserSettings {
+  if (!me) return local;
+  const merged: UserSettings = { ...local };
+  const fromServer = (me.profileSettings || {}) as Record<string, unknown>;
+  for (const key of SERVER_BACKED_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(fromServer, key) && fromServer[key] !== undefined && fromServer[key] !== null) {
+      (merged as unknown as Record<string, unknown>)[key] = fromServer[key];
+    }
+  }
+  if (typeof me.avatarUrl === 'string') merged.avatarUrl = me.avatarUrl;
+  if (me.avatarConfig !== undefined) merged.avatarConfig = me.avatarConfig ?? undefined;
+  if (!merged.displayName) merged.displayName = local.displayName;
+  return merged;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -24,6 +58,8 @@ export class UserSettingsService {
   private apiBase = getApiBaseUrl();
   private activeUser = signal<string>('');
   private _settings = signal<UserSettings>(DEFAULT_USER_SETTINGS);
+  /** Which account's profile was already pulled from the server this session. */
+  private hydratedOwner = '';
 
   public settings = this._settings.asReadonly();
 
@@ -67,6 +103,29 @@ export class UserSettingsService {
     if (loaded.themeMode) {
       this.themeService.setTheme(loaded.themeMode);
     }
+    void this.hydrateFromBackend(username);
+  }
+
+  /**
+   * Pulls the profile (photo included) from the server once per account, so a
+   * new device, the installed app and the browser all show the same thing.
+   */
+  private async hydrateFromBackend(username: string): Promise<void> {
+    if (this.hydratedOwner === username) return;
+    const headers = this.security.authHeaders();
+    if (!headers['x-auth-token']) return;
+    try {
+      const response = await fetch(`${this.apiBase}/auth/me`, { headers });
+      if (!response.ok) return;
+      const me = await response.json() as ServerProfile;
+      if (this.activeUser() !== username) return; // switched accounts meanwhile
+      this.hydratedOwner = username;
+      const merged = mergeServerSettings(this._settings(), me);
+      this._settings.set(merged);
+      this.persist(merged);
+    } catch {
+      // Offline: the device copy is all we have, and that's fine.
+    }
   }
 
   private persist(settings: UserSettings): void {
@@ -74,8 +133,13 @@ export class UserSettingsService {
     if (!username) {
       return;
     }
-    localStorage.setItem(this.getStorageKey(username), JSON.stringify(settings));
-    writeLegacyProfileSnapshot(settings);
+    try {
+      localStorage.setItem(this.getStorageKey(username), JSON.stringify(settings));
+      writeLegacyProfileSnapshot(settings);
+    } catch (err) {
+      // Storage full (photos are stored inline). The in-memory copy still works.
+      console.warn('Could not store settings locally:', err);
+    }
   }
 
   updateSettings(patch: Partial<UserSettings>): void {
@@ -95,30 +159,24 @@ export class UserSettingsService {
     }
   }
 
-  saveToBackend(): Promise<void> {
+  /**
+   * Saves server-backed settings. With `keys`, only those are sent (e.g. just the
+   * photo); the server merges them into what it already has.
+   */
+  saveToBackend(keys?: readonly (keyof UserSettings)[]): Promise<void> {
     const settings = this._settings();
+    const wanted = keys ? SERVER_BACKED_KEYS.filter((key) => keys.includes(key)) : SERVER_BACKED_KEYS;
+    const body: Record<string, unknown> = {};
+    for (const key of wanted) {
+      body[key] = key === 'avatarConfig' ? (settings.avatarConfig ?? null) : settings[key];
+    }
     return fetch(`${this.apiBase}/auth/profile-settings`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         ...this.security.authHeaders()
       },
-      body: JSON.stringify({
-        displayName: settings.displayName,
-        bio: settings.bio,
-        avatarUrl: settings.avatarUrl,
-        avatarConfig: settings.avatarConfig ?? null,
-        relationshipStatus: settings.relationshipStatus,
-        lookingFor: settings.lookingFor,
-        interestedIn: settings.interestedIn,
-        loveLanguage: settings.loveLanguage,
-        idealDate: settings.idealDate,
-        journalPromptFrequency: settings.journalPromptFrequency,
-        notifyChatMessages: settings.notifyChatMessages,
-        notifyFriendRequests: settings.notifyFriendRequests,
-        profileVisibility: settings.profileVisibility,
-        selectedFriendIds: settings.selectedFriendIds
-      })
+      body: JSON.stringify(body)
     }).then((response) => {
       if (!response.ok) throw new Error(`Profile settings save failed (${response.status})`);
     });

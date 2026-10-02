@@ -765,6 +765,8 @@ exports.getProfile = async (req, res) => {
         bio: user.bio || '',
         subscriptionTier: effectiveTier(user),
         avatarUrl: user.avatarUrl,
+        avatarConfig: null,
+        profileSettings: {},
         themePreference: user.themePreference || null,
         firstLoginTourSeen: Boolean(user.firstLoginTourSeen)
       });
@@ -784,6 +786,9 @@ exports.getProfile = async (req, res) => {
       bio: user.bio,
       subscriptionTier: effectiveTier(user),
       avatarUrl: user.avatarUrl,
+      avatarConfig: user.profileSettings?.avatarConfig ?? null,
+      // Everything saved from the Settings page, so a new device can pick it up.
+      profileSettings: user.profileSettings || {},
       isEmailVerified: user.isEmailVerified,
       themePreference: user.themePreference || null,
       firstLoginTourSeen: Boolean(user.onboarding?.firstLoginTourSeenAt),
@@ -869,16 +874,29 @@ exports.updateProfileSettings = async (req, res) => {
       }
     }
 
-    if (!['Public', 'Friends only', 'Selected friends', 'Private'].includes(profileSettings.profileVisibility)) {
+    if (Object.keys(profileSettings).length === 0) {
+      return res.status(400).json({ message: 'Nothing to save.' });
+    }
+    if (Object.prototype.hasOwnProperty.call(profileSettings, 'profileVisibility')
+        && !['Public', 'Friends only', 'Selected friends', 'Private'].includes(profileSettings.profileVisibility)) {
       return res.status(400).json({ message: 'Invalid profile visibility.' });
     }
     if (profileSettings.selectedFriendIds && !Array.isArray(profileSettings.selectedFriendIds)) {
       return res.status(400).json({ message: 'Selected friends must be an array.' });
     }
 
+    if (mongoose.connection.readyState !== 1) {
+      // Demo mode has no per-user document; the client keeps localStorage.
+      return res.json(profileSettings);
+    }
+
+    // Merge key by key so a partial save (e.g. just the photo) never wipes the rest.
+    const update = {};
+    for (const [key, value] of Object.entries(profileSettings)) {
+      update[`profileSettings.${key}`] = value;
+    }
     // The top-level avatarUrl is what friends, chats and the feed display, so
     // keep it in step with the photo chosen in Settings.
-    const update = { profileSettings };
     if (Object.prototype.hasOwnProperty.call(profileSettings, 'avatarUrl')) {
       update.avatarUrl = typeof profileSettings.avatarUrl === 'string' ? profileSettings.avatarUrl : '';
     }

@@ -97,11 +97,11 @@ interface FriendChoice {
                  class="settings-photo-picker">
               <app-avatar-picker label="Profile photo"
                                  [url]="settings.settings().avatarUrl || ''"
-                                 (urlChange)="update('avatarUrl', $event)"
+                                 (urlChange)="onPhotoChange('avatarUrl', $event)"
                                  [config]="settings.settings().avatarConfig"
-                                 (configChange)="update('avatarConfig', $event)"></app-avatar-picker>
+                                 (configChange)="onPhotoChange('avatarConfig', $event)"></app-avatar-picker>
               <p [style.color]="theme.colors().textSecondary" class="settings-photo-picker-note">
-                Tap Save Changes to update what your friends see.
+                {{ photoSyncMessage() || 'Your photo saves on its own as soon as you pick it.' }}
               </p>
             </div>
           }
@@ -829,6 +829,29 @@ export class SettingsComponent {
 
   update<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
     this.settings.updateSettings({ [key]: value } as Partial<UserSettings>);
+  }
+
+  /** "Saving photo…" / "Photo saved" under the picker. */
+  photoSyncMessage = signal('');
+  private photoSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * The photo is saved to the server as soon as it changes (debounced, so a crop
+   * followed by a preset pick sends one request), not only on Save Changes.
+   */
+  onPhotoChange(key: 'avatarUrl' | 'avatarConfig', value: UserSettings['avatarUrl'] | UserSettings['avatarConfig']) {
+    this.settings.updateSettings({ [key]: value } as Partial<UserSettings>);
+    if (this.photoSyncTimer) clearTimeout(this.photoSyncTimer);
+    this.photoSyncMessage.set('Saving photo…');
+    this.photoSyncTimer = setTimeout(() => {
+      this.photoSyncTimer = null;
+      void this.settings.saveToBackend(['avatarUrl', 'avatarConfig'])
+        .then(() => this.photoSyncMessage.set('Photo saved. Your friends will see it too.'))
+        .catch(() => {
+          this.photoSyncMessage.set('');
+          this.modal.show('Your photo is saved on this device but could not sync yet. Tap Save Changes to retry.');
+        });
+    }, 600);
   }
 
   async openFriendPicker() {
