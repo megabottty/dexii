@@ -39,6 +39,9 @@ router.get('/', auth, friendController.getFriends);
 // @route   GET /api/friends/profile/:friendId
 router.get('/profile/:friendId', auth, friendController.getFriendProfile);
 
+// @route   PUT /api/friends/:friendId/pause
+router.put('/:friendId/pause', auth, friendController.setPauseState);
+
 // @route   DELETE /api/friends/:friendId
 router.delete('/:friendId', auth, friendController.removeFriend);
 

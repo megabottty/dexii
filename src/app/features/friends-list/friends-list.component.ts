@@ -62,6 +62,8 @@ interface FriendshipProfile {
 }
 
 interface FriendCardView {
+  paused?: boolean;
+  mutedNotifications?: boolean;
   id: string;
   username: string;
   firstName?: string;
@@ -125,11 +127,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   [style.color]="activeTab() === 'sent' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'sent' ? theme.colors().primary : theme.colors().border)"
                   class="friends-list-tab">Pending Sent ({{ outgoingRequests().length }})</button>
-          <button (click)="activeTab.set('archived'); loadArchivedFriendsView()"
-                  [style.background-color]="activeTab() === 'archived' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'archived' ? 'white' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'archived' ? theme.colors().primary : theme.colors().border)"
-                  class="friends-list-tab">Archived ({{ archivedFriendIdsCount() }})</button>
+          <button (click)="activeTab.set('paused')"
+                  [style.background-color]="activeTab() === 'paused' ? theme.colors().primary : 'transparent'"
+                  [style.color]="activeTab() === 'paused' ? 'white' : theme.colors().text"
+                  [style.border]="'1px solid ' + (activeTab() === 'paused' ? theme.colors().primary : theme.colors().border)"
+                  class="friends-list-tab">Paused ({{ pausedFriends().length }})</button>
         </div>
 
         @if (activeTab() === 'find') {
@@ -414,8 +416,8 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-action-link">Chat</a>
-                  <button (click)="archiveFriend(friend.id)" [style.color]="'#ef4444'"
-                          class="friends-list-component__s60">Archive</button>
+                  <button (click)="pauseFriend(friend)" [style.color]="theme.colors().textSecondary"
+                          class="friends-list-component__s60">Pause friendship</button>
                   <button (click)="removeFriend(friend)"
                           [style.color]="'#ef4444'"
                           class="friends-list-component__s60">Remove Friend</button>
@@ -434,40 +436,50 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           </div>
         }
 
-        @if (activeTab() === 'archived') {
+        @if (activeTab() === 'paused') {
           <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
                class="friends-list-component__s52">
             <p class="friends-list-component__s47">
-              Archived friends stay hidden from your main list, but your friendship and sharing stay active. Unarchive anytime to bring them back into view.
+              Paused friends stay out of your main list and, while muted, don't send you notifications. You both keep access to anything already shared, and they aren't told. Resume any time.
             </p>
           </div>
 
           <div class="friends-list-component__s53">
-            @if (isLoadingArchived()) {
-              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading archived friends…</p>
+            @if (isLoadingFriends()) {
+              <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading…</p>
             } @else {
-              @for (friend of archivedFriends(); track friend.id) {
+              @for (friend of pausedFriends(); track friend.id) {
                 <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-component__s54">
                   <div class="friends-list-component__s55">
                     <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
                     <div>
                       <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
-                      <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">Archived</span>
+                      <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.mutedNotifications ? 'Paused · notifications muted' : 'Paused' }}</span>
                     </div>
                   </div>
                   <div class="friends-list-component__s59">
-                    <button (click)="unarchiveFriend(friend)"
+                    <label class="friends-list-mute-toggle" [style.color]="theme.colors().text">
+                      <input type="checkbox"
+                             [checked]="friend.mutedNotifications"
+                             (change)="setMuted(friend, $any($event.target).checked)">
+                      Mute notifications from {{ friend.username }}
+                    </label>
+                    <button (click)="resumeFriend(friend)"
                             [style.color]="theme.colors().primary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="friends-list-action-btn">
-                      Unarchive
+                      Resume friendship
                     </button>
+                    <a routerLink="/chat"
+                       [queryParams]="{ friendId: friend.id, friendName: friend.username }"
+                       [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                       class="friends-list-action-link">Chat</a>
                   </div>
                 </div>
               } @empty {
                 <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
-                   <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">You haven't archived any friends.</p>
+                   <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s61">No paused friendships.</p>
                 </div>
               }
             }
@@ -761,8 +773,11 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return this.security.currentUser() || '';
   }
 
-  activeTab = signal<'friends' | 'find' | 'incoming' | 'sent' | 'archived'>('friends');
-  friends = signal<FriendCardView[]>([]);
+  activeTab = signal<'friends' | 'find' | 'incoming' | 'sent' | 'paused'>('friends');
+  /** Every friend from the server, paused or not. */
+  allFriends = signal<FriendCardView[]>([]);
+  friends = computed(() => this.allFriends().filter((friend) => !friend.paused));
+  pausedFriends = computed(() => this.allFriends().filter((friend) => friend.paused));
   /** Text typed into the "Search your friends" box on the Friends tab. */
   friendSearch = signal('');
   visibleFriends = computed(() => {
@@ -774,8 +789,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         .some((value) => (value || '').toLowerCase().includes(query))
     );
   });
-  archivedFriends = signal<FriendCardView[]>([]);
-  isLoadingArchived = signal(false);
   searchQuery = signal('');
   searchResults = signal<FriendSearchResult[]>([]);
   incomingRequests = signal<FriendRequestItem[]>([]);
@@ -821,7 +834,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
         void this.loadOutgoingRequests();
         this.startIncomingRequestPolling();
       } else {
-        this.friends.set([]);
+        this.allFriends.set([]);
         this.searchResults.set([]);
         this.incomingRequests.set([]);
         this.outgoingRequests.set([]);
@@ -835,7 +848,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const tab = params.get('tab');
-      if (tab === 'friends' || tab === 'find' || tab === 'incoming' || tab === 'sent') {
+      if (tab === 'friends' || tab === 'find' || tab === 'incoming' || tab === 'sent' || tab === 'paused') {
         this.activeTab.set(tab);
       }
     });
@@ -903,7 +916,9 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       avatarUrl: friend.avatarUrl,
       friendCategories: friend.friendCategories || ['Close Friends'],
       subscriptionTier: (friend.subscriptionTier as SubscriptionTier) || SubscriptionTier.Free,
-      friendshipProfile: this.readFriendshipProfile(id) || null
+      friendshipProfile: this.readFriendshipProfile(id) || null,
+      paused: Boolean(friend.paused),
+      mutedNotifications: Boolean(friend.mutedNotifications)
     };
   }
 
@@ -976,8 +991,21 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     }
   }
 
-  private writeArchivedFriendIds(ids: Set<string>): void {
-    localStorage.setItem(this.getArchivedFriendsStorageKey(), JSON.stringify(Array.from(ids)));
+  /**
+   * Friends "archived" before pausing lived only in this browser. The first time
+   * the list loads, turn them into paused friendships on the server and forget the
+   * local copy, so every device agrees.
+   */
+  private async migrateArchivedFriends(data: FriendSummary[]): Promise<FriendSummary[]> {
+    const legacy = this.readArchivedFriendIds();
+    if (legacy.size === 0) return data;
+    const toPause = data.filter((f) => legacy.has(f.id) && !f.paused);
+    const results = await Promise.allSettled(toPause.map((f) => this.friendsApi.setPauseState(f.id, true, true)));
+    if (results.every((r) => r.status === 'fulfilled')) {
+      localStorage.removeItem(this.getArchivedFriendsStorageKey());
+    }
+    if (toPause.length === 0) return data;
+    return data.map((f) => legacy.has(f.id) ? { ...f, paused: true, mutedNotifications: true } : f);
   }
 
   private startIncomingRequestPolling(): void {
@@ -995,16 +1023,16 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   async loadFriends() {
     if (!this.isAuthenticated()) {
-      this.friends.set([]);
+      this.allFriends.set([]);
       return;
     }
 
     this.isLoadingFriends.set(true);
     this.friendsError.set('');
     try {
-      const data = await this.friendsApi.listFriends();
-      const archivedIds = this.readArchivedFriendIds();
-      this.friends.set(data.map((f) => this.mapApiUser(f)).filter((friend) => !archivedIds.has(friend.id)));
+      let data = await this.friendsApi.listFriends();
+      data = await this.migrateArchivedFriends(data);
+      this.allFriends.set(data.map((f) => this.mapApiUser(f)));
     } catch (error: any) {
       const message = error?.message || 'Unable to load friends.';
       this.friendsError.set(message);
@@ -1220,7 +1248,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     };
 
     this.writeFriendshipProfile(target, friendshipProfile);
-    this.friends.update((items) =>
+    this.allFriends.update((items) =>
       items.map((friend) => friend.id === target || friend.username === target ? { ...friend, friendshipProfile } : friend)
     );
     this.viewingFriendProfile.update((profile) => profile ? { ...profile, friendshipProfile } : profile);
@@ -1491,10 +1519,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     this.modal.confirm(`Are you sure you want to remove ${friend.username} as a friend? This cannot be undone.`, async () => {
       try {
         await this.friendsApi.removeFriend(friend.id);
-        const archivedIds = this.readArchivedFriendIds();
-        archivedIds.delete(friend.id);
-        this.writeArchivedFriendIds(archivedIds);
-        this.friends.update((items) => items.filter((item) => item.id !== friend.id));
+        this.allFriends.update((items) => items.filter((item) => item.id !== friend.id));
         this.messaging.pruneConversation(friend.id, friend.username);
         await this.loadFriends();
         this.modal.show(`${friend.username} removed from your friends.`);
@@ -1504,45 +1529,44 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     });
   }
 
-  async archiveFriend(id: string) {
-    this.modal.confirm('Archive this friend from your inner circle on this device? Your live friendship and shared access will stay active.', async () => {
-      const archivedIds = this.readArchivedFriendIds();
-      archivedIds.add(id);
-      this.writeArchivedFriendIds(archivedIds);
-      await this.loadFriends();
-      this.modal.show('Friend archived.');
-    });
+  async pauseFriend(friend: FriendCardView) {
+    this.modal.confirm(
+      `Pause your friendship with ${friend.username}? They move to your Paused list and, with notifications muted, you won't hear from them until you resume. Sharing stays active both ways, and they aren't told.`,
+      async () => {
+        try {
+          const state = await this.friendsApi.setPauseState(friend.id, true, true);
+          this.applyPauseState(friend.id, state.paused, state.mutedNotifications);
+          this.modal.show(`Friendship with ${friend.username} paused. Resume any time from the Paused tab.`);
+        } catch (error: any) {
+          this.modal.show(error?.message || 'Unable to pause this friendship right now.');
+        }
+      }
+    );
   }
 
-  /** Loads the full friend list (unfiltered) so archived friends can be resolved back into cards. */
-  async loadArchivedFriendsView() {
-    if (!this.isAuthenticated()) {
-      this.archivedFriends.set([]);
-      return;
-    }
-    this.isLoadingArchived.set(true);
+  async resumeFriend(friend: FriendCardView) {
     try {
-      const data = await this.friendsApi.listFriends();
-      const archivedIds = this.readArchivedFriendIds();
-      this.archivedFriends.set(data.map((f) => this.mapApiUser(f)).filter((friend) => archivedIds.has(friend.id)));
+      const state = await this.friendsApi.setPauseState(friend.id, false);
+      this.applyPauseState(friend.id, state.paused, state.mutedNotifications);
+      this.modal.show(`${friend.username} is back in your friends list.`);
     } catch (error: any) {
-      this.modal.show(error?.message || 'Unable to load archived friends.');
-    } finally {
-      this.isLoadingArchived.set(false);
+      this.modal.show(error?.message || 'Unable to resume this friendship right now.');
     }
   }
 
-  async unarchiveFriend(friend: FriendCardView) {
-    const archivedIds = this.readArchivedFriendIds();
-    archivedIds.delete(friend.id);
-    this.writeArchivedFriendIds(archivedIds);
-    this.archivedFriends.update((list) => list.filter((f) => f.id !== friend.id));
-    await this.loadFriends();
-    this.modal.show(`${friend.username} is back in your friends list.`);
+  async setMuted(friend: FriendCardView, muted: boolean) {
+    try {
+      const state = await this.friendsApi.setPauseState(friend.id, true, muted);
+      this.applyPauseState(friend.id, state.paused, state.mutedNotifications);
+    } catch (error: any) {
+      this.modal.show(error?.message || 'Unable to change notifications for this friend right now.');
+    }
   }
 
-  archivedFriendIdsCount(): number {
-    return this.readArchivedFriendIds().size;
+  private applyPauseState(friendId: string, paused: boolean, mutedNotifications: boolean): void {
+    this.allFriends.update((items) => items.map((item) =>
+      item.id === friendId ? { ...item, paused, mutedNotifications } : item
+    ));
   }
 
   private static readonly NUDGE_COOLDOWN_MS = 24 * 60 * 60 * 1000;

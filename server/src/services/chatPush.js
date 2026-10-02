@@ -27,14 +27,19 @@ const preview = (message) => {
 
 const wantsChatPush = (user) => user?.profileSettings?.notifyChatMessages !== false;
 
+/** True when `user` has paused `senderId` with notifications muted. */
+const hasMutedSender = (user, senderId) => (user?.pausedFriends || []).some(
+  (entry) => String(entry.user) === String(senderId) && entry.mutedNotifications !== false
+);
+
 async function notifyDirectMessage(message, senderId) {
   try {
     if (!(await push.isEnabled())) return;
     const [sender, recipient] = await Promise.all([
       User.findById(senderId).select('username firstName lastName').lean(),
-      User.findById(message.recipient).select('profileSettings').lean()
+      User.findById(message.recipient).select('profileSettings pausedFriends').lean()
     ]);
-    if (!recipient || !wantsChatPush(recipient)) return;
+    if (!recipient || !wantsChatPush(recipient) || hasMutedSender(recipient, senderId)) return;
 
     const name = displayName(sender);
     const route = `/chat?friendId=${encodeURIComponent(String(senderId))}&friendName=${encodeURIComponent(name)}`;
@@ -56,14 +61,14 @@ async function notifyGroupMessage(group, message, senderId) {
 
     const [sender, members] = await Promise.all([
       User.findById(senderId).select('username firstName lastName').lean(),
-      User.find({ _id: { $in: memberIds } }).select('profileSettings').lean()
+      User.find({ _id: { $in: memberIds } }).select('profileSettings pausedFriends').lean()
     ]);
     const name = displayName(sender);
     const title = group.name ? `${name} in ${group.name}` : name;
     const body = preview(message);
     const route = `/groups/${encodeURIComponent(String(group._id))}`;
 
-    await Promise.all(members.filter(wantsChatPush).map((member) => push.sendToUser(String(member._id), {
+    await Promise.all(members.filter((member) => wantsChatPush(member) && !hasMutedSender(member, senderId)).map((member) => push.sendToUser(String(member._id), {
       title,
       body,
       data: { route, type: 'group_message', groupId: String(group._id), senderId: String(senderId) }

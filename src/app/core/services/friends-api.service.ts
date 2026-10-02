@@ -31,6 +31,11 @@ export interface FriendSummary {
   lastName?: string;
   avatarUrl?: string;
   friendCategories?: string[];
+  /** Set aside for now (hidden from the main list). */
+  paused?: boolean;
+  /** While paused: no notifications from them. */
+  mutedNotifications?: boolean;
+  pausedAt?: string | null;
 }
 
 export interface FriendProfileDetails {
@@ -270,6 +275,14 @@ export class FriendsApiService {
 
   nudgeRequest(requestId: string): Promise<FriendRequestSummary> {
     return this.request<FriendRequestSummary>(`/requests/${requestId}/nudge`, { method: 'POST' });
+  }
+
+  /** Pause/resume a friendship and choose whether their notifications are muted. */
+  setPauseState(friendId: string, paused: boolean, muteNotifications?: boolean): Promise<{ friendId: string; paused: boolean; mutedNotifications: boolean }> {
+    return this.request(`/${encodeURIComponent(friendId)}/pause`, {
+      method: 'PUT',
+      body: JSON.stringify({ paused, muteNotifications })
+    });
   }
 
   removeFriend(friendId: string): Promise<unknown> {

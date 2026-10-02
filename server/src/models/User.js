@@ -78,6 +78,15 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  // Friends set aside for now: hidden from the main list, optionally muted.
+  pausedFriends: {
+    type: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      mutedNotifications: { type: Boolean, default: true },
+      pausedAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
   subscriptionTier: {
     type: String,
     enum: ['Free', 'Premium', 'Gold'],

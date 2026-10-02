@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const chatPush = require('../services/chatPush');
 const Message = require('../models/Message');
+const { isPausedBy, friendsWhoPaused } = require('../services/pauseState');
 const User = require('../models/User');
 const { readStore, writeStore, ensureUser } = require('../utils/demoFriendStore');
 
@@ -105,6 +106,13 @@ async function deleteExpiredSelfDestructMessages(userId, friendId) {
 // @route   GET /api/messages/conversations
 // @desc    Get started conversations for the logged-in user
 // @access  Private
+/** The sender's own message with its read receipt removed (the reader has paused them). */
+const hideReceiptFromSender = (message, senderId) => {
+  const plain = typeof message.toObject === 'function' ? message.toObject() : { ...message };
+  if (String(plain.sender) !== String(senderId)) return plain;
+  return { ...plain, isRead: false, readAt: undefined };
+};
+
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -155,7 +163,7 @@ exports.getConversations = async (req, res) => {
     }
 
     const user = await User.findById(userId)
-      .select('friends')
+      .select('friends pausedFriends')
       .populate('friends', 'username avatarUrl friendCategories')
       .lean();
 
@@ -207,6 +215,8 @@ exports.getConversations = async (req, res) => {
 
     const seen = new Set();
     const summaries = [];
+    const pausedMe = await friendsWhoPaused(userId, [...friendIds]);
+    const myPaused = new Map((user.pausedFriends || []).map((entry) => [String(entry.user), entry]));
 
     for (const message of messages) {
       const senderId = String(message.sender);
@@ -215,11 +225,13 @@ exports.getConversations = async (req, res) => {
       if (!friendIds.has(friendId) || seen.has(friendId)) continue;
 
       seen.add(friendId);
+      const latest = pausedMe.has(friendId) ? hideReceiptFromSender(message, userId) : message;
       summaries.push({
         friend: friendMap.get(friendId) || { id: friendId, username: friendId, friendCategories: [] },
-        latestMessage: previewSafe(message),
+        latestMessage: previewSafe(latest),
         unreadCount: unreadCountByFriend.get(friendId) || 0,
-        unreadSelfDestructCount: unreadSelfDestructByFriend.get(friendId) || 0
+        unreadSelfDestructCount: unreadSelfDestructByFriend.get(friendId) || 0,
+        muted: myPaused.get(friendId)?.mutedNotifications !== false && myPaused.has(friendId)
       });
     }
 
@@ -260,7 +272,9 @@ exports.getMessages = async (req, res) => {
       ]
     }).sort({ createdAt: 1 });
 
-    res.json(messages);
+    // If the friend has paused me, my messages never show as read to me.
+    const receiptsHidden = await isPausedBy(friendId, userId);
+    res.json(receiptsHidden ? messages.map((m) => hideReceiptFromSender(m, userId)) : messages);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -366,7 +380,9 @@ exports.markAsRead = async (req, res) => {
     );
 
     res.json({ msg: 'Messages marked as read' });
-    if (result.modifiedCount) notifySender();
+    // readAt is still stored (disappearing messages count down from it), but a
+    // friend you've paused is not told that you read their messages.
+    if (result.modifiedCount && !(await isPausedBy(userId, friendId))) notifySender();
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

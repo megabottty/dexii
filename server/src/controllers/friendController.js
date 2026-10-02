@@ -103,13 +103,60 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // @access  Private
 exports.getFriends = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate(
-      'friends',
-      'username firstName lastName avatarUrl friendCategories'
-    );
-    res.json((user?.friends || []).map(shapeUser));
+    const user = await User.findById(req.user.id)
+      .select('friends pausedFriends')
+      .populate('friends', 'username firstName lastName avatarUrl friendCategories');
+    const paused = new Map((user?.pausedFriends || []).map((entry) => [String(entry.user), entry]));
+    res.json((user?.friends || []).map((friend) => {
+      const entry = paused.get(String(friend._id));
+      return {
+        ...shapeUser(friend),
+        paused: Boolean(entry),
+        mutedNotifications: entry ? entry.mutedNotifications !== false : false,
+        pausedAt: entry?.pausedAt || null
+      };
+    }));
   } catch (err) {
     console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @route   PUT /api/friends/:friendId/pause   body: { paused: boolean, muteNotifications?: boolean }
+// @desc    Pause or resume a friendship, and set whether their notifications are muted
+exports.setPauseState = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+    const { friendId } = req.params;
+    if (!mongoose.isValidObjectId(friendId)) {
+      return res.status(400).json({ message: 'Invalid friend id.' });
+    }
+    const me = await User.findById(req.user.id).select('friends').lean();
+    if (!me?.friends?.some((id) => String(id) === String(friendId))) {
+      return res.status(404).json({ message: 'Friendship not found.' });
+    }
+
+    const paused = Boolean(req.body.paused);
+    const mute = typeof req.body.muteNotifications === 'boolean' ? req.body.muteNotifications : true;
+
+    if (!paused) {
+      await User.updateOne({ _id: req.user.id }, { $pull: { pausedFriends: { user: friendId } } });
+      return res.json({ friendId, paused: false, mutedNotifications: false });
+    }
+
+    const updated = await User.updateOne(
+      { _id: req.user.id, 'pausedFriends.user': friendId },
+      { $set: { 'pausedFriends.$.mutedNotifications': mute } }
+    );
+    if (!updated.matchedCount) {
+      await User.updateOne(
+        { _id: req.user.id },
+        { $push: { pausedFriends: { user: friendId, mutedNotifications: mute, pausedAt: new Date() } } }
+      );
+    }
+    res.json({ friendId, paused: true, mutedNotifications: mute });
+  } catch (err) {
+    console.error('Set pause state error:', err.message);
     res.status(500).send('Server Error');
   }
 };
@@ -190,7 +237,8 @@ exports.removeFriend = async (req, res) => {
     // Friendship is mutual, so drop the reverse edge too rather than leaving
     // the other user with a one-sided connection.
     await Promise.all([
-      User.updateOne({ _id: friendId }, { $pull: { friends: user._id } }),
+      User.updateOne({ _id: friendId }, { $pull: { friends: user._id, pausedFriends: { user: user._id } } }),
+      User.updateOne({ _id: user._id }, { $pull: { pausedFriends: { user: friendId } } }),
       FriendRequest.deleteMany({
         $or: [
           { from: user._id, to: friendId },

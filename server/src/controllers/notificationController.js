@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const push = require('../services/pushService');
+const { hasMuted } = require('../services/pauseState');
 
 const ACTOR_FIELDS = 'username firstName lastName avatarUrl';
 
@@ -186,6 +187,10 @@ exports.deleteNotification = async (req, res) => {
 
 exports.createNotification = async ({ recipient, actor, type, payload = {} }) => {
   if (!recipient || !type || mongoose.connection.readyState !== 1) {
+    return null;
+  }
+  // A paused-and-muted friend's activity never reaches this person's inbox or phone.
+  if (actor && await hasMuted(recipient, actor)) {
     return null;
   }
 

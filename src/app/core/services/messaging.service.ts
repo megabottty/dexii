@@ -15,6 +15,8 @@ export interface ChatSummary {
   latestMessage: Message;
   unreadCount: number;
   unreadSelfDestructCount?: number;
+  /** You paused this friend with notifications muted; their messages don't count toward the badge. */
+  muted?: boolean;
 }
 
 @Injectable({
@@ -44,7 +46,7 @@ export class MessagingService {
    */
   private _knownFriendKeys = signal<Set<string> | null>(null);
   public totalUnreadCount = computed(() =>
-    this._conversationSummaries().reduce((total, chat) => total + chat.unreadCount, 0)
+    this._conversationSummaries().reduce((total, chat) => total + (chat.muted ? 0 : chat.unreadCount), 0)
   );
   public unreadSelfDestructCount = computed(() => {
     const local = this.getUnreadSelfDestructForCurrentUser().length;
