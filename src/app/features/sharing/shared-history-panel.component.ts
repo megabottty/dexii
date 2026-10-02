@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { MessagingService } from '../../core/services/messaging.service';
 import { DataService } from '../../core/services/data.service';
 import { AuditService } from '../../core/services/audit.service';
+import { FriendsApiService } from '../../core/services/friends-api.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
@@ -86,7 +87,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </div>
       } @else {
         <div [style.border]="'1px dashed ' + theme.colors().border" class="shared-history-panel__empty">
-          <p [style.color]="theme.colors().textSecondary">No history found for this selection.</p>
+          <p [style.color]="theme.colors().textSecondary">{{ historyLoading() ? 'Loading your shared history…' : 'No history found for this selection.' }}</p>
           <a routerLink="/dashboard" [style.color]="theme.colors().primary">Browse your crushes to start sharing.</a>
         </div>
       }
@@ -98,8 +99,28 @@ export class SharedHistoryPanelComponent {
   private messaging = inject(MessagingService);
   private dataService = inject(DataService);
   private audit = inject(AuditService);
+  private friendsApi = inject(FriendsApiService);
 
   filterFriend = signal<string | null>(null);
+  historyLoading = signal(false);
+
+  constructor() {
+    // The history is built from share messages, which a new device hasn't cached yet.
+    void this.loadAllConversations();
+  }
+
+  private async loadAllConversations(): Promise<void> {
+    if (!this.friendsApi.isAuthenticated()) return;
+    this.historyLoading.set(true);
+    try {
+      const friends = await this.friendsApi.listFriends();
+      await Promise.allSettled(friends.map((friend) => this.messaging.loadConversation(friend.id)));
+    } catch {
+      // Offline: whatever is cached on this device is shown.
+    } finally {
+      this.historyLoading.set(false);
+    }
+  }
 
   uniqueFriends = computed(() => {
     const msgs = this.messaging.messages();

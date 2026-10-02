@@ -415,6 +415,9 @@ export class UserProfileComponent {
       }
 
       void this.loadFriendContext(routeUserId);
+      // Shared History is built from the share messages between us; make sure
+      // they're loaded on this device (a fresh phone has none cached).
+      void this.messaging.loadConversation(routeUserId);
     }, { allowSignalWrites: true });
   }
 
