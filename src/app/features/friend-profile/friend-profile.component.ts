@@ -51,7 +51,7 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
           <a routerLink="/dashboard"
              [style.color]="theme.colors().primary"
              [style.border]="'1px solid ' + theme.colors().primary"
-             style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
+             style="text-decoration: none; padding: 6px 12px; border-radius: var(--radius-pill); font-weight: 600;">
             Dashboard
           </a>
         </div>

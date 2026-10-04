@@ -246,7 +246,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       align-items: center;
       justify-content: center;
       padding: 6px;
-      border-radius: 6px;
+      border-radius: var(--radius-pill);
       transition: opacity 0.2s;
     }
     .password-toggle-btn:hover {
@@ -254,7 +254,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
     }
     .submit-button {
       padding: 16px;
-      border-radius: 10px;
+      border-radius: var(--radius-pill);
       color: white;
       font-weight: 600;
       border: none;

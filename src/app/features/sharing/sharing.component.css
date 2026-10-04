@@ -177,7 +177,7 @@
 
 .sharing-component__crush-toggle {
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   font-size: var(--fs-btn);
   font-weight: 600;

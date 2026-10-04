@@ -4,6 +4,51 @@
   --color-slate-950: #020617;
 }
 
+/* Buttons are pills everywhere. Cards, tiles, keypad keys and purely text tabs opt
+   out below; round controls keep their 50%. */
+:root {
+  --radius-pill: 999px;
+  --radius-card: 14px;
+}
+
+button,
+[role="button"] {
+  border-radius: var(--radius-pill);
+}
+
+.navbar-drawer-backdrop,
+.chat-hub__card,
+.user-profile-component__s16,
+.settings-theme-card,
+.settings-plan-option,
+.status-visibility-option,
+.ab-option,
+.vault-center-component__s26,
+.dashboard-component__s80,
+.dashboard-component__s81,
+.vault-center-component__s13,
+.vault-nav-link {
+  border-radius: 0;
+}
+
+.settings-chip,
+.cf-tile,
+.cf-order-chip {
+  border-radius: var(--radius-card);
+}
+
+.lock-screen-component__s17,
+.lock-screen-component__s19 {
+  border-radius: 40px;
+}
+
+.keypad-btn,
+.ab-swatch,
+.ap-preset,
+.cf-order-btn {
+  border-radius: 50%;
+}
+
 html, body {
   height: 100%;
   margin: 0;

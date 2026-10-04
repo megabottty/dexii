@@ -46,7 +46,7 @@
   min-height: 38px;
   padding: 8px 12px;
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   text-decoration: none;
   font-size: var(--fs-btn);
   font-weight: 700;
@@ -75,7 +75,7 @@
 .friend-profile-edit-link {
   background: transparent;
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   padding: 7px 12px;
   font-size: var(--fs-btn);
   font-weight: 700;

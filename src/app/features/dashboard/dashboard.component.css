@@ -59,7 +59,7 @@
 }
 
 .dashboard-component__s43 {
-  width: 100%; color: white; border: none; padding: 18px; border-radius: 0px; font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; margin-top: 24px;
+  width: 100%; color: white; border: none; padding: 18px; border-radius: var(--radius-pill); font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; margin-top: 24px;
 }
 
 .dashboard-component__s44 {

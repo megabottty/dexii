@@ -346,7 +346,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         @if (activeTab() === 'friends') {
           <div class="header-actions" style="margin-bottom: 14px; text-align: right;">
             <a routerLink="/sharing" [queryParams]="{ tab: 'history' }" [style.color]="theme.colors().primary"
-               style="text-decoration: none; font-weight: 500; font-family: 'Times New Roman', serif; font-size: 1.1rem; border: 1px solid currentColor; padding: 6px 12px; border-radius: 4px;">
+               style="text-decoration: none; font-weight: 500; font-family: 'Times New Roman', serif; font-size: 1.1rem; border: 1px solid currentColor; padding: 8px 16px; border-radius: var(--radius-pill);">
               📜 Shared History
             </a>
           </div>
@@ -733,7 +733,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           [style.border]="'1px solid ' + theme.colors().border"
                           [style.color]="theme.colors().text"
                           class="friends-list-add-modal-textarea"
+                          maxlength="300"
                           placeholder="Message they’ll receive"></textarea>
+                <span [style.color]="theme.colors().textSecondary" class="friends-list-add-modal-counter">{{ addFriendInviteMessage().length }}/300</span>
               </label>
 
             </div>

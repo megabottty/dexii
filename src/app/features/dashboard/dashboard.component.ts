@@ -129,21 +129,21 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                         [style.background-color]="subscription.tier() === freeTier ? theme.colors().primary : 'transparent'"
                         [style.color]="subscription.tier() === freeTier ? 'white' : theme.colors().text"
                         [style.border]="'1px solid ' + (subscription.tier() === freeTier ? theme.colors().primary : theme.colors().border)"
-                        style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                        style="padding: 6px 10px; border-radius: var(--radius-pill); cursor: pointer;">
                   Free ({{ subscription.crushLimitLabel(freeTier) }})
                 </button>
                 <button (click)="subscription.upgrade(premiumTier)"
                         [style.background-color]="subscription.tier() === premiumTier ? theme.colors().primary : 'transparent'"
                         [style.color]="subscription.tier() === premiumTier ? 'white' : theme.colors().text"
                         [style.border]="'1px solid ' + (subscription.tier() === premiumTier ? theme.colors().primary : theme.colors().border)"
-                        style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                        style="padding: 6px 10px; border-radius: var(--radius-pill); cursor: pointer;">
                   Premium ({{ subscription.crushLimitLabel(premiumTier) }})
                 </button>
                 <button (click)="subscription.upgrade(goldTier)"
                         [style.background-color]="subscription.tier() === goldTier ? theme.colors().primary : 'transparent'"
                         [style.color]="subscription.tier() === goldTier ? 'white' : theme.colors().text"
                         [style.border]="'1px solid ' + (subscription.tier() === goldTier ? theme.colors().primary : theme.colors().border)"
-                        style="padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                        style="padding: 6px 10px; border-radius: var(--radius-pill); cursor: pointer;">
                   Gold ({{ subscription.crushLimitLabel(goldTier) }})
                 </button>
               </div>

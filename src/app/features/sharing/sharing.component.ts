@@ -201,7 +201,7 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
                           <button (click)="addAndShareQuickEntry(crush.id)"
                                   [disabled]="!quickEntryDraft(crush.id).trim()"
                                   [style.background-color]="theme.colors().primary"
-                                  style="color:white; border:none; border-radius:6px; padding:6px 12px; font-size:var(--fs-btn); cursor:pointer;">
+                                  style="color:white; border:none; border-radius: var(--radius-pill); padding:6px 12px; font-size:var(--fs-btn); cursor:pointer;">
                             Share
                           </button>
                         </div>

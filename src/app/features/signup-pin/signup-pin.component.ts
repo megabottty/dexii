@@ -231,7 +231,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .submit-button {
       padding: 14px;
-      border-radius: 8px;
+      border-radius: var(--radius-pill);
       color: white;
       font-weight: 600;
       border: none;
@@ -240,7 +240,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .aux-btn {
       padding: 12px;
-      border-radius: 8px;
+      border-radius: var(--radius-pill);
       background: transparent;
       cursor: pointer;
       font-weight: 600;

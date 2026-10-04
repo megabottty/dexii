@@ -324,7 +324,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       align-items: center;
       justify-content: center;
       padding: 6px;
-      border-radius: 6px;
+      border-radius: var(--radius-pill);
       transition: opacity 0.2s;
     }
     .password-toggle-btn:hover {
@@ -351,7 +351,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     }
     .submit-button {
       padding: 14px;
-      border-radius: 8px;
+      border-radius: var(--radius-pill);
       color: white;
       font-weight: 600;
       border: none;

@@ -28,9 +28,19 @@ const buildInviteUrl = (req, token) => {
   return `${proto}://${host}/signup-profile?invite=${token}`;
 };
 
-/** SMS bodies must stay short, so the personal note is trimmed hard. */
+/** Shortens text at a word boundary, adding an ellipsis only when something was cut. */
+const truncateAtWord = (text, max) => {
+  const value = String(text || '').trim();
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max - 1);
+  const atWord = cut.lastIndexOf(' ') > max * 0.6 ? cut.slice(0, cut.lastIndexOf(' ')) : cut;
+  return `${atWord.replace(/[\s,;:.!?-]+$/, '')}…`;
+};
+exports.truncateAtWord = truncateAtWord;
+
+/** The personal note is kept whole up to 300 characters and never cut mid-word. */
 const buildInviteSmsBody = ({ inviterName, inviteUrl, personalMessage }) => {
-  const note = personalMessage ? `"${personalMessage.slice(0, 120)}" ` : '';
+  const note = personalMessage ? `"${truncateAtWord(personalMessage, 300)}" ` : '';
   return `${inviterName} invited you to Dexii. ${note}Join here: ${inviteUrl}`;
 };
 

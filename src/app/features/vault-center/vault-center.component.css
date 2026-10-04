@@ -493,7 +493,7 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 

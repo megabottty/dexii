@@ -350,7 +350,7 @@
   min-width: 132px;
   min-height: 38px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-btn);
   font-weight: 700;
   text-align: center;
@@ -630,4 +630,11 @@
 .friends-list-mute-toggle input {
   width: 18px;
   height: 18px;
+}
+
+.friends-list-add-modal-counter {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--fs-label);
+  text-align: right;
 }

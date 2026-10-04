@@ -100,7 +100,7 @@
   padding: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  border-radius: 4px;
+  border-radius: var(--radius-card);
   box-sizing: border-box;
 }
 
@@ -155,7 +155,7 @@
 .cf-chip {
   min-height: var(--tap-min);
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-btn);
   text-transform: uppercase;
   letter-spacing: 1px;

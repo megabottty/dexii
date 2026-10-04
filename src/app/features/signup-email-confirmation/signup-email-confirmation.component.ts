@@ -169,7 +169,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
     .verify-button {
       width: 100%;
       padding: 14px;
-      border-radius: 8px;
+      border-radius: var(--radius-pill);
       color: white;
       font-weight: 600;
       border: none;

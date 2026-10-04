@@ -89,7 +89,7 @@
 
 .walkthrough-btn {
   padding: 9px 18px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-small);
   font-weight: 600;
   cursor: pointer;

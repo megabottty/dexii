@@ -42,7 +42,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
           <a routerLink="/dashboard"
              [style.color]="theme.colors().primary"
              [style.border]="'1px solid ' + theme.colors().primary"
-             style="text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600;">
+             style="text-decoration: none; padding: 6px 12px; border-radius: var(--radius-pill); font-weight: 600;">
             Dashboard
           </a>
           @if (hasActiveChat() && isChatPartnerFriend()) {
@@ -51,7 +51,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                     [style.background-color]="showAddCrush() ? 'transparent' : theme.colors().primary"
                     [style.color]="showAddCrush() ? theme.colors().primary : '#ffffff'"
                     [style.border]="'1px solid ' + theme.colors().primary"
-                    style="padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    style="padding: 6px 12px; border-radius: var(--radius-pill); font-weight: 600; cursor: pointer;">
               {{ showAddCrush() ? 'Cancel' : '+ Add Crush' }}
             </button>
           }

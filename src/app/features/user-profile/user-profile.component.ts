@@ -237,7 +237,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                                 [style.background-color]="isShared(crush) ? theme.colors().primary : 'transparent'"
                                 [style.color]="isShared(crush) ? 'white' : theme.colors().text"
                                 [style.border]="'1px solid ' + (isShared(crush) ? theme.colors().primary : theme.colors().border)"
-                                style="padding: 6px 16px; border-radius: 20px; font-size: var(--fs-small); cursor: pointer; font-weight: 500; transition: all 0.2s;">
+                                style="padding: 8px 18px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer; font-weight: 500; transition: all 0.2s;">
                           {{ isShared(crush) ? 'Shared' : 'Share' }}
                         </button>
                       </div>
@@ -275,7 +275,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                       </div>
                     </a>
                     <button (click)="unshare(crush.id)"
-                            style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 10px; border-radius: 4px; font-size: var(--fs-small); cursor: pointer;">
+                            style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer;">
                       Unshare
                     </button>
                   </div>
