@@ -1,0 +1,770 @@
+<title>Dexii Palette</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#fffafa;--surface:#f5f3f4;--text:#4a374a;--muted:#866386;--primary:#8d5e94;--accent:#d4af37;--border:#e2d1e2;--low:#b91c1c;
+  --display:'Cormorant Garamond','Times New Roman',Georgia,serif;
+  --body:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#120b14;--surface:#1e1420;--text:#f3eaf4;--muted:#b89bb9;--primary:#c19bc7;--accent:#e2c365;--border:#3a2a3d;--low:#f87171}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#120b14;--surface:#1e1420;--text:#f3eaf4;--muted:#b89bb9;--primary:#c19bc7;--accent:#e2c365;--border:#3a2a3d;--low:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:1rem;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px;padding-block:32px 72px}
+header.hero{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;margin-bottom:12px}
+.logo{width:72px;height:72px;border-radius:22px;display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:2.4rem;font-weight:600;background:linear-gradient(135deg,#a881af,#d4af37);box-shadow:0 12px 30px rgba(141,94,148,.25)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.meta{display:flex;flex-wrap:wrap;gap:10px 18px;margin:18px 0 36px;color:var(--muted);font-size:.95rem}
+.meta code{font-family:var(--mono);font-size:.9rem;color:var(--text)}
+h2{font-family:var(--display);font-weight:600;font-size:1.9rem;margin:44px 0 6px;text-wrap:balance}
+.sub{margin:0 0 18px;color:var(--muted);max-width:65ch}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.brand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.tile{border:1px solid var(--border);border-radius:14px;padding:14px 16px;background:var(--surface);display:grid;gap:8px}
+.tile .chip{height:54px;border-radius:10px;border:1px solid rgba(0,0,0,.06)}
+.tile strong{font-weight:700}
+.tile small{color:var(--muted)}
+.hex{font-family:var(--mono);font-size:.95rem;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:999px;padding:4px 12px;cursor:pointer;min-height:36px;justify-self:start}
+.hex:hover,.sw-hex:hover{border-color:var(--primary)}
+.hex:focus-visible,.sw-hex:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:18px}
+.theme{border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:18px;display:grid;gap:14px;scroll-margin-top:16px}
+.theme-head{display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:start}
+.theme h3{font-family:var(--display);font-size:1.6rem;font-weight:600;margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.theme p{margin:4px 0 0;color:var(--muted)}
+.tag{font-family:var(--body);font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);border:1px solid currentColor;border-radius:999px;padding:2px 10px}
+.theme-preview{border:1px solid;border-radius:12px;padding:8px;display:grid;gap:8px;font-family:var(--body);font-size:.7rem}
+.tp-bar{display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid}
+.tp-logo{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:600}
+.tp-word{font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;font-size:.75rem}
+.tp-badge{margin-left:auto;color:#fff;border-radius:999px;min-width:16px;height:16px;display:grid;place-items:center;font-size:.6rem;font-weight:700;padding:0 4px}
+.tp-card{border:1px solid;border-radius:10px;padding:8px;display:grid;gap:3px}
+.tp-eyebrow{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.tp-title{font-family:var(--display);font-size:1rem;letter-spacing:.06em;text-transform:uppercase}
+.tp-stars{letter-spacing:2px}
+.tp-pill{justify-self:start;color:#fff;border-radius:999px;padding:3px 9px;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.swatches{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.sw{display:grid;grid-template-columns:44px 1fr auto auto;gap:10px;align-items:center}
+.sw-chip{width:44px;height:44px;border-radius:10px;border:1px solid rgba(0,0,0,.08)}
+.sw-role{display:grid;line-height:1.25;font-weight:600}
+.sw-role small{color:var(--muted);font-weight:400}
+.sw-hex{font-family:var(--mono);font-size:.9rem;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:999px;padding:4px 10px;min-height:34px;cursor:pointer}
+.sw-contrast{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sw-contrast.is-low{color:var(--low);font-weight:700}
+table{border-collapse:collapse;width:100%;font-size:.98rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+td code{font-family:var(--mono);font-size:.88rem}
+.table-wrap{overflow-x:auto}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);border-radius:999px;padding:8px 16px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.notes{display:grid;gap:10px;max-width:70ch}
+.notes p{margin:0}
+@media (max-width:560px){.theme-head{grid-template-columns:1fr}.theme-preview{max-width:220px}.sw{grid-template-columns:36px 1fr auto}.sw-contrast{grid-column:2/-1;justify-self:start}.sw-chip{width:36px;height:36px}}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="logo" aria-hidden="true">D</div>
+    <div>
+      <p class="eyebrow">Brand hand-off</p>
+      <h1>Dexii colour palette</h1>
+      <p class="lede">Every colour the app ships, as it is written in code. Dexii is a private crush journal with an inner circle of friends, so the themes range from soft and glamorous to dark and dramatic. People pick a theme; the default is Pearl.</p>
+    </div>
+  </header>
+  <div class="meta">
+    <span>Generated <code>2026-10-05</code> from <code>theme.service.ts</code></span>
+    <span>10 themes · 9 roles each</span>
+    <span>Tap any hex to copy it</span>
+  </div>
+
+  <h2>Brand constants</h2>
+  <p class="sub">These are fixed regardless of the theme a person picks.</p>
+  <div class="brand-grid">
+    <div class="tile"><span class="chip" style="background:linear-gradient(135deg,#a881af,#d4af37)"></span><strong>Logo &amp; splash gradient</strong><small>The D mark and the loading splash</small><span><button type="button" class="hex" data-copy="#a881af">#a881af</button> → <button type="button" class="hex" data-copy="#d4af37">#d4af37</button></span></div>
+    <div class="tile"><span class="chip" style="background:#8d5e94"></span><strong>App / browser chrome</strong><small>manifest theme_color, status bar tint</small><button type="button" class="hex" data-copy="#8d5e94">#8d5e94</button></div>
+    <div class="tile"><span class="chip" style="background:#fffafa;border:1px solid var(--border)"></span><strong>App background</strong><small>manifest background_color, first paint</small><button type="button" class="hex" data-copy="#fffafa">#fffafa</button></div>
+    <div class="tile"><span class="chip" style="background:linear-gradient(135deg,#8d5e94,#d4af37)"></span><strong>In-app logo</strong><small>Gradient from the active theme's primary to its accent</small><span class="sub" style="margin:0;font-size:.9rem">Changes with the theme</span></div>
+  </div>
+
+  <h2>Status colours</h2>
+  <p class="sub">Semantic colours stay the same in every theme.</p>
+  <div class="brand-grid">
+    <div class="tile"><span class="chip" style="background:#ef4444"></span><strong>Danger</strong><small>Red flags, remove, destructive actions</small><button type="button" class="hex" data-copy="#ef4444">#ef4444</button></div><div class="tile"><span class="chip" style="background:#16a34a"></span><strong>Success</strong><small>Accept, confirmations</small><button type="button" class="hex" data-copy="#16a34a">#16a34a</button></div><div class="tile"><span class="chip" style="background:#10b981"></span><strong>Seen</strong><small>Read receipts and seen marks</small><button type="button" class="hex" data-copy="#10b981">#10b981</button></div><div class="tile"><span class="chip" style="background:#f59e0b"></span><strong>Warning / focus</strong><small>Focus ring, caution</small><button type="button" class="hex" data-copy="#f59e0b">#f59e0b</button></div><div class="tile"><span class="chip" style="background:#d4af37"></span><strong>Gold</strong><small>Vault, premium, Pearl accent</small><button type="button" class="hex" data-copy="#d4af37">#d4af37</button></div>
+  </div>
+
+  <h2>Themes</h2>
+  <p class="sub">Each theme defines the same 9 roles. Contrast ratios are text on background for the text roles, and white text on the colour for primary, hover and accent. "Low" means below 3:1.</p>
+  <div class="themes">
+<article class="theme " id="pearl">
+  <header class="theme-head">
+    <div>
+      <h3>Pearl <span class="tag">Default</span></h3>
+      <p>Classic Glamour Light with Soft Mauve Silk &amp; Polished Gold</p>
+    </div>
+    <div class="theme-preview" style="background:#fffafa;color:#4a374a;border-color:#e2d1e2">
+      <div class="tp-bar" style="border-color:#e2d1e2"><span class="tp-logo" style="background:linear-gradient(135deg,#8d5e94,#d4af37)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#d4af37">3</span></div>
+      <div class="tp-card" style="background:#f5f3f4;border-color:#e2d1e2">
+        <span class="tp-eyebrow" style="color:#866386">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#d4af37">★★★☆☆</span>
+        <span class="tp-pill" style="background:#8d5e94">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#fffafa"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#fffafa" aria-label="Copy #fffafa">#fffafa</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">10.5:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f5f3f4"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#f5f3f4" aria-label="Copy #f5f3f4">#f5f3f4</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">9.8:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#ffffff"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffffff" aria-label="Copy #ffffff">#ffffff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">10.8:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#4a374a"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#4a374a" aria-label="Copy #4a374a">#4a374a</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">10.5:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#866386"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#866386" aria-label="Copy #866386">#866386</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">4.9:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#8d5e94"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#8d5e94" aria-label="Copy #8d5e94">#8d5e94</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.0:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#815688"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#815688" aria-label="Copy #815688">#815688</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.8:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#d4af37"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#d4af37" aria-label="Copy #d4af37">#d4af37</button>
+    <span class="sw-contrast is-low" title="Contrast of white text on this colour">2.1:1 · Low</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#e2d1e2"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#e2d1e2" aria-label="Copy #e2d1e2">#e2d1e2</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">7.5:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme theme--dark" id="onyx">
+  <header class="theme-head">
+    <div>
+      <h3>Onyx</h3>
+      <p>Midnight Slate Dark with Electric Indigo accents</p>
+    </div>
+    <div class="theme-preview" style="background:#020617;color:#f8fafc;border-color:#1e293b">
+      <div class="tp-bar" style="border-color:#1e293b"><span class="tp-logo" style="background:linear-gradient(135deg,#4f46e5,#6366f1)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#6366f1">3</span></div>
+      <div class="tp-card" style="background:#0f172a;border-color:#1e293b">
+        <span class="tp-eyebrow" style="color:#94a3b8">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#6366f1">★★★☆☆</span>
+        <span class="tp-pill" style="background:#4f46e5">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#020617"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#020617" aria-label="Copy #020617">#020617</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">19.3:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#0f172a"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#0f172a" aria-label="Copy #0f172a">#0f172a</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">17.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#0f172a"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#0f172a" aria-label="Copy #0f172a">#0f172a</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">17.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f8fafc"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#f8fafc" aria-label="Copy #f8fafc">#f8fafc</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">19.3:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#94a3b8"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#94a3b8" aria-label="Copy #94a3b8">#94a3b8</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">7.9:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#4f46e5"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#4f46e5" aria-label="Copy #4f46e5">#4f46e5</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.3:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#4338ca"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#4338ca" aria-label="Copy #4338ca">#4338ca</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">7.9:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#6366f1"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#6366f1" aria-label="Copy #6366f1">#6366f1</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">4.5:1 · AA large</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#1e293b"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#1e293b" aria-label="Copy #1e293b">#1e293b</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">14.0:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme " id="girlie">
+  <header class="theme-head">
+    <div>
+      <h3>Girlie</h3>
+      <p>Blush pink, sparkly and sweet</p>
+    </div>
+    <div class="theme-preview" style="background:#fff5f8;color:#5a2a45;border-color:#fbcfe8">
+      <div class="tp-bar" style="border-color:#fbcfe8"><span class="tp-logo" style="background:linear-gradient(135deg,#cf1571,#f9a8d4)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#f9a8d4">3</span></div>
+      <div class="tp-card" style="background:#ffe8f0;border-color:#fbcfe8">
+        <span class="tp-eyebrow" style="color:#a2507a">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#f9a8d4">★★★☆☆</span>
+        <span class="tp-pill" style="background:#cf1571">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#fff5f8"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#fff5f8" aria-label="Copy #fff5f8">#fff5f8</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">10.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#ffe8f0"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffe8f0" aria-label="Copy #ffe8f0">#ffe8f0</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">9.7:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#ffffff"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffffff" aria-label="Copy #ffffff">#ffffff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">11.3:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#5a2a45"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#5a2a45" aria-label="Copy #5a2a45">#5a2a45</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">10.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#a2507a"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#a2507a" aria-label="Copy #a2507a">#a2507a</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">5.0:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#cf1571"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#cf1571" aria-label="Copy #cf1571">#cf1571</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.3:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#bc1367"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#bc1367" aria-label="Copy #bc1367">#bc1367</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.1:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f9a8d4"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#f9a8d4" aria-label="Copy #f9a8d4">#f9a8d4</button>
+    <span class="sw-contrast is-low" title="Contrast of white text on this colour">1.8:1 · Low</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#fbcfe8"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#fbcfe8" aria-label="Copy #fbcfe8">#fbcfe8</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">8.2:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme theme--dark" id="manly">
+  <header class="theme-head">
+    <div>
+      <h3>Rugged</h3>
+      <p>Steel, denim &amp; leather - bold and grounded</p>
+    </div>
+    <div class="theme-preview" style="background:#1c1f24;color:#eef1f5;border-color:#3a4048">
+      <div class="tp-bar" style="border-color:#3a4048"><span class="tp-logo" style="background:linear-gradient(135deg,#3b6ea5,#c0752f)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#c0752f">3</span></div>
+      <div class="tp-card" style="background:#262b32;border-color:#3a4048">
+        <span class="tp-eyebrow" style="color:#9aa5b1">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#c0752f">★★★☆☆</span>
+        <span class="tp-pill" style="background:#3b6ea5">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#1c1f24"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#1c1f24" aria-label="Copy #1c1f24">#1c1f24</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">14.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#262b32"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#262b32" aria-label="Copy #262b32">#262b32</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">12.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#22262c"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#22262c" aria-label="Copy #22262c">#22262c</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">13.4:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#eef1f5"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#eef1f5" aria-label="Copy #eef1f5">#eef1f5</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">14.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#9aa5b1"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#9aa5b1" aria-label="Copy #9aa5b1">#9aa5b1</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">6.6:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#3b6ea5"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#3b6ea5" aria-label="Copy #3b6ea5">#3b6ea5</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.3:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#2f5a89"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#2f5a89" aria-label="Copy #2f5a89">#2f5a89</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">7.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#c0752f"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#c0752f" aria-label="Copy #c0752f">#c0752f</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">3.6:1 · AA large</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#3a4048"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#3a4048" aria-label="Copy #3a4048">#3a4048</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">9.2:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme " id="hippie">
+  <header class="theme-head">
+    <div>
+      <h3>Hippie Gardener</h3>
+      <p>Earthy greens &amp; warm terracotta, grown from the garden</p>
+    </div>
+    <div class="theme-preview" style="background:#f6f3e7;color:#3f4a2f;border-color:#d8cfa8">
+      <div class="tp-bar" style="border-color:#d8cfa8"><span class="tp-logo" style="background:linear-gradient(135deg,#526d3c,#c97b3d)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#c97b3d">3</span></div>
+      <div class="tp-card" style="background:#eae4cf;border-color:#d8cfa8">
+        <span class="tp-eyebrow" style="color:#5f6a47">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#c97b3d">★★★☆☆</span>
+        <span class="tp-pill" style="background:#526d3c">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#f6f3e7"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#f6f3e7" aria-label="Copy #f6f3e7">#f6f3e7</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">8.5:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#eae4cf"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#eae4cf" aria-label="Copy #eae4cf">#eae4cf</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">7.4:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#fffdf6"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#fffdf6" aria-label="Copy #fffdf6">#fffdf6</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">9.2:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#3f4a2f"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#3f4a2f" aria-label="Copy #3f4a2f">#3f4a2f</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">8.5:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#5f6a47"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#5f6a47" aria-label="Copy #5f6a47">#5f6a47</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">5.2:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#526d3c"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#526d3c" aria-label="Copy #526d3c">#526d3c</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.8:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#4b6337"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#4b6337" aria-label="Copy #4b6337">#4b6337</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.7:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#c97b3d"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#c97b3d" aria-label="Copy #c97b3d">#c97b3d</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">3.3:1 · AA large</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#d8cfa8"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#d8cfa8" aria-label="Copy #d8cfa8">#d8cfa8</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.0:1 · AA</span>
+  </li></ul>
+</article>
+<article class="theme theme--dark" id="gothic">
+  <header class="theme-head">
+    <div>
+      <h3>Gothic</h3>
+      <p>Black lace, deep wine &amp; moonlit drama</p>
+    </div>
+    <div class="theme-preview" style="background:#0b0509;color:#f1e6ea;border-color:#2b1720">
+      <div class="tp-bar" style="border-color:#2b1720"><span class="tp-logo" style="background:linear-gradient(135deg,#8f1d3a,#7c3aed)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#7c3aed">3</span></div>
+      <div class="tp-card" style="background:#160a12;border-color:#2b1720">
+        <span class="tp-eyebrow" style="color:#a98d97">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#7c3aed">★★★☆☆</span>
+        <span class="tp-pill" style="background:#8f1d3a">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#0b0509"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#0b0509" aria-label="Copy #0b0509">#0b0509</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">16.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#160a12"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#160a12" aria-label="Copy #160a12">#160a12</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">15.9:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#160a12"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#160a12" aria-label="Copy #160a12">#160a12</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">15.9:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f1e6ea"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#f1e6ea" aria-label="Copy #f1e6ea">#f1e6ea</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">16.6:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#a98d97"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#a98d97" aria-label="Copy #a98d97">#a98d97</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">6.7:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#8f1d3a"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#8f1d3a" aria-label="Copy #8f1d3a">#8f1d3a</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">8.7:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#711530"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#711530" aria-label="Copy #711530">#711530</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">11.3:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#7c3aed"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#7c3aed" aria-label="Copy #7c3aed">#7c3aed</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.7:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#2b1720"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#2b1720" aria-label="Copy #2b1720">#2b1720</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">13.8:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme " id="light">
+  <header class="theme-head">
+    <div>
+      <h3>Clean Light</h3>
+      <p>Simple, crisp and minimal - no frills</p>
+    </div>
+    <div class="theme-preview" style="background:#ffffff;color:#18181b;border-color:#e4e4e7">
+      <div class="tp-bar" style="border-color:#e4e4e7"><span class="tp-logo" style="background:linear-gradient(135deg,#2563eb,#0ea5e9)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#0ea5e9">3</span></div>
+      <div class="tp-card" style="background:#f4f4f5;border-color:#e4e4e7">
+        <span class="tp-eyebrow" style="color:#6f6f77">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#0ea5e9">★★★☆☆</span>
+        <span class="tp-pill" style="background:#2563eb">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#ffffff"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffffff" aria-label="Copy #ffffff">#ffffff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">17.7:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f4f4f5"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#f4f4f5" aria-label="Copy #f4f4f5">#f4f4f5</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">16.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#ffffff"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffffff" aria-label="Copy #ffffff">#ffffff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">17.7:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#18181b"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#18181b" aria-label="Copy #18181b">#18181b</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">17.7:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#6f6f77"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#6f6f77" aria-label="Copy #6f6f77">#6f6f77</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">5.0:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#2563eb"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#2563eb" aria-label="Copy #2563eb">#2563eb</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.2:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#1d4ed8"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#1d4ed8" aria-label="Copy #1d4ed8">#1d4ed8</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.7:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#0ea5e9"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#0ea5e9" aria-label="Copy #0ea5e9">#0ea5e9</button>
+    <span class="sw-contrast is-low" title="Contrast of white text on this colour">2.8:1 · Low</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#e4e4e7"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#e4e4e7" aria-label="Copy #e4e4e7">#e4e4e7</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">14.0:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme theme--dark" id="dark">
+  <header class="theme-head">
+    <div>
+      <h3>Clean Dark</h3>
+      <p>Simple, crisp and minimal - true black &amp; white</p>
+    </div>
+    <div class="theme-preview" style="background:#0a0a0a;color:#fafafa;border-color:#27272a">
+      <div class="tp-bar" style="border-color:#27272a"><span class="tp-logo" style="background:linear-gradient(135deg,#2563eb,#0ea5e9)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#0ea5e9">3</span></div>
+      <div class="tp-card" style="background:#171717;border-color:#27272a">
+        <span class="tp-eyebrow" style="color:#a1a1aa">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#0ea5e9">★★★☆☆</span>
+        <span class="tp-pill" style="background:#2563eb">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#0a0a0a"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#0a0a0a" aria-label="Copy #0a0a0a">#0a0a0a</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">19.0:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#171717"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#171717" aria-label="Copy #171717">#171717</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">17.2:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#171717"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#171717" aria-label="Copy #171717">#171717</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">17.2:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#fafafa"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#fafafa" aria-label="Copy #fafafa">#fafafa</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">19.0:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#a1a1aa"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#a1a1aa" aria-label="Copy #a1a1aa">#a1a1aa</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">7.7:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#2563eb"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#2563eb" aria-label="Copy #2563eb">#2563eb</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.2:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#1d4ed8"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#1d4ed8" aria-label="Copy #1d4ed8">#1d4ed8</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.7:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#0ea5e9"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#0ea5e9" aria-label="Copy #0ea5e9">#0ea5e9</button>
+    <span class="sw-contrast is-low" title="Contrast of white text on this colour">2.8:1 · Low</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#27272a"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#27272a" aria-label="Copy #27272a">#27272a</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">14.3:1 · AAA</span>
+  </li></ul>
+</article>
+<article class="theme " id="highschool">
+  <header class="theme-head">
+    <div>
+      <h3>Locker Room</h3>
+      <p>Y2K bubblegum pink &amp; purple - loud and fun</p>
+    </div>
+    <div class="theme-preview" style="background:#fdf4ff;color:#581c87;border-color:#f0abfc">
+      <div class="tp-bar" style="border-color:#f0abfc"><span class="tp-logo" style="background:linear-gradient(135deg,#b612cf,#22d3ee)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#22d3ee">3</span></div>
+      <div class="tp-card" style="background:#fae8ff;border-color:#f0abfc">
+        <span class="tp-eyebrow" style="color:#942ef5">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#22d3ee">★★★☆☆</span>
+        <span class="tp-pill" style="background:#b612cf">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#fdf4ff"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#fdf4ff" aria-label="Copy #fdf4ff">#fdf4ff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">10.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#fae8ff"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#fae8ff" aria-label="Copy #fae8ff">#fae8ff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">9.3:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#ffffff"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffffff" aria-label="Copy #ffffff">#ffffff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">10.9:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#581c87"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#581c87" aria-label="Copy #581c87">#581c87</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">10.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#942ef5"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#942ef5" aria-label="Copy #942ef5">#942ef5</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">4.9:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#b612cf"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#b612cf" aria-label="Copy #b612cf">#b612cf</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.3:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#a510bc"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#a510bc" aria-label="Copy #a510bc">#a510bc</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.2:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#22d3ee"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#22d3ee" aria-label="Copy #22d3ee">#22d3ee</button>
+    <span class="sw-contrast is-low" title="Contrast of white text on this colour">1.8:1 · Low</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f0abfc"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#f0abfc" aria-label="Copy #f0abfc">#f0abfc</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.2:1 · AA</span>
+  </li></ul>
+</article>
+<article class="theme " id="neutral">
+  <header class="theme-head">
+    <div>
+      <h3>Sandstone</h3>
+      <p>Warm neutral tones that work for anyone</p>
+    </div>
+    <div class="theme-preview" style="background:#faf7f2;color:#3a352e;border-color:#e3dccb">
+      <div class="tp-bar" style="border-color:#e3dccb"><span class="tp-logo" style="background:linear-gradient(135deg,#866346,#5f7470)">D</span><span class="tp-word">Dexii</span><span class="tp-badge" style="background:#5f7470">3</span></div>
+      <div class="tp-card" style="background:#f0ebe1;border-color:#e3dccb">
+        <span class="tp-eyebrow" style="color:#71695d">Active crushes</span>
+        <span class="tp-title">Sunny</span>
+        <span class="tp-stars" style="color:#5f7470">★★★☆☆</span>
+        <span class="tp-pill" style="background:#866346">New crush</span>
+      </div>
+    </div>
+  </header>
+  <ul class="swatches"><li class="sw">
+    <span class="sw-chip" style="background:#faf7f2"></span>
+    <span class="sw-role">Background<small>Page background</small></span>
+    <button type="button" class="sw-hex" data-copy="#faf7f2" aria-label="Copy #faf7f2">#faf7f2</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">11.4:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#f0ebe1"></span>
+    <span class="sw-role">Surface<small>Cards, panels, inputs</small></span>
+    <button type="button" class="sw-hex" data-copy="#f0ebe1" aria-label="Copy #f0ebe1">#f0ebe1</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">10.2:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#ffffff"></span>
+    <span class="sw-role">Card<small>Raised cards and modals</small></span>
+    <button type="button" class="sw-hex" data-copy="#ffffff" aria-label="Copy #ffffff">#ffffff</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">12.1:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#3a352e"></span>
+    <span class="sw-role">Text<small>Headings and body copy</small></span>
+    <button type="button" class="sw-hex" data-copy="#3a352e" aria-label="Copy #3a352e">#3a352e</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">11.4:1 · AAA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#71695d"></span>
+    <span class="sw-role">Muted text<small>Labels, hints, meta</small></span>
+    <button type="button" class="sw-hex" data-copy="#71695d" aria-label="Copy #71695d">#71695d</button>
+    <span class="sw-contrast " title="Contrast of this text on the background">5.1:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#866346"></span>
+    <span class="sw-role">Primary<small>Buttons, links, active states</small></span>
+    <button type="button" class="sw-hex" data-copy="#866346" aria-label="Copy #866346">#866346</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.4:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#7a5a40"></span>
+    <span class="sw-role">Primary hover<small>Pressed and hover state</small></span>
+    <button type="button" class="sw-hex" data-copy="#7a5a40" aria-label="Copy #7a5a40">#7a5a40</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">6.2:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#5f7470"></span>
+    <span class="sw-role">Accent<small>Badges, highlights, the Tea cup</small></span>
+    <button type="button" class="sw-hex" data-copy="#5f7470" aria-label="Copy #5f7470">#5f7470</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">5.0:1 · AA</span>
+  </li><li class="sw">
+    <span class="sw-chip" style="background:#e3dccb"></span>
+    <span class="sw-role">Border<small>Dividers and outlines</small></span>
+    <button type="button" class="sw-hex" data-copy="#e3dccb" aria-label="Copy #e3dccb">#e3dccb</button>
+    <span class="sw-contrast " title="Contrast of white text on this colour">8.9:1 · AAA</span>
+  </li></ul>
+</article></div>
+
+  <h2>Custom theme defaults</h2>
+  <p class="sub">People can build their own theme from three colours; the rest is derived. These are the starting values.</p>
+  <div class="brand-grid">
+    <div class="tile"><span class="chip" style="background:#fdf6f0;border:1px solid var(--border)"></span><strong>Background</strong><button type="button" class="hex" data-copy="#fdf6f0">#fdf6f0</button></div><div class="tile"><span class="chip" style="background:#e0796b;border:1px solid var(--border)"></span><strong>Primary</strong><button type="button" class="hex" data-copy="#e0796b">#e0796b</button></div><div class="tile"><span class="chip" style="background:#3d8f89;border:1px solid var(--border)"></span><strong>Accent</strong><button type="button" class="hex" data-copy="#3d8f89">#3d8f89</button></div>
+  </div>
+
+  <h2>Typography</h2>
+  <div class="table-wrap"><table><thead><tr><th>Role</th><th>Stack</th><th>Notes</th></tr></thead><tbody>
+    <tr><td><strong>Brand &amp; headings</strong></td><td><code>'Times New Roman', serif</code></td><td>The Rolodex, Dexii wordmark, section titles. Uppercase with wide letter-spacing for eyebrows.</td></tr><tr><td><strong>Interface</strong></td><td><code>-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif</code></td><td>Body copy, buttons, forms. 1rem minimum everywhere; 1.0625rem body.</td></tr><tr><td><strong>Diagnostics</strong></td><td><code>ui-monospace, SFMono-Regular, Menlo, monospace</code></td><td>Technical detail lines only.</td></tr>
+  </tbody></table></div>
+
+  <h2>Shape &amp; spacing</h2>
+  <div class="table-wrap"><table><thead><tr><th>Element</th><th>Value</th><th>Notes</th></tr></thead><tbody>
+    <tr><td><strong>Buttons</strong></td><td><code>999px pill</code></td><td>Every button, chip and tab is a pill.</td></tr><tr><td><strong>Cards &amp; tiles</strong></td><td><code>14px</code></td><td>Theme cards, form tiles, option rows.</td></tr><tr><td><strong>Modals</strong></td><td><code>0–24px</code></td><td>Full-bleed on phones; 24px on the signup card.</td></tr><tr><td><strong>Tap target</strong></td><td><code>44px</code></td><td>Minimum height for anything tappable on phones.</td></tr>
+  </tbody></table></div>
+
+  <h2>Notes for the designer</h2>
+  <div class="notes">
+    <p><strong>Primary</strong> is the one colour that has to carry white text: buttons, the active tab, links. <strong>Accent</strong> is used sparingly for counts and highlights (the Tea cup badge, stars, the Vault). Keep them distinguishable from each other in every theme.</p>
+    <p><strong>Pearl</strong> is the first impression: it is the default theme, the install icon and the splash screen. If the brand gets one colour, it is Pearl's primary #8d5e94, with gold #d4af37 as its partner.</p>
+    <p>Four themes are dark (Onyx, Rugged, Gothic, Clean Dark). Anything you design should be checked on at least Pearl, Onyx and Clean Light.</p>
+    <p>Text never renders below 16px in the app, and every button is a pill. Icons are emoji today (💘 crushes, 💬 chat, 🍵 Tea, 👥 friends); a custom icon set is an open opportunity.</p>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite">Copied</div>
+<script>
+(function(){
+  var toast=document.getElementById('toast');var timer;
+  function show(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){toast.classList.remove('show')},1400)}
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('[data-copy]');if(!btn)return;
+    var hex=btn.getAttribute('data-copy');
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(hex).then(function(){show('Copied '+hex)}).catch(function(){select(btn)})}else{select(btn)}
+  });
+  function select(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r);show('Select and copy '+el.textContent)}
+})();
+</script>
