@@ -33,7 +33,8 @@ button,
 
 .settings-chip,
 .cf-tile,
-.cf-order-chip {
+.cf-order-chip,
+.sharing-component__friend-row {
   border-radius: var(--radius-card);
 }
 
