@@ -12,6 +12,7 @@ import { FriendsApiService } from '../../core/services/friends-api.service';
 import { UserSettings, UserSettingsService } from '../../core/services/user-settings.service';
 import { InstallPromptService } from '../../core/services/install-prompt.service';
 import { WebPushService } from '../../core/services/web-push.service';
+import { NotificationSetupComponent } from '../../core/components/notification-setup/notification-setup.component';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 import { AppUpdateService } from '../../core/services/app-update.service';
 import { FeatureGateService } from '../../core/services/feature-gate.service';
@@ -29,7 +30,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -423,7 +424,7 @@ interface FriendChoice {
             </div>
           </section>
 
-          @if (install.shouldOffer()) {
+          @if (install.canInstall() && !install.isInstalled()) {
             <div class="settings-divider"></div>
 
             <section class="settings-plan-section">
@@ -437,124 +438,25 @@ interface FriendChoice {
                 </div>
               </div>
 
-              @if (install.isIos()) {
-                <ol [style.color]="theme.colors().textSecondary"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    class="settings-install-steps">
-                  <li>Tap the <strong>Share</strong> button at the bottom of Safari.</li>
-                  <li>Scroll and choose <strong>Add to Home Screen</strong>.</li>
-                  <li>Tap <strong>Add</strong> — Dexii will appear on your home screen.</li>
-                </ol>
-              } @else {
-                <button type="button"
-                        (click)="installApp()"
-                        [style.background-color]="theme.colors().primary"
-                        class="settings-install-btn">
-                  Install Dexii
-                </button>
-              }
+              <button type="button"
+                      (click)="installApp()"
+                      [style.background-color]="theme.colors().primary"
+                      class="settings-install-btn">
+                Install Dexii
+              </button>
             </section>
           }
 
           <div class="settings-divider"></div>
 
           <section class="settings-plan-section">
-              <div class="settings-plan-header">
-                <div>
-                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
-                  <h2 class="settings-section-title">Notifications on your phone</h2>
-                  <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                    @switch (webPush.status()) {
-                      @case ('on') { Notifications are on for this device. You'll hear about friend requests and shared crushes even when Dexii is closed. }
-                      @case ('blocked') { Notifications are blocked for Dexii in your browser settings. Allow them there, then come back and turn them on. }
-                      @case ('needs-install') { On iPhone, notifications work once Dexii is on your Home Screen. Add it using the steps above, open it from there, and turn them on here. }
-                      @case ('unsupported') { {{ webPush.unsupportedReason() || 'Notifications are not available in this browser.' }} }
-                      @default { Get a notification on this device when a friend sends a request or shares a crush. }
-                    }
-                  </p>
-                  @if (webPush.status() !== 'on' && webPush.status() !== 'off' && webPush.failingChecks().length) {
-                    <ul class="settings-push-checklist" aria-label="What's missing">
-                      @for (check of webPush.failingChecks(); track check.label) {
-                        <li class="settings-push-check settings-push-check--fail">
-                          <span class="settings-push-check__label">✕ {{ check.label }}</span>
-                          @if (check.hint) {
-                            <span class="settings-push-check__hint" [style.color]="theme.colors().textSecondary">{{ check.hint }}</span>
-                          }
-                        </li>
-                      }
-                    </ul>
-                  }
-                  @if (webPush.diagnostics()) {
-                    <button type="button"
-                            class="settings-push-details-toggle"
-                            [style.color]="theme.colors().textSecondary"
-                            [attr.aria-expanded]="showPushDetails()"
-                            (click)="togglePushDetails()">
-                      {{ showPushDetails() ? 'Hide details' : 'Details' }}
-                    </button>
-                    @if (showPushDetails()) {
-                      <ul class="settings-push-checklist" aria-label="Notification checks">
-                        @for (check of webPush.checks(); track check.label) {
-                          <li class="settings-push-check" [class.settings-push-check--fail]="!check.ok">
-                            <span class="settings-push-check__label">{{ check.ok ? '✓' : '✕' }} {{ check.label }}</span>
-                          </li>
-                        }
-                      </ul>
-                      <p class="settings-push-diagnostics" [style.color]="theme.colors().textSecondary">{{ webPush.diagnostics() }}</p>
-                    }
-                  }
-                  @if (webPush.error()) {
-                    <p class="settings-push-error">{{ webPush.error() }}</p>
-                  }
-                </div>
-              </div>
-
-              @if (webPush.status() === 'off') {
-                <button type="button"
-                        (click)="webPush.enable()"
-                        [disabled]="webPush.busy()"
-                        [style.background-color]="theme.colors().primary"
-                        class="settings-install-btn">
-                  {{ webPush.busy() ? 'Turning on…' : 'Turn on notifications' }}
-                </button>
-              } @else if (webPush.status() === 'on') {
-                <button type="button"
-                        (click)="webPush.disable()"
-                        [disabled]="webPush.busy()"
-                        [style.color]="theme.colors().text"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        class="settings-push-off-btn">
-                  Turn off on this device
-                </button>
-              }
-            </section>
-          <div class="settings-divider"></div>
-
-          <section class="settings-plan-section">
             <div class="settings-plan-header">
               <div>
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
-                <h2 class="settings-section-title">Notification Settings</h2>
-                <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  These control which push notifications Dexii sends to your phone.
-                </p>
+                <h2 class="settings-section-title">Notifications</h2>
               </div>
             </div>
-
-            <div class="settings-toggles">
-              <label class="settings-toggle">
-                <input type="checkbox"
-                       [checked]="settings.settings().notifyFriendRequests"
-                       (change)="update('notifyFriendRequests', checkedValue($event))">
-                Notify me about friend requests
-              </label>
-              <label class="settings-toggle">
-                <input type="checkbox"
-                       [checked]="settings.settings().notifyChatMessages"
-                       (change)="update('notifyChatMessages', checkedValue($event))">
-                Notify me about new chat messages
-              </label>
-            </div>
+            <app-notification-setup mode="settings"></app-notification-setup>
           </section>
 
           <div class="settings-divider"></div>
@@ -711,11 +613,6 @@ export class SettingsComponent {
   theme = inject(ThemeService);
   install = inject(InstallPromptService);
   webPush = inject(WebPushService);
-  /** Technical notification checks, hidden unless the person asks for them. */
-  showPushDetails = signal(false);
-  togglePushDetails(): void {
-    this.showPushDetails.update((open) => !open);
-  }
   photoPickerOpen = signal(false);
   appUpdate = inject(AppUpdateService);
   gate = inject(FeatureGateService);

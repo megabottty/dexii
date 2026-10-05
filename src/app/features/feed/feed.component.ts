@@ -36,7 +36,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
               <p [style.color]="theme.colors().text" class="tea-push-banner-title">📲 Get Tea on your phone</p>
               @if (webPush.status() === 'needs-install') {
                 <p [style.color]="theme.colors().textSecondary" class="tea-push-banner-text">
-                  Add Dexii to your Home Screen first (Settings → Get the App), then open it from there to turn on notifications.
+                  On iPhone, add Dexii to your Home Screen first (Settings → Notifications shows how), then open it from there to turn these on.
                 </p>
               } @else {
                 <p [style.color]="theme.colors().textSecondary" class="tea-push-banner-text">

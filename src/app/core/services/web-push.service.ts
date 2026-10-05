@@ -4,7 +4,9 @@ import { getApiBaseUrl, isNativeApp } from '../config/api-config';
 import { NotificationsService } from './notifications.service';
 import { SecurityService } from './security.service';
 
-const DISMISSED_KEY = 'dexii_web_push_prompt_dismissed';
+/** Per-user: `${DISMISSED_KEY_PREFIX}<userId>` holds the time it was dismissed. */
+const DISMISSED_KEY_PREFIX = 'dexii_web_push_prompt_dismissed_';
+const DISMISS_FOR_MS = 14 * 24 * 60 * 60 * 1000;
 
 /** One plain-language requirement for notifications, with what to do when it fails. */
 export interface WebPushCheck {
@@ -43,7 +45,9 @@ export class WebPushService {
   readonly subscribed = signal(false);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  readonly dismissed = signal(false);
+  /** When the person last said "Not now" (per account); the prompt comes back after two weeks. */
+  private readonly dismissedAt = signal(0);
+  readonly dismissed = computed(() => Date.now() - this.dismissedAt() < DISMISS_FOR_MS);
 
   readonly supported = computed(() => this.permission() !== 'unsupported');
   readonly isIos = signal(false);
@@ -171,10 +175,16 @@ export class WebPushService {
       }
       if (this.syncedForUser !== userId) {
         this.syncedForUser = userId;
+        this.readDismissed();
         // Prefetch the key so enable() can subscribe inside the tap gesture.
         void this.loadPublicKey();
       }
     });
+  }
+
+  /** Fetches the server key ahead of time so enable() can run inside a tap. */
+  prepare(): void {
+    void this.loadPublicKey();
   }
 
   /** Call from a click handler. Prompts for permission and subscribes. */
@@ -219,12 +229,20 @@ export class WebPushService {
   }
 
   dismissPrompt(): void {
-    this.dismissed.set(true);
-    try { localStorage.setItem(DISMISSED_KEY, '1'); } catch { /* ignore */ }
+    const now = Date.now();
+    this.dismissedAt.set(now);
+    const userId = this.security.currentUserId();
+    if (!userId) return;
+    try { localStorage.setItem(DISMISSED_KEY_PREFIX + userId, String(now)); } catch { /* ignore */ }
   }
 
   private readDismissed(): void {
-    try { this.dismissed.set(localStorage.getItem(DISMISSED_KEY) === '1'); } catch { /* ignore */ }
+    const userId = this.security.currentUserId();
+    if (!userId) { this.dismissedAt.set(0); return; }
+    try {
+      const raw = localStorage.getItem(DISMISSED_KEY_PREFIX + userId);
+      this.dismissedAt.set(raw ? Number(raw) || 0 : 0);
+    } catch { /* ignore */ }
   }
 
   private async loadPublicKey(): Promise<string | null> {

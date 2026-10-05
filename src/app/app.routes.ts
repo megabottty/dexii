@@ -30,6 +30,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/signup-email-confirmation/signup-email-confirmation.component').then(m => m.SignupEmailConfirmationComponent)
   },
   {
+    path: 'signup-notifications',
+    canActivate: [lockGuard],
+    loadComponent: () => import('./features/signup-notifications/signup-notifications.component').then(m => m.SignupNotificationsComponent)
+  },
+  {
     path: 'dashboard',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)

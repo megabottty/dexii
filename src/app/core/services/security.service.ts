@@ -240,8 +240,11 @@ export class SecurityService {
     this._userPin.set(finalPin);
     this._needsPinSetup.set(false);
     this._isLoggedIn.set(true);
-    this._isLocked.set(true);
-    this.router.navigate(['/lock']);
+    // They set this PIN seconds ago: no need to type it again. The PIN still
+    // protects every later open. One last setup step: notifications.
+    this._isLocked.set(false);
+    try { sessionStorage.removeItem('dexii_pending_password'); } catch { /* ignore */ }
+    this.router.navigate(['/signup-notifications']);
   }
 
   async registerUser(password: string, pin: string): Promise<void> {

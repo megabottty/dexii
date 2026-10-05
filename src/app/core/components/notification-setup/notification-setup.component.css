@@ -1,0 +1,155 @@
+.ns {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ns-title {
+  margin: 0;
+  font-size: var(--fs-h-lg);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ns-copy {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.ns-steps {
+  border-radius: var(--radius-card);
+  display: grid;
+  font-size: var(--fs-body);
+  gap: 0.6rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 1rem 1rem 1rem 2.2rem;
+}
+
+.ns-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-label);
+}
+
+.ns-check {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+}
+
+.ns-check__label {
+  font-weight: 700;
+}
+
+.ns-check--fail .ns-check__label {
+  color: #b91c1c;
+}
+
+.ns-error {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: #dc2626;
+}
+
+.ns-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ns-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+
+.ns-btn--primary {
+  color: #fff;
+}
+
+.ns-btn--ghost {
+  background: transparent;
+}
+
+.ns-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ns--setup .ns-btn--primary {
+  width: 100%;
+}
+
+.ns-on {
+  font-weight: 700;
+  font-size: var(--fs-body);
+}
+
+.ns-prefs {
+  padding-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.ns-prefs-title {
+  margin: 0;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.ns-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-min);
+  padding: 10px 16px;
+  border-radius: var(--radius-card);
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+
+.ns-toggle input {
+  width: 20px;
+  height: 20px;
+}
+
+.ns-details-toggle {
+  align-self: flex-start;
+  min-height: var(--tap-min);
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ns-diagnostics {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-label);
+  opacity: 0.8;
+  word-break: break-word;
+}

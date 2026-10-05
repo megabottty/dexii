@@ -294,7 +294,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
             <button (click)="auditLogView.set(!auditLogView())"
                     [style.color]="theme.colors().primary"
                     [style.border]="'1px solid ' + theme.colors().primary"
-                    style="background: transparent; padding: 6px 12px; border-radius: 12px; font-size: var(--fs-btn); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    style="background: transparent; padding: 8px 16px; border-radius: var(--radius-pill); font-size: var(--fs-btn); cursor: pointer; display: flex; align-items: center; gap: 4px;">
               📜 {{ auditLogView() ? 'Close History' : 'Shared History' }}
             </button>
           </div>

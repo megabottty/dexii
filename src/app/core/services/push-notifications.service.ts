@@ -1,4 +1,4 @@
-import { Injectable, effect, inject } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import {
@@ -44,6 +44,12 @@ export class PushNotificationsService {
 
       if (ready && this.registeredForUser !== userId) {
         this.registeredForUser = userId;
+        // During account setup the "Turn on notifications" step asks from a tap,
+        // with an explanation, instead of the OS box popping up over the welcome tour.
+        if (this.router.url.startsWith('/signup-notifications')) {
+          void this.refreshPermission();
+          return;
+        }
         void this.register();
       } else if (!userId) {
         this.registeredForUser = null;
@@ -51,19 +57,39 @@ export class PushNotificationsService {
     });
   }
 
+  /** The OS permission for this app, once known. */
+  readonly permission = signal<'unknown' | 'prompt' | 'granted' | 'denied'>('unknown');
+  /** True once this device's token has been registered for the signed-in account. */
+  readonly registered = signal(false);
+  readonly busy = signal(false);
+
+  async refreshPermission(): Promise<void> {
+    try {
+      const status = await PushNotifications.checkPermissions();
+      this.permission.set(status.receive === 'granted' ? 'granted' : status.receive === 'denied' ? 'denied' : 'prompt');
+    } catch { /* leave unknown */ }
+  }
+
   /** Asks for permission (first time only) and registers with APNs/FCM. */
-  async register(): Promise<void> {
+  async register(): Promise<boolean> {
+    this.busy.set(true);
     try {
       let status = await PushNotifications.checkPermissions();
       if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale') {
         status = await PushNotifications.requestPermissions();
       }
-      if (status.receive !== 'granted') return;
+      this.permission.set(status.receive === 'granted' ? 'granted' : status.receive === 'denied' ? 'denied' : 'prompt');
+      if (status.receive !== 'granted') return false;
 
       await this.attachListeners();
       await PushNotifications.register();
+      this.registered.set(true);
+      return true;
     } catch (err) {
       console.warn('Push registration failed:', err);
+      return false;
+    } finally {
+      this.busy.set(false);
     }
   }
 
