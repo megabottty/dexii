@@ -199,6 +199,10 @@
 .action-buttons-grid > .action-btn-styled {
   height: 100%;
   min-height: 44px;
+  /* This grid keeps the compact look it had before the app-wide text floor was raised. */
+  font-size: 13px;
+  letter-spacing: 0.9px;
+  padding: 9px 12px;
 }
 
 .action-btn-styled {
