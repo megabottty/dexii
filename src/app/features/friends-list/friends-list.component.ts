@@ -30,6 +30,7 @@ type InviteMethod = 'email' | 'sms' | 'whatsapp' | 'copy' | 'share';
 
 interface FriendRequestItem {
   id: string;
+  kind?: 'request' | 'invite';
   from: string;
   to: string;
   fromId?: string;
@@ -50,6 +51,8 @@ interface FriendRequestItem {
     contact?: string;
     message?: string;
     sentAt?: string;
+  
+    id?: string;
   };
 }
 
@@ -194,11 +197,37 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           class="friends-list-component__s8">
                           {{ candidateActionLabel(candidate) }}
                         </button>
+                      } @else if (candidate.relationship === 'invite_sent') {
+                        <span class="friends-list-pending-chip"
+                              [style.color]="theme.colors().primary"
+                              [style.border]="'1px solid ' + theme.colors().primary">✉️ Invite sent {{ candidate.invite?.sentAt | date:'MMM d' }}</span>
+                        <span [style.color]="theme.colors().textSecondary" class="friends-list-invite-note">They haven't joined Dexii yet. You can send the invite again or withdraw it.</span>
+                        <button type="button"
+                                (click)="resendInvite(inviteItemFor(candidate))"
+                                [disabled]="resendingInviteId() === candidate.id"
+                                [style.background-color]="theme.colors().primary"
+                                class="friends-list-component__s8">
+                          {{ resendingInviteId() === candidate.id ? 'Sending…' : 'Send again' }}
+                        </button>
+                        <button type="button"
+                                (click)="withdrawInvite(inviteItemFor(candidate))"
+                                [style.color]="theme.colors().textSecondary"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                class="friends-list-action-btn">Withdraw invite</button>
                       } @else if (candidate.relationship === 'request_sent') {
                         <span class="friends-list-pending-chip"
                               [style.color]="theme.colors().primary"
                               [style.border]="'1px solid ' + theme.colors().primary">⏳ Request pending</span>
                         @if (outgoingRequestFor(candidate); as pending) {
+                          <button type="button"
+                                  (click)="nudgeRequest(pending)"
+                                  [disabled]="nudgeCooldownMs(pending) > 0 || nudgingRequestId() === pending.id"
+                                  [style.opacity]="nudgeCooldownMs(pending) > 0 ? '0.6' : '1'"
+                                  [style.background-color]="theme.colors().primary"
+                                  [title]="nudgeCooldownMs(pending) > 0 ? 'You can nudge again in ' + nudgeCooldownLabel(pending) : 'Send a gentle reminder'"
+                                  class="friends-list-component__s8">
+                            {{ nudgingRequestId() === pending.id ? 'Nudging…' : (nudgeCooldownMs(pending) > 0 ? nudgedAgoLabel(pending) : 'Nudge') }}
+                          </button>
                           <button type="button"
                                   (click)="cancelOutgoingRequest(pending)"
                                   [style.color]="theme.colors().textSecondary"
@@ -296,11 +325,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 @for (req of outgoingRequests(); track req.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
                     <div>
-                      <div style="font-weight: 600;">To: {{ req.to }}</div>
+                      <div style="font-weight: 600;">{{ req.kind === 'invite' ? 'Invited: ' : 'To: ' }}{{ req.to }}</div>
                       <div [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-small);">
-                        Sent {{ req.createdAt | date:'MMM d, h:mm a' }}
-                        @if (req.lastNudgedAt) {
-                          • Nudged {{ req.lastNudgedAt | date:'MMM d, h:mm a' }} ({{ req.nudgeCount || 1 }})
+                        @if (req.kind === 'invite') {
+                          Invite {{ req.invite?.method === 'sms' ? 'texted' : 'emailed' }} {{ req.createdAt | date:'MMM d, h:mm a' }} · they haven't joined Dexii yet
+                        } @else {
+                          Sent {{ req.createdAt | date:'MMM d, h:mm a' }}
+                          @if (req.lastNudgedAt) {
+                            • Nudged {{ req.lastNudgedAt | date:'MMM d, h:mm a' }} ({{ req.nudgeCount || 1 }})
+                          }
                         }
                       </div>
                       @if (req.friendshipProfile) {
@@ -313,6 +346,20 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       }
                     </div>
                     <div class="friends-list-component__s49">
+                      @if (req.kind === 'invite') {
+                        <button (click)="resendInvite(req)"
+                                [disabled]="resendingInviteId() === req.id"
+                                [style.background-color]="theme.colors().primary"
+                                class="friends-list-component__s50">
+                          {{ resendingInviteId() === req.id ? 'Sending…' : 'Send again' }}
+                        </button>
+                        <button (click)="withdrawInvite(req)"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().textSecondary"
+                                class="friends-list-component__s50">
+                          Withdraw invite
+                        </button>
+                      } @else {
                       <button (click)="openFriendProfile(req)"
                               [style.border]="'1px solid ' + theme.colors().border"
                               [style.color]="theme.colors().text"
@@ -333,6 +380,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                               class="friends-list-component__s50">
                         {{ nudgingRequestId() === req.id ? 'Nudging…' : (nudgeCooldownMs(req) > 0 ? nudgedAgoLabel(req) : 'Nudge') }}
                       </button>
+                      }
                     </div>
                   </div>
                 }
@@ -890,7 +938,54 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   /** The sent-but-unanswered request behind a search result, if we have it loaded. */
   outgoingRequestFor(candidate: FriendSearchResult): FriendRequestItem | null {
-    return this.outgoingRequests().find((req) => req.toId === candidate.id || req.to === candidate.username) || null;
+    return this.outgoingRequests().find((req) => req.kind !== 'invite' && (req.toId === candidate.id || req.to === candidate.username)) || null;
+  }
+
+  /** A search hit for an email/phone we already invited, as a list item. */
+  inviteItemFor(candidate: FriendSearchResult): FriendRequestItem {
+    return {
+      id: candidate.id || `invite-${candidate.invite?.id}`,
+      kind: 'invite',
+      from: this.currentUsername,
+      to: candidate.username,
+      status: 'pending',
+      createdAt: candidate.invite?.sentAt || new Date().toISOString(),
+      invite: candidate.invite ? { contact: candidate.invite.contact, message: candidate.invite.message, sentAt: candidate.invite.sentAt, method: candidate.invite.method, id: candidate.invite.id } : undefined
+    } as FriendRequestItem;
+  }
+
+  resendingInviteId = signal<string | null>(null);
+
+  /** Sends the same invite again (email or text); the link stays the same. */
+  async resendInvite(item: FriendRequestItem) {
+    const invite = item.invite as { contact?: string; method?: InviteMethod; message?: string } | undefined;
+    if (!invite?.contact || !invite.method) return;
+    this.resendingInviteId.set(item.id);
+    try {
+      const result = await this.sendInvite({ toUsername: invite.contact, method: invite.method, contact: invite.contact, message: invite.message || '' });
+      if (result?.ok) {
+        await this.dispatchInvite(invite.method, invite.contact, invite.message || '', result.launchUrl);
+        await this.loadOutgoingRequests();
+        if (this.didSearch()) await this.searchUsers();
+      }
+    } finally {
+      this.resendingInviteId.set(null);
+    }
+  }
+
+  async withdrawInvite(item: FriendRequestItem) {
+    const invite = item.invite as { id?: string; contact?: string } | undefined;
+    if (!invite?.id) return;
+    this.modal.confirm(`Withdraw the invite to ${invite.contact || item.to}? The link you sent them will stop working.`, async () => {
+      try {
+        await this.friendsApi.cancelInvite(invite.id!);
+        await this.loadOutgoingRequests();
+        if (this.didSearch()) await this.searchUsers();
+        this.modal.show('Invite withdrawn.');
+      } catch (error: any) {
+        this.modal.show(error?.message || 'Unable to withdraw that invite right now.');
+      }
+    });
   }
 
   candidateActionLabel(candidate: FriendSearchResult): string {
@@ -935,6 +1030,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
     return {
       id: request.id,
+      kind: request.kind || 'request',
       from: fromUsername,
       to: toUsername,
       fromId,

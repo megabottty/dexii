@@ -320,6 +320,18 @@ exports.searchUsers = async (req, res) => {
         .lean();
     }
 
+    // No account for that email/phone, but we already invited them: say so.
+    if (users.length === 0 && (normalizedEmail?.includes('@') || normalizedPhone)) {
+      const contact = normalizedEmail?.includes('@') ? normalizedEmail : normalizedPhone;
+      const invite = await Invite.findOne({
+        invitedBy: req.user.id, contact, status: 'pending', expiresAt: { $gt: new Date() }
+      }).lean();
+      if (invite) {
+        const shaped = shapeInvite(invite, req.user.id);
+        return res.json([{ id: shaped.id, username: invite.contact, relationship: 'invite_sent', invite: shaped.invite }]);
+      }
+    }
+
     // Annotate each result so the UI can render the right action (add / pending / friends)
     // instead of offering to re-send a request that already exists.
     const me = await User.findById(req.user.id).select('friends').lean();
@@ -719,16 +731,70 @@ exports.getIncomingRequests = async (req, res) => {
 // @route   GET /api/friends/requests/sent
 // @desc    Outgoing pending requests
 // @access  Private
+/** A pending invite shaped like a sent request, for the Pending Sent list and search. */
+const shapeInvite = (invite, fromId) => ({
+  id: `invite-${invite._id}`,
+  kind: 'invite',
+  from: String(fromId),
+  to: { id: null, username: invite.contact },
+  status: 'pending',
+  createdAt: invite.sentAt || invite.createdAt,
+  invite: {
+    id: String(invite._id),
+    contact: invite.contact,
+    method: invite.method,
+    message: invite.message || '',
+    sentAt: invite.sentAt || invite.createdAt,
+    expiresAt: invite.expiresAt,
+    delivery: invite.delivery
+  }
+});
+
+// @route   DELETE /api/friends/invite/:inviteId
+// @desc    Withdraw an invite that hasn't been accepted (the link stops working)
+exports.cancelInvite = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+    const { inviteId } = req.params;
+    if (!mongoose.isValidObjectId(inviteId)) {
+      return res.status(400).json({ message: 'Invalid invite id.' });
+    }
+    const invite = await Invite.findOne({ _id: inviteId, invitedBy: req.user.id });
+    if (!invite) return res.status(404).json({ message: 'Invite not found.' });
+    if (invite.status !== 'pending') {
+      return res.status(400).json({ message: 'This invite was already used or withdrawn.' });
+    }
+    invite.status = 'cancelled';
+    await invite.save();
+    res.json({ message: 'Invite withdrawn.', id: String(invite._id) });
+  } catch (err) {
+    console.error('Cancel invite error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 exports.getOutgoingRequests = async (req, res) => {
   try {
     if (!requireDb(res)) return;
 
-    const requests = await FriendRequest.find({ from: req.user.id, status: 'pending' })
-      .populate('to', PUBLIC_USER_FIELDS)
-      .sort({ createdAt: -1 })
-      .lean();
+    const [requests, invites] = await Promise.all([
+      FriendRequest.find({ from: req.user.id, status: 'pending' })
+        .populate('to', PUBLIC_USER_FIELDS)
+        .sort({ createdAt: -1 })
+        .lean(),
+      Invite.find({ invitedBy: req.user.id, status: 'pending', expiresAt: { $gt: new Date() } })
+        .sort({ sentAt: -1 })
+        .lean()
+    ]);
 
-    res.json(requests.map((r) => ({ ...r, id: String(r._id), to: shapeUser(r.to) })));
+    const items = [
+      ...requests.map((r) => ({ ...r, id: String(r._id), kind: 'request', to: shapeUser(r.to) })),
+      // Invites to people who don't have an account yet sit in the same list, so
+      // "did I already ask them?" has one answer.
+      ...invites.map((invite) => shapeInvite(invite, req.user.id))
+    ].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    res.json(items);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

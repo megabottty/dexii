@@ -3,7 +3,18 @@ import { getApiBaseUrl } from '../config/api-config';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import { SecurityService } from './security.service';
 
-export type FriendRelationship = 'none' | 'friends' | 'request_sent' | 'request_received';
+export type FriendRelationship = 'none' | 'friends' | 'request_sent' | 'request_received' | 'invite_sent';
+
+/** An invite sent to someone who doesn't have a Dexii account yet. */
+export interface PendingInvite {
+  id: string;
+  contact: string;
+  method: 'email' | 'sms';
+  message?: string;
+  sentAt?: string;
+  expiresAt?: string;
+  delivery?: string;
+}
 
 /** Outcome of asking for a crush a friend shared with you. */
 export type SharedCrushResult =
@@ -22,6 +33,7 @@ export interface FriendSearchResult {
   phoneE164?: string;
   subscriptionTier?: string;
   relationship: FriendRelationship;
+  invite?: PendingInvite;
 }
 
 export interface FriendSummary {
@@ -97,12 +109,15 @@ interface BackendCrushProfile {
 export interface FriendRequestSummary {
   id: string;
   status: string;
+  /** 'invite' = sent to an email/phone with no account yet. */
+  kind?: 'request' | 'invite';
   message?: string;
   createdAt?: string;
   nudgeCount?: number;
   lastNudgedAt?: string;
   from?: FriendSummary;
   to?: FriendSummary;
+  invite?: PendingInvite;
 }
 
 export interface InviteResponse {
@@ -267,6 +282,11 @@ export class FriendsApiService {
       method: 'POST',
       body: JSON.stringify({ action })
     });
+  }
+
+  /** Withdraws an invite that hasn't been accepted; its link stops working. */
+  cancelInvite(inviteId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/invite/${encodeURIComponent(inviteId)}`, { method: 'DELETE' });
   }
 
   cancelRequest(requestId: string): Promise<{ message: string }> {

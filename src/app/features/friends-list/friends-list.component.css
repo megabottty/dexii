@@ -638,3 +638,9 @@
   font-size: var(--fs-label);
   text-align: right;
 }
+
+.friends-list-invite-note {
+  flex-basis: 100%;
+  font-size: var(--fs-label);
+  line-height: 1.4;
+}

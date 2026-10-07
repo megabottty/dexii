@@ -33,6 +33,9 @@ router.post('/invite', auth, friendController.inviteUser);
 // @route   GET /api/friends/invite/:token  (public - signup needs it before auth exists)
 router.get('/invite/:token', friendController.getInvite);
 
+// @route   DELETE /api/friends/invite/:inviteId
+router.delete('/invite/:inviteId', auth, friendController.cancelInvite);
+
 // @route   GET /api/friends
 router.get('/', auth, friendController.getFriends);
 

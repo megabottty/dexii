@@ -28,7 +28,7 @@ const InviteSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'expired'],
+    enum: ['pending', 'accepted', 'expired', 'cancelled'],
     default: 'pending',
     index: true
   },
