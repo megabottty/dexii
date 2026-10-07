@@ -166,6 +166,19 @@ const TABS: TabDef[] = [
                   [title]="option.label"
                   (click)="set(key, option.value)"></button>
         }
+        <!-- Any colour at all: the palette is a starting point, not a limit. -->
+        <label class="ab-swatch ab-swatch--custom"
+               [class.ab-swatch--custom-active]="isCustom(key, source || key)"
+               [style.background]="isCustom(key, source || key) ? '#' + currentColor(key) : 'conic-gradient(from 90deg, #f8c8a8, #d08b5b, #614335, #65c9ff, #a881af, #f8c8a8)'"
+               [style.box-shadow]="isCustom(key, source || key) ? '0 0 0 3px ' + theme.colors().bg + ', 0 0 0 5px ' + theme.colors().primary : 'none'"
+               [title]="'Pick any ' + title.toLowerCase()">
+          <span class="ab-swatch--custom__plus" aria-hidden="true">{{ isCustom(key, source || key) ? '' : '+' }}</span>
+          <input type="color"
+                 class="ab-swatch--custom__input"
+                 [value]="'#' + currentColor(key)"
+                 [attr.aria-label]="'Pick a custom ' + title.toLowerCase()"
+                 (input)="setCustom(key, $any($event.target).value)">
+        </label>
       </div>
     </ng-template>
   `,
@@ -236,6 +249,26 @@ export class AvatarBuilderComponent {
 
   protected set(key: string, value: string): void {
     this.config.update((cfg) => this.withOption(cfg, key, value));
+  }
+
+  /** The colour currently used for a field, resolved through its fallbacks. */
+  protected currentColor(key: string): string {
+    const cfg = this.config() as unknown as Record<string, string | undefined>;
+    if (key === 'facialHairColor' && !cfg[key]) return this.config().hairColor;
+    if (key === 'accessoriesColor' && !cfg[key]) return '262e33';
+    return cfg[key] || 'ffdbb4';
+  }
+
+  /** True when the field's colour isn't one of the palette swatches (it was picked freely). */
+  protected isCustom(key: string, paletteKey: string): boolean {
+    const current = this.currentColor(key).toLowerCase();
+    return !this.optionsFor(paletteKey).some((option) => option.value.toLowerCase() === current);
+  }
+
+  protected setCustom(key: string, cssHex: string): void {
+    const hex = String(cssHex || '').replace('#', '').toLowerCase();
+    if (!/^[0-9a-f]{6}$/.test(hex)) return;
+    this.set(key, hex);
   }
 
   protected thumb(key: string, value: string): string | undefined {

@@ -1935,8 +1935,8 @@ export class ProfileDetailComponent implements OnDestroy {
     const current = this.crush();
     if (!current) return;
 
-    if (!this.editForm.nickname.trim()) {
-      this.modal.show('Please enter a nickname at least!');
+    if (!this.editForm.nickname.trim() && !this.editForm.fullName.trim()) {
+      this.modal.show('Give them a nickname or a first name so you can find them.');
       return;
     }
     if (!crushFormTextFields(this.editForm).every((text) => this.security.moderateContent(text))) {

@@ -105,7 +105,26 @@ describe('crush form helpers', () => {
     });
   });
 
-  describe('crushToFormValue', () => {
+  describe('formValueToCrushPatch names', () => {
+  it('uses the first name as the nickname when no nickname is given', () => {
+    const value = emptyCrushFormValue();
+    value.nickname = '';
+    value.fullName = 'Sun Lee';
+    const patch = formValueToCrushPatch(value);
+    expect(patch.nickname).toBe('Sun Lee');
+    expect(patch.displayName).toBe('fullName');
+  });
+
+  it('keeps the chosen display name when a nickname exists', () => {
+    const value = emptyCrushFormValue();
+    value.nickname = 'Sunny';
+    value.fullName = 'Sun Lee';
+    value.displayName = 'nickname';
+    expect(formValueToCrushPatch(value).displayName).toBe('nickname');
+  });
+});
+
+describe('crushToFormValue', () => {
     it('strips the legacy "Other: " label prefix and opens the Other tile', () => {
       const value = crushToFormValue(crushWith({ relationshipLabels: ['Other: long distance', 'Just friends'] }));
       expect(value.relationshipLabels).toEqual(['long distance', 'Just friends']);

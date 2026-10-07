@@ -627,3 +627,50 @@
   }
 }
 
+
+/* New Crush modal: share with friends */
+.dashboard-share-section {
+  padding-top: 24px;
+}
+
+.dashboard-share-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-align: center;
+  margin: 0 0 8px;
+  font-style: italic;
+}
+
+.dashboard-share-hint {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: var(--fs-label);
+  line-height: 1.4;
+}
+
+.dashboard-share-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-share-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap-min);
+  padding: 6px 16px 6px 6px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dashboard-share-chip__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}

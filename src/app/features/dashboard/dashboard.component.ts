@@ -44,6 +44,30 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
             <div class="dashboard-component__s6">
               <app-crush-form [form]="newCrush"></app-crush-form>
+
+              @if (friends().length > 0) {
+                <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-share-section">
+                  <h4 [style.color]="theme.colors().primary" class="dashboard-share-title">Share with friends</h4>
+                  <p [style.color]="theme.colors().textSecondary" class="dashboard-share-hint">
+                    Pick who gets to see this crush right away. You can change this any time from Sharing.
+                  </p>
+                  <div class="dashboard-share-grid" role="group" aria-label="Share with friends">
+                    @for (friend of friends(); track friend.id) {
+                      <button type="button"
+                              (click)="toggleShareWith(friend.id)"
+                              [attr.aria-pressed]="shareWith().includes(friend.id)"
+                              [style.background-color]="shareWith().includes(friend.id) ? theme.colors().primary : 'transparent'"
+                              [style.color]="shareWith().includes(friend.id) ? '#fff' : theme.colors().text"
+                              [style.border]="'1px solid ' + (shareWith().includes(friend.id) ? theme.colors().primary : theme.colors().border)"
+                              class="dashboard-share-chip">
+                        <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/80?u=' + friend.id" alt="" class="dashboard-share-chip__avatar">
+                        {{ friend.username }}
+                        @if (shareWith().includes(friend.id)) { <span aria-hidden="true">✓</span> }
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
             </div>
 
             <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
@@ -433,6 +457,12 @@ export class DashboardComponent implements OnInit {
   friends = signal<FriendSummary[]>([]);
 
   newCrush: CrushFormValue = emptyCrushFormValue();
+  /** Friends the new crush is shared with as soon as it is saved. */
+  shareWith = signal<string[]>([]);
+
+  toggleShareWith(friendId: string): void {
+    this.shareWith.update((ids) => ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]);
+  }
 
   ngOnInit() {
     this.dataService.setViewer(null);
@@ -507,8 +537,8 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    if (!this.newCrush.nickname.trim()) {
-      this.modal.show('Please enter a nickname at least!');
+    if (!this.newCrush.nickname.trim() && !this.newCrush.fullName.trim()) {
+      this.modal.show('Give them a nickname or a first name so you can find them.');
       return;
     }
     if (!crushFormTextFields(this.newCrush).every((text) => this.security.moderateContent(text))) {
@@ -525,7 +555,7 @@ export class DashboardComponent implements OnInit {
     const createdCrush = this.dataService.addCrush({
       ...formValueToCrushPatch(this.newCrush),
       visibility: []
-    });
+    }, { shareWith: this.shareWith() });
 
     const note = this.newCrush.note.trim();
     if (note) {
@@ -549,5 +579,6 @@ export class DashboardComponent implements OnInit {
 
   resetForm() {
     this.newCrush = emptyCrushFormValue();
+    this.shareWith.set([]);
   }
 }

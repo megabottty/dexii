@@ -223,11 +223,14 @@ export function crushToFormValue(crush: CrushProfile): CrushFormValue {
 export function formValueToCrushPatch(value: CrushFormValue): CrushFormPatch {
   const labels = cleanLabels(value.relationshipLabels);
   const heartbroken = labels.includes(HEARTBROKEN_LABEL);
+  const nickname = value.nickname.trim();
+  const fullName = value.fullName.trim();
 
   return {
-    nickname: value.nickname.trim(),
-    fullName: value.fullName.trim(),
-    displayName: value.displayName,
+    // Nickname is optional: with only a first name, that name is used everywhere.
+    nickname: nickname || fullName,
+    fullName,
+    displayName: nickname ? value.displayName : 'fullName',
     pronouns: value.pronouns,
     avatarUrl: value.avatarUrl,
     avatarConfig: value.avatarConfig,

@@ -70,12 +70,12 @@ interface ListGroup {
       <app-avatar-picker [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"></app-avatar-picker>
 
       <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-nickname">Nickname</label>
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-nickname">Nickname (Optional)</label>
         <input id="cf-nickname" [(ngModel)]="form().nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
       </div>
 
       <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-full-name">First Name (Optional)</label>
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-full-name">First Name</label>
         <input id="cf-full-name" [(ngModel)]="form().fullName" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
       </div>
 

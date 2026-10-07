@@ -527,7 +527,7 @@ export class DataService {
     this.lastCrushFetchAt = Date.now();
   }
 
-  private async persistNewCrush(localId: string, crush: CrushProfile): Promise<void> {
+  private async persistNewCrush(localId: string, crush: CrushProfile, shareWith: string[] = []): Promise<void> {
     try {
       const payload = {
         nickname: crush.nickname,
@@ -603,7 +603,11 @@ export class DataService {
       this._allCrushes.update(crushes =>
         crushes.map((existing) => existing.id === localId ? mapped : existing)
       );
-      this.modal.show('Profile Secured in the Rolodex.');
+      // Sharing needs the server id, so it happens once the crush exists there.
+      if (shareWith.length) void this.shareCrushWith(mapped.id, shareWith);
+      this.modal.show(shareWith.length
+        ? `Profile Secured in the Rolodex and shared with ${shareWith.length} friend${shareWith.length === 1 ? '' : 's'}.`
+        : 'Profile Secured in the Rolodex.');
     } catch (err) {
       console.error('Error persisting new crush:', err);
       this.modal.show('Connection error. Could not save profile.');
@@ -803,7 +807,10 @@ export class DataService {
     }));
   }
 
-  public addCrush(crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'> & { initialRating?: number }): CrushProfile {
+  public addCrush(
+    crush: Omit<CrushProfile, 'id' | 'userId' | 'lastInteraction' | 'vibeHistory' | 'redFlags' | 'sharedEntries'> & { initialRating?: number },
+    options: { shareWith?: string[] } = {}
+  ): CrushProfile {
     const localId = Math.random().toString(36).substring(7);
     const { initialRating: passedInitial, ...crushData } = crush as any;
     const startRating = passedInitial ?? crush.rating ?? 3;
@@ -827,7 +834,7 @@ export class DataService {
     };
 
     this._allCrushes.update(prev => [newCrush, ...prev]);
-    void this.persistNewCrush(localId, newCrush);
+    void this.persistNewCrush(localId, newCrush, options.shareWith || []);
     return newCrush;
   }
 
