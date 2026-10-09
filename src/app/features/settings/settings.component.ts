@@ -63,9 +63,11 @@ interface FriendChoice {
           </div>
 
           @if (lockedFeature(); as locked) {
-            <div class="settings-locked-banner">
-              <app-upgrade-prompt [feature]="locked" [compact]="true"></app-upgrade-prompt>
-            </div>
+            @if (subscription.tierGatingEnabled || locked === 'manageSuperAdmins') {
+              <div class="settings-locked-banner">
+                <app-upgrade-prompt [feature]="locked" [compact]="true"></app-upgrade-prompt>
+              </div>
+            }
           }
 
           <div class="settings-actions">
@@ -485,6 +487,7 @@ interface FriendChoice {
 
           
 
+          @if (subscription.tierGatingEnabled) {
           <section class="settings-plan-section">
             <div class="settings-plan-header">
               <div>
@@ -515,6 +518,7 @@ interface FriendChoice {
               }
             </div>
           </section>
+          }
 
           <div [style.border-top]="'1px solid ' + theme.colors().border" class="settings-footer">
             <p [style.color]="theme.colors().textSecondary">

@@ -43,10 +43,18 @@ const effectiveTier = (user) => {
 /** Rung on the ladder used for gating: SuperAdmin sits above Gold. */
 const effectiveAccess = (user) => (isSuperAdminUser(user) ? 'SuperAdmin' : effectiveTier(user));
 
+/**
+ * Plans are parked for public testing: everything is open unless
+ * TIER_GATING_ENABLED=true is set in the environment. Super-admin tools are
+ * guarded separately (requireSuperAdmin) and are never opened by this switch.
+ */
+const TIER_GATING_ENABLED = process.env.TIER_GATING_ENABLED === 'true';
+
 const tierAllows = (level, featureKey) => {
   const feature = PREMIUM_FEATURES[featureKey];
   if (!feature || !feature.enabled) return true;
+  if (!TIER_GATING_ENABLED && feature.minTier !== 'SuperAdmin') return true;
   return (TIER_RANK[level] || 0) >= (TIER_RANK[feature.minTier] || 0);
 };
 
-module.exports = { TIER_RANK, PREMIUM_FEATURES, effectiveTier, effectiveAccess, tierAllows, isSuperAdminUser, isSeededSuperAdmin, seededSuperAdmins };
+module.exports = { TIER_RANK, TIER_GATING_ENABLED, PREMIUM_FEATURES, effectiveTier, effectiveAccess, tierAllows, isSuperAdminUser, isSeededSuperAdmin, seededSuperAdmins };

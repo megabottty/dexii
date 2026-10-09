@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { SubscriptionTier } from '../models/user.model';
 import { getApiBaseUrl } from '../config/api-config';
-import { ACCESS_LABELS, AccessLevel, CRUSH_LIMITS, crushLimitLabel } from '../config/premium-features';
+import { ACCESS_LABELS, AccessLevel, CRUSH_LIMITS, crushLimitLabel, TIER_GATING_ENABLED } from '../config/premium-features';
 
 @Injectable({
   providedIn: 'root'
@@ -91,7 +91,11 @@ export class SubscriptionService {
     return this.accessLevel() !== SubscriptionTier.Free;
   }
 
+  /** Plans are parked while tiers are switched off (see TIER_GATING_ENABLED). */
+  readonly tierGatingEnabled = TIER_GATING_ENABLED;
+
   getCrushLimit(): number {
+    if (!TIER_GATING_ENABLED) return Number.POSITIVE_INFINITY;
     return this.crushLimits[this.accessLevel()];
   }
 

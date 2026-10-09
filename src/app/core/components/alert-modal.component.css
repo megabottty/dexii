@@ -15,11 +15,11 @@
 }
 
 .alert-modal-component__s5 {
-  font-size: var(--fs-small); line-height: 1.6; margin: 0 0 20px;
+  font-size: var(--fs-modal); line-height: 1.6; margin: 0 0 20px;
 }
 
 .alert-modal-component__s6 {
-  color: white; border: none; padding: 10px 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin: 4px;
+  color: white; border: none; padding: 10px 24px; font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin: 4px;
 }
 
 .alert-modal-prompt-input {
@@ -63,7 +63,6 @@
   }
 
   .alert-modal-component__s5 {
-    font-size: var(--fs-label);
     margin-bottom: 16px;
   }
 

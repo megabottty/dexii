@@ -62,6 +62,36 @@ const CrushProfileSchema = new mongoose.Schema({
     type: [Number],
     default: [5]
   },
+  // Compatibility Check: the owner's read (0-100), why, and anything giving them pause.
+  compatibility: {
+    score: { type: Number, min: 0, max: 100, default: null },
+    factors: { type: [String], default: [] },
+    note: { type: String, default: '', maxlength: 600 },
+    pause: { type: String, default: '', maxlength: 300 },
+    updatedAt: { type: Date, default: null }
+  },
+  // Every time the owner's score or note changed (newest last, capped at 50).
+  compatibilityHistory: {
+    type: [{
+      score: { type: Number, min: 0, max: 100 },
+      factors: { type: [String], default: [] },
+      note: { type: String, default: '' },
+      at: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
+  // Friends' reads on a crush shared with them: one entry per friend.
+  friendCompatibility: {
+    type: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      username: { type: String, default: '' },
+      avatarUrl: { type: String, default: '' },
+      score: { type: Number, min: 0, max: 100, required: true },
+      note: { type: String, default: '', maxlength: 300 },
+      at: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
   category: String,
   hair: [String],
   eyes: [String],

@@ -510,7 +510,7 @@ export class UserProfileComponent {
   });
 
   crushes = computed(() => {
-    if (this.isSelf()) return this.dataService.getAllCrushes()();
+    if (this.isSelf()) return this.dataService.activeCrushes();
     return this.friendSharedCrushes();
   });
 
@@ -518,7 +518,7 @@ export class UserProfileComponent {
   sharedWithThem = computed(() => {
     const friendId = this.friendId();
     if (!friendId || this.dataService.isMe(friendId)) return [] as Array<CrushProfile & { seenAt: Date | null }>;
-    return this.dataService.getAllCrushes()()
+    return this.dataService.activeCrushes()
       .filter((crush) => this.dataService.isCrushSharedWith(crush, friendId))
       .map((crush) => ({ ...crush, seenAt: crushSeenAt(crush, friendId) }));
   });

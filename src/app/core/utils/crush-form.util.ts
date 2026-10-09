@@ -1,3 +1,4 @@
+import { COMPATIBILITY_FACTORS } from '../config/crush-form-options';
 import { AvatarConfig } from '../models/avatar-config.model';
 import { CrushProfile, CrushStatus, SchoolOrWork } from '../models/crush-profile.model';
 import { CrushPronoun, HEARTBROKEN_LABEL, OTHER_LABEL, relationshipStatusOptions } from '../config/crush-form-options';
@@ -58,6 +59,13 @@ export interface CrushFormValue {
   friends: string;
   memorableMoments: string;
   privateNotes: string;
+  /** Compatibility Check: null = not rated yet. */
+  compatibilityScore: number | null;
+  compatibilityFactors: string[];
+  /** Form-only: the "Something else" chip's text. */
+  compatibilityOther: string;
+  compatibilityNote: string;
+  compatibilityPause: string;
 }
 
 export interface ParsedCustomNotes {
@@ -72,7 +80,7 @@ export type CrushFormPatch = Pick<CrushProfile,
   'nickname' | 'fullName' | 'displayName' | 'pronouns' | 'avatarUrl' | 'avatarConfig' | 'bio' | 'status'
   | 'rating' | 'initialRating' | 'hair' | 'eyes' | 'build' | 'social' | 'relationshipStatus' | 'relationshipLabels'
   | 'heartbreakSong' | 'heartbreakRecovery' | 'customNotes' | 'location' | 'dateOfBirth' | 'howWeMet' | 'whenWeMet'
-  | 'schoolOrWork' | 'grade' | 'occupation' | 'family' | 'friends' | 'memorableMoments'>;
+  | 'schoolOrWork' | 'grade' | 'occupation' | 'family' | 'friends' | 'memorableMoments' | 'compatibility'>;
 
 const NOTE_KINDS: ReadonlyArray<{ key: keyof Omit<ParsedCustomNotes, 'privateNotes'>; label: string }> = [
   { key: 'hairNotes', label: 'Hair' },
@@ -120,7 +128,12 @@ export function emptyCrushFormValue(): CrushFormValue {
     family: '',
     friends: '',
     memorableMoments: '',
-    privateNotes: ''
+    privateNotes: '',
+    compatibilityScore: null,
+    compatibilityFactors: [],
+    compatibilityOther: '',
+    compatibilityNote: '',
+    compatibilityPause: ''
   };
 }
 
@@ -215,7 +228,12 @@ export function crushToFormValue(crush: CrushProfile): CrushFormValue {
     family: crush.family || '',
     friends: crush.friends ? crush.friends.join(', ') : '',
     memorableMoments: crush.memorableMoments || '',
-    privateNotes: parsed.privateNotes
+    privateNotes: parsed.privateNotes,
+    compatibilityScore: crush.compatibility?.score ?? null,
+    compatibilityFactors: (crush.compatibility?.factors || []).filter((f) => COMPATIBILITY_FACTORS.includes(f)),
+    compatibilityOther: (crush.compatibility?.factors || []).filter((f) => !COMPATIBILITY_FACTORS.includes(f)).join(', '),
+    compatibilityNote: crush.compatibility?.note || '',
+    compatibilityPause: crush.compatibility?.pause || ''
   };
 }
 
@@ -264,7 +282,13 @@ export function formValueToCrushPatch(value: CrushFormValue): CrushFormPatch {
     friends: value.friends
       ? value.friends.split(',').map((f) => f.trim()).filter((f) => f)
       : [],
-    memorableMoments: value.memorableMoments
+    memorableMoments: value.memorableMoments,
+    compatibility: {
+      score: value.compatibilityScore,
+      factors: [...value.compatibilityFactors, ...(value.compatibilityOther.trim() ? [value.compatibilityOther.trim()] : [])],
+      note: value.compatibilityNote.trim(),
+      pause: value.compatibilityPause.trim()
+    }
   };
 }
 
@@ -277,7 +301,10 @@ export function crushFormTextFields(value: CrushFormValue): string[] {
     value.privateNotes,
     value.relationshipNotes,
     value.bio,
-    value.memorableMoments
+    value.memorableMoments,
+    value.compatibilityNote,
+    value.compatibilityPause,
+    value.compatibilityOther
   ];
 }
 

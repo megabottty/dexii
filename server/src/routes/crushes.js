@@ -3,7 +3,8 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const {
   getCrushes, getFriendSharedCrushes, getSharedCrushById, createCrush, updateCrush, deleteCrush, shareCrush, unshareCrush,
-  getCrushPhotos, addCrushPhoto, removeCrushPhoto, removeCrushPhotos, reorderCrushPhotos, setCrushPhotoAudience
+  getCrushPhotos, addCrushPhoto, removeCrushPhoto, removeCrushPhotos, reorderCrushPhotos, setCrushPhotoAudience,
+  voteCompatibility, retractCompatibilityVote
 } = require('../controllers/crushController');
 
 // All routes here require auth
@@ -29,6 +30,10 @@ router.post('/:id/share', shareCrush);
 
 // @route   DELETE /api/crushes/:id/share/:friendId
 router.delete('/:id/share/:friendId', unshareCrush);
+
+// A friend's read on a crush shared with them
+router.put('/:id/compatibility/vote', voteCompatibility);
+router.delete('/:id/compatibility/vote', retractCompatibilityVote);
 
 // Photos (up to 8 per crush; friends only see what each photo's audience allows)
 router.get('/:id/photos', getCrushPhotos);

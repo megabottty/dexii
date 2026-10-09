@@ -769,7 +769,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   /** Same underlying crush list shown on the Dashboard, used here so you can
    * share an existing crush with the current chat partner instead of having
    * to fill out a separate "create a new crush" form. */
-  myCrushesForSharing = computed(() => this.dataService.getAllCrushes()());
+  myCrushesForSharing = computed(() => this.dataService.activeCrushes());
 
   toggleAddCrush(): void {
     this.showAddCrush.update((open) => !open);

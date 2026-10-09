@@ -10,7 +10,7 @@ import { EntriesApiService, SharedEntry } from './entries-api.service';
 import { ThemeService } from './theme.service';
 import { RealtimeService } from './realtime.service';
 import { CrushField, pickCrushPayload } from './crush-payload';
-import { CrushPhoto, mapCrushPhotos } from '../models/crush-profile.model';
+import { CrushPhoto, FriendCompatibilityVote, mapCompatibility, mapCompatibilityHistory, mapCrushPhotos, mapFriendCompatibility } from '../models/crush-profile.model';
 
 
 interface BackendCrush {
@@ -62,6 +62,9 @@ interface BackendCrush {
   viewedBy?: Array<{ user: string; at: string }>;
   photos?: Array<{ id?: string; _id?: string; url?: string; width?: number; height?: number; bytes?: number; addedAt?: string; audience?: 'shared' | 'friends'; friendIds?: string[] }>;
   photoCount?: number;
+  compatibility?: unknown;
+  compatibilityHistory?: unknown;
+  friendCompatibility?: unknown;
 }
 
 @Injectable({
@@ -384,7 +387,10 @@ export class DataService {
         ? crush.viewedBy.map((view) => ({ userId: String(view.user), at: new Date(view.at) }))
         : [],
       photos: mapCrushPhotos(crush.photos),
-      photoCount: typeof crush.photoCount === 'number' ? crush.photoCount : (Array.isArray(crush.photos) ? crush.photos.length : 0)
+      photoCount: typeof crush.photoCount === 'number' ? crush.photoCount : (Array.isArray(crush.photos) ? crush.photos.length : 0),
+      compatibility: mapCompatibility(crush.compatibility),
+      compatibilityHistory: mapCompatibilityHistory(crush.compatibilityHistory),
+      friendCompatibility: mapFriendCompatibility(crush.friendCompatibility)
     };
   }
 
@@ -419,6 +425,21 @@ export class DataService {
     const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
     this.patchCrushPhotos(crushId, current.filter((p) => p.id !== photoId));
     return true;
+  }
+
+  /** A friend's read on a crush shared with them (0-100 + an optional note). */
+  public async voteCompatibility(crushId: string, score: number, note: string): Promise<FriendCompatibilityVote[] | null> {
+    const response = await this.authenticatedFetch(`/crushes/${crushId}/compatibility/vote`, { method: 'PUT', body: JSON.stringify({ score, note }) });
+    if (!response || !response.ok) { this.modal.show('Could not save your read right now.'); return null; }
+    const body = await response.json().catch(() => ({}));
+    return mapFriendCompatibility(body?.friendCompatibility);
+  }
+
+  public async retractCompatibilityVote(crushId: string): Promise<FriendCompatibilityVote[] | null> {
+    const response = await this.authenticatedFetch(`/crushes/${crushId}/compatibility/vote`, { method: 'DELETE' });
+    if (!response || !response.ok) { this.modal.show('Could not remove your read right now.'); return null; }
+    const body = await response.json().catch(() => ({}));
+    return mapFriendCompatibility(body?.friendCompatibility);
   }
 
   /** Removes several photos in one request. */
@@ -634,7 +655,8 @@ export class DataService {
         family: crush.family,
         memorableMoments: crush.memorableMoments,
         friends: crush.friends,
-        sortOrder: crush.sortOrder
+        sortOrder: crush.sortOrder,
+        compatibility: crush.compatibility ?? null
       };
 
       let response = await this.authenticatedFetch('/crushes', {
@@ -1032,6 +1054,9 @@ export class DataService {
   public getAllCrushes() {
     return this._allCrushes;
   }
+
+  /** Every crush that isn't archived: the only ones you can share or list for sharing. */
+  public readonly activeCrushes = computed(() => this._allCrushes().filter((crush) => crush.status !== CrushStatus.Archived));
 
   public getUserId(): string {
     return localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';

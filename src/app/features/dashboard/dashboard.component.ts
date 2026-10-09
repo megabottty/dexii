@@ -1,3 +1,4 @@
+import { compatibilityLabel } from '../../core/utils/compatibility';
 import { Component, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -121,9 +122,11 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                 ({{ archivedCrushCount() }} archived)
               }.
             </p>
-            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
-              {{ subscription.tier() }} tier: {{ subscription.crushLimitLabel() === 'Unlimited' ? 'unlimited crushes' : 'up to ' + subscription.crushLimitLabel() + ' crushes' }}.
-            </p>
+            @if (subscription.tierGatingEnabled) {
+              <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s75">
+                {{ subscription.tier() }} tier: {{ subscription.crushLimitLabel() === 'Unlimited' ? 'unlimited crushes' : 'up to ' + subscription.crushLimitLabel() + ' crushes' }}.
+              </p>
+            }
           </div>
           <div class="dashboard-component__s76">
             <button (click)="goToFriends()"
@@ -142,7 +145,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           </div>
         </div>
 
-        @if (!subscription.isPremium()) {
+        @if (subscription.tierGatingEnabled && !subscription.isPremium()) {
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                style="border-radius: 12px; padding: 14px; margin-bottom: 16px;">
@@ -192,39 +195,32 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                         [attr.tabindex]="selectedFilter() === tab.id ? 0 : -1"
                         aria-controls="crush-grid"
                         (click)="selectedFilter.set(tab.id)"
-                        [style.color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().textSecondary"
-                        [style.border-bottom]="selectedFilter() === tab.id ? '2px solid ' + theme.colors().primary : '2px solid transparent'"
+                        [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : 'transparent'"
+                        [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().textSecondary"
                         class="dashboard-component__s81">
                   <span aria-hidden="true">{{ tab.icon }}</span>
                   {{ tab.label }}
                   <span class="dashboard-filter-count"
-                        [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().border"
+                        [style.background-color]="selectedFilter() === tab.id ? 'rgba(255,255,255,0.25)' : theme.colors().border"
                         [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().text"
                         [attr.aria-label]="filterCounts()[tab.id] + ' crushes'">{{ filterCounts()[tab.id] }}</span>
                 </button>
               }
             </div>
-            <span class="info-icon-tooltip" data-tooltip="Dating is anyone whose status is Dating or Exclusive. Not dating is everyone else.">
+            <span class="info-icon-tooltip info-icon-tooltip--end" data-tooltip="All is every crush that isn't archived. Dating is anyone whose status is Dating or Exclusive. Not dating is everyone else. The tabs follow each crush's Status, not their relationship labels.">
               <button type="button"
                         class="dashboard-filter-info"
                         [style.color]="theme.colors().textSecondary"
                         [style.border]="'1px solid ' + theme.colors().border"
-                        [attr.aria-expanded]="showFilterHelp()"
-                        aria-controls="crush-filter-help"
                         aria-label="How these tabs work"
-                        (click)="toggleFilterHelp()">i</button>
+                        aria-describedby="crush-filter-help">i</button>
+            </span>
+            <span id="crush-filter-help" class="sr-only">
+              All is every crush that isn't archived. Dating is anyone whose status is Dating or Exclusive.
+              Not dating is everyone else: Crush, Plotting, Broken Up, Heartbroken and Friend. Archived crushes live under View Archive.
+              The tabs follow each crush's Status, not their relationship labels.
             </span>
           </div>
-          @if (showFilterHelp()) {
-            <p id="crush-filter-help"
-               [style.color]="theme.colors().textSecondary"
-               [style.border]="'1px solid ' + theme.colors().border"
-               class="dashboard-filter-help">
-              <strong>All</strong> is every crush that isn't archived. <strong>Dating</strong> is anyone whose status is Dating or Exclusive.
-              <strong>Not dating</strong> is everyone else: Crush, Plotting, Broken Up, Heartbroken and Friend. Archived crushes live under View Archive.
-              The tabs follow each crush's Status (the drop-down on their page), not their relationship labels.
-            </p>
-          }
         }
 
         <!-- Grid -->
@@ -277,6 +273,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                    </span>
                    @if ((crush.photoCount || 0) > 0) {
                      <span class="dashboard-photo-chip" [attr.aria-label]="crush.photoCount + ' photos'">📷 {{ crush.photoCount }}</span>
+                   }
+                   @if (crush.compatibility?.score !== null && crush.compatibility?.score !== undefined) {
+                     <span class="dashboard-photo-chip dashboard-compat-chip" [title]="'Compatibility: ' + compatibilityLabel(crush.compatibility.score)" [attr.aria-label]="'Compatibility ' + crush.compatibility.score + ' percent, ' + compatibilityLabel(crush.compatibility.score)">💞 {{ crush.compatibility.score }}%</span>
                    }
                    @if ((crush.redFlags || 0) > 0) {
                      <button type="button"
@@ -346,6 +345,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   `
 })
 export class DashboardComponent implements OnInit {
+  /** "Soulmate energy 🔥" for the card chip's tooltip. */
+  compatibilityLabel = compatibilityLabel;
+
   getCrushDisplayName(crush: CrushProfile): string {
     return crush.displayName === 'fullName' && crush.fullName?.trim()
       ? crush.fullName
@@ -366,8 +368,6 @@ export class DashboardComponent implements OnInit {
 
   showArchived = signal(false);
   selectedFilter = signal<CrushFilter>('All');
-  showFilterHelp = signal(false);
-  toggleFilterHelp(): void { this.showFilterHelp.update((open) => !open); }
   readonly filterTabs: ReadonlyArray<{ id: CrushFilter; label: string; icon: string }> = [
     { id: 'All', label: 'All', icon: '✨' },
     { id: 'Dating', label: 'Dating', icon: '💑' },
@@ -583,7 +583,6 @@ export class DashboardComponent implements OnInit {
   }
 
   openNewEntryModal() {
-    const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
       this.modal.show(`${this.subscription.tier()} tier allows up to ${this.subscription.crushLimitLabel()} active crushes. Archive one or upgrade to add more.`);
       return;
@@ -597,7 +596,6 @@ export class DashboardComponent implements OnInit {
   }
 
   async saveCrush() {
-    const crushLimit = this.subscription.getCrushLimit();
     if (!this.subscription.checkLimit(this.activeCrushCount())) {
       this.modal.show(`${this.subscription.tier()} tier allows up to ${this.subscription.crushLimitLabel()} active crushes. Archive one or upgrade to add more.`);
       return;

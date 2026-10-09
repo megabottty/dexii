@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
-import { CrushPhoto, CrushProfile, CrushStatus, mapCrushPhotos } from '../models/crush-profile.model';
+import { CrushPhoto, CrushProfile, CrushStatus, mapCrushPhotos, mapCompatibility, mapFriendCompatibility } from '../models/crush-profile.model';
 import { SecurityService } from './security.service';
 
 export type FriendRelationship = 'none' | 'friends' | 'request_sent' | 'request_received' | 'invite_sent';
@@ -284,7 +284,9 @@ export class FriendsApiService {
       family: crush.family,
       memorableMoments: crush.memorableMoments,
       friends: crush.friends || [],
-      photoCount: typeof (crush as any).photoCount === 'number' ? (crush as any).photoCount : 0
+      photoCount: typeof (crush as any).photoCount === 'number' ? (crush as any).photoCount : 0,
+      compatibility: mapCompatibility((crush as any).compatibility),
+      friendCompatibility: mapFriendCompatibility((crush as any).friendCompatibility)
     };
   }
 

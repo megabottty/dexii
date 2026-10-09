@@ -95,7 +95,7 @@ export class CrushSharePickerComponent {
   protected saving = signal(false);
   private selected = signal<Set<string>>(new Set());
 
-  crushes = computed<CrushProfile[]>(() => this.dataService.getAllCrushes()());
+  crushes = computed<CrushProfile[]>(() => this.dataService.activeCrushes());
 
   constructor() {
     // Freshly seeded whenever this is mounted for a (possibly new) friend: start

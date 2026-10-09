@@ -10,6 +10,8 @@ import { UnreadableImageError, resizeImageFile } from '../../utils/image-resize'
 
 const MAX_PHOTOS = 8;
 
+interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
+
 /**
  * Photos of a crush. Owners add, reorder, remove, pick who sees each photo and
  * promote one to the profile picture. Friends get a swipeable carousel of the
@@ -21,7 +23,65 @@ const MAX_PHOTOS = 8;
   imports: [CommonModule, FocusTrapDirective],
   styleUrl: './crush-photo-gallery.component.css',
   template: `
-    @if (mode() === 'owner' || photos().length > 0) {
+    @if (layout() === 'hero') {
+      <!-- The profile picture is the first slide; the other photos follow. Swipe, arrows, dots, tap for full screen. -->
+      <div class="pg-hero" [class.pg-hero--small]="size() === 'small'">
+        <div class="pg-hero-carousel" role="region" aria-roledescription="carousel" [attr.aria-label]="'Photos of ' + nickname()">
+          <div #track class="pg-track pg-track--hero" (scroll)="onScroll()" tabindex="0" (keydown.arrowright)="step(1); $event.preventDefault()" (keydown.arrowleft)="step(-1); $event.preventDefault()">
+            @for (slide of slides(); track slide.key; let i = $index) {
+              <div class="pg-slide pg-slide--hero" role="group" [attr.aria-label]="(i === 0 ? 'Profile picture' : 'Photo ' + (i + 1)) + ' of ' + slides().length" [attr.aria-roledescription]="'slide'">
+                <button type="button" class="pg-slide-btn" (click)="openLightbox(i)" [attr.aria-label]="'Open ' + (i === 0 ? 'profile picture' : 'photo ' + (i + 1)) + ' full screen'">
+                  <img [src]="slide.url" [alt]="nickname() + (i === 0 ? '' : ', photo ' + (i + 1))" class="pg-img" [attr.loading]="i === 0 ? 'eager' : 'lazy'">
+                </button>
+                @if (mode() === 'owner' && slide.photo?.audience === 'friends') {
+                  <span class="pg-badge pg-badge--hero" [style.background-color]="theme.colors().primary" [attr.title]="audienceLabel(slide.photo!)">🔒</span>
+                }
+              </div>
+            }
+          </div>
+          @if (slides().length > 1) {
+            <button type="button" class="pg-nav pg-nav--hero pg-nav--prev" (click)="step(-1)" [disabled]="index() === 0" aria-label="Previous photo" [style.background-color]="theme.colors().bg">‹</button>
+            <button type="button" class="pg-nav pg-nav--hero pg-nav--next" (click)="step(1)" [disabled]="index() === slides().length - 1" aria-label="Next photo" [style.background-color]="theme.colors().bg">›</button>
+          }
+        </div>
+        @if (slides().length > 1) {
+          <div class="pg-dots pg-dots--hero" aria-hidden="true">
+            @for (slide of slides(); track slide.key; let i = $index) {
+              <span class="pg-dot" [style.background-color]="i === index() ? theme.colors().primary : theme.colors().border"></span>
+            }
+          </div>
+          <p class="pg-counter pg-counter--hero" [style.color]="theme.colors().textSecondary" aria-live="polite">{{ index() + 1 }} / {{ slides().length }}</p>
+        }
+        @if (busy()) {
+          <p [style.color]="theme.colors().textSecondary" class="pg-note pg-note--hero" role="status">{{ busy() }}</p>
+        }
+        @if (mode() === 'owner') {
+          <div class="pg-hero-tools">
+            @if (photos().length < max) {
+              <label class="pg-add pg-add--hero" [style.background-color]="theme.colors().primary">
+                <span aria-hidden="true">＋</span> Photos
+                <input type="file" accept="image/*" multiple (change)="onFilesPicked($event)" class="pg-file" aria-label="Add photos of this crush">
+              </label>
+            }
+            @if (currentHeroPhoto(); as photo) {
+              <button type="button" (click)="openAudience(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero" [attr.title]="photo.audience === 'friends' ? audienceLabel(photo) : 'Everyone this crush is shared with'">{{ photo.audience === 'friends' ? '🔒 Who sees' : '👁️ Who sees' }}</button>
+              <button type="button" (click)="useAsProfile(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero">Set as picture</button>
+              <button type="button" (click)="move(photo, -1)" [disabled]="photoIndex(photo) === 0" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero pg-btn--icon" aria-label="Move this photo earlier">◀</button>
+              <button type="button" (click)="move(photo, 1)" [disabled]="photoIndex(photo) === photos().length - 1" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero pg-btn--icon" aria-label="Move this photo later">▶</button>
+              <button type="button" (click)="remove(photo)" class="pg-btn pg-btn--danger pg-btn--hero">Remove</button>
+            }
+            @if (photos().length > 1) {
+              <button type="button" (click)="openSelect()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero">Select</button>
+            }
+            @if (hasHiddenPhotos()) {
+              <button type="button" (click)="shareAll()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero">Share all</button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (layout() === 'section' && (mode() === 'owner' || photos().length > 0)) {
       <section class="pg" [attr.aria-label]="'Photos of ' + nickname()">
         <div class="pg-head">
           <h3 class="pg-title">Photos <span class="pg-count" [style.color]="theme.colors().textSecondary">{{ photos().length }}@if (mode() === 'owner') { / {{ max }}}</span></h3>
@@ -97,16 +157,19 @@ const MAX_PHOTOS = 8;
           }
         }
 
-        <!-- Lightbox -->
+      </section>
+    }
+
+        <!-- Lightbox (both layouts) -->
         @if (lightboxIndex() !== null) {
-          <div class="pg-lightbox" role="dialog" aria-modal="true" [attr.aria-label]="'Photo ' + (lightboxIndex()! + 1) + ' of ' + photos().length" (click)="closeLightbox()" (keydown.escape)="closeLightbox()" (keydown.arrowright)="lightboxStep(1)" (keydown.arrowleft)="lightboxStep(-1)">
+          <div class="pg-lightbox" role="dialog" aria-modal="true" [attr.aria-label]="'Photo ' + (lightboxIndex()! + 1) + ' of ' + slides().length" (click)="closeLightbox()" (keydown.escape)="closeLightbox()" (keydown.arrowright)="lightboxStep(1)" (keydown.arrowleft)="lightboxStep(-1)">
             <button #lightboxClose type="button" class="pg-lightbox-close" (click)="closeLightbox()" aria-label="Close">✕</button>
-            <img [src]="photos()[lightboxIndex()!]?.url" [alt]="nickname() + ', photo ' + (lightboxIndex()! + 1)" class="pg-lightbox-img" (click)="$event.stopPropagation()">
-            @if (photos().length > 1) {
+            <img [src]="slides()[lightboxIndex()!]?.url" [alt]="nickname() + ', photo ' + (lightboxIndex()! + 1)" class="pg-lightbox-img" (click)="$event.stopPropagation()">
+            @if (slides().length > 1) {
               <button type="button" class="pg-lightbox-nav pg-lightbox-nav--prev" (click)="lightboxStep(-1); $event.stopPropagation()" aria-label="Previous photo">‹</button>
               <button type="button" class="pg-lightbox-nav pg-lightbox-nav--next" (click)="lightboxStep(1); $event.stopPropagation()" aria-label="Next photo">›</button>
             }
-            <p class="pg-lightbox-counter">{{ lightboxIndex()! + 1 }} / {{ photos().length }}</p>
+            <p class="pg-lightbox-counter">{{ lightboxIndex()! + 1 }} / {{ slides().length }}</p>
           </div>
         }
 
@@ -168,14 +231,16 @@ const MAX_PHOTOS = 8;
             </div>
           </div>
         }
-      </section>
-    }
   `
 })
 export class CrushPhotoGalleryComponent {
   readonly crushId = input.required<string>();
   /** 'owner': full management UI. 'viewer': a friend seeing what was shared with them. 'preview': the owner seeing their own crush the way any friend they've shared it with would -- same photos as 'viewer' (anything shared, not just one friend's slice), no management UI. */
   readonly mode = input<'owner' | 'viewer' | 'preview'>('viewer');
+  /** 'section': the standalone Photos block. 'hero': sits in the profile-picture spot; the picture is slide one. */
+  readonly layout = input<'section' | 'hero'>('section');
+  /** Hero only: 'large' (owner header, 140px) or 'small' (friend view, 96px). */
+  readonly size = input<'large' | 'small'>('large');
   readonly nickname = input('this crush');
   /** Owner only: the current profile picture, to offer "Use as profile picture". */
   readonly avatarUrl = input<string | undefined>(undefined);
@@ -200,7 +265,18 @@ export class CrushPhotoGalleryComponent {
   private readonly lightboxClose = viewChild<ElementRef<HTMLButtonElement>>('lightboxClose');
   private lastFocused: HTMLElement | null = null;
 
-  readonly current = computed(() => this.photos()[this.index()] || null);
+  readonly current = computed(() => this.layout() === 'hero' ? null : (this.photos()[this.index()] || null));
+
+  /** What the carousel shows: in hero layout the profile picture first, then every photo that isn't it. */
+  readonly slides = computed<HeroSlide[]>(() => {
+    const photos = this.photos().filter((p) => p.url);
+    if (this.layout() !== 'hero') return photos.map((p) => ({ key: p.id, url: p.url!, photo: p }));
+    const avatar = this.avatarUrl() || `https://i.pravatar.cc/300?u=${encodeURIComponent(this.nickname())}`;
+    return [{ key: 'avatar', url: avatar, photo: null }, ...photos.filter((p) => p.url !== avatar).map((p) => ({ key: p.id, url: p.url!, photo: p }))];
+  });
+  /** Hero layout: the photo under the current slide (null on the profile-picture slide). */
+  readonly currentHeroPhoto = computed(() => this.slides()[this.index()]?.photo || null);
+  photoIndex(photo: CrushPhoto): number { return this.photos().findIndex((p) => p.id === photo.id); }
   readonly hasHiddenPhotos = computed(() => this.photos().some((p) => p.audience === 'friends'));
 
   constructor() {
@@ -248,11 +324,11 @@ export class CrushPhotoGalleryComponent {
   onScroll(): void {
     const el = this.track()?.nativeElement;
     if (!el || el.clientWidth === 0) return;
-    this.index.set(Math.max(0, Math.min(this.photos().length - 1, Math.round(el.scrollLeft / el.clientWidth))));
+    this.index.set(Math.max(0, Math.min(this.slides().length - 1, Math.round(el.scrollLeft / el.clientWidth))));
   }
 
   step(delta: number): void {
-    const next = Math.max(0, Math.min(this.photos().length - 1, this.index() + delta));
+    const next = Math.max(0, Math.min(this.slides().length - 1, this.index() + delta));
     this.index.set(next);
     const el = this.track()?.nativeElement;
     el?.scrollTo({ left: next * el.clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
@@ -263,7 +339,7 @@ export class CrushPhotoGalleryComponent {
   lightboxStep(delta: number): void {
     const i = this.lightboxIndex();
     if (i === null) return;
-    this.lightboxIndex.set(Math.max(0, Math.min(this.photos().length - 1, i + delta)));
+    this.lightboxIndex.set(Math.max(0, Math.min(this.slides().length - 1, i + delta)));
   }
 
   async onFilesPicked(event: Event): Promise<void> {
@@ -331,7 +407,10 @@ export class CrushPhotoGalleryComponent {
     if (from < 0 || to < 0 || to >= list.length) return;
     list.splice(from, 1); list.splice(to, 0, photo);
     this.photos.set(list);
-    this.index.set(to);
+    const target = this.layout() === 'hero' ? Math.max(0, this.slides().findIndex((slide) => slide.photo?.id === photo.id)) : to;
+    this.index.set(target);
+    const el = this.track()?.nativeElement;
+    el?.scrollTo({ left: target * el.clientWidth, behavior: 'auto' });
     await this.dataService.reorderCrushPhotos(this.crushId(), list.map((p) => p.id));
   }
 

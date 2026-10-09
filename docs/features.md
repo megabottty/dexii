@@ -70,6 +70,32 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
   Delete selected; a crush's photo gallery has "Select photos", which opens a thumbnail sheet with the same
   controls and calls `POST /api/crushes/:id/photos/delete` with the chosen ids.
 
+## Compatibility Check
+
+- **Your read**: when adding or editing a crush, slide the 0–100 meter (🧊 Not feeling it → 🤔 Hmm, maybe →
+  ✨ There's something → 💫 Really clicking → 🔥 Soulmate energy), tap the chips that explain it ("Shared values",
+  "Makes me laugh", …), write it in your own words, and note anything giving you pause. Saved as
+  `compatibility` on the crush; every change of score or note is appended to `compatibilityHistory` (owner only).
+- **Friends' read**: friends you've shared the crush with get a "Weigh in" slider on their view
+  (`PUT/DELETE /api/crushes/:id/compatibility/vote`). The owner sees the average, each friend's score and note,
+  and a one-liner comparing the two reads. A vote logs `compatibility_voted` in History and lands in Tea.
+- Shown as a card under the crush header and as a 💞 chip on the dashboard card. Helpers live in
+  `core/utils/compatibility.ts`.
+
+## Plans are parked (public testing)
+
+`TIER_GATING_ENABLED` in `src/app/core/config/premium-features.ts` (and the `TIER_GATING_ENABLED` env var on the
+server) is off: everyone gets every feature and unlimited crushes, and the Crush Plan card, Settings plan
+section and upgrade prompts are hidden. Super-admin tools stay admin-only. Flip the flag to `true` (and set the
+env var) to bring Free / Premium / Gold back.
+
+## Photos as the profile picture
+
+A crush's profile-picture spot is the photo carousel: the picture is slide one and the other photos follow,
+for the owner and for friends (who only see photos whose audience allows them). Owners manage photos right
+there: add several at once, set any photo as the picture, choose who sees each one, reorder, remove, or
+select several to delete. Archived crushes never appear in share pickers.
+
 ## Accessibility (WCAG 2.1 AA)
 
 The whole app is built to the WCAG 2.1 AA bar. The rules the code follows:

@@ -286,3 +286,98 @@
     flex-direction: column;
   }
 }
+
+/* ---- Compatibility Check ---- */
+.cf-compat-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.cf-compat-emoji { font-size: 2.4rem; line-height: 1; }
+.cf-compat-label { font-size: var(--fs-h-md); font-weight: 800; }
+.cf-compat-hint { font-size: var(--fs-small); }
+.cf-compat-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cf-compat-end { font-size: 1.4rem; line-height: 1; }
+.cf-compat-range {
+  --compat-fill: 50%;
+  --compat-color: #8d5e94;
+  flex: 1;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.cf-compat-range::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa 0%, #c084fc 50%, #f97316 100%);
+  opacity: 0.9;
+}
+.cf-compat-range::-moz-range-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa 0%, #c084fc 50%, #f97316 100%);
+}
+.cf-compat-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--compat-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.cf-compat-range::-moz-range-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--compat-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.cf-compat-range--unset::-webkit-slider-thumb { opacity: 0.45; }
+.cf-compat-range--unset::-moz-range-thumb { opacity: 0.45; }
+.cf-compat-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 0 34px;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.cf-compat-clear {
+  background: none;
+  border: none;
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: var(--fs-label);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.cf-chip--compat {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.cf-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+@media (max-width: 480px) {
+  .cf-compat-scale { padding: 0 8px; }
+}

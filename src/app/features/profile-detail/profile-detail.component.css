@@ -1117,3 +1117,47 @@ button.friend-item {
 button.friend-item:disabled {
   cursor: default;
 }
+
+/* ---- Compatibility Check card ---- */
+.compat-card {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 16px;
+  display: grid;
+  gap: 18px;
+}
+.compat-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.compat-title { margin: 0; font-size: var(--fs-h-sm); text-transform: uppercase; letter-spacing: 3px; }
+.compat-block { display: grid; gap: 10px; }
+.compat-eyebrow { margin: 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+.compat-trend { font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 8px; }
+.compat-meter { display: grid; gap: 8px; }
+.compat-track { position: relative; height: 14px; border-radius: 999px; background: linear-gradient(90deg, #60a5fa 0%, #c084fc 50%, #f97316 100%); margin: 10px 14px 6px; }
+.compat-marker { position: absolute; top: 50%; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 3px solid; transform: translate(-50%, -50%); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.compat-marker--friends { width: 24px; height: 24px; border-style: dashed; }
+.compat-readout { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.compat-score { font-size: var(--fs-h-lg); font-weight: 800; }
+.compat-zone { font-size: var(--fs-body); font-weight: 600; }
+.compat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.compat-chip { padding: 6px 12px; border-radius: 999px; font-size: var(--fs-small); }
+.compat-note { margin: 0; font-size: var(--fs-body); line-height: 1.5; font-style: italic; }
+.compat-pause, .compat-empty, .compat-gap { margin: 0; font-size: var(--fs-small); line-height: 1.5; }
+.compat-gap { font-weight: 700; }
+.compat-votes, .compat-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.compat-vote { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; }
+.compat-vote-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.compat-vote-body { font-size: var(--fs-small); line-height: 1.4; }
+.compat-history-row { display: flex; gap: 10px; align-items: baseline; font-size: var(--fs-small); }
+.compat-history-date { min-width: 64px; }
+.compat-weigh-in { padding-top: 16px; }
+.compat-vote-readout { display: flex; align-items: center; gap: 10px; }
+.compat-vote-emoji { font-size: 1.8rem; line-height: 1; }
+.compat-vote-label { font-weight: 700; font-size: var(--fs-body); }
+.compat-vote-meter { display: flex; align-items: center; gap: 10px; }
+.compat-vote-range { --compat-color: #8d5e94; flex: 1; height: 44px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.compat-vote-range::-webkit-slider-runnable-track { height: 14px; border-radius: 999px; background: linear-gradient(90deg, #60a5fa 0%, #c084fc 50%, #f97316 100%); }
+.compat-vote-range::-moz-range-track { height: 14px; border-radius: 999px; background: linear-gradient(90deg, #60a5fa 0%, #c084fc 50%, #f97316 100%); }
+.compat-vote-range::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -8px; border-radius: 50%; background: #fff; border: 3px solid var(--compat-color); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.compat-vote-range::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 3px solid var(--compat-color); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.compat-vote-note { width: 100%; min-height: var(--tap-min); padding: 10px 14px; border-radius: 10px; font: inherit; font-size: var(--fs-body); box-sizing: border-box; }
+.compat-vote-actions { display: flex; gap: 8px; flex-wrap: wrap; }

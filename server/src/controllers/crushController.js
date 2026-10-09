@@ -16,8 +16,30 @@ const UPDATABLE_CRUSH_FIELDS = [
   'category', 'hair', 'eyes', 'build', 'social', 'relationshipStatus', 'relationshipLabels',
   'heartbreakSong', 'heartbreakRecovery', 'pronouns', 'customNotes', 'location', 'dateOfBirth',
   'age', 'howWeMet', 'whenWeMet', 'schoolOrWork', 'grade', 'occupation', 'family',
-  'memorableMoments', 'friends', 'sortOrder'
+  'memorableMoments', 'friends', 'sortOrder', 'compatibility'
 ];
+
+const COMPATIBILITY_FACTOR_MAX = 12;
+const clampScore = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(100, Math.round(n)));
+};
+/** Normalises what a client sends for `compatibility`; null score = "not rated". */
+const cleanCompatibility = (raw) => {
+  if (!raw || typeof raw !== 'object') return null;
+  const score = raw.score === null || raw.score === undefined || raw.score === '' ? null : clampScore(raw.score);
+  const factors = Array.isArray(raw.factors) ? raw.factors.filter((f) => typeof f === 'string').map((f) => f.trim().slice(0, 60)).filter(Boolean).slice(0, COMPATIBILITY_FACTOR_MAX) : [];
+  return {
+    score,
+    factors,
+    note: typeof raw.note === 'string' ? raw.note.trim().slice(0, 600) : '',
+    pause: typeof raw.pause === 'string' ? raw.pause.trim().slice(0, 300) : ''
+  };
+};
+/** A history point is worth keeping when the score or the note moved. */
+const compatibilityChanged = (before, after) =>
+  !before || before.score !== after.score || (before.note || '') !== (after.note || '') || JSON.stringify(before.factors || []) !== JSON.stringify(after.factors || []);
 
 const MAX_PHOTOS = 8;
 const MAX_PHOTO_CHARS = 560_000; // ~400KB of JPEG once base64-encoded
@@ -45,7 +67,8 @@ const shapeCrushForWire = (crush, viewerId = null) => {
   const visible = viewerId ? photos.filter((p) => photoVisibleTo(p, viewerId)) : photos;
   plain.photos = visible.map(photoMeta);
   plain.photoCount = visible.length;
-  if (viewerId) delete plain.viewedBy;
+  plain.friendCompatibility = (plain.friendCompatibility || []).map(shapeVote);
+  if (viewerId) { delete plain.viewedBy; delete plain.compatibilityHistory; }
   return plain;
 };
 
@@ -241,6 +264,11 @@ exports.createCrush = async (req, res) => {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) body[field] = req.body[field];
     }
     if (body.status === 'Crushing') body.status = 'Plotting';
+    if (Object.prototype.hasOwnProperty.call(body, 'compatibility')) {
+      const clean = cleanCompatibility(body.compatibility);
+      body.compatibility = clean ? { ...clean, updatedAt: clean.score === null ? null : new Date() } : undefined;
+      if (clean && clean.score !== null) body.compatibilityHistory = [{ score: clean.score, factors: clean.factors, note: clean.note, at: new Date() }];
+    }
     const newCrush = new CrushProfile({
       ...body,
       userId: req.user.id
@@ -288,6 +316,19 @@ exports.updateCrush = async (req, res) => {
     }
     if (Object.prototype.hasOwnProperty.call(updatePayload, 'relationshipLabels') && !Array.isArray(updatePayload.relationshipLabels)) {
       updatePayload.relationshipLabels = [];
+    }
+    if (Object.prototype.hasOwnProperty.call(updatePayload, 'compatibility')) {
+      const clean = cleanCompatibility(updatePayload.compatibility);
+      if (!clean) {
+        delete updatePayload.compatibility;
+      } else {
+        const before = crush.compatibility ? { score: crush.compatibility.score ?? null, note: crush.compatibility.note, factors: crush.compatibility.factors } : null;
+        updatePayload.compatibility = { ...clean, updatedAt: clean.score === null ? (before && before.score !== null ? new Date() : crush.compatibility?.updatedAt || null) : new Date() };
+        if (clean.score !== null && compatibilityChanged(before, clean)) {
+          const history = [...(crush.compatibilityHistory || []), { score: clean.score, factors: clean.factors, note: clean.note, at: new Date() }];
+          updatePayload.compatibilityHistory = history.slice(-50);
+        }
+      }
     }
     // Replacing the whole sharing list is still allowed (demo fallback and older
     // clients); new clients use POST/DELETE /crushes/:id/share instead.
@@ -464,6 +505,62 @@ exports.removeCrushPhoto = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// @desc    A friend's read on a crush shared with them (one vote per friend)
+// @route   PUT /api/crushes/:id/compatibility/vote   body: { score: 0-100, note?: string }
+exports.voteCompatibility = async (req, res) => {
+  try {
+    const crush = await loadSharedCrushForViewer(req, res);
+    if (!crush) return;
+    const score = clampScore(req.body?.score);
+    if (score === null) return res.status(400).json({ message: 'Score must be 0-100' });
+    const note = typeof req.body?.note === 'string' ? req.body.note.trim().slice(0, 300) : '';
+    const me = await User.findById(req.user.id).select('username avatarUrl').lean();
+    const entry = { user: req.user.id, username: me?.username || '', avatarUrl: me?.avatarUrl || '', score, note, at: new Date() };
+    const existing = (crush.friendCompatibility || []).findIndex((v) => String(v.user) === String(req.user.id));
+    if (existing >= 0) crush.friendCompatibility[existing] = entry; else crush.friendCompatibility.push(entry);
+    await crush.save();
+    res.json({ ok: true, friendCompatibility: crush.friendCompatibility.map(shapeVote) });
+    const io = req.app.get('io');
+    emitToUser(io, String(crush.userId), 'crushesChanged', { crushId: String(crush._id) });
+    void recordActivity({ io, actor: req.user.id, counterpart: String(crush.userId), type: 'compatibility_voted', crushId: crush._id, meta: { nickname: crush.nickname, score }, visibleTo: [req.user.id, String(crush.userId)] });
+    try {
+      await createNotification({ recipient: String(crush.userId), actor: req.user.id, type: 'compatibility_vote', payload: { crushId: String(crush._id), crushNickname: crush.nickname, score } });
+    } catch (notificationErr) {
+      console.error('Compatibility vote notification failed:', notificationErr.message);
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @route   DELETE /api/crushes/:id/compatibility/vote
+exports.retractCompatibilityVote = async (req, res) => {
+  try {
+    const crush = await loadSharedCrushForViewer(req, res);
+    if (!crush) return;
+    crush.friendCompatibility = (crush.friendCompatibility || []).filter((v) => String(v.user) !== String(req.user.id));
+    await crush.save();
+    res.json({ ok: true, friendCompatibility: crush.friendCompatibility.map(shapeVote) });
+    emitToUser(req.app.get('io'), String(crush.userId), 'crushesChanged', { crushId: String(crush._id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+const shapeVote = (v) => ({ userId: String(v.user), username: v.username || '', avatarUrl: v.avatarUrl || '', score: v.score, note: v.note || '', at: v.at });
+
+/** A crush the caller can see because its owner shared it with them (404/403 otherwise). */
+async function loadSharedCrushForViewer(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) { res.status(404).json({ message: 'Crush not found' }); return null; }
+  const crush = await CrushProfile.findById(req.params.id);
+  if (!crush) { res.status(404).json({ message: 'Crush not found' }); return null; }
+  if (String(crush.userId) === String(req.user.id)) { res.status(400).json({ message: 'Rate your own read from the crush form.' }); return null; }
+  const me = await User.findById(req.user.id).select('friends username').lean();
+  const isFriend = (me?.friends || []).some((id) => String(id) === String(crush.userId));
+  if (!isFriend || !visibilityIncludes(crush, req.user.id, me?.username)) { res.status(403).json({ message: 'This crush has not been shared with you.' }); return null; }
+  return crush;
+}
 
 // @route   POST /api/crushes/:id/photos/delete   body: { ids: string[] }
 // @desc    Remove several photos at once (owner only)

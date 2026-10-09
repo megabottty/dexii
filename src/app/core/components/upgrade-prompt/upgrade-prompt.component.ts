@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { ThemeService } from '../../services/theme.service';
 import { SubscriptionService } from '../../services/subscription.service';
 import { ModalService } from '../../services/modal.service';
-import { PREMIUM_FEATURES, PremiumFeatureKey } from '../../config/premium-features';
+import { PREMIUM_FEATURES, PremiumFeatureKey, TIER_GATING_ENABLED } from '../../config/premium-features';
 
 /**
  * The one upgrade box used wherever a premium feature is locked. Copy comes
@@ -14,6 +14,7 @@ import { PREMIUM_FEATURES, PremiumFeatureKey } from '../../config/premium-featur
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './upgrade-prompt.component.css',
   template: `
+    @if (shown()) {
     <div class="up-box"
          [class.up-box--compact]="compact()"
          [style.border]="'1px dashed ' + theme.colors().border"
@@ -33,10 +34,13 @@ import { PREMIUM_FEATURES, PremiumFeatureKey } from '../../config/premium-featur
         </button>
       }
     </div>
+    }
   `
 })
 export class UpgradePromptComponent {
   protected theme = inject(ThemeService);
+  /** While plans are parked, only the super-admin notice still shows. */
+  readonly shown = computed(() => TIER_GATING_ENABLED || this.entry().minTier === 'SuperAdmin');
   private subscription = inject(SubscriptionService);
   private modal = inject(ModalService);
 

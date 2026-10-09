@@ -12,7 +12,8 @@ const ACTIVITY_TYPES = [
   'dating_status_shared', 'safety_alert',
   'request_sent', 'request_accepted', 'request_declined', 'request_cancelled', 'request_nudged',
   'invite_sent', 'invite_cancelled', 'invite_accepted', 'friends_linked',
-  'friend_paused', 'friend_resumed', 'friend_removed'
+  'friend_paused', 'friend_resumed', 'friend_removed',
+  'compatibility_voted'
 ];
 
 const FriendActivitySchema = new mongoose.Schema({

@@ -39,6 +39,13 @@ export const DISPLAY_NAME_OPTIONS: ReadonlyArray<{ label: string; value: 'nickna
 ];
 
 /** The "Other" tile: opens the custom label box and Relationship Notes; never stored as a label itself. */
+/** Compatibility Check chips: what's making you feel compatible? */
+export const COMPATIBILITY_FACTORS: ReadonlyArray<string> = [
+  'Shared values', 'Makes me laugh', 'I feel like myself around them', 'We talk easily', 'Same life goals',
+  'Chemistry', 'Similar lifestyle', 'Kind to others', 'Respects my boundaries', 'My friends like them'
+];
+export const COMPATIBILITY_OTHER_LABEL = 'Something else';
+
 export const OTHER_LABEL = 'Other';
 export const HEARTBROKEN_LABEL = 'Heartbroken';
 

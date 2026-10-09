@@ -24,6 +24,7 @@ export type TeaKind =
   | 'invite_accepted'
   | 'friend_request_accepted'
   | 'journal_prompt'
+  | 'compatibility_vote'
   | 'other';
 
 export type TeaFilter = 'all' | 'requests' | 'shares' | 'notes';
@@ -77,6 +78,7 @@ const kindOf = (type: string): TeaKind => {
     case 'invite_accepted': return 'invite_accepted';
     case 'friend_request_accepted': return 'friend_request_accepted';
     case 'journal_prompt': return 'journal_prompt';
+    case 'compatibility_vote': return 'compatibility_vote';
     default: return 'other';
   }
 };
@@ -127,6 +129,14 @@ export function mergeTeaItems(
         item.text = `${actor.name} accepted your friend request`;
         item.route = ['/chat']; item.queryParams = { friendId: actor.id, friendName: actor.username || actor.name }; item.actionLabel = 'Say hi';
         break;
+      case 'compatibility_vote': {
+        const crush = crushId ? crushById.get(crushId) : undefined;
+        const nickname = crush?.nickname || (n.payload?.crushNickname as string | undefined) || 'your crush';
+        item.text = `${actor.name} weighed in on ${nickname}: ${n.payload?.['score'] ?? '?'}% compatible`;
+        if (crushId) item.route = ['/profile', crushId];
+        item.actionLabel = 'See their read';
+        break;
+      }
       case 'journal_prompt':
         item.text = 'Your journal prompt is ready';
         item.route = ['/vault']; item.actionLabel = 'Open Vault';

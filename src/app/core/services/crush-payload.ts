@@ -10,11 +10,11 @@ export const CRUSH_FORM_FIELDS: readonly CrushField[] = [
   'nickname', 'fullName', 'displayName', 'pronouns', 'avatarUrl', 'avatarConfig', 'bio', 'status',
   'rating', 'initialRating', 'hair', 'eyes', 'build', 'social', 'relationshipStatus', 'relationshipLabels',
   'heartbreakSong', 'heartbreakRecovery', 'customNotes', 'location', 'dateOfBirth', 'howWeMet', 'whenWeMet',
-  'schoolOrWork', 'grade', 'occupation', 'family', 'friends', 'memorableMoments'
+  'schoolOrWork', 'grade', 'occupation', 'family', 'friends', 'memorableMoments', 'compatibility'
 ];
 
 /** Never part of an update payload: identity and server-managed lists. */
-const NEVER_SENT: ReadonlySet<string> = new Set(['id', 'userId', 'sharedEntries', 'viewedBy', 'photos', 'photoCount']);
+const NEVER_SENT: ReadonlySet<string> = new Set(['id', 'userId', 'sharedEntries', 'viewedBy', 'photos', 'photoCount', 'compatibilityHistory', 'friendCompatibility']);
 
 /**
  * Builds the body for PUT /crushes/:id from just the fields an action changed.

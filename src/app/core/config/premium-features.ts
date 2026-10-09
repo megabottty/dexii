@@ -87,10 +87,19 @@ export const CRUSH_LIMITS: Record<AccessLevel, number> = {
 export const crushLimitLabel = (limit: number): string =>
   Number.isFinite(limit) ? String(limit) : 'Unlimited';
 
+/**
+ * The master switch for plans. While it's `false` (public user testing) everyone
+ * gets every feature and unlimited crushes, and the plan screens are hidden.
+ * Flip it to `true` to bring the Free / Premium / Gold tiers back. Super-admin
+ * tools are never opened up by this switch.
+ */
+export const TIER_GATING_ENABLED = false;
+
 /** True when `level` is at or above the feature's minimum (or the gate is off). */
-export const accessAllows = (level: AccessLevel, feature: PremiumFeatureKey): boolean => {
+export const accessAllows = (level: AccessLevel, feature: PremiumFeatureKey, gatingEnabled: boolean = TIER_GATING_ENABLED): boolean => {
   const entry = PREMIUM_FEATURES[feature];
   if (!entry.enabled) return true;
+  if (!gatingEnabled && entry.minTier !== 'SuperAdmin') return true;
   return ACCESS_RANK[level] >= ACCESS_RANK[entry.minTier];
 };
 

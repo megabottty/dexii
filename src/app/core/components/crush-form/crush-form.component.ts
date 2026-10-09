@@ -1,5 +1,6 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { COMPATIBILITY_PROMPTS, CompatibilityZone, compatibilityZone } from '../../utils/compatibility';
 import { ThemeService } from '../../services/theme.service';
 import { AvatarPickerComponent } from '../avatar-picker/avatar-picker.component';
 import { CrushFormValue } from '../../utils/crush-form.util';
@@ -14,8 +15,7 @@ import {
   OTHER_LABEL,
   PRONOUN_OPTIONS,
   SCHOOL_OR_WORK_OPTIONS,
-  relationshipStatusOptions
-} from '../../config/crush-form-options';
+  relationshipStatusOptions, COMPATIBILITY_FACTORS, COMPATIBILITY_OTHER_LABEL } from '../../config/crush-form-options';
 
 type ListKey = 'hair' | 'eyes' | 'build';
 type ListNotesKey = 'hairNotes' | 'eyeNotes' | 'buildNotes';
@@ -317,6 +317,80 @@ interface ListGroup {
         </div>
       </div>
 
+      <!-- Compatibility check -->
+      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section cf-compat">
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">💞 Compatibility Check</h4>
+        <div class="cf-field">
+          <div class="cf-compat-readout" aria-live="polite">
+            <span class="cf-compat-emoji" aria-hidden="true">{{ compatZone()?.emoji || '💭' }}</span>
+            <span class="cf-compat-label">{{ compatZone()?.label || 'Not rated yet' }}</span>
+            @if (compatZone(); as zone) {
+              <span [style.color]="theme.colors().textSecondary" class="cf-compat-hint">{{ zone.hint }}</span>
+            } @else {
+              <span [style.color]="theme.colors().textSecondary" class="cf-compat-hint">Slide to say how compatible you feel.</span>
+            }
+          </div>
+          <div class="cf-compat-meter">
+            <span class="cf-compat-end" aria-hidden="true">🧊</span>
+            <input type="range" min="0" max="100" step="1"
+                   [value]="form().compatibilityScore ?? 50"
+                   (input)="setCompatibility($event)"
+                   [attr.aria-valuetext]="compatZone() ? compatZone()!.label + ', ' + form().compatibilityScore + ' out of 100' : 'Not rated yet'"
+                   aria-label="How compatible do you feel?"
+                   [class.cf-compat-range--unset]="form().compatibilityScore === null"
+                   [style.--compat-fill]="(form().compatibilityScore ?? 50) + '%'"
+                   [style.--compat-color]="theme.colors().primary"
+                   class="cf-compat-range">
+            <span class="cf-compat-end" aria-hidden="true">🔥</span>
+          </div>
+          <div class="cf-compat-scale" aria-hidden="true">
+            <span>Not very</span>
+            @if (form().compatibilityScore !== null) {
+              <button type="button" (click)="form().compatibilityScore = null" [style.color]="theme.colors().textSecondary" class="cf-compat-clear">{{ form().compatibilityScore }}% · clear</button>
+            }
+            <span>Highly compatible</span>
+          </div>
+        </div>
+        <div class="cf-field">
+          <label [style.color]="theme.colors().textSecondary" class="cf-label">What's making you feel compatible?</label>
+          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Tap everything that fits.</span>
+          <div class="cf-chip-row" role="group" aria-label="Compatibility factors">
+            @for (factor of compatibilityFactors; track factor) {
+              <button type="button" (click)="toggleCompatFactor(factor)" [attr.aria-pressed]="form().compatibilityFactors.includes(factor)"
+                      [style.background-color]="form().compatibilityFactors.includes(factor) ? theme.colors().primary : 'transparent'"
+                      [style.color]="form().compatibilityFactors.includes(factor) ? '#fff' : theme.colors().text"
+                      [style.border]="'1px solid ' + (form().compatibilityFactors.includes(factor) ? theme.colors().primary : theme.colors().border)"
+                      class="cf-chip cf-chip--compat">{{ factor }}</button>
+            }
+            <button type="button" (click)="compatOtherOpen.set(!compatOtherOpen())" [attr.aria-pressed]="compatOtherOpen() || !!form().compatibilityOther"
+                    [style.background-color]="(compatOtherOpen() || form().compatibilityOther) ? theme.colors().primary : 'transparent'"
+                    [style.color]="(compatOtherOpen() || form().compatibilityOther) ? '#fff' : theme.colors().text"
+                    [style.border]="'1px solid ' + ((compatOtherOpen() || form().compatibilityOther) ? theme.colors().primary : theme.colors().border)"
+                    class="cf-chip cf-chip--compat">{{ compatibilityOtherLabel }}</button>
+          </div>
+          @if (compatOtherOpen() || form().compatibilityOther) {
+            <input [(ngModel)]="form().compatibilityOther" name="compatibilityOther" maxlength="60" placeholder="Something else that clicks…"
+                   aria-label="Something else that makes you feel compatible"
+                   [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                   class="cf-input cf-subfield">
+          }
+        </div>
+        <div class="cf-field">
+          <label for="cf-compat-note" [style.color]="theme.colors().textSecondary" class="cf-label">In your own words</label>
+          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">{{ compatPrompt }}</span>
+          <textarea id="cf-compat-note" [(ngModel)]="form().compatibilityNote" name="compatibilityNote" rows="3" maxlength="600"
+                    [placeholder]="compatPrompt"
+                    [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                    class="cf-textarea"></textarea>
+        </div>
+        <div class="cf-field">
+          <label for="cf-compat-pause" [style.color]="theme.colors().textSecondary" class="cf-label">Anything giving you pause? <span class="cf-optional">(optional)</span></label>
+          <input id="cf-compat-pause" [(ngModel)]="form().compatibilityPause" name="compatibilityPause" maxlength="300" placeholder="A small thing you keep noticing…"
+                 [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                 class="cf-input">
+        </div>
+      </div>
+
       <!-- More about them -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
         <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">More About Them</h4>
@@ -423,6 +497,22 @@ export class CrushFormComponent {
   readonly schoolOrWorkOptions = SCHOOL_OR_WORK_OPTIONS;
   readonly otherLabel = OTHER_LABEL;
   readonly heartbrokenLabel = HEARTBROKEN_LABEL;
+
+  // Compatibility Check
+  readonly compatibilityFactors = COMPATIBILITY_FACTORS;
+  readonly compatibilityOtherLabel = COMPATIBILITY_OTHER_LABEL;
+  readonly compatOtherOpen = signal(false);
+  /** A different nudge each time the form opens. */
+  readonly compatPrompt = COMPATIBILITY_PROMPTS[Math.floor(Math.random() * COMPATIBILITY_PROMPTS.length)];
+  compatZone(): CompatibilityZone | null { return compatibilityZone(this.form().compatibilityScore); }
+  setCompatibility(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    this.form().compatibilityScore = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : null;
+  }
+  toggleCompatFactor(factor: string): void {
+    const list = this.form().compatibilityFactors;
+    this.form().compatibilityFactors = list.includes(factor) ? list.filter((f) => f !== factor) : [...list, factor];
+  }
 
   readonly listGroups: ReadonlyArray<ListGroup> = [
     { key: 'hair', notesKey: 'hairNotes', label: 'Hair', notesLabel: 'Hair Notes', placeholder: 'Describe their hair...', options: HAIR_OPTIONS },

@@ -4,7 +4,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { AVATAR_BUILDER_PREMIUM, FeatureGateService } from './feature-gate.service';
 import { SubscriptionService } from './subscription.service';
 import { SubscriptionTier } from '../models/user.model';
-import { PREMIUM_FEATURES } from '../config/premium-features';
+import { PREMIUM_FEATURES, TIER_GATING_ENABLED, accessAllows } from '../config/premium-features';
 
 describe('FeatureGateService', () => {
   let gate: FeatureGateService;
@@ -22,14 +22,23 @@ describe('FeatureGateService', () => {
     expect(gate.canUseAvatarBuilder()).toBe(true);
   });
 
-  it('Safety Check is gated: Free cannot, Premium and Gold can', () => {
+  it('Safety Check is gated when tiers are on: Free cannot, Premium and Gold can', () => {
+    expect(accessAllows(SubscriptionTier.Free, 'safetyCheck', true)).toBe(false);
+    expect(accessAllows(SubscriptionTier.Premium, 'safetyCheck', true)).toBe(true);
+    expect(accessAllows(SubscriptionTier.Gold, 'safetyCheck', true)).toBe(true);
+  });
+
+  it('with tiers switched off everyone gets every feature, except super-admin tools', () => {
+    expect(accessAllows(SubscriptionTier.Free, 'safetyCheck', false)).toBe(true);
+    expect(accessAllows(SubscriptionTier.Free, 'photoVault', false)).toBe(true);
+    expect(accessAllows(SubscriptionTier.Gold, 'manageSuperAdmins', false)).toBe(false);
+    expect(accessAllows('SuperAdmin', 'manageSuperAdmins', false)).toBe(true);
+  });
+
+  it('the live gate follows the master switch', () => {
     subscription.setTier(SubscriptionTier.Free);
-    expect(gate.can('safetyCheck')).toBe(false);
-    expect(gate.canUseSafetyCheck()).toBe(false);
-    subscription.setTier(SubscriptionTier.Premium);
-    expect(gate.can('safetyCheck')).toBe(true);
-    subscription.setTier(SubscriptionTier.Gold);
-    expect(gate.can('safetyCheck')).toBe(true);
+    expect(gate.can('safetyCheck')).toBe(!TIER_GATING_ENABLED);
+    expect(subscription.getCrushLimit()).toBe(TIER_GATING_ENABLED ? 3 : Number.POSITIVE_INFINITY);
   });
 
   it('reports the tier a feature needs', () => {

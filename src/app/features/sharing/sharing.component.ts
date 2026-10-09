@@ -259,7 +259,8 @@ export class SharingComponent implements OnInit {
   friends = signal<FriendSummary[]>([]);
   friendSearch = signal('');
   selectedFriend = signal<FriendSummary | null>(null);
-  allCrushes = this.dataService.getAllCrushes();
+  /** Archived crushes stay out of the sharing controls. */
+  allCrushes = this.dataService.activeCrushes;
 
   filteredFriends = computed(() => {
     const term = this.friendSearch().trim().toLowerCase();

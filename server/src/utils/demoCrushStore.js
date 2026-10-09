@@ -61,6 +61,9 @@ const addCrush = async (username, crushPayload) => {
     vibeHistory: Array.isArray(crushPayload.vibeHistory) && crushPayload.vibeHistory.length > 0
       ? crushPayload.vibeHistory
       : [5],
+    compatibility: crushPayload.compatibility || null,
+    compatibilityHistory: [],
+    friendCompatibility: [],
     category: crushPayload.category || '',
     hair: Array.isArray(crushPayload.hair) ? crushPayload.hair : [],
     eyes: Array.isArray(crushPayload.eyes) ? crushPayload.eyes : [],
@@ -121,6 +124,9 @@ const updateCrush = async (username, id, crushPayload) => {
       ? crushPayload.redFlagReason
       : existing.redFlagReason,
     vibeHistory: Array.isArray(crushPayload.vibeHistory) ? crushPayload.vibeHistory : existing.vibeHistory,
+    compatibility: crushPayload.compatibility !== undefined ? crushPayload.compatibility : existing.compatibility,
+    compatibilityHistory: existing.compatibilityHistory || [],
+    friendCompatibility: existing.friendCompatibility || [],
     category: crushPayload.category !== undefined ? crushPayload.category : existing.category,
     hair: Array.isArray(crushPayload.hair) ? crushPayload.hair : existing.hair,
     eyes: Array.isArray(crushPayload.eyes) ? crushPayload.eyes : existing.eyes,

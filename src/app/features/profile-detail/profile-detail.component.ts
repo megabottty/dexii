@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, OnDestroy, DestroyRef } from '@angular/core';
+import { Component, signal, inject, computed, OnDestroy, DestroyRef, effect, untracked } from '@angular/core';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -14,6 +14,7 @@ import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier, User } from '../../core/models/user.model';
 import { FriendsApiService } from '../../core/services/friends-api.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { compatibilityLabel, compatibilityTrend, compatibilityZone, friendsRead, readGap } from '../../core/utils/compatibility';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
 import { CrushPhotoGalleryComponent } from '../../core/components/crush-photos/crush-photo-gallery.component';
@@ -88,9 +89,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                [style.border]="'1px solid ' + theme.colors().border"
                style="border-radius: 16px; padding: 24px; display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
             <div class="profile-avatar-wrap">
-              <img [src]="c.avatarUrl || 'https://i.pravatar.cc/150?u=' + c.nickname"
-                   [alt]="c.nickname"
-                   style="width: 96px; height: 96px; border-radius: 12px; object-fit: cover;">
+              <app-crush-photo-gallery layout="hero" size="small" [crushId]="c.id" [mode]="previewAsFriend() ? 'preview' : 'viewer'" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl"></app-crush-photo-gallery>
             </div>
             <div style="flex: 1; min-width: 200px;">
               <h2 style="margin: 0 0 4px 0; font-size: 22px;">{{ getCrushDisplayName(c) }}</h2>
@@ -211,7 +210,75 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             </div>
           </div>
 
-          <app-crush-photo-gallery [crushId]="c.id" [mode]="previewAsFriend() ? 'preview' : 'viewer'" [nickname]="getCrushDisplayName(c)"></app-crush-photo-gallery>
+          <!-- Compatibility: the owner's read, your friends' reads, and your own say -->
+          <section [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   class="compat-card" aria-labelledby="compat-title-friend">
+            <h2 id="compat-title-friend" class="compat-title">💞 Compatibility</h2>
+            <div class="compat-block">
+              <p [style.color]="theme.colors().textSecondary" class="compat-eyebrow">{{ previewAsFriend() ? 'Your read' : (friendCrushOwnerName() || 'Their') + (previewAsFriend() ? '' : '’s read') }}</p>
+              @if (c.compatibility?.score != null) {
+                <div class="compat-meter" role="img" [attr.aria-label]="'Owner read: ' + c.compatibility!.score + ' percent'">
+                  <div class="compat-track"><span class="compat-marker" [style.left]="c.compatibility!.score + '%'" [style.border-color]="theme.colors().primary"></span></div>
+                  <div class="compat-readout"><span class="compat-score">{{ c.compatibility!.score }}%</span> <span class="compat-zone">{{ compatLabel(c.compatibility!.score) }}</span></div>
+                </div>
+                @if (c.compatibility!.factors.length) {
+                  <div class="compat-chips">
+                    @for (factor of c.compatibility!.factors; track factor) { <span [style.border]="'1px solid ' + theme.colors().border" class="compat-chip">{{ factor }}</span> }
+                  </div>
+                }
+                @if (c.compatibility!.note) { <p class="compat-note">“{{ c.compatibility!.note }}”</p> }
+              } @else {
+                <p [style.color]="theme.colors().textSecondary" class="compat-empty">No read yet.</p>
+              }
+            </div>
+            <div class="compat-block">
+              <p [style.color]="theme.colors().textSecondary" class="compat-eyebrow">Friends' read</p>
+              @if (friendsReadFor(c); as fr) {
+                <div class="compat-meter" role="img" [attr.aria-label]="'Friends read: ' + fr.average + ' percent from ' + fr.count + (fr.count === 1 ? ' friend' : ' friends')">
+                  <div class="compat-track"><span class="compat-marker compat-marker--friends" [style.left]="fr.average + '%'" [style.border-color]="theme.colors().accent"></span></div>
+                  <div class="compat-readout"><span class="compat-score">{{ fr.average }}%</span> <span class="compat-zone">{{ compatLabel(fr.average) }} · {{ fr.count }} {{ fr.count === 1 ? 'friend' : 'friends' }}</span></div>
+                </div>
+                @if (gapLine(c)) { <p class="compat-gap">{{ gapLine(c) }}</p> }
+                <ul class="compat-votes">
+                  @for (vote of c.friendCompatibility || []; track vote.userId) {
+                    <li class="compat-vote" [style.border]="'1px solid ' + theme.colors().border">
+                      <img [src]="vote.avatarUrl || 'https://i.pravatar.cc/150?u=' + vote.userId" [alt]="vote.username || 'friend'" class="compat-vote-avatar">
+                      <span class="compat-vote-body"><strong>{{ vote.userId === security.currentUserId() ? 'You' : (vote.username || 'A friend') }}</strong> · {{ vote.score }}% {{ compatLabel(vote.score) }}@if (vote.note) { <span [style.color]="theme.colors().textSecondary"> — “{{ vote.note }}”</span> }</span>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p [style.color]="theme.colors().textSecondary" class="compat-empty">No friends have weighed in yet.</p>
+              }
+            </div>
+            @if (!previewAsFriend()) {
+              <div class="compat-block compat-weigh-in" [style.border-top]="'1px solid ' + theme.colors().border">
+                <p [style.color]="theme.colors().textSecondary" class="compat-eyebrow">{{ myVote() ? 'Your read' : 'Weigh in' }}</p>
+                <div class="compat-vote-readout" aria-live="polite">
+                  <span class="compat-vote-emoji" aria-hidden="true">{{ compatZoneOf(voteScore())?.emoji || '💭' }}</span>
+                  <span class="compat-vote-label">{{ compatZoneOf(voteScore())?.label || 'Slide to say how compatible they seem' }}</span>
+                </div>
+                <div class="compat-vote-meter">
+                  <span aria-hidden="true">🧊</span>
+                  <input type="range" min="0" max="100" step="1" [value]="voteScore() ?? 50" (input)="setVoteScore($event)"
+                         [attr.aria-valuetext]="voteScore() === null ? 'Not rated' : compatLabel(voteScore()!) + ', ' + voteScore() + ' out of 100'"
+                         aria-label="How compatible do they seem to you?" class="compat-vote-range" [style.--compat-color]="theme.colors().primary">
+                  <span aria-hidden="true">🔥</span>
+                </div>
+                <input [ngModel]="voteNote()" (ngModelChange)="voteNote.set($event)" maxlength="300" placeholder="Why? (optional, the owner sees this)"
+                       aria-label="Why do you think so?"
+                       [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                       class="compat-vote-note">
+                <div class="compat-vote-actions">
+                  <button type="button" (click)="saveVote(c.id)" [disabled]="voteScore() === null || voteBusy()" class="action-btn-styled primary">{{ voteBusy() ? 'Saving…' : (myVote() ? 'Update my read' : 'Share my read') }}</button>
+                  @if (myVote()) {
+                    <button type="button" (click)="retractVote(c.id)" [disabled]="voteBusy()" class="action-btn-styled secondary">Remove</button>
+                  }
+                </div>
+              </div>
+            }
+          </section>
 
           @if ((previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()).length > 0) {
             <div [style.background-color]="theme.colors().bgSecondary"
@@ -264,9 +331,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                class="profile-header-card">
             <div class="profile-header-flex">
               <div class="profile-avatar-wrap">
-                <img [src]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'"
-                     [alt]="c.nickname"
-                     class="profile-avatar">
+                <app-crush-photo-gallery layout="hero" size="large" [crushId]="c.id" mode="owner" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'" [sharedFriends]="friendsSharedWith(c)"></app-crush-photo-gallery>
               </div>
               <div class="profile-title-section">
                 <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
@@ -440,7 +505,70 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             }
           </div>
 
-          <app-crush-photo-gallery [crushId]="c.id" mode="owner" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl" [sharedFriends]="friendsSharedWith(c)"></app-crush-photo-gallery>
+          <!-- Compatibility Check -->
+          @if (!isEditMode()) {
+            <section [style.background-color]="theme.colors().bgSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     class="compat-card" aria-labelledby="compat-title">
+              <div class="compat-head">
+                <h2 id="compat-title" class="compat-title">💞 Compatibility</h2>
+                <button type="button" (click)="editCompatibility()" class="action-btn-styled secondary">{{ c.compatibility?.score != null ? 'Update' : 'Add your read' }}</button>
+              </div>
+
+              <div class="compat-block">
+                <p [style.color]="theme.colors().textSecondary" class="compat-eyebrow">Your read</p>
+                @if (c.compatibility?.score != null) {
+                  <div class="compat-meter" role="img" [attr.aria-label]="'Your read: ' + c.compatibility!.score + ' percent, ' + compatLabel(c.compatibility!.score)">
+                    <div class="compat-track"><span class="compat-marker" [style.left]="c.compatibility!.score + '%'" [style.border-color]="theme.colors().primary"></span></div>
+                    <div class="compat-readout"><span class="compat-score">{{ c.compatibility!.score }}%</span> <span class="compat-zone">{{ compatLabel(c.compatibility!.score) }}</span></div>
+                  </div>
+                  @if (c.compatibility!.factors.length) {
+                    <div class="compat-chips">
+                      @for (factor of c.compatibility!.factors; track factor) {
+                        <span [style.border]="'1px solid ' + theme.colors().border" class="compat-chip">{{ factor }}</span>
+                      }
+                    </div>
+                  }
+                  @if (c.compatibility!.note) { <p class="compat-note">“{{ c.compatibility!.note }}”</p> }
+                  @if (c.compatibility!.pause) { <p [style.color]="theme.colors().textSecondary" class="compat-pause">⚠︎ Giving you pause: {{ c.compatibility!.pause }}</p> }
+                } @else {
+                  <p [style.color]="theme.colors().textSecondary" class="compat-empty">Not rated yet. Slide the meter in Edit Profile to say how compatible you feel.</p>
+                }
+              </div>
+
+              <div class="compat-block">
+                <p [style.color]="theme.colors().textSecondary" class="compat-eyebrow">Friends' read</p>
+                @if (friendsReadFor(c); as fr) {
+                  <div class="compat-meter" role="img" [attr.aria-label]="'Friends read: ' + fr.average + ' percent from ' + fr.count + (fr.count === 1 ? ' friend' : ' friends')">
+                    <div class="compat-track"><span class="compat-marker compat-marker--friends" [style.left]="fr.average + '%'" [style.border-color]="theme.colors().accent"></span></div>
+                    <div class="compat-readout"><span class="compat-score">{{ fr.average }}%</span> <span class="compat-zone">{{ compatLabel(fr.average) }} · {{ fr.count }} {{ fr.count === 1 ? 'friend' : 'friends' }}</span></div>
+                  </div>
+                  @if (gapLine(c)) { <p class="compat-gap">{{ gapLine(c) }}</p> }
+                  <ul class="compat-votes">
+                    @for (vote of c.friendCompatibility || []; track vote.userId) {
+                      <li class="compat-vote" [style.border]="'1px solid ' + theme.colors().border">
+                        <img [src]="vote.avatarUrl || 'https://i.pravatar.cc/150?u=' + vote.userId" [alt]="vote.username || 'friend'" class="compat-vote-avatar">
+                        <span class="compat-vote-body"><strong>{{ vote.username || 'A friend' }}</strong> · {{ vote.score }}% {{ compatLabel(vote.score) }}@if (vote.note) { <span [style.color]="theme.colors().textSecondary"> — “{{ vote.note }}”</span> }</span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p [style.color]="theme.colors().textSecondary" class="compat-empty">No friends have weighed in yet. Friends you share {{ getCrushDisplayName(c) }} with can rate from their side.</p>
+                }
+              </div>
+
+              @if ((c.compatibilityHistory || []).length > 1) {
+                <div class="compat-block">
+                  <p [style.color]="theme.colors().textSecondary" class="compat-eyebrow">Over time <span class="compat-trend">{{ compatTrend(c) }}</span></p>
+                  <ul class="compat-history">
+                    @for (point of historyFor(c); track point.at) {
+                      <li class="compat-history-row"><span [style.color]="theme.colors().textSecondary" class="compat-history-date">{{ point.at | date:'MMM d' }}</span> <strong>{{ point.score }}%</strong> <span>{{ compatLabel(point.score) }}</span></li>
+                    }
+                  </ul>
+                </div>
+              }
+            </section>
+          }
 
           <!-- Vibe Check Banner -->
           @if (showVibeBanner()) {
@@ -909,6 +1037,62 @@ export class ProfileDetailComponent implements OnDestroy {
 
   crushId = signal<string | null>(null);
   friendCrush = signal<CrushProfile | null>(null);
+
+  // ---------- Compatibility Check ----------
+  compatLabel(score: number | null | undefined): string { return compatibilityLabel(score); }
+  compatZoneOf(score: number | null | undefined) { return compatibilityZone(score); }
+  friendsReadFor(crush: CrushProfile) { return friendsRead(crush.friendCompatibility); }
+  gapLine(crush: CrushProfile): string { return readGap(crush.compatibility?.score ?? null, friendsRead(crush.friendCompatibility)); }
+  compatTrend(crush: CrushProfile): string { return compatibilityTrend(crush.compatibilityHistory); }
+  historyFor(crush: CrushProfile) { return [...(crush.compatibilityHistory || [])].reverse().slice(0, 8); }
+  /** Opens Edit Profile and scrolls to the Compatibility Check section. */
+  editCompatibility(): void {
+    if (!this.isEditMode()) this.toggleEditMode();
+    setTimeout(() => {
+      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.querySelector('.cf-compat')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }, 80);
+  }
+  // A friend's own read on a crush shared with them
+  voteScore = signal<number | null>(null);
+  voteNote = signal('');
+  voteBusy = signal(false);
+  myVote = computed(() => {
+    const me = this.security.currentUserId();
+    return (this.crush()?.friendCompatibility || []).find((vote) => vote.userId === me) || null;
+  });
+  private readonly seedVote = effect(() => {
+    const mine = this.myVote();
+    untracked(() => { this.voteScore.set(mine ? mine.score : null); this.voteNote.set(mine?.note || ''); });
+  });
+  setVoteScore(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    this.voteScore.set(Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : null);
+  }
+  async saveVote(crushId: string): Promise<void> {
+    const score = this.voteScore();
+    if (score === null || this.voteBusy()) return;
+    this.voteBusy.set(true);
+    try {
+      const votes = await this.dataService.voteCompatibility(crushId, score, this.voteNote().trim());
+      if (votes) {
+        this.friendCrush.update((c) => c ? { ...c, friendCompatibility: votes } : c);
+        this.modal.show(`Your read is in: ${score}% ${compatibilityLabel(score)}.`);
+      }
+    } finally {
+      this.voteBusy.set(false);
+    }
+  }
+  async retractVote(crushId: string): Promise<void> {
+    if (this.voteBusy()) return;
+    this.voteBusy.set(true);
+    try {
+      const votes = await this.dataService.retractCompatibilityVote(crushId);
+      if (votes) this.friendCrush.update((c) => c ? { ...c, friendCompatibility: votes } : c);
+    } finally {
+      this.voteBusy.set(false);
+    }
+  }
   friendCrushOwnerId = signal<string | null>(null);
   friendCrushOwnerName = signal<string | null>(null);
   friendCrushLoading = signal(false);

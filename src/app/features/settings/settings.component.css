@@ -897,3 +897,9 @@
 .settings-locked-banner {
   margin: 0 0 18px;
 }
+
+/* Dialog copy reads at the modal size */
+.settings-modal-help,
+.settings-modal-friend-name {
+  font-size: var(--fs-modal);
+}
