@@ -100,16 +100,26 @@
   text-transform: uppercase;
 }
 
-.friend-profile-edit-grid input,
-.friend-profile-edit-grid textarea {
+.friend-profile-field {
   box-sizing: border-box;
   width: 100%;
-  padding: 10px;
-  border: 1px solid var(--border);
+  min-height: var(--tap-min);
+  padding: 12px 14px;
+  border-radius: 10px;
   font: inherit;
-  font-size: var(--fs-small);
+  font-size: var(--fs-body);
   text-transform: none;
   letter-spacing: normal;
+  outline: none;
+}
+
+.friend-profile-field:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.friend-profile-field::placeholder {
+  opacity: 0.6;
 }
 
 .friend-profile-edit-field--full {

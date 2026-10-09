@@ -497,3 +497,9 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
+
+.feed-item-avatar-link {
+  display: inline-flex;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

@@ -392,20 +392,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         }
 
         @if (activeTab() === 'friends') {
-          <div class="header-actions" style="margin-bottom: 14px; text-align: right;">
-            <a routerLink="/sharing" [queryParams]="{ tab: 'history' }" [style.color]="theme.colors().primary"
-               style="text-decoration: none; font-weight: 500; font-family: 'Times New Roman', serif; font-size: 1.1rem; border: 1px solid currentColor; padding: 8px 16px; border-radius: var(--radius-pill);">
-              📜 Shared History
-            </a>
-          </div>
-
-          <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().accent"
-               class="friends-list-component__s52">
-            <p class="friends-list-component__s47">
-              Friends are unlimited on all tiers.
-            </p>
-          </div>
-
           @if (friends().length > 0) {
             <label class="friends-list-filter">
               <span class="friends-list-filter__icon" aria-hidden="true">🔍</span>
@@ -438,7 +424,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                    class="friends-list-component__s54">
 
                 <div class="friends-list-component__s55">
-                  <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                  <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + friend.username" class="friends-list-avatar-link">
+                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                  </a>
                   <div>
                     <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
                     <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
@@ -500,7 +488,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-component__s54">
                   <div class="friends-list-component__s55">
-                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                    <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + friend.username" class="friends-list-avatar-link">
+                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                    </a>
                     <div>
                       <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
                       <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.mutedNotifications ? 'Paused · notifications muted' : 'Paused' }}</span>

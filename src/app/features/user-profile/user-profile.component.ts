@@ -38,9 +38,17 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
              [style.border]="'1px solid ' + theme.colors().border"
              class="user-profile-component__s5">
           <div class="user-profile-component__s6">
-            <img [src]="profileAvatar()"
-                 [alt]="profileDisplayName()"
-                 class="user-profile-component__s7">
+            @if (!isSelf()) {
+              <a [routerLink]="['/friends', profileUsername()]" [attr.aria-label]="'Open your friendship page with ' + profileDisplayName()" class="user-profile-avatar-link">
+                <img [src]="profileAvatar()"
+                     [alt]="profileDisplayName()"
+                     class="user-profile-component__s7">
+              </a>
+            } @else {
+              <img [src]="profileAvatar()"
+                   [alt]="profileDisplayName()"
+                   class="user-profile-component__s7">
+            }
             <div>
               @if (profileLoading()) {
                 <div class="user-profile-loading" role="status" aria-live="polite">

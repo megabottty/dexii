@@ -95,36 +95,11 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
             </div>
           </div>
 
-          <div [style.border]="'1px solid ' + theme.colors().border"
-               [style.background-color]="theme.colors().bgSecondary"
-               class="friend-profile-component__s4">
-            <h3 class="friend-profile-component__s10">Add Note About Friend</h3>
-
-            <textarea [(ngModel)]="draftNote"
-                      rows="4"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text"
-                      placeholder="Add bio notes, reminders, updates..."
-                      class="friend-profile-component__s11"></textarea>
-
-            <div class="friend-profile-component__s12">
-              <button (click)="addFriendNote()"
-                      [style.background-color]="theme.colors().primary"
-                      class="friend-profile-component__s14">
-                Save Note
-              </button>
-            </div>
-          </div>
-
-          <div [style.border]="'1px solid ' + theme.colors().border"
-               [style.background-color]="theme.colors().bgSecondary"
-               class="friend-profile-component__s15">
-            <h3 class="friend-profile-component__s10">
-              Friend Notes
-            </h3>
-
-            @if (notes().length > 0) {
+          @if (notes().length > 0) {
+            <div [style.border]="'1px solid ' + theme.colors().border"
+                 [style.background-color]="theme.colors().bgSecondary"
+                 class="friend-profile-component__s15">
+              <h3 class="friend-profile-component__s10">Your notes</h3>
               <div class="friend-profile-component__s16">
                 @for (note of notes(); track note.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border"
@@ -135,20 +110,13 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
                             class="friend-profile-component__s19">
                         {{ note.createdAt | date:'MMM d, h:mm a' }}
                       </span>
-                      <button (click)="toggleNote(note.id)"
-                              [style.border]="'1px solid ' + theme.colors().border"
-                              class="friend-profile-component__s20">
-                        Private
-                      </button>
                     </div>
                     <p class="friend-profile-component__s21">{{ note.content }}</p>
                   </div>
                 }
               </div>
-            } @else {
-              <p [style.color]="theme.colors().textSecondary" class="friend-profile-component__s22">No notes yet.</p>
-            }
-          </div>
+            </div>
+          }
 
           <div [style.border]="'1px solid ' + theme.colors().border"
                [style.background-color]="theme.colors().bgSecondary"
@@ -167,20 +135,25 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
 
             @if (editingFriendshipProfile()) {
               <div class="friend-profile-edit-grid">
-                <label>Relationship Name
-                  <input [(ngModel)]="friendshipDraft.relationshipName">
+                <label for="fp-relationship-name">Relationship Name
+                  <input id="fp-relationship-name" [(ngModel)]="friendshipDraft.relationshipName" placeholder="e.g. Bestie, cousin"
+                         [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="friend-profile-field">
                 </label>
-                <label>Relationship Type
-                  <input [(ngModel)]="friendshipDraft.relationshipType">
+                <label for="fp-relationship-type">Relationship Type
+                  <input id="fp-relationship-type" [(ngModel)]="friendshipDraft.relationshipType" placeholder="e.g. Close friend"
+                         [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="friend-profile-field">
                 </label>
-                <label>How You Met
-                  <input [(ngModel)]="friendshipDraft.howMet">
+                <label for="fp-how-met">How You Met
+                  <input id="fp-how-met" [(ngModel)]="friendshipDraft.howMet" placeholder="e.g. College"
+                         [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="friend-profile-field">
                 </label>
-                <label>Trust Level
-                  <input [(ngModel)]="friendshipDraft.trustLevel">
+                <label for="fp-trust">Trust Level
+                  <input id="fp-trust" [(ngModel)]="friendshipDraft.trustLevel" placeholder="e.g. Tell them everything"
+                         [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="friend-profile-field">
                 </label>
-                <label class="friend-profile-edit-field--full">Notes
-                  <textarea [(ngModel)]="friendshipDraft.notes" rows="3"></textarea>
+                <label class="friend-profile-edit-field--full" for="fp-notes">Notes
+                  <textarea id="fp-notes" [(ngModel)]="friendshipDraft.notes" rows="3" placeholder="Anything worth remembering"
+                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="friend-profile-field"></textarea>
                 </label>
               </div>
               <div class="friend-profile-actions">
@@ -249,7 +222,6 @@ export class FriendProfileComponent {
   friend = signal<FriendView | null>(null);
   editingFriendshipProfile = signal(false);
   friendshipDraft: NonNullable<FriendView['friendshipProfile']> = {};
-  draftNote = '';
 
   notes = computed(() => {
     const friend = this.friend();
@@ -332,22 +304,4 @@ export class FriendProfileComponent {
     this.modal.show('Friendship profile saved.');
   }
 
-  addFriendNote() {
-    const friend = this.friend();
-    const content = this.draftNote.trim();
-    if (!friend || !content) return;
-
-    if (!this.security.moderateContent(content)) {
-      this.modal.show('Note flagged by AI moderation for safety.');
-      return;
-    }
-
-    this.notesService.addNote(friend.id, content, 'private');
-    this.modal.show('Private note saved.');
-    this.draftNote = '';
-  }
-
-  toggleNote(noteId: string) {
-    void noteId;
-  }
 }

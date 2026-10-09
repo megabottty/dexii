@@ -123,9 +123,11 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
               <p [style.color]="theme.colors().textSecondary" class="sharing-component__empty">Select a friend to view sharing controls.</p>
             } @else {
               <div [style.border]="'1px solid ' + theme.colors().border" class="sharing-component__friend-banner">
-                <img [src]="selectedFriend()?.avatarUrl || 'https://i.pravatar.cc/150?u=' + selectedFriend()?.id"
-                     [alt]="selectedFriend()?.username || 'Selected friend'"
-                     class="sharing-component__friend-banner-avatar">
+                <a [routerLink]="['/friends', selectedFriend()?.username]" [attr.aria-label]="'Open your friendship page with ' + selectedFriend()?.username" class="sharing-component__friend-banner-link">
+                  <img [src]="selectedFriend()?.avatarUrl || 'https://i.pravatar.cc/150?u=' + selectedFriend()?.id"
+                       [alt]="selectedFriend()?.username || 'Selected friend'"
+                       class="sharing-component__friend-banner-avatar">
+                </a>
                 <div>
                   <p [style.color]="theme.colors().textSecondary" class="sharing-component__friend-banner-label">Sharing with</p>
                   <p class="sharing-component__friend-banner-name">{{ selectedFriend()?.username }}</p>

@@ -28,7 +28,8 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Granular Controls**: Decide which friend can see which crush profile or specific "Tea" (Notes). (Simulated UI).
 - **In-App Messaging**: Secure, end-to-end encrypted style chat between friends.
 - **Self-Destructing Messages**: Messages containing the word "secret" are automatically flagged for self-destruction/deletion.
-- **Crush Tier Limits**: Free tier is limited to 5 friends. Premium/Gold tiers allow unlimited crushes.
+- **Crush Tier Limits**: Free keeps up to 3 crushes, Premium 8, Gold unlimited. Friends are never limited.
+- **Dashboard tabs**: All = every crush that isn't archived; Dating = status Dating or Exclusive; Not dating = everything else (Crush, Plotting, Broken Up, Heartbroken, Friend). The tabs follow the crush's Status, not its relationship labels.
 
 ## 💖 Safety & Moderation
 - **Safety Check-In**: High-priority feature for dates. Notifies trusted contacts and tracks status (`Draft` -> `Sent` -> `Safe`).
@@ -38,10 +39,10 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 
 ## 💎 Monetization (Freemium)
 - **Subscription Tiers**:
-  - **Free**: 5 friends, basic features.
-  - **Premium ($5/mo)**: Unlimited friends, advanced safety features.
+  - **Free**: 3 crushes, basic features.
+  - **Premium**: 8 crushes, advanced safety features.
   - **Gold ($15/mo)**: Enhanced vault storage, priority support, and all premium features.
-- **Feature Gating**: Limits on friends and advanced vault sections for the Free tier.
+- **Feature Gating**: Limits on crushes and advanced vault sections for the Free tier.
 
 ---
 *Note: This is still a prototype. Crushes, entries, friends, and messages can use the backend when MongoDB is available; local state remains a demo/offline fallback. PINs and some settings are stored locally for testing.*

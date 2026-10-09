@@ -14,6 +14,11 @@ import {
 } from '../../core/config/walkthrough-tours';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+
+type CrushFilter = 'All' | 'Dating' | 'NotDating';
+/** The dashboard's idea of "dating": the two statuses that mean you're actually seeing them. */
+const isDatingStatus = (status: CrushStatus | string | undefined): boolean =>
+  status === CrushStatus.Dating || status === CrushStatus.Exclusive;
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
 import { CrushFormValue, crushFormTextFields, emptyCrushFormValue, formValueToCrushPatch } from '../../core/utils/crush-form.util';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
@@ -145,7 +150,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               <div>
                 <p style="margin: 0; font-weight: 600;">Crush Plan</p>
                 <p [style.color]="theme.colors().textSecondary" style="margin: 4px 0 0 0; font-size: var(--fs-small);">
-                  Friends are unlimited. Plans only change crush capacity.
+                  Plans change how many crushes you can keep.
                 </p>
               </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -175,21 +180,48 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           </div>
         }
 
-        <!-- Filter Chips -->
-        <div class="dashboard-component__s79">
-          <button (click)="selectedFilter.set('All')"
-                  [style.color]="selectedFilter() === 'All' ? theme.colors().primary : theme.colors().textSecondary"
-                  [style.border-bottom]="selectedFilter() === 'All' ? '2px solid ' + theme.colors().primary : 'none'"
-                  class="dashboard-component__s80">All</button>
-          <button (click)="selectedFilter.set('Dating')"
-                  [style.color]="selectedFilter() === 'Dating' ? theme.colors().primary : theme.colors().textSecondary"
-                  [style.border-bottom]="selectedFilter() === 'Dating' ? '2px solid ' + theme.colors().primary : 'none'"
-                  class="dashboard-component__s81">Dating</button>
-          <button (click)="selectedFilter.set('Prospects')"
-                  [style.color]="selectedFilter() === 'Prospects' ? theme.colors().primary : theme.colors().textSecondary"
-                  [style.border-bottom]="selectedFilter() === 'Prospects' ? '2px solid ' + theme.colors().primary : 'none'"
-                  class="dashboard-component__s81">Prospects</button>
-        </div>
+        <!-- Filter tabs -->
+        @if (!showArchived()) {
+          <div class="dashboard-component__s79" role="tablist" aria-label="Filter crushes" (keydown)="onFilterKeydown($event)">
+            @for (tab of filterTabs; track tab.id) {
+              <button type="button"
+                      role="tab"
+                      [id]="'crush-tab-' + tab.id"
+                      [attr.aria-selected]="selectedFilter() === tab.id"
+                      [attr.tabindex]="selectedFilter() === tab.id ? 0 : -1"
+                      aria-controls="crush-grid"
+                      (click)="selectedFilter.set(tab.id)"
+                      [style.color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().textSecondary"
+                      [style.border-bottom]="selectedFilter() === tab.id ? '2px solid ' + theme.colors().primary : '2px solid transparent'"
+                      class="dashboard-component__s81">
+                <span aria-hidden="true">{{ tab.icon }}</span>
+                {{ tab.label }}
+                <span class="dashboard-filter-count"
+                      [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().border"
+                      [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().text"
+                      [attr.aria-label]="filterCounts()[tab.id] + ' crushes'">{{ filterCounts()[tab.id] }}</span>
+              </button>
+            }
+            <button type="button"
+                    class="dashboard-filter-info"
+                    [style.color]="theme.colors().textSecondary"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [attr.aria-expanded]="showFilterHelp()"
+                    aria-controls="crush-filter-help"
+                    aria-label="How these tabs work"
+                    (click)="toggleFilterHelp()">i</button>
+          </div>
+          @if (showFilterHelp()) {
+            <p id="crush-filter-help"
+               [style.color]="theme.colors().textSecondary"
+               [style.border]="'1px solid ' + theme.colors().border"
+               class="dashboard-filter-help">
+              <strong>All</strong> is every crush that isn't archived. <strong>Dating</strong> is anyone whose status is Dating or Exclusive.
+              <strong>Not dating</strong> is everyone else: Crush, Plotting, Broken Up, Heartbroken and Friend. Archived crushes live under View Archive.
+              The tabs follow each crush's Status (the drop-down on their page), not their relationship labels.
+            </p>
+          }
+        }
 
         <!-- Grid -->
           <div class="dashboard-component__s82">
@@ -203,7 +235,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
              </button>
           </div>
 
-        <div class="dashboard-component__s84">
+        <div id="crush-grid" class="dashboard-component__s84">
           @for (crush of displayCrushes(); track crush.id) {
             <div [routerLink]="draggingId() ? null : ['/profile', crush.id]"
                  [attr.data-crush-id]="crush.id"
@@ -325,7 +357,36 @@ export class DashboardComponent implements OnInit {
   showNewEntryModal = signal(false);
 
   showArchived = signal(false);
-  selectedFilter = signal<'All' | 'Dating' | 'Prospects'>('All');
+  selectedFilter = signal<CrushFilter>('All');
+  showFilterHelp = signal(false);
+  toggleFilterHelp(): void { this.showFilterHelp.update((open) => !open); }
+  readonly filterTabs: ReadonlyArray<{ id: CrushFilter; label: string; icon: string }> = [
+    { id: 'All', label: 'All', icon: '✨' },
+    { id: 'Dating', label: 'Dating', icon: '💑' },
+    { id: 'NotDating', label: 'Not dating', icon: '💘' }
+  ];
+
+  /** How many crushes each tab holds, from the same list the grid uses. */
+  filterCounts = computed<Record<CrushFilter, number>>(() => {
+    const active = this.dataService.visibleCrushes().filter((c: any) => c.status !== CrushStatus.Archived);
+    const dating = active.filter((c: any) => isDatingStatus(c.status)).length;
+    return { All: active.length, Dating: dating, NotDating: active.length - dating };
+  });
+
+  /** Left/Right/Home/End move between the tabs, as a tablist should. */
+  onFilterKeydown(event: KeyboardEvent): void {
+    const ids = this.filterTabs.map((t) => t.id);
+    const index = ids.indexOf(this.selectedFilter());
+    let next = index;
+    if (event.key === 'ArrowRight') next = (index + 1) % ids.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + ids.length) % ids.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = ids.length - 1;
+    else return;
+    event.preventDefault();
+    this.selectedFilter.set(ids[next]);
+    document.getElementById('crush-tab-' + ids[next])?.focus();
+  }
   freeTier = SubscriptionTier.Free;
   premiumTier = SubscriptionTier.Premium;
   goldTier = SubscriptionTier.Gold;
@@ -341,14 +402,11 @@ export class DashboardComponent implements OnInit {
     // Filter by Archive first
     crushes = crushes.filter((c: any) => c.status !== CrushStatus.Archived);
 
-    // Apply category filters
+    // Dating = status Dating or Exclusive; Not dating = every other active status
+    // (Crush, Plotting, Broken Up, Heartbroken, Friend). Relationship labels play no part.
     const filter = this.selectedFilter();
-    if (filter === 'Dating') {
-      return crushes.filter((c: any) => c.status === CrushStatus.Dating || c.status === CrushStatus.Exclusive);
-    } else if (filter === 'Prospects') {
-      return crushes.filter((c: any) => c.status === CrushStatus.Crush || c.status === CrushStatus.Plotting);
-    }
-
+    if (filter === 'Dating') return crushes.filter((c: any) => isDatingStatus(c.status));
+    if (filter === 'NotDating') return crushes.filter((c: any) => !isDatingStatus(c.status));
     return crushes;
   });
 

@@ -644,3 +644,12 @@
   font-size: var(--fs-label);
   line-height: 1.4;
 }
+
+.friends-list-avatar-link {
+  display: inline-flex;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.friends-list-avatar-link:focus-visible {
+  outline-offset: 3px;
+}

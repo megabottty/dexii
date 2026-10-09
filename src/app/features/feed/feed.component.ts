@@ -167,9 +167,20 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
              [attr.tabindex]="item.route ? 0 : null"
              (click)="item.route && tea.open(item)"
              (keydown.enter)="item.route && tea.open(item)">
-          <img [src]="item.actor.avatarUrl || ('https://i.pravatar.cc/150?u=' + (item.actor.username || item.actor.id || 'friend'))"
-               [alt]="item.actor.name"
-               class="feed-item-avatar">
+          @if ((item.kind === 'crush_shared' || item.kind === 'entry_shared') && item.actor.username) {
+            <a [routerLink]="['/friends', item.actor.username]"
+               (click)="$event.stopPropagation()"
+               [attr.aria-label]="'Open your friendship page with ' + item.actor.name"
+               class="feed-item-avatar-link">
+              <img [src]="item.actor.avatarUrl || ('https://i.pravatar.cc/150?u=' + (item.actor.username || item.actor.id || 'friend'))"
+                   [alt]="item.actor.name"
+                   class="feed-item-avatar">
+            </a>
+          } @else {
+            <img [src]="item.actor.avatarUrl || ('https://i.pravatar.cc/150?u=' + (item.actor.username || item.actor.id || 'friend'))"
+                 [alt]="item.actor.name"
+                 class="feed-item-avatar">
+          }
           <div class="tea-card-body">
             <p class="tea-card-text" [style.color]="theme.colors().text">
               {{ item.text }}

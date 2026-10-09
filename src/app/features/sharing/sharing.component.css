@@ -343,3 +343,9 @@
 .sharing-component__overview-friends {
   font-size: var(--fs-label);
 }
+
+.sharing-component__friend-banner-link {
+  display: inline-flex;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

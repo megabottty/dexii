@@ -31,6 +31,13 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
              [style.color]="theme.colors().textSecondary"
              [attr.aria-label]="hasActiveChat() ? 'Back' : 'Back to friends'"
              class="messaging-component__s4">←</a>
+          @if (hasActiveChat()) {
+            <a [routerLink]="['/friends', currentChatPartner().username]"
+               [attr.aria-label]="'Open your friendship page with ' + currentChatPartner().username"
+               class="messaging-partner-avatar-link">
+              <img [src]="chatPartnerAvatar()" alt="" class="messaging-partner-avatar">
+            </a>
+          }
           <div>
             <h2 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().username : 'Chats' }}</h2>
             <span [style.color]="theme.colors().primary" class="messaging-component__s6">
@@ -551,6 +558,11 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     };
   });
   hasActiveChat = computed(() => Boolean(this.currentChatPartner().id));
+  chatPartnerAvatar = computed(() => {
+    const id = this.chatPartnerId();
+    const friend = this.friends().find((f) => f.id === id);
+    return friend?.avatarUrl || ('https://i.pravatar.cc/150?u=' + (id || 'friend'));
+  });
   /**
    * False when the current chat partner is no longer a mutual friend (e.g. the
    * friendship ended after the conversation started, or a stale link/notification

@@ -593,3 +593,16 @@
   font-weight: 700;
   letter-spacing: 0.3px;
 }
+
+.messaging-partner-avatar-link {
+  display: inline-flex;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.messaging-partner-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
