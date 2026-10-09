@@ -115,7 +115,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
         <!-- Hero Section -->
         <div class="dashboard-component__s71">
           <div class="dashboard-component__s72">
-            <h1 class="dashboard-component__s73">The Rolodex</h1>
+            <h1 class="dashboard-component__s73">The Stash</h1>
             <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">
               Curating {{ activeCrushCount() }} active crushes
               @if (archivedCrushCount() > 0) {
@@ -194,7 +194,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                         [attr.aria-selected]="selectedFilter() === tab.id"
                         [attr.tabindex]="selectedFilter() === tab.id ? 0 : -1"
                         aria-controls="crush-grid"
-                        (click)="selectedFilter.set(tab.id)"
+                        (click)="selectFilter(tab.id)"
                         [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : 'transparent'"
                         [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().textSecondary"
                         class="dashboard-component__s81">
@@ -239,6 +239,8 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           @for (crush of displayCrushes(); track crush.id) {
             <div [routerLink]="draggingId() ? null : ['/profile', crush.id]"
                  [attr.data-crush-id]="crush.id"
+                 [attr.data-deal]="dealKey() % 2"
+                 [style.--deal-index]="$index"
                  [style.background-color]="theme.colors().cardBg"
                  [style.border]="dragOverId() === crush.id ? '2px dashed ' + theme.colors().primary : '1px solid ' + theme.colors().border"
                  [style.opacity]="draggingId() === crush.id ? 0.5 : 1"
@@ -312,6 +314,8 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           @if (!showArchived() && displayCrushes().length > 0) {
             <button type="button"
                     (click)="openNewEntryModal()"
+                    [attr.data-deal]="dealKey() % 2"
+                    [style.--deal-index]="displayCrushes().length"
                     [style.border]="'2px dashed ' + theme.colors().border"
                     [style.color]="theme.colors().textSecondary"
                     class="dashboard-add-crush-ghost-card">
@@ -392,7 +396,7 @@ export class DashboardComponent implements OnInit {
     else if (event.key === 'End') next = ids.length - 1;
     else return;
     event.preventDefault();
-    this.selectedFilter.set(ids[next]);
+    this.selectFilter(ids[next]);
     document.getElementById('crush-tab-' + ids[next])?.focus();
   }
   freeTier = SubscriptionTier.Free;
@@ -564,7 +568,16 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  /** Bumped whenever the set of cards changes on purpose; its parity swaps the animation name so every card deals again. */
+  dealKey = signal(0);
+  selectFilter(id: CrushFilter): void {
+    if (this.selectedFilter() === id) return;
+    this.selectedFilter.set(id);
+    this.dealKey.update((n) => n + 1);
+  }
+
   toggleArchived() {
+    this.dealKey.update((n) => n + 1);
     this.showArchived.update(v => !v);
   }
 

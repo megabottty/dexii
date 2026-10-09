@@ -696,8 +696,8 @@ export class DataService {
       // Sharing needs the server id, so it happens once the crush exists there.
       if (shareWith.length) void this.shareCrushWith(mapped.id, shareWith);
       this.modal.show(shareWith.length
-        ? `Profile Secured in the Rolodex and shared with ${shareWith.length} friend${shareWith.length === 1 ? '' : 's'}.`
-        : 'Profile Secured in the Rolodex.');
+        ? `Profile secured in the Stash and shared with ${shareWith.length} friend${shareWith.length === 1 ? '' : 's'}.`
+        : 'Profile secured in the Stash.');
     } catch (err) {
       console.error('Error persisting new crush:', err);
       this.modal.show('Connection error. Could not save profile.');

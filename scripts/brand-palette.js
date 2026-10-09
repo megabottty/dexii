@@ -67,7 +67,7 @@ const BRAND = {
     ['#d4af37', 'Gold', 'Vault, premium, Pearl accent']
   ],
   type: [
-    ['Brand & headings', "'Times New Roman', serif", 'The Rolodex, Dexii wordmark, section titles. Uppercase with wide letter-spacing for eyebrows.'],
+    ['Brand & headings', "'Times New Roman', serif", 'The Stash, Dexii wordmark, section titles. Uppercase with wide letter-spacing for eyebrows.'],
     ['Interface', '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', 'Body copy, buttons, forms. 1rem minimum everywhere; 1.0625rem body.'],
     ['Diagnostics', 'ui-monospace, SFMono-Regular, Menlo, monospace', 'Technical detail lines only.']
   ],

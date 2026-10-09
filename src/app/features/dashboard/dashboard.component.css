@@ -318,7 +318,10 @@
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease;
   position: relative;
   box-shadow: 0 8px 24px rgba(219, 39, 119, 0.08);
-  animation: dashboard-crush-card-pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Dealt from the deck: each card flies in a beat after the one before it */
+  animation: dashboard-card-deal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(min(var(--deal-index, 0), 11) * 55ms);
+  transform-origin: 20% 0;
 }
 
 .dashboard-component__s85:hover {
@@ -337,6 +340,31 @@
 @keyframes dashboard-crush-card-pop-in {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* The Stash deals its cards: from a stack up and to the left, a small tilt, a soft settle.
+   Two identical keyframe sets: switching between them (data-deal parity) restarts the deal
+   on cards that stay in the grid when the filter changes. */
+@keyframes dashboard-card-deal {
+  0%   { opacity: 0; transform: translate(-28%, -56px) rotate(-7deg) scale(0.9); }
+  70%  { opacity: 1; transform: translate(2%, 6px) rotate(1.2deg) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes dashboard-card-deal-b {
+  0%   { opacity: 0; transform: translate(-28%, -56px) rotate(-7deg) scale(0.9); }
+  70%  { opacity: 1; transform: translate(2%, 6px) rotate(1.2deg) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
+.dashboard-component__s85[data-deal="1"],
+.dashboard-add-crush-ghost-card[data-deal="1"] {
+  animation-name: dashboard-card-deal-b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-component__s85,
+  .dashboard-add-crush-ghost-card {
+    animation: none;
+  }
 }
 
 @keyframes dashboard-crush-grid-fade-in {
@@ -456,7 +484,9 @@
   gap: 10px;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, background-color 0.3s ease;
-  animation: dashboard-crush-card-pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: dashboard-card-deal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(min(var(--deal-index, 0), 11) * 55ms);
+  transform-origin: 20% 0;
 }
 
 .dashboard-add-crush-ghost-card:hover {

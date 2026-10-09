@@ -5,7 +5,7 @@ Dexii is a "digital little black book" designed for high-security, high-glamour 
 ## 🚀 Key Features
 
 - **🔐 Secure Vault**: Protected by a 4-digit PIN with stealth mode themes.
-- **🗂 The Rolodex**: Manage connections with detailed profiles, attraction ratings, and status tracking.
+- **🗂 The Stash**: Manage connections with detailed profiles, attraction ratings, and status tracking.
 - **👥 Selective Sharing**: One-to-one sharing of "Tea" (Notes) and profiles with your inner circle.
 - **💬 Secure Messaging**: End-to-end encrypted style chat with self-destructing message support.
 - **💖 Safety First**: Built-in safety check-ins and red flag tracking for dates.
