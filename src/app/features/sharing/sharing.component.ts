@@ -351,27 +351,12 @@ export class SharingComponent implements OnInit {
     const friend = this.selectedFriend();
     if (!friend) return;
 
-    const wasShared = this.isCrushSharedBefore(crushId, friend.id);
+    // The data service sends the "Shared a crush" chat bubble itself once the
+    // share has saved, so nothing else to do here. No blocking modal on purpose:
+    // it would cover the quick-note input that appears right below.
     this.dataService.toggleCrushVisibility(crushId, friend.id);
-
-    if (!wasShared) {
-      const crush = this.allCrushes().find((current: any) => current.id === crushId);
-      this.messaging.sendMessage({
-        senderId: this.currentUserId || this.currentUsername,
-        receiverId: friend.id,
-        content: `Shared a crush: ${crush?.nickname || 'a crush'}`,
-        relatedCrushId: crushId
-      });
-      // No blocking confirmation modal here on purpose: it would cover the
-      // "Specific Entries" quick-note input that appears right below as soon
-      // as the crush becomes shared. The chat message above already confirms it.
-    }
   }
 
-  private isCrushSharedBefore(crushId: string, friendId: string): boolean {
-    const crush = this.allCrushes().find((current: any) => current.id === crushId);
-    return crush ? this.dataService.isCrushSharedWith(crush, friendId) : false;
-  }
 
   toggleEntrySharing(entry: any): void {
     const friend = this.selectedFriend();
@@ -388,7 +373,8 @@ export class SharingComponent implements OnInit {
         receiverId: friend.id,
         content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${preview}`,
         relatedCrushId: entry.crushId,
-        relatedEntryId: entry.id
+        relatedEntryId: entry.id,
+        kind: 'entry_share'
       });
       this.modal.show(`Shared entry sent to ${friend.username}.`);
     }

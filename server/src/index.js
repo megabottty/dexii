@@ -72,6 +72,7 @@ app.use('/api/vault', require('./routes/vault'));
 app.use('/api/groups', require('./routes/groups'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/activity', require('./routes/activity'));
 
 // Expose io on the app so REST controllers (e.g. group messages) can emit realtime events.
 app.set('io', io);

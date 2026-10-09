@@ -343,7 +343,7 @@ export class AppComponent implements OnInit, OnDestroy {
     },
     {
       title: '4. Chat + Shared History',
-      details: 'Shared entries and notes show up in chat and audit history, so you can see what each friend received.'
+      details: 'Shared entries and notes show up in chat and in your history with each friend, so you can see what they received.'
     },
     {
       title: '5. Privacy Tools',

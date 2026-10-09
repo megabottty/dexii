@@ -4,6 +4,7 @@ const Entry = require('../models/Entry');
 const User = require('../models/User');
 const { createNotification, retractCrushShares, emitToUser } = require('./notificationController');
 const { isPausedBy } = require('../services/pauseState');
+const { recordActivity } = require('../services/activityLog');
 
 /**
  * Fields a client may change through PUT /crushes/:id. Ownership, sharing and
@@ -24,8 +25,11 @@ const visibilityIncludes = (crush, friendId, username) => {
   return visibility.includes(String(friendId)) || (username && visibility.includes(username));
 };
 
-const notifyCrushShared = async (ownerId, crush, recipients) => {
+const notifyCrushShared = async (ownerId, crush, recipients, io) => {
   if (!recipients.length) return;
+  for (const recipient of recipients) {
+    void recordActivity({ io, actor: ownerId, counterpart: recipient, type: 'crush_shared', crushId: crush._id, meta: { nickname: crush.nickname } });
+  }
   try {
     await Promise.allSettled(recipients.map((recipient) => createNotification({
       recipient,
@@ -189,6 +193,11 @@ const recordCrushViewed = async (io, crush, viewerId) => {
       await CrushProfile.updateOne({ _id: crush._id }, { $push: { viewedBy: { user: viewerId, at } } });
     }
     emitToUser(io, ownerId, 'crushViewed', { crushId: String(crush._id), viewerId: String(viewerId), at: at.toISOString() });
+    // One history line per viewer per crush per day keeps "opened it" readable.
+    void recordActivity({
+      io, actor: viewerId, counterpart: ownerId, type: 'crush_viewed', crushId: crush._id,
+      meta: { nickname: crush.nickname }, source: `view:${crush._id}:${viewerId}:${at.toISOString().slice(0, 10)}`
+    });
   } catch (err) {
     console.warn('Recording crush view failed:', err.message);
   }
@@ -261,14 +270,17 @@ exports.updateCrush = async (req, res) => {
       );
     }
 
-    await notifyCrushShared(req.user.id, crush, newRecipients);
+    const io = req.app.get('io');
+    await notifyCrushShared(req.user.id, crush, newRecipients, io);
 
     res.json(crush);
 
-    const io = req.app.get('io');
     emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(crush._id) });
     // Unshared with someone: take back their "shared a crush" notification.
     if (removedRecipients.length > 0) {
+      for (const recipient of removedRecipients) {
+        void recordActivity({ io, actor: req.user.id, counterpart: recipient, type: 'crush_unshared', crushId: crush._id, meta: { nickname: crush.nickname } });
+      }
       setImmediate(() => { void retractCrushShares({ io, crushId: crush._id, recipients: removedRecipients }); });
     }
   } catch (err) {
@@ -297,7 +309,7 @@ exports.shareCrush = async (req, res) => {
       ? await CrushProfile.findByIdAndUpdate(req.params.id, { $addToSet: { visibility: { $each: added } } }, { new: true })
       : crush;
 
-    await notifyCrushShared(req.user.id, updated, added);
+    await notifyCrushShared(req.user.id, updated, added, req.app.get('io'));
     res.json(updated);
     if (added.length) emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(updated._id) });
   } catch (err) {
@@ -330,6 +342,7 @@ exports.unshareCrush = async (req, res) => {
     const io = req.app.get('io');
     emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(updated._id) });
     if (friend) {
+      void recordActivity({ io, actor: req.user.id, counterpart: friend._id, type: 'crush_unshared', crushId: updated._id, meta: { nickname: updated.nickname } });
       setImmediate(() => { void retractCrushShares({ io, crushId: updated._id, recipients: [String(friend._id)] }); });
     }
   } catch (err) {
@@ -353,13 +366,18 @@ exports.deleteCrush = async (req, res) => {
       return res.status(401).json({ message: 'User not authorized' });
     }
 
+    const sharedWith = await resolveVisibilityUserIds(req.user.id, crush.visibility);
     await CrushProfile.findByIdAndDelete(req.params.id);
     await Entry.deleteMany({ crushId: req.params.id });
 
     res.json({ message: 'Crush deleted', id: req.params.id });
 
     // The crush is gone: nobody should still hold a notification pointing at it.
-    setImmediate(() => { void retractCrushShares({ io: req.app.get('io'), crushId: req.params.id }); });
+    const io = req.app.get('io');
+    for (const recipient of sharedWith) {
+      void recordActivity({ io, actor: req.user.id, counterpart: recipient, type: 'crush_deleted', crushId: req.params.id, meta: { nickname: crush.nickname } });
+    }
+    setImmediate(() => { void retractCrushShares({ io, crushId: req.params.id }); });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

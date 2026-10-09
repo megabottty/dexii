@@ -57,6 +57,7 @@ export class RealtimeService {
   private messagesReadHandlers = new Set<(data: { readerId: string; readAt: string }) => void>();
   private crushesChangedHandlers = new Set<(data: { crushId?: string }) => void>();
   private crushViewedHandlers = new Set<(data: CrushViewedEvent) => void>();
+  private activityHandlers = new Set<() => void>();
 
   private _connected = signal(false);
   public connected = this._connected.asReadonly();
@@ -149,6 +150,10 @@ export class RealtimeService {
     this.socket.on('crushViewed', (data: CrushViewedEvent) => {
       this.crushViewedHandlers.forEach((handler) => handler(data));
     });
+
+    this.socket.on('activityChanged', () => {
+      this.activityHandlers.forEach((handler) => handler());
+    });
   }
 
   emitMessage(payload: IncomingSocketMessage): void {
@@ -195,6 +200,12 @@ export class RealtimeService {
   onCrushesChanged(handler: (data: { crushId?: string }) => void): () => void {
     this.crushesChangedHandlers.add(handler);
     return () => this.crushesChangedHandlers.delete(handler);
+  }
+
+  /** Fired when a line is added to the history between you and a friend. */
+  onActivityChanged(handler: () => void): () => void {
+    this.activityHandlers.add(handler);
+    return () => this.activityHandlers.delete(handler);
   }
 
   /** Fired when a friend opens a crush you shared with them. */

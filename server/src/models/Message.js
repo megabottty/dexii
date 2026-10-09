@@ -25,6 +25,12 @@ const MessageSchema = new mongoose.Schema({
     default: false
   },
   readAt: Date,
+  // What this message is for; 'chat' is a normal message.
+  kind: {
+    type: String,
+    enum: ['chat', 'crush_share', 'entry_share', 'dating_status', 'safety_alert'],
+    default: 'chat'
+  },
   isSafetyAlert: {
     type: Boolean,
     default: false

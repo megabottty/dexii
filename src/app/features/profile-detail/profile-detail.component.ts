@@ -1764,7 +1764,8 @@ export class ProfileDetailComponent implements OnDestroy {
         senderId: 'me',
         receiverId: friend.id,
         content,
-        relatedCrushId: crushId
+        relatedCrushId: crushId,
+        kind: 'dating_status'
       });
     });
 
@@ -1813,7 +1814,8 @@ export class ProfileDetailComponent implements OnDestroy {
           receiverId: friend.id,
           content: `Shared note about ${this.crush()?.nickname || 'this crush'}: ${this.entries().find((entry) => entry.id === entryId)?.content || 'Shared note'}`,
           relatedCrushId: crushId,
-          relatedEntryId: entryId
+          relatedEntryId: entryId,
+          kind: 'entry_share'
         });
       });
 

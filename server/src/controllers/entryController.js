@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Entry = require('../models/Entry');
+const { recordActivity } = require('../services/activityLog');
 const User = require('../models/User');
 
 const requireDb = (res) => {
@@ -127,6 +128,11 @@ exports.createEntry = async (req, res) => {
     });
 
     res.status(201).json(shapeEntry(entry));
+
+    const io = req.app.get('io');
+    for (const id of (Array.isArray(entry.visibility) ? entry.visibility.map(String) : []).filter((v) => mongoose.isValidObjectId(v))) {
+      void recordActivity({ io, actor: req.user.id, counterpart: id, type: 'entry_shared', crushId: entry.crushId, entryId: entry._id, meta: { preview: String(entry.content || '').slice(0, 80), entryType: entry.type } });
+    }
   } catch (err) {
     handleError(res, err);
   }
@@ -155,10 +161,23 @@ exports.updateEntry = async (req, res) => {
       existing.editedAt = new Date();
     }
 
+    const before = Array.isArray(existing.visibility) ? existing.visibility.map(String) : [];
     Object.assign(existing, updates);
     await existing.save();
 
     res.json(shapeEntry(existing));
+
+    if (Array.isArray(updates.visibility)) {
+      const after = updates.visibility.map(String);
+      const io = req.app.get('io');
+      const preview = String(existing.content || '').slice(0, 80);
+      for (const id of after.filter((v) => !before.includes(v) && mongoose.isValidObjectId(v))) {
+        void recordActivity({ io, actor: req.user.id, counterpart: id, type: 'entry_shared', crushId: existing.crushId, entryId: existing._id, meta: { preview, entryType: existing.type } });
+      }
+      for (const id of before.filter((v) => !after.includes(v) && mongoose.isValidObjectId(v))) {
+        void recordActivity({ io, actor: req.user.id, counterpart: id, type: 'entry_unshared', crushId: existing.crushId, entryId: existing._id, meta: { preview, entryType: existing.type } });
+      }
+    }
   } catch (err) {
     handleError(res, err);
   }

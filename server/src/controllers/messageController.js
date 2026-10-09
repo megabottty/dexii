@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const chatPush = require('../services/chatPush');
 const Message = require('../models/Message');
 const { isPausedBy, friendsWhoPaused } = require('../services/pauseState');
+const { recordActivity } = require('../services/activityLog');
 const User = require('../models/User');
 const { readStore, writeStore, ensureUser } = require('../utils/demoFriendStore');
 
@@ -288,6 +289,8 @@ exports.sendMessage = async (req, res) => {
   try {
     const { recipientId, content, isSafetyAlert, crushId, relatedEntryId, isSelfDestruct, selfDestructDurationMs } = req.body;
     const senderId = req.user.id;
+    const KINDS = ['chat', 'crush_share', 'entry_share', 'dating_status', 'safety_alert'];
+    const kind = KINDS.includes(req.body.kind) ? req.body.kind : (isSafetyAlert ? 'safety_alert' : 'chat');
 
     if (!recipientId) {
       return res.status(400).json({ message: 'recipientId is required' });
@@ -324,6 +327,7 @@ exports.sendMessage = async (req, res) => {
       sender: senderId,
       recipient: recipientId,
       content,
+      kind,
       isSafetyAlert,
       isSelfDestruct: Boolean(isSelfDestruct),
       selfDestructDurationMs: isSelfDestruct && Number.isFinite(duration) && duration >= 1000 ? duration : undefined,
@@ -333,6 +337,13 @@ exports.sendMessage = async (req, res) => {
 
     const message = await newMessage.save();
     res.json(message);
+
+    // Status updates and safety alerts are part of the history between friends.
+    if (kind === 'dating_status') {
+      void recordActivity({ io: req.app.get('io'), actor: senderId, counterpart: recipientId, type: 'dating_status_shared', crushId, messageId: message._id, meta: { text: String(content || '').slice(0, 160) } });
+    } else if (kind === 'safety_alert' || isSafetyAlert) {
+      void recordActivity({ io: req.app.get('io'), actor: senderId, counterpart: recipientId, type: 'safety_alert', messageId: message._id, meta: { text: String(content || '').slice(0, 160) } });
+    }
 
     // Wake the recipient's phone; never delays or fails the send.
     setImmediate(() => { void chatPush.notifyDirectMessage(message, senderId); });

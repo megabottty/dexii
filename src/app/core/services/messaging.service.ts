@@ -368,6 +368,7 @@ export class MessagingService {
           content: message.content,
           crushId: message.relatedCrushId,
           relatedEntryId: message.relatedEntryId,
+          kind: message.kind,
           isSelfDestruct: message.isSelfDestruct,
           selfDestructDurationMs: message.selfDestructDurationMs,
           isSafetyAlert: message.isSafetyAlert || undefined

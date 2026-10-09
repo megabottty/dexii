@@ -42,6 +42,9 @@ router.get('/', auth, friendController.getFriends);
 // @route   GET /api/friends/profile/:friendId
 router.get('/profile/:friendId', auth, friendController.getFriendProfile);
 
+// @route   GET /api/friends/:friendId/activity
+router.get('/:friendId/activity', auth, require('../controllers/activityController').listForFriend);
+
 // @route   PUT /api/friends/:friendId/pause
 router.put('/:friendId/pause', auth, friendController.setPauseState);
 

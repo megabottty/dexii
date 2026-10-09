@@ -787,16 +787,8 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     if (!friend?.id) return;
 
     const wasShared = this.isCrushSharedWithChatPartner(crush);
+    // The data service posts the "Shared a crush" bubble once the share saves.
     this.dataService.toggleCrushVisibility(crush.id, friend.id);
-
-    if (!wasShared) {
-      this.messaging.sendMessage({
-        senderId: this.selfId(),
-        receiverId: friend.id,
-        content: `Shared a crush: ${crush.nickname}`,
-        relatedCrushId: crush.id
-      });
-    }
 
     this.showShareFeedback(`${crush.nickname} ${wasShared ? 'is no longer shared with' : 'was shared with'} ${friend.username}.`);
   }

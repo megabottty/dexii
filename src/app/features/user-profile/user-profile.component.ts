@@ -4,7 +4,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
-import { AuditService } from '../../core/services/audit.service';
+import { ActivityTimelineComponent } from '../../core/components/activity-timeline/activity-timeline.component';
 import { UserSettingsService } from '../../core/services/user-settings.service';
 import { CrushProfile, crushSeenAt } from '../../core/models/crush-profile.model';
 import { FriendProfileDetails, FriendSummary, FriendsApiService } from '../../core/services/friends-api.service';
@@ -17,7 +17,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent],
+  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -303,7 +303,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                     [style.color]="theme.colors().primary"
                     [style.border]="'1px solid ' + theme.colors().primary"
                     style="background: transparent; padding: 8px 16px; border-radius: var(--radius-pill); font-size: var(--fs-btn); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-              📜 {{ auditLogView() ? 'Close History' : 'Shared History' }}
+              📜 {{ auditLogView() ? 'Close history' : 'History' }}
             </button>
           </div>
 
@@ -312,68 +312,12 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="user-profile-component__s11" style="margin-top: 1rem; animation: slideDown 0.3s ease-out;">
               <div class="user-profile-component__s12" style="border-bottom: 1px solid {{theme.colors().border}}; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                <h2 class="section-title">Shared history with {{ profileDisplayName() }}</h2>
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13">
-                  Everything you two have shared, newest first.
+                <h2 class="section-title">History with {{ profileDisplayName() }}</h2>
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0;">
+                  Everything that has happened between you two, newest first.
                 </p>
               </div>
-
-              <div style="display: flex; flex-direction: column; gap: 1rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
-                @for (entry of auditLog(); track entry.id) {
-                  <div [style.border-left]="'3px solid ' + (entry.isFromMe ? theme.colors().primary : '#10b981')"
-                       style="padding: 0.75rem 1rem; background: rgba(0,0,0,0.02); border-radius: 0 8px 8px 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem;">
-                      <span style="font-weight: 600; font-size: var(--fs-small);" [style.color]="entry.isFromMe ? theme.colors().primary : '#10b981'">
-                        {{ entry.isFromMe ? 'You sent' : entry.friendName + ' sent' }}
-                      </span>
-                      <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
-                        {{ entry.timestamp | date:'short' }}
-                      </span>
-                    </div>
-                    @if (entry.type === 'entry-share') {
-                      <div style="margin-bottom: 0.4rem;">
-                        <span [style.color]="theme.colors().primary"
-                              style="font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid currentColor; padding: 2px 6px; border-radius: 999px;">
-                          Specific entry shared
-                        </span>
-                      </div>
-                    }
-                    <p style="margin: 0; font-size: var(--fs-body);">
-                      {{ entry.content }}
-                      @if (entry.crushId) {
-                        <a [routerLink]="['/profile', entry.crushId]" [style.color]="theme.colors().primary" style="text-decoration: underline; margin-left: 4px;">
-                          View {{ entry.crushName }}
-                        </a>
-                      }
-                    </p>
-                    @if (entry.isFromMe) {
-                      <div style="margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
-                        @if (entry.type === 'message') {
-                          @if (entry.readAt) {
-                            <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
-                              <span style="font-size: var(--fs-body);">✓</span> Read {{ entry.readAt | date:'shortTime' }}
-                            </span>
-                          } @else {
-                            <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary">Sent</span>
-                          }
-                        } @else if (entry.seenAt) {
-                          <span style="font-size: var(--fs-label); color: #10b981; display: flex; align-items: center; gap: 2px;">
-                            <span style="font-size: var(--fs-body);">👁️</span> Seen {{ entry.seenAt | date:'MMM d, shortTime' }}
-                          </span>
-                        } @else {
-                          <span style="font-size: var(--fs-label);" [style.color]="theme.colors().textSecondary">
-                            <span style="font-size: var(--fs-body);">👁️‍🗨️</span> Not seen yet
-                          </span>
-                        }
-                      </div>
-                    }
-                  </div>
-                } @empty {
-                  <div style="text-align: center; padding: 2rem 0;">
-                    <p [style.color]="theme.colors().textSecondary">No shared history found yet.</p>
-                  </div>
-                }
-              </div>
+              <app-activity-timeline [friendId]="routeUserId()"></app-activity-timeline>
             </div>
           }
         }
@@ -386,7 +330,6 @@ export class UserProfileComponent {
   private dataService = inject(DataService);
   private friendsApi = inject(FriendsApiService);
   private messaging = inject(MessagingService);
-  private audit = inject(AuditService);
   private settings = inject(UserSettingsService);
   public theme = inject(ThemeService);
 
@@ -491,10 +434,6 @@ export class UserProfileComponent {
       .map((crush) => ({ ...crush, seenAt: crushSeenAt(crush, friendId) }));
   });
 
-  auditLog = computed(() => {
-    const friendId = this.routeUserId();
-    return this.audit.getHistoryWithFriend(friendId, this.dataService)();
-  });
 
   myCrushes = computed(() => {
     // Return all crushes. In the demo environment, this list is already filtered by owner on the backend.

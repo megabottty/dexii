@@ -7,6 +7,7 @@ const sendEmail = require('../utils/sendEmail');
 const sendSms = require('../utils/sendSms');
 const { buildInviteEmail } = require('../utils/inviteEmail');
 const { createNotification, retractCrushShares, retractFriendRequestNotifications } = require('./notificationController');
+const { recordActivity } = require('../services/activityLog');
 
 const INVITE_DAILY_LIMIT = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -151,6 +152,7 @@ exports.setPauseState = async (req, res) => {
 
     if (!paused) {
       await User.updateOne({ _id: req.user.id }, { $pull: { pausedFriends: { user: friendId } } });
+      void recordActivity({ io: req.app.get('io'), actor: req.user.id, counterpart: friendId, type: 'friend_resumed', visibleTo: [req.user.id] });
       return res.json({ friendId, paused: false, mutedNotifications: false });
     }
 
@@ -163,6 +165,7 @@ exports.setPauseState = async (req, res) => {
         { _id: req.user.id },
         { $push: { pausedFriends: { user: friendId, mutedNotifications: mute, pausedAt: new Date() } } }
       );
+      void recordActivity({ io: req.app.get('io'), actor: req.user.id, counterpart: friendId, type: 'friend_paused', visibleTo: [req.user.id], meta: { muted: mute } });
     }
     res.json({ friendId, paused: true, mutedNotifications: mute });
   } catch (err) {
@@ -243,6 +246,7 @@ exports.removeFriend = async (req, res) => {
 
     user.friends = user.friends.filter(id => id.toString() !== friendId);
     await user.save();
+    void recordActivity({ io: req.app.get('io'), actor: user._id, counterpart: friendId, type: 'friend_removed' });
 
     // Friendship is mutual, so drop the reverse edge too rather than leaving
     // the other user with a one-sided connection.
@@ -510,6 +514,7 @@ exports.inviteUser = async (req, res) => {
 
     invite.delivery = delivery;
     await invite.save();
+    void recordActivity({ io: req.app.get('io'), actor: inviter._id, type: 'invite_sent', inviteId: invite._id, visibleTo: [inviter._id], meta: { contact, method } });
 
     res.json({
       status: 'ok',
@@ -605,6 +610,7 @@ exports.acceptInviteForUser = async function acceptInviteForUser(token, newUserI
 
     try {
       await linkFriends(invite.invitedBy, newUserId);
+      void recordActivity({ actor: newUserId, counterpart: invite.invitedBy, type: 'invite_accepted', inviteId: invite._id, meta: { contact: invite.contact, method: invite.method } });
       try {
         await createNotification({
           recipient: invite.invitedBy,
@@ -671,6 +677,7 @@ exports.sendFriendRequest = async (req, res) => {
       reverse.status = 'accepted';
       reverse.respondedAt = new Date();
       await reverse.save();
+      void recordActivity({ io: req.app.get('io'), actor: req.user.id, counterpart: toUserId, type: 'request_accepted', requestId: reverse._id });
       setImmediate(() => { void retractFriendRequestNotifications({ io: req.app.get('io'), requestId: reverse._id, recipient: reverse.to }); });
       await linkFriends(req.user.id, toUserId);
       try {
@@ -692,6 +699,7 @@ exports.sendFriendRequest = async (req, res) => {
     }
 
     const request = await FriendRequest.create({ from: req.user.id, to: toUserId, message });
+    void recordActivity({ io: req.app.get('io'), actor: req.user.id, counterpart: toUserId, type: 'request_sent', requestId: request._id });
     try {
       await createNotification({
         recipient: toUserId,
@@ -766,6 +774,7 @@ exports.cancelInvite = async (req, res) => {
     }
     invite.status = 'cancelled';
     await invite.save();
+    void recordActivity({ io: req.app.get('io'), actor: req.user.id, type: 'invite_cancelled', inviteId: invite._id, visibleTo: [req.user.id], meta: { contact: invite.contact, method: invite.method } });
     res.json({ message: 'Invite withdrawn.', id: String(invite._id) });
   } catch (err) {
     console.error('Cancel invite error:', err.message);
@@ -833,6 +842,12 @@ exports.respondToRequest = async (req, res) => {
     request.status = action === 'accept' ? 'accepted' : 'declined';
     request.respondedAt = new Date();
     await request.save();
+    void recordActivity({
+      io: req.app.get('io'), actor: req.user.id, counterpart: request.from,
+      type: action === 'accept' ? 'request_accepted' : 'request_declined', requestId: request._id,
+      // A decline is the decliner's business; the sender just sees nothing happen.
+      visibleTo: action === 'accept' ? undefined : [req.user.id]
+    });
     // The recipient's Tea card for this request is no longer actionable.
     setImmediate(() => { void retractFriendRequestNotifications({ io: req.app.get('io'), requestId: request._id, recipient: request.to }); });
 
@@ -883,6 +898,7 @@ exports.cancelRequest = async (req, res) => {
     request.status = 'cancelled';
     request.respondedAt = new Date();
     await request.save();
+    void recordActivity({ io: req.app.get('io'), actor: req.user.id, counterpart: request.to, type: 'request_cancelled', requestId: request._id, visibleTo: [req.user.id] });
     setImmediate(() => { void retractFriendRequestNotifications({ io: req.app.get('io'), requestId: request._id, recipient: request.to }); });
 
     res.json({ message: 'Request cancelled.', id: String(request._id) });
@@ -932,6 +948,7 @@ exports.nudgeRequest = async (req, res) => {
     request.nudgeCount = (request.nudgeCount || 0) + 1;
     request.lastNudgedAt = new Date();
     await request.save();
+    void recordActivity({ io: req.app.get('io'), actor: req.user.id, counterpart: request.to, type: 'request_nudged', requestId: request._id, meta: { nudgeCount: request.nudgeCount } });
 
     try {
       await createNotification({

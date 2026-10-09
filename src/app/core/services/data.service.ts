@@ -1,6 +1,5 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { MessagingService } from './messaging.service';
-import { AuditService } from './audit.service';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import { AvatarConfig } from '../models/avatar-config.model';
 import { Entry } from '../models/entry.model';
@@ -81,7 +80,6 @@ export class DataService {
   private _activeOwner = signal<string>('');
   private modal = inject(ModalService);
   private messaging = inject(MessagingService);
-  private audit = inject(AuditService);
   private security = inject(SecurityService);
   private entriesApi = inject(EntriesApiService);
   private theme = inject(ThemeService);
@@ -1020,14 +1018,17 @@ export class DataService {
     this._allCrushes.update(crushes => crushes.map(c =>
       c.id === crushId ? { ...c, visibility: [...c.visibility, ...added] } : c
     ));
-    for (const friendId of added) {
-      this.audit.logEvent(me, friendId, `Shared a crush: ${crush.nickname}`, crushId);
-    }
 
-    await this.persistSharingChange(crushId, () => this.authenticatedFetch(`/crushes/${crushId}/share`, {
+    const ok = await this.persistSharingChange(crushId, () => this.authenticatedFetch(`/crushes/${crushId}/share`, {
       method: 'POST',
       body: JSON.stringify({ friendIds: added })
     }));
+    // One chat bubble per friend, only once the share really happened.
+    if (ok) {
+      for (const friendId of added) {
+        this.messaging.sendMessage({ senderId: me, receiverId: friendId, content: `Shared a crush: ${crush.nickname}`, relatedCrushId: crushId, kind: 'crush_share' });
+      }
+    }
   }
 
   /** Stops sharing a crush with one friend. */
@@ -1059,13 +1060,13 @@ export class DataService {
    * to saving the full sharing list, which is fine on a single device. Errors are
    * shown; success is silent so the sharing UI isn't covered by a modal.
    */
-  private async persistSharingChange(crushId: string, send: () => Promise<Response | null>): Promise<void> {
+  private async persistSharingChange(crushId: string, send: () => Promise<Response | null>): Promise<boolean> {
     this.pendingCrushSaves++;
     try {
       let response = await send();
       if (!response) {
         const crush = this._allCrushes().find((c) => c.id === crushId);
-        if (!crush) return;
+        if (!crush) return false;
         response = await this.demoFetch(`/crushes/${crushId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -1075,12 +1076,14 @@ export class DataService {
       if (!response || !response.ok) {
         console.error('Failed to update sharing:', response?.status);
         this.modal.show('Could not update sharing right now. Please try again.');
-        return;
+        return false;
       }
       this.applySavedCrush(crushId, await response.json() as BackendCrush);
+      return true;
     } catch (err) {
       console.error('Error updating sharing:', err);
       this.modal.show('Connection error. Could not update sharing.');
+      return false;
     } finally {
       this.pendingCrushSaves--;
     }
