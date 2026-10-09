@@ -240,17 +240,21 @@
 .dashboard-component__s79::-webkit-scrollbar { display: none; }
 
 .dashboard-filter-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px 1px;
   margin-left: 2px;
   border-radius: 999px;
   font-size: var(--fs-micro);
   font-weight: 800;
+  line-height: 1;
   letter-spacing: 0;
   text-transform: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-filter-info {
@@ -275,7 +279,7 @@
 .dashboard-component__s81 {
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex: 0 0 auto;
   min-height: 40px; padding: 8px 16px; border-radius: 999px; border: none; background: transparent;
-  font-size: var(--fs-btn); font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer;
+  font-size: var(--fs-btn); font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; line-height: 1.2;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 .dashboard-component__s81:hover:not([aria-selected="true"]) {
@@ -679,9 +683,9 @@
   }
 
   .dashboard-filter-count {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px 1px;
     margin-left: 2px;
   }
 

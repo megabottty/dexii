@@ -13,7 +13,7 @@ import { SubscriptionService } from '../../core/services/subscription.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SubscriptionTier, User } from '../../core/models/user.model';
 import { FriendsApiService } from '../../core/services/friends-api.service';
-import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { CrushProfile, CrushStatus, FriendCompatibilityVote } from '../../core/models/crush-profile.model';
 import { compatibilityLabel, compatibilityTrend, compatibilityZone, friendsRead, readGap } from '../../core/utils/compatibility';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
@@ -505,6 +505,27 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             }
           </div>
 
+          <!-- A friend weighed in: the reveal -->
+          @if (revealVote(); as vote) {
+            <div class="compat-reveal-backdrop" (click)="closeReveal(c.id)">
+              <div class="compat-reveal" role="dialog" aria-modal="true" aria-labelledby="compat-reveal-title" appFocusTrap (escaped)="closeReveal(c.id)" (click)="$event.stopPropagation()"
+                   [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text">
+                <div class="compat-reveal-burst" aria-hidden="true">
+                  @for (piece of burstPieces; track piece) { <span class="compat-reveal-piece" [style.--i]="piece"></span> }
+                </div>
+                <p [style.color]="theme.colors().textSecondary" class="compat-reveal-eyebrow">{{ revealIsFirst() ? "Your first friends' read" : 'A friend weighed in' }}</p>
+                <h2 id="compat-reveal-title" class="compat-reveal-title">{{ vote.username || 'A friend' }} weighed in on {{ getCrushDisplayName(c) }}</h2>
+                <div class="compat-reveal-score" aria-live="polite">
+                  <span class="compat-reveal-number">{{ revealShown() }}%</span>
+                  <span class="compat-reveal-zone">{{ compatLabel(vote.score) }}</span>
+                </div>
+                @if (vote.note) { <p class="compat-reveal-note">“{{ vote.note }}”</p> }
+                @if (revealGap(c, vote)) { <p [style.color]="theme.colors().textSecondary" class="compat-reveal-gap">{{ revealGap(c, vote) }}</p> }
+                <button type="button" (click)="closeReveal(c.id)" [style.background-color]="theme.colors().primary" class="compat-reveal-btn">{{ revealQueue().length > 1 ? 'Next' : 'Nice' }}</button>
+              </div>
+            </div>
+          }
+
           <!-- Compatibility Check -->
           @if (!isEditMode()) {
             <section [style.background-color]="theme.colors().bgSecondary"
@@ -594,6 +615,39 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                       [style.color]="theme.colors().textSecondary"
                       class="vibe-banner-dismiss"
                       aria-label="Dismiss">✕</button>
+            </div>
+          }
+
+          <!-- Compatibility check-in: once a week, "still feeling the same?" -->
+          @if (showCompatCheckIn() && c.compatibility?.score != null) {
+            <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + '18, ' + theme.colors().accent + '18)'"
+                 [style.border]="'1px solid ' + theme.colors().primary + '40'"
+                 class="vibe-banner compat-checkin" role="region" aria-label="Compatibility check-in">
+              <div class="compat-checkin-body">
+                <div class="vibe-banner-content">
+                  <span class="vibe-banner-emoji" aria-hidden="true">💞</span>
+                  <div class="vibe-banner-text">
+                    <span [style.color]="theme.colors().text" class="vibe-banner-title">Still {{ c.compatibility!.score }}% {{ compatLabel(c.compatibility!.score) }} with {{ getCrushDisplayName(c) }}?</span>
+                    <span [style.color]="theme.colors().textSecondary" class="vibe-banner-sub">It's been {{ compatDaysSince(c) }} days. Has anything changed?</span>
+                  </div>
+                </div>
+                <div class="compat-checkin-meter">
+                  <span aria-hidden="true">🧊</span>
+                  <input type="range" min="0" max="100" step="1" [value]="checkInScore() ?? c.compatibility!.score" (input)="setCheckInScore($event)"
+                         [attr.aria-valuetext]="compatLabel(checkInScore() ?? c.compatibility!.score) + ', ' + (checkInScore() ?? c.compatibility!.score) + ' out of 100'"
+                         aria-label="How compatible do you feel now?" class="compat-vote-range" [style.--compat-color]="theme.colors().primary">
+                  <span aria-hidden="true">🔥</span>
+                  <span class="compat-checkin-readout" aria-live="polite">{{ checkInScore() ?? c.compatibility!.score }}% {{ compatLabel(checkInScore() ?? c.compatibility!.score) }}</span>
+                </div>
+                <div class="compat-checkin-actions">
+                  <button type="button" (click)="snoozeCompatCheckIn(c.id)" class="action-btn-styled secondary">Same as before</button>
+                  <button type="button" (click)="saveCompatCheckIn(c)" [disabled]="checkInScore() === null || checkInScore() === c.compatibility!.score" class="action-btn-styled primary">Update my read</button>
+                </div>
+              </div>
+              <button (click)="snoozeCompatCheckIn(c.id)"
+                      [style.color]="theme.colors().textSecondary"
+                      class="vibe-banner-dismiss"
+                      aria-label="Dismiss for now">✕</button>
             </div>
           }
 
@@ -1039,6 +1093,105 @@ export class ProfileDetailComponent implements OnDestroy {
   friendCrush = signal<CrushProfile | null>(null);
 
   // ---------- Compatibility Check ----------
+  /** Weekly check-in: shown when your read is 7+ days old and you haven't snoozed it this week. */
+  private static readonly COMPAT_CHECKIN_MS = 7 * 24 * 60 * 60 * 1000;
+  compatSnoozedAt = signal(0);
+  checkInScore = signal<number | null>(null);
+  showCompatCheckIn = computed(() => {
+    const c = this.crush();
+    if (!c || this.isReadOnlyFriendView() || this.previewAsFriend() || this.isEditMode() || c.compatibility?.score == null) return false;
+    const updated = c.compatibility.updatedAt ? new Date(c.compatibility.updatedAt).getTime() : 0;
+    const last = Math.max(updated, this.compatSnoozedAt());
+    return Date.now() - last >= ProfileDetailComponent.COMPAT_CHECKIN_MS;
+  });
+  compatDaysSince(crush: CrushProfile): number {
+    const updated = crush.compatibility?.updatedAt ? new Date(crush.compatibility.updatedAt).getTime() : 0;
+    const last = Math.max(updated, this.compatSnoozedAt());
+    return last ? Math.max(1, Math.floor((Date.now() - last) / (24 * 60 * 60 * 1000))) : 7;
+  }
+  setCheckInScore(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    this.checkInScore.set(Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : null);
+  }
+  snoozeCompatCheckIn(crushId: string): void {
+    const now = Date.now();
+    localStorage.setItem(`compat_checked_${crushId}`, String(now));
+    this.compatSnoozedAt.set(now);
+    this.checkInScore.set(null);
+  }
+  saveCompatCheckIn(crush: CrushProfile): void {
+    const score = this.checkInScore();
+    if (score === null || !crush.compatibility) return;
+    const compatibility = { ...crush.compatibility, score, updatedAt: new Date().toISOString() };
+    this.dataService.updateCrush({ ...crush, compatibility }, { fields: ['compatibility'] });
+    this.snoozeCompatCheckIn(crush.id);
+    this.modal.show(`Updated: ${score}% ${compatibilityLabel(score)}.`);
+  }
+
+  /** The reveal when a friend weighs in: every vote you haven't seen yet, shown one at a time. */
+  readonly burstPieces = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  private seenVoteKeys = signal<Set<string>>(new Set());
+  private seenVotesLoadedFor = '';
+  revealQueue = signal<FriendCompatibilityVote[]>([]);
+  revealVote = computed(() => this.revealQueue()[0] || null);
+  revealIsFirst = signal(false);
+  revealShown = signal(0);
+  private revealTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly watchVotes = effect(() => {
+    const c = this.crush();
+    if (!c || this.isReadOnlyFriendView() || this.previewAsFriend()) return;
+    const votes = c.friendCompatibility || [];
+    const seen = this.seenVoteKeys();
+    const loadedFor = untracked(() => this.seenVotesLoadedFor);
+    if (loadedFor !== c.id) return;
+    const fresh = votes.filter((vote) => !seen.has(this.voteKey(vote)));
+    untracked(() => {
+      if (fresh.length === 0 || this.revealQueue().length > 0) return;
+      this.revealIsFirst.set(votes.length === fresh.length);
+      this.revealQueue.set(fresh);
+      this.startRevealCount(fresh[0].score);
+    });
+  });
+  private voteKey(vote: FriendCompatibilityVote): string { return `${vote.userId}|${vote.score}|${vote.note || ''}`; }
+  private loadSeenVotes(crushId: string): void {
+    try {
+      const raw = JSON.parse(localStorage.getItem(`compat_seen_${crushId}`) || '[]');
+      this.seenVoteKeys.set(new Set(Array.isArray(raw) ? raw : []));
+    } catch { this.seenVoteKeys.set(new Set()); }
+    this.seenVotesLoadedFor = crushId;
+    this.revealQueue.set([]);
+  }
+  private startRevealCount(target: number): void {
+    if (this.revealTimer) clearInterval(this.revealTimer);
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { this.revealShown.set(target); return; }
+    this.revealShown.set(0);
+    const start = performance.now();
+    this.revealTimer = setInterval(() => {
+      const t = Math.min(1, (performance.now() - start) / 900);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.revealShown.set(Math.round(target * eased));
+      if (t >= 1 && this.revealTimer) { clearInterval(this.revealTimer); this.revealTimer = null; }
+    }, 30);
+  }
+  revealGap(crush: CrushProfile, vote: FriendCompatibilityVote): string {
+    const mine = crush.compatibility?.score;
+    if (mine === null || mine === undefined) return 'Add your own read to compare.';
+    const diff = vote.score - mine;
+    if (Math.abs(diff) <= 5) return `${vote.username || 'They'} and you see it the same way 🤝`;
+    return diff > 0 ? `${diff} points more optimistic than you 👀` : `${-diff} points below your read 😌`;
+  }
+  closeReveal(crushId: string): void {
+    const [current, ...rest] = this.revealQueue();
+    if (current) {
+      const seen = new Set(this.seenVoteKeys()); seen.add(this.voteKey(current));
+      this.seenVoteKeys.set(seen);
+      try { localStorage.setItem(`compat_seen_${crushId}`, JSON.stringify([...seen])); } catch { /* ignore */ }
+    }
+    this.revealQueue.set(rest);
+    if (rest[0]) { this.revealIsFirst.set(false); this.startRevealCount(rest[0].score); }
+  }
+
   compatLabel(score: number | null | undefined): string { return compatibilityLabel(score); }
   compatZoneOf(score: number | null | undefined) { return compatibilityZone(score); }
   friendsReadFor(crush: CrushProfile) { return friendsRead(crush.friendCompatibility); }
@@ -1294,6 +1447,10 @@ export class ProfileDetailComponent implements OnDestroy {
     // another (e.g. two Tea cards in a row), so follow the id rather than read it once.
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.crushId.set(params.get('id'));
+      const crushId = params.get('id') || '';
+      this.compatSnoozedAt.set(Number(localStorage.getItem(`compat_checked_${crushId}`) || 0) || 0);
+      this.checkInScore.set(null);
+      this.loadSeenVotes(crushId);
       this.friendCrush.set(null);
       this.friendCrushOwnerId.set(null);
       this.friendCrushOwnerName.set(null);

@@ -1161,3 +1161,35 @@ button.friend-item:disabled {
 .compat-vote-range::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 3px solid var(--compat-color); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
 .compat-vote-note { width: 100%; min-height: var(--tap-min); padding: 10px 14px; border-radius: 10px; font: inherit; font-size: var(--fs-body); box-sizing: border-box; }
 .compat-vote-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- Compatibility check-in banner ---- */
+.compat-checkin { align-items: stretch; }
+.compat-checkin-body { display: grid; gap: 12px; flex: 1; min-width: 0; }
+.compat-checkin-meter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.compat-checkin-meter .compat-vote-range { flex: 1 1 160px; }
+.compat-checkin-readout { font-weight: 700; font-size: var(--fs-small); white-space: nowrap; }
+.compat-checkin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- "A friend weighed in" reveal ---- */
+.compat-reveal-backdrop { position: fixed; inset: 0; z-index: 1600; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.compat-reveal { position: relative; width: 100%; max-width: 420px; padding: 32px 24px 24px; border-radius: 24px; text-align: center; display: grid; gap: 10px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); animation: compat-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.compat-reveal-eyebrow { margin: 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 2px; }
+.compat-reveal-title { margin: 0; font-size: var(--fs-h-md); }
+.compat-reveal-score { display: grid; gap: 2px; margin: 8px 0; }
+.compat-reveal-number { font-size: 3.25rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #60a5fa, #c084fc, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.compat-reveal-zone { font-size: var(--fs-h-sm); font-weight: 700; }
+.compat-reveal-note { margin: 0; font-size: var(--fs-modal); font-style: italic; line-height: 1.5; }
+.compat-reveal-gap { margin: 0; font-size: var(--fs-small); }
+.compat-reveal-btn { margin-top: 8px; min-height: var(--tap-min); padding: 10px 28px; border: none; border-radius: 999px; color: #fff; font-size: var(--fs-btn); font-weight: 700; cursor: pointer; justify-self: center; }
+.compat-reveal-burst { position: absolute; inset: 0; pointer-events: none; }
+.compat-reveal-piece { position: absolute; left: 50%; top: 38%; width: 10px; height: 10px; border-radius: 2px; background: hsl(calc(var(--i) * 30), 85%, 60%); opacity: 0; transform: translate(-50%, -50%); animation: compat-burst 1.4s ease-out calc(var(--i) * 0.03s) forwards; }
+@keyframes compat-pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes compat-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + (var(--i) - 5.5) * 36px), calc(-50% + 180px)) rotate(540deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .compat-reveal { animation: none; }
+  .compat-reveal-piece { animation: none; opacity: 0; }
+}

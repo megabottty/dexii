@@ -81,6 +81,11 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
   and a one-liner comparing the two reads. A vote logs `compatibility_voted` in History and lands in Tea.
 - Shown as a card under the crush header and as a 💞 chip on the dashboard card. Helpers live in
   `core/utils/compatibility.ts`.
+- **Weekly check-in**: when your read is 7+ days old the crush page asks "Still 72% Really clicking with Sunny?"
+  with a slider; "Same as before" snoozes it for a week (`compat_checked_<id>` on the device), "Update my read"
+  saves and adds a history point.
+- **The reveal**: the first time you open a crush after a friend weighs in, their read pops up with a count-up
+  score, their note and how it compares to yours (one card per new vote; seen votes are remembered per device).
 
 ## Plans are parked (public testing)
 
