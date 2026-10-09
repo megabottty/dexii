@@ -81,6 +81,24 @@ textarea {
   outline-offset: 2px;
 }
 
+/* Square icon-only buttons (pause, remove, ...): a 44px target, named with aria-label. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0;
+  border-radius: 14px;
+  background: transparent;
+  border: 1px solid currentColor;
+  cursor: pointer;
+}
+.icon-btn:hover { background: rgba(127, 127, 127, 0.12); }
+.icon-btn--danger { color: var(--danger); }
+
 /* Visually hidden, still read by screen readers (page headings on logo-only screens). */
 .sr-only {
   position: absolute;

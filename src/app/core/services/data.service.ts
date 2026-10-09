@@ -421,6 +421,16 @@ export class DataService {
     return true;
   }
 
+  /** Removes several photos in one request. */
+  public async removeCrushPhotos(crushId: string, ids: string[]): Promise<boolean> {
+    if (ids.length === 0) return false;
+    const response = await this.authenticatedFetch(`/crushes/${crushId}/photos/delete`, { method: 'POST', body: JSON.stringify({ ids }) });
+    if (!response || !response.ok) { this.modal.show('Could not delete those photos right now.'); return false; }
+    const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
+    this.patchCrushPhotos(crushId, current.filter((p) => !ids.includes(p.id)));
+    return true;
+  }
+
   public async reorderCrushPhotos(crushId: string, ids: string[]): Promise<void> {
     const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
     const byId = new Map(current.map((p) => [p.id, p]));

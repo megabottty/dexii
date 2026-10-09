@@ -44,6 +44,25 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
   - **Gold ($15/mo)**: Enhanced vault storage, priority support, and all premium features.
 - **Feature Gating**: Limits on crushes and advanced vault sections for the Free tier.
 
+## Friends: one page per friend
+
+- **The friend page** lives at `/friends/<username>` (old `/user/<id>` links redirect there). It shows the
+  friend's bio and About details, the crushes they share with you, the crushes you share with them (with
+  seen/not-seen and Unshare), your History together, and, last, your **Friendship Profile** card: relationship
+  name, type, how you met, trust level and notes. Those notes are private to you and are saved on your
+  account (`PUT /api/friends/:id/friendship-profile`), so they follow you between devices. Anything saved in a
+  browser before this existed is moved to the server the first time it is seen.
+- **Edit** in the header jumps to that card in edit mode; **Chat** opens the conversation. The pause (⏸) and
+  remove (🗑) icon buttons on the card manage the friendship.
+- **Friend cards** on the Friends page carry four actions: Share (opens the friend page), Chat, pause and
+  remove. Paused cards show Resume, Chat and remove plus the mute toggle.
+- **Destructive actions always confirm** with a titled dialog whose button says what it does ("Remove",
+  "Delete 3") in the outlined red danger style: removing a friend, deleting a vault photo, deleting crush
+  photos.
+- **Photos can be deleted in bulk**: the Vault photo grid has Select → tick photos (or Select all) →
+  Delete selected; a crush's photo gallery has "Select photos", which opens a thumbnail sheet with the same
+  controls and calls `POST /api/crushes/:id/photos/delete` with the chosen ids.
+
 ## Accessibility (WCAG 2.1 AA)
 
 The whole app is built to the WCAG 2.1 AA bar. The rules the code follows:

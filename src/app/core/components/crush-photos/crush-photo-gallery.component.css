@@ -48,3 +48,12 @@
 .pg-chip { min-height: 40px; padding: 8px 14px; border-radius: var(--radius-pill); font-size: var(--fs-btn); font-weight: 700; cursor: pointer; }
 .pg-sheet-actions { display: flex; gap: 10px; justify-content: flex-end; }
 @media (prefers-reduced-motion: reduce) { .pg-track { scroll-behavior: auto; } }
+
+/* Select-and-delete sheet: a thumbnail grid with a checkbox on each photo */
+.pg-pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.pg-pick { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; background: rgba(127, 127, 127, 0.15); }
+.pg-pick input { position: absolute; top: 6px; left: 6px; width: 24px; height: 24px; margin: 0; z-index: 1; accent-color: #15803d; cursor: pointer; }
+.pg-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pg-pick-lock { position: absolute; right: 6px; bottom: 6px; font-size: 0.9rem; }
+.pg-pick--on { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
+.pg-pick:focus-within { outline: 3px solid var(--focus-ring); outline-offset: 2px; }

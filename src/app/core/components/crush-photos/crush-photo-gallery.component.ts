@@ -1,5 +1,6 @@
 import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
 import { ThemeService } from '../../services/theme.service';
 import { DataService } from '../../services/data.service';
 import { FriendsApiService, FriendSummary } from '../../services/friends-api.service';
@@ -17,7 +18,7 @@ const MAX_PHOTOS = 8;
 @Component({
   selector: 'app-crush-photo-gallery',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FocusTrapDirective],
   styleUrl: './crush-photo-gallery.component.css',
   template: `
     @if (mode() === 'owner' || photos().length > 0) {
@@ -31,6 +32,9 @@ const MAX_PHOTOS = 8;
                   <span aria-hidden="true">＋</span> Add photos
                   <input type="file" accept="image/*" multiple (change)="onFilesPicked($event)" class="pg-file" aria-label="Add photos of this crush">
                 </label>
+              }
+              @if (photos().length > 1) {
+                <button type="button" (click)="openSelect()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost">Select photos</button>
               }
               @if (photos().length > 0 && hasHiddenPhotos()) {
                 <button type="button" (click)="shareAll()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost">Share all photos with everyone</button>
@@ -109,7 +113,7 @@ const MAX_PHOTOS = 8;
         <!-- Audience sheet -->
         @if (audienceFor(); as photo) {
           <div class="pg-sheet-backdrop" (click)="closeAudience()">
-            <div class="pg-sheet" role="dialog" aria-modal="true" aria-labelledby="pg-audience-title" (click)="$event.stopPropagation()" (keydown.escape)="closeAudience()"
+            <div class="pg-sheet" role="dialog" aria-modal="true" aria-labelledby="pg-audience-title" appFocusTrap (escaped)="closeAudience()" (click)="$event.stopPropagation()"
                  [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border">
               <h3 id="pg-audience-title" class="pg-sheet-title">Who can see this photo?</h3>
               <label class="pg-choice" [style.border]="'1px solid ' + (draftAudience() === 'shared' ? theme.colors().primary : theme.colors().border)">
@@ -136,6 +140,30 @@ const MAX_PHOTOS = 8;
               <div class="pg-sheet-actions">
                 <button type="button" (click)="saveAudience()" [style.background-color]="theme.colors().primary" class="pg-btn pg-btn--primary">Save</button>
                 <button type="button" (click)="closeAudience()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost">Cancel</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Select-and-delete sheet -->
+        @if (selecting()) {
+          <div class="pg-sheet-backdrop" (click)="closeSelect()">
+            <div class="pg-sheet" role="dialog" aria-modal="true" aria-labelledby="pg-select-title" appFocusTrap (escaped)="closeSelect()" (click)="$event.stopPropagation()"
+                 [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border">
+              <h3 id="pg-select-title" class="pg-sheet-title">Select photos to delete</h3>
+              <div class="pg-pick-grid" role="group" aria-label="Photos">
+                @for (photo of photos(); track photo.id; let i = $index) {
+                  <label class="pg-pick" [class.pg-pick--on]="selectedIds().includes(photo.id)">
+                    <input type="checkbox" [checked]="selectedIds().includes(photo.id)" (change)="toggleSelected(photo.id)" [attr.aria-label]="'Select photo ' + (i + 1) + ' of ' + photos().length">
+                    <img [src]="photo.url" alt="" loading="lazy">
+                    @if (photo.audience === 'friends') { <span class="pg-pick-lock" aria-hidden="true">🔒</span> }
+                  </label>
+                }
+              </div>
+              <div class="pg-sheet-actions">
+                <button type="button" (click)="toggleSelectAll()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost">{{ allSelected() ? 'Deselect all' : 'Select all' }}</button>
+                <button type="button" (click)="deleteSelected()" [disabled]="selectedIds().length === 0 || busy() === 'delete'" class="pg-btn pg-btn--danger">Delete selected ({{ selectedIds().length }})</button>
+                <button type="button" (click)="closeSelect()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost">Cancel</button>
               </div>
             </div>
           </div>
@@ -249,12 +277,41 @@ export class CrushPhotoGalleryComponent {
   }
 
   remove(photo: CrushPhoto): void {
-    this.modal.confirm('Remove this photo?', async () => {
+    this.modal.confirm('Delete this photo? This cannot be undone.', async () => {
       if (await this.dataService.removeCrushPhoto(this.crushId(), photo.id)) {
-        this.photos.update((list) => list.filter((p) => p.id !== photo.id));
-        this.index.update((i) => Math.max(0, Math.min(i, this.photos().length - 1)));
+        this.dropPhotos([photo.id]);
       }
-    });
+    }, undefined, { title: 'Delete photo?', confirmLabel: 'Delete', danger: true });
+  }
+
+  /** Select several photos and delete them together. */
+  readonly selecting = signal(false);
+  readonly selectedIds = signal<string[]>([]);
+  readonly allSelected = computed(() => this.photos().length > 0 && this.photos().every((p) => this.selectedIds().includes(p.id)));
+  openSelect(): void { this.selectedIds.set([]); this.selecting.set(true); }
+  closeSelect(): void { this.selecting.set(false); this.selectedIds.set([]); }
+  toggleSelected(id: string): void {
+    this.selectedIds.update((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
+  }
+  toggleSelectAll(): void {
+    this.selectedIds.set(this.allSelected() ? [] : this.photos().map((p) => p.id));
+  }
+  deleteSelected(): void {
+    const ids = [...this.selectedIds()];
+    if (ids.length === 0) return;
+    const noun = ids.length === 1 ? 'this photo' : `${ids.length} photos`;
+    this.modal.confirm(`Delete ${noun}? This cannot be undone.`, async () => {
+      this.busy.set('delete');
+      const ok = ids.length === 1
+        ? await this.dataService.removeCrushPhoto(this.crushId(), ids[0])
+        : await this.dataService.removeCrushPhotos(this.crushId(), ids);
+      this.busy.set('');
+      if (ok) { this.dropPhotos(ids); this.closeSelect(); }
+    }, undefined, { title: ids.length === 1 ? 'Delete photo?' : 'Delete photos?', confirmLabel: ids.length === 1 ? 'Delete' : `Delete ${ids.length}`, danger: true });
+  }
+  private dropPhotos(ids: string[]): void {
+    this.photos.update((list) => list.filter((p) => !ids.includes(p.id)));
+    this.index.update((i) => Math.max(0, Math.min(i, this.photos().length - 1)));
   }
 
   async move(photo: CrushPhoto, delta: number): Promise<void> {

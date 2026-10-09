@@ -87,6 +87,19 @@ const UserSchema = new mongoose.Schema({
     }],
     default: []
   },
+  // What this user wrote about each friendship (private to them; shown on the friend's page)
+  friendshipProfiles: {
+    type: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      relationshipName: { type: String, default: '', trim: true, maxlength: 500 },
+      relationshipType: { type: String, default: '', trim: true, maxlength: 500 },
+      howMet: { type: String, default: '', trim: true, maxlength: 500 },
+      trustLevel: { type: String, default: '', trim: true, maxlength: 500 },
+      notes: { type: String, default: '', trim: true, maxlength: 2000 },
+      updatedAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
   subscriptionTier: {
     type: String,
     enum: ['Free', 'Premium', 'Gold'],

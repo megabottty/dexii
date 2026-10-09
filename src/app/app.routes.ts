@@ -71,16 +71,22 @@ export const routes: Routes = [
     loadComponent: () => import('./features/sharing/sharing.component').then(m => m.SharingComponent)
   },
   {
+    // The one friend page: bio, shared crushes, history and your friendship profile.
     path: 'friends/:id',
-    title: 'Friendship',
+    title: 'Friend',
     canActivate: [lockGuard],
-    loadComponent: () => import('./features/friend-profile/friend-profile.component').then(m => m.FriendProfileComponent)
+    loadComponent: () => import('./features/user-profile/user-profile.component').then(m => m.UserProfileComponent)
   },
   {
-    path: 'user/:id',
+    path: 'user/me',
     title: 'Profile',
     canActivate: [lockGuard],
     loadComponent: () => import('./features/user-profile/user-profile.component').then(m => m.UserProfileComponent)
+  },
+  {
+    // Old links: the friend page used to live here. The page itself swaps the id for the username.
+    path: 'user/:id',
+    redirectTo: ({ params, queryParams }) => inject(Router).createUrlTree(['/friends', params['id']], { queryParams })
   },
   {
     path: 'chat',

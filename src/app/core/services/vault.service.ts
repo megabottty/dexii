@@ -29,6 +29,20 @@ export class VaultService {
   }
 
   deleteFile(id: string): void {
-    this._files.update(files => files.filter(f => f.id !== id));
+    this.deleteFiles([id]);
+  }
+
+  /** Removes several photos at once and frees their object URLs. */
+  deleteFiles(ids: string[]): void {
+    const gone = new Set(ids);
+    if (gone.size === 0) return;
+    this._files.update((files) => {
+      for (const file of files) {
+        if (gone.has(file.id) && file.url.startsWith('blob:')) {
+          try { URL.revokeObjectURL(file.url); } catch { /* already revoked */ }
+        }
+      }
+      return files.filter((f) => !gone.has(f.id));
+    });
   }
 }

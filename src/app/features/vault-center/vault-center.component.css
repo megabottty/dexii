@@ -301,7 +301,28 @@
 }
 
 .vault-center-component__s31 {
-  position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 5px 8px; font-size: var(--vault-fs-micro); cursor: pointer;
+  position: absolute; top: 6px; right: 6px; width: var(--tap-min); height: var(--tap-min); min-height: var(--tap-min); display: grid; place-items: center; background: rgba(0,0,0,0.55); color: white; border: none; padding: 0; border-radius: 12px; font-size: var(--vault-fs-micro); cursor: pointer;
+}
+
+/* Select mode: a big checkbox in the top-left corner of each photo */
+.vault-select {
+  position: absolute; top: 6px; left: 6px; width: var(--tap-min); height: var(--tap-min); display: grid; place-items: center; background: rgba(0,0,0,0.55); border-radius: 12px; cursor: pointer;
+}
+.vault-select input {
+  width: 24px; height: 24px; margin: 0; accent-color: #fff; cursor: pointer;
+}
+
+.vault-photo-toolbar {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.vault-toolbar-btn {
+  min-height: var(--tap-min); padding: 8px 16px; background: transparent; border-radius: var(--radius-pill); font-size: var(--fs-btn); font-weight: 700; cursor: pointer;
+}
+.vault-toolbar-btn--danger {
+  border: 1px solid #ef4444; color: var(--danger);
+}
+.vault-toolbar-btn:disabled {
+  opacity: 0.45; cursor: default;
 }
 
 .vault-center-component__s32 {

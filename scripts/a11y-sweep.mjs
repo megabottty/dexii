@@ -10,7 +10,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 const BASE = process.env.A11Y_BASE || 'http://localhost:4200';
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-const friends = [{ id: 'f1', username: 'sam', firstName: 'Sam', lastName: 'Lee' }, { id: 'f2', username: 'bea' }];
+const friends = [{ id: 'f1', username: 'sam', firstName: 'Sam', lastName: 'Lee', friendshipProfile: { relationshipName: 'Sam', relationshipType: 'Bestie', howMet: 'College', trustLevel: 'High', notes: '' } }, { id: 'f2', username: 'bea', friendshipProfile: null }];
 const crushes = [
   { _id: 'c1', userId: 'avatartester', nickname: 'Sunny', status: 'Dating', visibility: ['f1'], viewedBy: [], vibeHistory: [3], rating: 3, relationshipLabels: ['Just flirting'], redFlags: 1, photoCount: 0 },
   { _id: 'c2', userId: 'avatartester', nickname: 'Moon', status: 'Crush', visibility: [], viewedBy: [], vibeHistory: [4], rating: 4, photoCount: 0 }
@@ -38,6 +38,7 @@ for (const [width, label] of [[390, 'phone'], [1200, 'desktop']]) {
     if (p === '/api/friends/requests' && m === 'GET') return json(route, [{ id: 'r9', from: { id: 'f9', username: 'zed' }, to: { id: 'avatartester' }, status: 'pending', createdAt: new Date().toISOString() }]);
     if (p === '/api/friends/requests/sent') return json(route, []);
     if (p === '/api/friends/profile/f1') return json(route, { ...friends[0], profileSettings: {}, isFriend: true });
+    if (p === '/api/friends/f1/friendship-profile') return json(route, JSON.parse(route.request().postData() || '{}'));
     if (p === '/api/crushes' && m === 'GET') return json(route, crushes);
     if (p === '/api/crushes/friend/f1' || p === '/api/entries/shared' || p === '/api/messages/conversations' || p === '/api/crushes/c1/photos') return json(route, []);
     if (p === '/api/messages/f1') return json(route, [{ _id: 'm1', sender: 'f1', recipient: 'avatartester', content: 'hey', createdAt: new Date().toISOString() }]);

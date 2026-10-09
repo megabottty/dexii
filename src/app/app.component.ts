@@ -346,11 +346,11 @@ export class AppComponent implements OnInit, OnDestroy {
     },
     {
       title: '2. Friendship Profiles',
-      details: 'Open View Friendship to keep notes about how you know them, trust level, and relationship context.'
+      details: 'Open a friend\'s page and scroll to Friendship Profile to keep notes on how you know them, trust level, and relationship context.'
     },
     {
       title: '3. Sharing Controls',
-      details: 'On a friend profile, choose exactly which crushes and entries they can see, one person at a time.'
+      details: 'On the Sharing page, choose exactly which crushes and entries each friend can see, one person at a time.'
     },
     {
       title: '4. Chat + Shared History',
@@ -525,8 +525,8 @@ export class AppComponent implements OnInit, OnDestroy {
     const normalized = this.routeHintKey(path);
     const map: Record<string, string> = {
       '/dashboard': 'Use New Crush to add a crush. Add a Crush Note and set it Private/Public.',
-      '/friends': 'Use Bio for friend notes and Sharing Controls to choose which crushes/entries each friend can view.',
-      '/friends/:id': 'Save private notes for yourself or shared notes that get sent to this friend.',
+      '/friends': 'Tap a friend to open their page. Share opens what you two can see of each other; the pause and bin icons manage the friendship.',
+      '/friends/:id': 'Everything about this friendship in one place: their bio, the crushes you share, your history, and your private friendship profile at the bottom.',
       '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each crush.',
       '/chat': 'Messages marked as shared notes are sent here. Type "secret" in a message to make it self-destruct after it is opened.',
       '/vault': 'Vault is your private zone for sensitive content and locked-down entries.',

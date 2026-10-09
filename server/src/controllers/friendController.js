@@ -115,20 +115,69 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 exports.getFriends = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .select('friends pausedFriends')
+      .select('friends pausedFriends friendshipProfiles')
       .populate('friends', 'username firstName lastName avatarUrl friendCategories');
     const paused = new Map((user?.pausedFriends || []).map((entry) => [String(entry.user), entry]));
+    const profiles = new Map((user?.friendshipProfiles || []).map((entry) => [String(entry.user), entry]));
     res.json((user?.friends || []).map((friend) => {
       const entry = paused.get(String(friend._id));
+      const profile = profiles.get(String(friend._id));
       return {
         ...shapeUser(friend),
         paused: Boolean(entry),
         mutedNotifications: entry ? entry.mutedNotifications !== false : false,
-        pausedAt: entry?.pausedAt || null
+        pausedAt: entry?.pausedAt || null,
+        friendshipProfile: profile ? shapeFriendshipProfile(profile) : null
       };
     }));
   } catch (err) {
     console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+const FRIENDSHIP_PROFILE_FIELDS = ['relationshipName', 'relationshipType', 'howMet', 'trustLevel', 'notes'];
+const shapeFriendshipProfile = (entry) => ({
+  relationshipName: entry.relationshipName || '',
+  relationshipType: entry.relationshipType || '',
+  howMet: entry.howMet || '',
+  trustLevel: entry.trustLevel || '',
+  notes: entry.notes || '',
+  updatedAt: entry.updatedAt || null
+});
+
+// @route   PUT /api/friends/:friendId/friendship-profile   body: the five text fields
+// @desc    Save what you wrote about this friendship (only you can see it)
+exports.setFriendshipProfile = async (req, res) => {
+  try {
+    if (!requireDb(res)) return;
+    const { friendId } = req.params;
+    if (!mongoose.isValidObjectId(friendId)) {
+      return res.status(400).json({ message: 'Invalid friend id.' });
+    }
+    const me = await User.findById(req.user.id).select('friends').lean();
+    if (!me?.friends?.some((id) => String(id) === String(friendId))) {
+      return res.status(404).json({ message: 'Friendship not found.' });
+    }
+    const fields = {};
+    for (const key of FRIENDSHIP_PROFILE_FIELDS) {
+      const raw = req.body?.[key];
+      fields[key] = typeof raw === 'string' ? raw.trim().slice(0, key === 'notes' ? 2000 : 500) : '';
+    }
+    const updatedAt = new Date();
+    const updated = await User.updateOne(
+      { _id: req.user.id, 'friendshipProfiles.user': friendId },
+      { $set: Object.fromEntries([...Object.entries(fields).map(([k, v]) => [`friendshipProfiles.$.${k}`, v]), ['friendshipProfiles.$.updatedAt', updatedAt]]) }
+    );
+    if (!updated.matchedCount) {
+      await User.updateOne(
+        { _id: req.user.id },
+        { $push: { friendshipProfiles: { user: friendId, ...fields, updatedAt } } }
+      );
+    }
+    res.json(shapeFriendshipProfile({ ...fields, updatedAt }));
+  } catch (err) {
+    console.error('Set friendship profile error:', err.message);
     res.status(500).send('Server Error');
   }
 };
@@ -251,8 +300,8 @@ exports.removeFriend = async (req, res) => {
     // Friendship is mutual, so drop the reverse edge too rather than leaving
     // the other user with a one-sided connection.
     await Promise.all([
-      User.updateOne({ _id: friendId }, { $pull: { friends: user._id, pausedFriends: { user: user._id } } }),
-      User.updateOne({ _id: user._id }, { $pull: { pausedFriends: { user: friendId } } }),
+      User.updateOne({ _id: friendId }, { $pull: { friends: user._id, pausedFriends: { user: user._id }, friendshipProfiles: { user: user._id } } }),
+      User.updateOne({ _id: user._id }, { $pull: { pausedFriends: { user: friendId }, friendshipProfiles: { user: friendId } } }),
       FriendRequest.deleteMany({
         $or: [
           { from: user._id, to: friendId },

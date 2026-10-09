@@ -25,7 +25,7 @@ import { ThemeService } from '../services/theme.service';
              [style.border]="'1px solid ' + theme.colors().border"
              class="alert-modal-component__s2">
           <button (click)="close()" [style.color]="theme.colors().textSecondary" aria-label="Close notice" class="alert-modal-component__s3">✕</button>
-          <h3 id="alert-modal-title" class="alert-modal-component__s4">Notice</h3>
+          <h3 id="alert-modal-title" class="alert-modal-component__s4">{{ modal.options().title || 'Notice' }}</h3>
           <p id="alert-modal-message" aria-live="polite" [style.color]="theme.colors().textSecondary" class="alert-modal-component__s5">{{ modal.message() }}</p>
 
           @if (modal.type() === 'prompt') {
@@ -49,13 +49,15 @@ import { ThemeService } from '../services/theme.service';
                       [style.border]="'1px solid ' + theme.colors().border"
                       [style.color]="theme.colors().textSecondary"
                       class="alert-modal-component__s6">
-                Cancel
+                {{ modal.options().cancelLabel || 'Cancel' }}
               </button>
             }
             <button (click)="modal.handleConfirm()"
-                    [style.background-color]="theme.colors().primary"
+                    [style.background-color]="modal.options().danger ? 'transparent' : theme.colors().primary"
+                    [style.border]="modal.options().danger ? '1px solid #ef4444' : null"
+                    [style.color]="modal.options().danger ? theme.colors().danger : null"
                     class="alert-modal-component__s6">
-              {{ modal.type() === 'alert' ? 'Close' : 'Confirm' }}
+              {{ modal.options().confirmLabel || (modal.type() === 'alert' ? 'Close' : 'Confirm') }}
             </button>
           </div>
         </div>

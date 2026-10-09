@@ -222,6 +222,20 @@ import { NotificationsService } from '../../core/services/notifications.service'
                        class="vault-center-component__s24">Start Verification</button>
             </div>
           } @else {
+            @if (vault.files().length > 0) {
+              <div class="vault-photo-toolbar" role="group" aria-label="Photo selection">
+                <button type="button" (click)="toggleSelectMode()" [attr.aria-pressed]="selectMode()"
+                        [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                        class="vault-toolbar-btn">{{ selectMode() ? 'Done' : 'Select' }}</button>
+                @if (selectMode()) {
+                  <button type="button" (click)="toggleSelectAll()"
+                          [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                          class="vault-toolbar-btn">{{ allSelected() ? 'Deselect all' : 'Select all' }}</button>
+                  <button type="button" (click)="deleteSelected()" [disabled]="selected().size === 0"
+                          class="vault-toolbar-btn vault-toolbar-btn--danger">Delete selected ({{ selected().size }})</button>
+                }
+              </div>
+            }
             <div class="vault-center-component__s25">
               <div (click)="fileInput.click()"
                    (keydown.enter)="fileInput.click()"
@@ -232,7 +246,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
                    class="vault-center-component__s26">
                 <span class="vault-center-component__s27">+</span>
                 <span class="vault-center-component__s28">Add Sensitive Photo</span>
-                <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" class="vault-center-component__s29">
+                <input #fileInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" class="vault-center-component__s29">
               </div>
 
               @for (file of vault.files(); track file.id) {
@@ -241,7 +255,14 @@ import { NotificationsService } from '../../core/services/notifications.service'
                         alt="Sensitive vault image"
                         [style.filter]="revealed().has(file.id) ? 'none' : 'blur(20px)'"
                         class="vault-center-component__s30">
-                   <button (click)="vault.deleteFile(file.id)" aria-label="Delete sensitive photo" class="vault-center-component__s31">✕</button>
+                   @if (selectMode()) {
+                     <label class="vault-select">
+                       <input type="checkbox" [checked]="selected().has(file.id)" (change)="toggleSelected(file.id)"
+                              [attr.aria-label]="'Select photo from ' + (file.uploadedAt | date:'MMM d')">
+                     </label>
+                   } @else {
+                     <button (click)="confirmDeleteFile(file.id)" aria-label="Delete sensitive photo" class="vault-center-component__s31">✕</button>
+                   }
                    <button type="button"
                            (click)="toggleReveal(file.id)"
                            [attr.aria-pressed]="revealed().has(file.id)"
@@ -263,6 +284,42 @@ export class VaultCenterComponent implements OnDestroy {
   revealed = signal<Set<string>>(new Set());
   toggleReveal(id: string): void {
     this.revealed.update((set) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }
+
+  /** Select mode: tick several photos and delete them in one go. */
+  selectMode = signal(false);
+  selected = signal<Set<string>>(new Set());
+  allSelected = computed(() => this.vault.files().length > 0 && this.vault.files().every((f) => this.selected().has(f.id)));
+  toggleSelectMode(): void {
+    this.selectMode.update((on) => !on);
+    this.selected.set(new Set());
+  }
+  toggleSelected(id: string): void {
+    this.selected.update((set) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }
+  toggleSelectAll(): void {
+    this.selected.set(this.allSelected() ? new Set() : new Set(this.vault.files().map((f) => f.id)));
+  }
+  confirmDeleteFile(id: string): void {
+    this.modal.confirm('Delete this photo? This cannot be undone.', () => {
+      this.vault.deleteFile(id);
+      this.forgetPhotos([id]);
+    }, undefined, { title: 'Delete photo?', confirmLabel: 'Delete', danger: true });
+  }
+  deleteSelected(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) return;
+    const noun = ids.length === 1 ? 'this photo' : `${ids.length} photos`;
+    this.modal.confirm(`Delete ${noun}? This cannot be undone.`, () => {
+      this.vault.deleteFiles(ids);
+      this.forgetPhotos(ids);
+      if (this.vault.files().length === 0) this.selectMode.set(false);
+    }, undefined, { title: ids.length === 1 ? 'Delete photo?' : 'Delete photos?', confirmLabel: ids.length === 1 ? 'Delete' : `Delete ${ids.length}`, danger: true });
+  }
+  private forgetPhotos(ids: string[]): void {
+    const gone = new Set(ids);
+    this.selected.update((set) => new Set([...set].filter((id) => !gone.has(id))));
+    this.revealed.update((set) => new Set([...set].filter((id) => !gone.has(id))));
   }
 
   public vault = inject(VaultService);
@@ -425,8 +482,9 @@ export class VaultCenterComponent implements OnDestroy {
     const input = event.target;
     if (!(input instanceof HTMLInputElement) || !input.files?.length) return;
 
-    this.vault.uploadImage(input.files[0]);
-    this.modal.show('Sensitive image uploaded and blurred in your vault.');
+    const files = Array.from(input.files);
+    for (const file of files) this.vault.uploadImage(file);
+    this.modal.show(files.length === 1 ? 'Sensitive image uploaded and blurred in your vault.' : `${files.length} sensitive images uploaded and blurred in your vault.`);
     input.value = '';
   }
 }

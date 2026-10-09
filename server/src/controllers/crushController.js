@@ -465,6 +465,25 @@ exports.removeCrushPhoto = async (req, res) => {
   }
 };
 
+// @route   POST /api/crushes/:id/photos/delete   body: { ids: string[] }
+// @desc    Remove several photos at once (owner only)
+exports.removeCrushPhotos = async (req, res) => {
+  try {
+    const crush = await loadOwnCrush(req, res);
+    if (!crush) return;
+    const ids = new Set(Array.isArray(req.body?.ids) ? req.body.ids.map(String) : []);
+    if (ids.size === 0) return res.status(400).json({ message: 'No photos selected' });
+    const before = crush.photos.length;
+    crush.photos = crush.photos.filter((p) => !ids.has(String(p._id)));
+    if (crush.photos.length === before) return res.status(404).json({ message: 'Photos not found' });
+    await crush.save();
+    res.json({ ok: true, photos: crush.photos.map(photoMeta) });
+    emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(crush._id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // @route   PUT /api/crushes/:id/photos/order   body: { ids: string[] }
 exports.reorderCrushPhotos = async (req, res) => {
   try {

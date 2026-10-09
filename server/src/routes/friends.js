@@ -48,6 +48,9 @@ router.get('/:friendId/activity', auth, require('../controllers/activityControll
 // @route   PUT /api/friends/:friendId/pause
 router.put('/:friendId/pause', auth, friendController.setPauseState);
 
+// @route   PUT /api/friends/:friendId/friendship-profile
+router.put('/:friendId/friendship-profile', auth, friendController.setFriendshipProfile);
+
 // @route   DELETE /api/friends/:friendId
 router.delete('/:friendId', auth, friendController.removeFriend);
 

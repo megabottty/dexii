@@ -1,5 +1,6 @@
 import { computed, Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
+import { IconComponent } from '../../core/components/icon/icon.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -10,6 +11,10 @@ import { ModalService } from '../../core/services/modal.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import {
   FriendsApiService,
+  FriendshipProfile,
+  readLocalFriendshipProfile,
+  clearLocalFriendshipProfile,
+  writeLocalFriendshipProfile,
   type FriendSearchResult as ApiFriendSearchResult,
   type FriendSummary
 } from '../../core/services/friends-api.service';
@@ -57,13 +62,6 @@ interface FriendRequestItem {
   };
 }
 
-interface FriendshipProfile {
-  relationshipName?: string;
-  relationshipType?: string;
-  howMet?: string;
-  trustLevel?: string;
-  notes?: string;
-}
 
 interface FriendCardView {
   paused?: boolean;
@@ -84,7 +82,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
@@ -94,7 +92,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <app-page-hint
           hintKey="friends_inline"
           title="Friends Hint"
-          message="Add friends, open Bio for friend notes, and use Sharing Controls to manage crush and entry visibility by person.">
+          message="Add friends here. Tap a friend to open their page: what you share with each other, your history, and your private friendship profile. The pause and bin icons manage each friendship.">
         </app-page-hint>
 
         <h1 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
@@ -362,12 +360,6 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           Withdraw invite
                         </button>
                       } @else {
-                      <button (click)="openFriendProfile(req)"
-                              [style.border]="'1px solid ' + theme.colors().border"
-                              [style.color]="theme.colors().text"
-                              class="friends-list-component__s50">
-                        View Profile
-                      </button>
                       <button (click)="cancelOutgoingRequest(req)"
                               [style.border]="'1px solid ' + theme.colors().border"
                               [style.color]="theme.colors().textSecondary"
@@ -435,30 +427,23 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   </div>
                 </div>
 
-                <div class="friends-list-component__s59">
-                  <a [routerLink]="['/user', friend.id]"
-                     [attr.aria-label]="'Open the sharing overview with ' + friend.username"
-                     [style.color]="theme.colors().text"
-                     [style.border]="'1px solid ' + theme.colors().border"
-                     class="friends-list-action-link">Sharing overview</a>
-                  <button (click)="openFriendProfileFromFriend(friend)"
-                          [style.color]="theme.colors().onBgPrimary"
-                          [style.border]="'1px solid ' + theme.colors().primary"
-                          class="friends-list-action-btn">
-                    View Friendship
-                  </button>
-                  <a [routerLink]="['/sharing']" [queryParams]="{ friendId: friend.id }"
-                     [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary"
-                     class="friends-list-action-link">Sharing controls</a>
+                <div class="friends-list-component__s59 friends-list-card-actions">
+                  <a [routerLink]="['/friends', friend.username]"
+                     [attr.aria-label]="'Open your page with ' + friend.username + ': what you share with each other'"
+                     [style.color]="theme.colors().onBgPrimary"
+                     [style.border]="'1px solid ' + theme.colors().primary"
+                     class="friends-list-action-link">Share</a>
                   <a routerLink="/chat"
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-action-link">Chat</a>
-                  <button (click)="pauseFriend(friend)" [style.color]="theme.colors().textSecondary"
-                          class="friends-list-component__s60">Pause friendship</button>
-                  <button (click)="removeFriend(friend)"
-                          [style.color]="theme.colors().danger"
-                          class="friends-list-component__s60">Remove Friend</button>
+                  <button type="button" (click)="pauseFriend(friend)"
+                          [attr.aria-label]="'Pause friendship with ' + friend.username" title="Pause friendship"
+                          [style.color]="theme.colors().textSecondary"
+                          class="icon-btn"><app-icon name="pause" /></button>
+                  <button type="button" (click)="removeFriend(friend)"
+                          [attr.aria-label]="'Remove ' + friend.username + ' as a friend'" title="Remove friend"
+                          class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
                 </div>
               </div>
             } @empty {
@@ -515,6 +500,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                        [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                        [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                        class="friends-list-action-link">Chat</a>
+                    <button type="button" (click)="removeFriend(friend)"
+                            [attr.aria-label]="'Remove ' + friend.username + ' as a friend'" title="Remove friend"
+                            class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
                   </div>
                 </div>
               } @empty {
@@ -527,131 +515,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         }
       </div>
 
-      @if (viewingFriendProfile()) {
-        <div class="friends-list-component__s9">
-          <div [style.background-color]="theme.colors().bg"
-               [style.border]="'1px solid ' + theme.colors().border"
-               role="dialog" aria-modal="true" aria-label="Friendship profile" appFocusTrap (escaped)="closeFriendProfile()"
-               class="friends-list-component__s10">
-            <button (click)="closeFriendProfile()"
-                    [style.color]="theme.colors().textSecondary"
-                    aria-label="Close friendship profile"
-                    class="friends-list-component__s11">✕</button>
-
-            <h3 class="friends-list-component__s12">Friendship Profile</h3>
-            <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s13">
-              Fill this out for {{ viewingFriendUsername() || viewingFriendProfile()?.to }}
-            </p>
-
-            <div class="friends-list-add-modal-grid">
-              <label class="friends-list-add-modal-label">
-                Relationship Name
-                <input [value]="friendProfileDraft().relationshipName || ''"
-                       (input)="setFriendProfileRelationshipName($event)"
-                       [style.background-color]="theme.colors().bgSecondary"
-                       [style.border]="'1px solid ' + theme.colors().border"
-                       [style.color]="theme.colors().text"
-                       class="friends-list-add-modal-input"
-                       placeholder="How you label this friendship">
-              </label>
-
-              <label class="friends-list-add-modal-label">
-                Relationship Type
-                <select [value]="friendProfileDraft().relationshipType || 'Close Friend'"
-                        (change)="setFriendProfileRelationshipType($event)"
-                        [style.background-color]="theme.colors().bgSecondary"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.color]="theme.colors().text"
-                        class="friends-list-add-modal-input">
-                  <option value="Close Friend">Close Friend</option>
-                  <option value="Bestie">Bestie</option>
-                  <option value="Work Friend">Work Friend</option>
-                  <option value="Family Friend">Family Friend</option>
-                  <option value="New Friend">New Friend</option>
-                </select>
-              </label>
-
-              <label class="friends-list-add-modal-label">
-                How You Met
-                <input [value]="friendProfileDraft().howMet || ''"
-                       (input)="setFriendProfileHowMet($event)"
-                       [style.background-color]="theme.colors().bgSecondary"
-                       [style.border]="'1px solid ' + theme.colors().border"
-                       [style.color]="theme.colors().text"
-                       class="friends-list-add-modal-input"
-                       placeholder="Work, school, app, mutuals...">
-              </label>
-
-              <label class="friends-list-add-modal-label">
-                Trust Level
-                <select [value]="friendProfileDraft().trustLevel || 'Medium'"
-                        (change)="setFriendProfileTrustLevel($event)"
-                        [style.background-color]="theme.colors().bgSecondary"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.color]="theme.colors().text"
-                        class="friends-list-add-modal-input">
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </label>
-
-              <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
-                Notes
-                <textarea [value]="friendProfileDraft().notes || ''"
-                          (input)="setFriendProfileNotes($event)"
-                          [style.background-color]="theme.colors().bgSecondary"
-                          [style.border]="'1px solid ' + theme.colors().border"
-                          [style.color]="theme.colors().text"
-                          class="friends-list-add-modal-textarea"
-                          placeholder="Anything you want to remember"></textarea>
-              </label>
-            </div>
-
-            <div class="friends-list-add-modal-actions">
-              <button (click)="saveFriendshipProfile()"
-                      [style.background-color]="theme.colors().primary"
-                      class="friends-list-component__s8">
-                Save Questionnaire
-              </button>
-            </div>
-
-            @if (viewingFriendProfile()?.invite; as invite) {
-              <div [style.border-top]="'1px solid ' + theme.colors().border" style="margin-top: 18px; padding-top: 18px;">
-                <p [style.color]="theme.colors().onBgPrimary" style="margin: 0 0 10px 0; font-size: var(--fs-body); text-transform: uppercase; letter-spacing: 1px;">Invite Details</p>
-                <div class="friends-list-profile-grid">
-                  <div class="friends-list-profile-row">
-                    <span class="friends-list-profile-label">Method</span>
-                    <span class="friends-list-profile-value">{{ invite.method || 'N/A' }}</span>
-                  </div>
-                  <div class="friends-list-profile-row">
-                    <span class="friends-list-profile-label">Contact</span>
-                    <span class="friends-list-profile-value">{{ invite.contact || 'N/A' }}</span>
-                  </div>
-                  <div class="friends-list-profile-row friends-list-profile-row--full">
-                    <span class="friends-list-profile-label">Message</span>
-                    <span class="friends-list-profile-value">{{ invite.message || 'N/A' }}</span>
-                  </div>
-                </div>
-              </div>
-            }
-
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap;">
-              <a [routerLink]="['/friends', viewingFriendUsername() || viewingFriendProfile()?.to]"
-                 [style.border]="'1px solid ' + theme.colors().border"
-                 [style.color]="theme.colors().text"
-                 class="friends-list-action-link">
-                Open Bio
-              </a>
-            </div>
-          </div>
-        </div>
-      }
-
       @if (addFriendCandidate()) {
         <div class="friends-list-component__s9">
           <div [style.background-color]="theme.colors().bg"
                [style.border]="'1px solid ' + theme.colors().border"
+               role="dialog" aria-modal="true" aria-label="Add friend" appFocusTrap (escaped)="closeAddFriendModal()"
                class="friends-list-component__s10">
             <button (click)="closeAddFriendModal()"
                     [style.color]="theme.colors().textSecondary"
@@ -854,15 +722,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   addFriendInviteContact = signal('');
   addFriendInviteMessage = signal('');
   skipFriendshipProfile = signal(false);
-  viewingFriendProfile = signal<FriendRequestItem | null>(null);
-  viewingFriendUsername = signal('');
-  friendProfileDraft = signal<FriendshipProfile>({
-    relationshipName: '',
-    relationshipType: 'Close Friend',
-    howMet: '',
-    trustLevel: 'Medium',
-    notes: ''
-  });
   private incomingPollTimer: ReturnType<typeof setInterval> | null = null;
 
   allCrushes = this.dataService.getAllCrushes();
@@ -1006,7 +865,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       avatarUrl: friend.avatarUrl,
       friendCategories: friend.friendCategories || ['Close Friends'],
       subscriptionTier: (friend.subscriptionTier as SubscriptionTier) || SubscriptionTier.Free,
-      friendshipProfile: this.readFriendshipProfile(id) || null,
+      friendshipProfile: friend.friendshipProfile || this.readFriendshipProfile(id) || null,
       paused: Boolean(friend.paused),
       mutedNotifications: Boolean(friend.mutedNotifications)
     };
@@ -1041,29 +900,21 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return this.currentUserId || 'signed_out';
   }
 
-  private getFriendshipProfilesStorageKey(): string {
-    return `dexii_friendship_profiles_${this.getUserStorageSuffix()}`;
-  }
-
-  private readFriendshipProfiles(): Record<string, FriendshipProfile> {
-    try {
-      const raw = localStorage.getItem(this.getFriendshipProfilesStorageKey());
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-
   private readFriendshipProfile(friendId: string): FriendshipProfile | null {
-    return this.readFriendshipProfiles()[friendId] || null;
+    return readLocalFriendshipProfile(this.currentUserId || '', friendId);
   }
 
   private writeFriendshipProfile(friendId: string, profile: FriendshipProfile): void {
-    const profiles = this.readFriendshipProfiles();
-    profiles[friendId] = profile;
-    localStorage.setItem(this.getFriendshipProfilesStorageKey(), JSON.stringify(profiles));
+    writeLocalFriendshipProfile(this.currentUserId || '', friendId, profile);
+  }
+
+  /** Friendship profiles used to live only in this browser; hand any leftover copy to the server once. */
+  private migrateLocalFriendshipProfile(friendId: string): void {
+    const local = this.readFriendshipProfile(friendId);
+    if (!local) return;
+    void this.friendsApi.saveFriendshipProfile(friendId, local)
+      .then(() => clearLocalFriendshipProfile(this.currentUserId || '', friendId))
+      .catch(() => { /* offline or demo: keep the local copy for next time */ });
   }
 
   private getArchivedFriendsStorageKey(): string {
@@ -1124,6 +975,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       let data = await this.friendsApi.listFriends();
       data = await this.migrateArchivedFriends(data);
       this.allFriends.set(data.map((f) => this.mapApiUser(f)));
+      for (const f of data) if (!f.friendshipProfile) this.migrateLocalFriendshipProfile(f.id);
     } catch (error: any) {
       const message = error?.message || 'Unable to load friends.';
       this.friendsError.set(message);
@@ -1256,94 +1108,6 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   closeAddFriendModal() {
     this.addFriendCandidate.set(null);
-  }
-
-  openFriendProfile(request: FriendRequestItem) {
-    const target = request.fromId === this.currentUserId ? request.to : request.from;
-    const targetId = request.fromId === this.currentUserId ? request.toId : request.fromId;
-    const storedProfile = targetId ? this.readFriendshipProfile(targetId) : null;
-    this.viewingFriendUsername.set(target);
-    this.friendProfileDraft.set({
-      relationshipName: storedProfile?.relationshipName || request.friendshipProfile?.relationshipName || '',
-      relationshipType: storedProfile?.relationshipType || request.friendshipProfile?.relationshipType || 'Close Friend',
-      howMet: storedProfile?.howMet || request.friendshipProfile?.howMet || '',
-      trustLevel: storedProfile?.trustLevel || request.friendshipProfile?.trustLevel || 'Medium',
-      notes: storedProfile?.notes || request.friendshipProfile?.notes || ''
-    });
-    this.viewingFriendProfile.set({ ...request, friendshipProfile: storedProfile || request.friendshipProfile });
-  }
-
-  openFriendProfileFromFriend(friend: FriendCardView) {
-    this.viewingFriendUsername.set(friend.username);
-    this.friendProfileDraft.set({
-      relationshipName: friend.friendshipProfile?.relationshipName || friend.username,
-      relationshipType: friend.friendshipProfile?.relationshipType || 'Close Friend',
-      howMet: friend.friendshipProfile?.howMet || '',
-      trustLevel: friend.friendshipProfile?.trustLevel || 'Medium',
-      notes: friend.friendshipProfile?.notes || ''
-    });
-    this.viewingFriendProfile.set({
-      id: `friend-${friend.id}`,
-      from: this.currentUsername || this.currentUserId || '',
-      to: friend.username,
-      fromId: this.currentUserId || undefined,
-      toId: friend.id,
-      status: 'accepted',
-      createdAt: new Date().toISOString(),
-      friendshipProfile: friend.friendshipProfile || undefined
-    });
-  }
-
-  closeFriendProfile() {
-    this.viewingFriendProfile.set(null);
-    this.viewingFriendUsername.set('');
-  }
-
-  setFriendProfileRelationshipName(event: Event) {
-    this.friendProfileDraft.update((draft) => ({ ...draft, relationshipName: this.asInputValue(event) }));
-  }
-
-  setFriendProfileRelationshipType(event: Event) {
-    this.friendProfileDraft.update((draft) => ({ ...draft, relationshipType: this.asSelectValue(event) }));
-  }
-
-  setFriendProfileHowMet(event: Event) {
-    this.friendProfileDraft.update((draft) => ({ ...draft, howMet: this.asInputValue(event) }));
-  }
-
-  setFriendProfileTrustLevel(event: Event) {
-    this.friendProfileDraft.update((draft) => ({ ...draft, trustLevel: this.asSelectValue(event) }));
-  }
-
-  setFriendProfileNotes(event: Event) {
-    this.friendProfileDraft.update((draft) => ({ ...draft, notes: this.asTextAreaValue(event) }));
-  }
-
-  async saveFriendshipProfile() {
-    const profile = this.viewingFriendProfile();
-    const target = profile?.fromId === this.currentUserId
-      ? profile?.toId || this.viewingFriendUsername()
-      : profile?.fromId || this.viewingFriendUsername();
-    if (!target) {
-      this.modal.show('Missing friend.');
-      return;
-    }
-
-    const draft = this.friendProfileDraft();
-    const friendshipProfile = {
-      relationshipName: draft.relationshipName?.trim() || '',
-      relationshipType: draft.relationshipType?.trim() || 'Close Friend',
-      howMet: draft.howMet?.trim() || '',
-      trustLevel: draft.trustLevel?.trim() || 'Medium',
-      notes: draft.notes?.trim() || ''
-    };
-
-    this.writeFriendshipProfile(target, friendshipProfile);
-    this.allFriends.update((items) =>
-      items.map((friend) => friend.id === target || friend.username === target ? { ...friend, friendshipProfile } : friend)
-    );
-    this.viewingFriendProfile.update((profile) => profile ? { ...profile, friendshipProfile } : profile);
-    this.modal.show('Friendship profile saved.');
   }
 
   setInviteMethod(value: string) {
@@ -1607,7 +1371,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   async removeFriend(friend: FriendCardView) {
-    this.modal.confirm(`Are you sure you want to remove ${friend.username} as a friend? This cannot be undone.`, async () => {
+    this.modal.confirm(`Remove ${friend.username} as a friend? You both lose access to what you shared with each other. This cannot be undone.`, async () => {
       try {
         await this.friendsApi.removeFriend(friend.id);
         this.allFriends.update((items) => items.filter((item) => item.id !== friend.id));
@@ -1617,7 +1381,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       } catch (error: any) {
         this.modal.show(error?.message || 'Unable to remove friend right now.');
       }
-    });
+    }, undefined, { title: 'Remove friend?', confirmLabel: 'Remove', danger: true });
   }
 
   async pauseFriend(friend: FriendCardView) {

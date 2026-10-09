@@ -1,5 +1,5 @@
 .alert-modal-component__s1 {
-  position: fixed; inset: 0; z-index: 1500; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px);
+  position: fixed; inset: 0; z-index: 2100; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px);
 }
 
 .alert-modal-component__s2 {

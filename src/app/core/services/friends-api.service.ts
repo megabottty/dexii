@@ -36,6 +36,16 @@ export interface FriendSearchResult {
   invite?: PendingInvite;
 }
 
+/** What you wrote about a friendship. Private to you; stored on the server. */
+export interface FriendshipProfile {
+  relationshipName?: string;
+  relationshipType?: string;
+  howMet?: string;
+  trustLevel?: string;
+  notes?: string;
+  updatedAt?: string | null;
+}
+
 export interface FriendSummary {
   id: string;
   username: string;
@@ -48,6 +58,37 @@ export interface FriendSummary {
   /** While paused: no notifications from them. */
   mutedNotifications?: boolean;
   pausedAt?: string | null;
+  friendshipProfile?: FriendshipProfile | null;
+}
+
+/**
+ * Friendship profiles used to live only in this browser. These helpers read and
+ * clear that copy so it can be moved to the server the first time it's seen.
+ */
+export function friendshipProfileStorageKey(ownerId: string): string {
+  return `dexii_friendship_profiles_${ownerId || 'signed_out'}`;
+}
+export function readLocalFriendshipProfiles(ownerId: string): Record<string, FriendshipProfile> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(friendshipProfileStorageKey(ownerId)) || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+export function readLocalFriendshipProfile(ownerId: string, friendId: string): FriendshipProfile | null {
+  return readLocalFriendshipProfiles(ownerId)[friendId] || null;
+}
+export function writeLocalFriendshipProfile(ownerId: string, friendId: string, profile: FriendshipProfile): void {
+  const all = readLocalFriendshipProfiles(ownerId);
+  all[friendId] = profile;
+  try { localStorage.setItem(friendshipProfileStorageKey(ownerId), JSON.stringify(all)); } catch { /* storage full: ignore */ }
+}
+export function clearLocalFriendshipProfile(ownerId: string, friendId: string): void {
+  const all = readLocalFriendshipProfiles(ownerId);
+  if (!(friendId in all)) return;
+  delete all[friendId];
+  try { localStorage.setItem(friendshipProfileStorageKey(ownerId), JSON.stringify(all)); } catch { /* ignore */ }
 }
 
 export interface FriendProfileDetails {
@@ -318,6 +359,13 @@ export class FriendsApiService {
 
   removeFriend(friendId: string): Promise<unknown> {
     return this.request(`/${friendId}`, { method: 'DELETE' });
+  }
+
+  saveFriendshipProfile(friendId: string, profile: FriendshipProfile): Promise<FriendshipProfile> {
+    return this.request(`/${encodeURIComponent(friendId)}/friendship-profile`, {
+      method: 'PUT',
+      body: JSON.stringify(profile)
+    });
   }
 
   async getFriendSharedCrushes(friendId: string): Promise<CrushProfile[]> {

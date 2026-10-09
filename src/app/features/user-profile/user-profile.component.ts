@@ -1,14 +1,19 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Location } from '@angular/common';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ModalService } from '../../core/services/modal.service';
+import { SecurityService } from '../../core/services/security.service';
+import { IconComponent } from '../../core/components/icon/icon.component';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
 import { ActivityTimelineComponent } from '../../core/components/activity-timeline/activity-timeline.component';
 import { UserSettingsService } from '../../core/services/user-settings.service';
 import { CrushProfile, crushSeenAt } from '../../core/models/crush-profile.model';
-import { FriendProfileDetails, FriendSummary, FriendsApiService } from '../../core/services/friends-api.service';
+import { FriendProfileDetails, FriendSummary, FriendsApiService, FriendshipProfile, clearLocalFriendshipProfile, readLocalFriendshipProfile, writeLocalFriendshipProfile } from '../../core/services/friends-api.service';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -18,7 +23,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, FocusTrapDirective],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, FocusTrapDirective, IconComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -32,24 +37,16 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
         <app-page-hint
           hintKey="user_profile_inline"
           title="Profile Hint"
-          message="This page is your sharing overview with a friend: the crushes they let you see, and the crushes of yours they can see. Open any crush card for details and notes.">
+          message="Everything about this friendship: their bio, the crushes you share with each other, your history together, and your private friendship profile at the bottom.">
         </app-page-hint>
 
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
              class="user-profile-component__s5">
           <div class="user-profile-component__s6">
-            @if (!isSelf()) {
-              <a [routerLink]="['/friends', profileUsername()]" [attr.aria-label]="'Open your friendship page with ' + profileDisplayName()" class="user-profile-avatar-link">
-                <img [src]="profileAvatar()"
-                     [alt]="profileDisplayName()"
-                     class="user-profile-component__s7">
-              </a>
-            } @else {
-              <img [src]="profileAvatar()"
-                   [alt]="profileDisplayName()"
-                   class="user-profile-component__s7">
-            }
+            <img [src]="profileAvatar()"
+                 [alt]="profileDisplayName()"
+                 class="user-profile-component__s7">
             <div>
               @if (profileLoading()) {
                 <div class="user-profile-loading" role="status" aria-live="polite">
@@ -78,13 +75,17 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                     {{ profileBio() }}
                   </p>
                 }
-                @if (!isSelf()) {
-                  <a [routerLink]="['/chat']"
-                     [queryParams]="{ friendId: routeUserId(), friendName: profileDisplayName() }"
-                     [style.background-color]="theme.colors().primary"
-                     style="display: inline-flex; align-items: center; gap: 6px; color: white; text-decoration: none; padding: 6px 14px; border-radius: 999px; font-size: var(--fs-small); font-weight: 600; margin-top: 10px;">
-                    💬 Chat with {{ profileDisplayName() }}
-                  </a>
+                @if (!isSelf() && friend()) {
+                  <div class="user-profile-header-actions">
+                    <button type="button" (click)="startEditingFriendshipProfile()"
+                            [style.color]="theme.colors().onBgPrimary"
+                            [style.border]="'1px solid ' + theme.colors().primary"
+                            class="user-profile-pill user-profile-pill--ghost">Edit</button>
+                    <a [routerLink]="['/chat']"
+                       [queryParams]="{ friendId: friendId(), friendName: profileDisplayName() }"
+                       [style.background-color]="theme.colors().primary"
+                       class="user-profile-pill user-profile-pill--primary">💬 Chat</a>
+                  </div>
                 }
               }
             </div>
@@ -320,8 +321,102 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                   Everything that has happened between you two, newest first.
                 </p>
               </div>
-              <app-activity-timeline [friendId]="routeUserId()"></app-activity-timeline>
+              <app-activity-timeline [friendId]="friendId()"></app-activity-timeline>
             </div>
+          }
+
+          @if (friendNotFound()) {
+            <div [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 class="user-profile-component__s11" style="margin-top: 2rem;">
+              <p [style.color]="theme.colors().textSecondary" style="margin: 0;">This person isn't in your friends list.</p>
+            </div>
+          }
+
+          <!-- Friendship Profile: what you wrote about this friendship (only you can see it) -->
+          @if (friend(); as f) {
+            <section id="friendship-profile"
+                     [style.background-color]="theme.colors().bgSecondary"
+                     [style.border]="'1px solid ' + theme.colors().border"
+                     class="user-profile-component__s11 user-profile-fp" style="margin-top: 2rem;">
+              <div class="user-profile-fp-heading">
+                <div>
+                  <h2 class="section-title">Friendship Profile</h2>
+                  <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0; margin: 4px 0 0;">
+                    Your private notes on this friendship. {{ f.username }} can't see them.
+                  </p>
+                </div>
+                <div class="user-profile-fp-tools">
+                  @if (!editingFriendshipProfile()) {
+                    <button type="button" (click)="startEditingFriendshipProfile()"
+                            [style.color]="theme.colors().onBgPrimary"
+                            [style.border]="'1px solid ' + theme.colors().primary"
+                            class="user-profile-pill user-profile-pill--ghost">Edit</button>
+                  }
+                  <button type="button" (click)="f.paused ? resumeFriendship() : pauseFriendship()"
+                          [attr.aria-label]="(f.paused ? 'Resume friendship with ' : 'Pause friendship with ') + f.username"
+                          [title]="f.paused ? 'Resume friendship' : 'Pause friendship'"
+                          [style.color]="theme.colors().textSecondary"
+                          class="icon-btn"><app-icon [name]="f.paused ? 'play' : 'pause'" /></button>
+                  <button type="button" (click)="removeFriendship()"
+                          [attr.aria-label]="'Remove ' + f.username + ' as a friend'" title="Remove friend"
+                          class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
+                </div>
+              </div>
+              @if (f.paused) {
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-fp-paused">⏸ This friendship is paused. Resume it to hear from {{ f.username }} again.</p>
+              }
+
+              @if (editingFriendshipProfile()) {
+                <div class="user-profile-fp-grid">
+                  <label for="fp-relationship-name">Relationship Name
+                    <input id="fp-relationship-name" [(ngModel)]="friendshipDraft.relationshipName" placeholder="e.g. Bestie, cousin" maxlength="500"
+                           [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
+                  </label>
+                  <label for="fp-relationship-type">Relationship Type
+                    <select id="fp-relationship-type" [(ngModel)]="friendshipDraft.relationshipType"
+                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
+                      <option value="">Choose…</option>
+                      @for (type of relationshipTypes; track type) { <option [value]="type">{{ type }}</option> }
+                    </select>
+                  </label>
+                  <label for="fp-how-met">How You Met
+                    <input id="fp-how-met" [(ngModel)]="friendshipDraft.howMet" placeholder="e.g. College" maxlength="500"
+                           [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
+                  </label>
+                  <label for="fp-trust">Trust Level
+                    <select id="fp-trust" [(ngModel)]="friendshipDraft.trustLevel"
+                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
+                      <option value="">Choose…</option>
+                      @for (level of trustLevels; track level) { <option [value]="level">{{ level }}</option> }
+                    </select>
+                  </label>
+                  <label class="user-profile-fp-field--full" for="fp-notes">Notes
+                    <textarea id="fp-notes" [(ngModel)]="friendshipDraft.notes" rows="3" placeholder="Anything worth remembering" maxlength="2000"
+                              [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field"></textarea>
+                  </label>
+                </div>
+                <div class="user-profile-fp-actions">
+                  <button type="button" (click)="saveFriendshipProfile()" [disabled]="savingFriendshipProfile()"
+                          [style.background-color]="theme.colors().primary"
+                          class="user-profile-pill user-profile-pill--primary">{{ savingFriendshipProfile() ? 'Saving…' : 'Save Changes' }}</button>
+                  <button type="button" (click)="cancelEditingFriendshipProfile()"
+                          [style.color]="theme.colors().onBgPrimary"
+                          [style.border]="'1px solid ' + theme.colors().primary"
+                          class="user-profile-pill user-profile-pill--ghost">Cancel</button>
+                </div>
+              } @else if (friendshipProfile(); as fp) {
+                <dl class="user-profile-fp-view">
+                  <div class="user-profile-fp-row" [style.border]="'1px solid ' + theme.colors().border"><dt>Relationship Name</dt><dd>{{ fp.relationshipName || 'N/A' }}</dd></div>
+                  <div class="user-profile-fp-row" [style.border]="'1px solid ' + theme.colors().border"><dt>Relationship Type</dt><dd>{{ fp.relationshipType || 'N/A' }}</dd></div>
+                  <div class="user-profile-fp-row" [style.border]="'1px solid ' + theme.colors().border"><dt>How You Met</dt><dd>{{ fp.howMet || 'N/A' }}</dd></div>
+                  <div class="user-profile-fp-row" [style.border]="'1px solid ' + theme.colors().border"><dt>Trust Level</dt><dd>{{ fp.trustLevel || 'N/A' }}</dd></div>
+                  <div class="user-profile-fp-row user-profile-fp-row--full" [style.border]="'1px solid ' + theme.colors().border"><dt>Notes</dt><dd>{{ fp.notes || 'N/A' }}</dd></div>
+                </dl>
+              } @else {
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-fp-empty">No friendship profile saved yet. Tap Edit to add one.</p>
+              }
+            </section>
           }
         }
       </div>
@@ -330,13 +425,27 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
 })
 export class UserProfileComponent {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private location = inject(Location);
   private dataService = inject(DataService);
   private friendsApi = inject(FriendsApiService);
   private messaging = inject(MessagingService);
   private settings = inject(UserSettingsService);
+  private modal = inject(ModalService);
+  private security = inject(SecurityService);
   public theme = inject(ThemeService);
 
+  /** The route param as written: 'me', a username, or (from old links) an id. */
   routeUserId = signal('');
+  /** The friend matching the route param, once the friends list has loaded. */
+  friend = computed<FriendSummary | null>(() => {
+    const param = this.routeUserId();
+    if (!param || this.isSelf()) return null;
+    return this.friendSummaries().find((item) => item.id === param || item.username === param) || null;
+  });
+  /** The friend's real id: every API call, chat link and share toggle uses this, never the raw param. */
+  friendId = computed(() => this.friend()?.id || '');
+  protected friendNotFound = signal(false);
   private friendSummaries = signal<FriendSummary[]>([]);
   private friendSharedCrushes = signal<CrushProfile[]>([]);
   private friendProfileDetailsState = signal<FriendProfileDetails | null>(null);
@@ -349,10 +458,15 @@ export class UserProfileComponent {
   constructor() {
     this.route.paramMap.subscribe(params => {
       this.routeUserId.set(params.get('id') || 'me');
+      this.editingFriendshipProfile.set(false);
+      this.friendNotFound.set(false);
     });
     this.route.queryParamMap.subscribe(params => {
       if (params.get('history') === 'true') {
         this.auditLogView.set(true);
+      }
+      if (params.get('edit') === 'profile') {
+        this.pendingEdit = true;
       }
     });
 
@@ -369,9 +483,6 @@ export class UserProfileComponent {
       }
 
       void this.loadFriendContext(routeUserId);
-      // Shared History is built from the share messages between us; make sure
-      // they're loaded on this device (a fresh phone has none cached).
-      void this.messaging.loadConversation(routeUserId);
     }, { allowSignalWrites: true });
   }
 
@@ -430,7 +541,7 @@ export class UserProfileComponent {
 
   /** My crushes this friend can see, with when they last opened each one. */
   sharedWithThem = computed(() => {
-    const friendId = this.routeUserId();
+    const friendId = this.friendId();
     if (!friendId || this.dataService.isMe(friendId)) return [] as Array<CrushProfile & { seenAt: Date | null }>;
     return this.dataService.getAllCrushes()()
       .filter((crush) => this.dataService.isCrushSharedWith(crush, friendId))
@@ -446,20 +557,137 @@ export class UserProfileComponent {
   protected showShareSelector = signal(false);
 
   isShared(crush: any): boolean {
-    const friendId = this.routeUserId();
-    return this.dataService.isCrushSharedWith(crush, friendId);
+    return this.dataService.isCrushSharedWith(crush, this.friendId());
   }
 
   toggleShare(crushId: string) {
-    let friendId = this.routeUserId();
-    if (this.dataService.isMe(friendId)) friendId = this.dataService.getUserId();
-    this.dataService.toggleCrushVisibility(crushId, friendId);
+    const friendId = this.friendId();
+    if (friendId) this.dataService.toggleCrushVisibility(crushId, friendId);
   }
 
   unshare(crushId: string) {
-    let friendId = this.routeUserId();
-    if (this.dataService.isMe(friendId)) friendId = this.dataService.getUserId();
-    this.dataService.toggleCrushVisibility(crushId, friendId);
+    this.toggleShare(crushId);
+  }
+
+  // ---------- Friendship profile (private to you; saved on the server) ----------
+  readonly relationshipTypes = ['Close Friend', 'Bestie', 'Work Friend', 'Family Friend', 'New Friend'];
+  readonly trustLevels = ['Low', 'Medium', 'High'];
+  protected editingFriendshipProfile = signal(false);
+  protected savingFriendshipProfile = signal(false);
+  protected friendshipDraft: FriendshipProfile = {};
+  private pendingEdit = false;
+
+  friendshipProfile = computed<FriendshipProfile | null>(() => {
+    const profile = this.friend()?.friendshipProfile;
+    if (!profile) return null;
+    const hasContent = [profile.relationshipName, profile.relationshipType, profile.howMet, profile.trustLevel, profile.notes].some((v) => (v || '').trim());
+    return hasContent ? profile : null;
+  });
+
+  startEditingFriendshipProfile(): void {
+    const friend = this.friend();
+    if (!friend) return;
+    const current = friend.friendshipProfile || {};
+    this.friendshipDraft = {
+      relationshipName: current.relationshipName || '',
+      relationshipType: current.relationshipType || '',
+      howMet: current.howMet || '',
+      trustLevel: current.trustLevel || '',
+      notes: current.notes || ''
+    };
+    this.editingFriendshipProfile.set(true);
+    setTimeout(() => {
+      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.getElementById('friendship-profile')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      document.getElementById('fp-relationship-name')?.focus({ preventScroll: true });
+    }, 50);
+  }
+
+  cancelEditingFriendshipProfile(): void {
+    this.editingFriendshipProfile.set(false);
+  }
+
+  async saveFriendshipProfile(): Promise<void> {
+    const friend = this.friend();
+    if (!friend || this.savingFriendshipProfile()) return;
+    const profile: FriendshipProfile = {
+      relationshipName: (this.friendshipDraft.relationshipName || '').trim(),
+      relationshipType: (this.friendshipDraft.relationshipType || '').trim(),
+      howMet: (this.friendshipDraft.howMet || '').trim(),
+      trustLevel: (this.friendshipDraft.trustLevel || '').trim(),
+      notes: (this.friendshipDraft.notes || '').trim()
+    };
+    this.savingFriendshipProfile.set(true);
+    try {
+      const saved = await this.friendsApi.saveFriendshipProfile(friend.id, profile);
+      this.patchFriend(friend.id, { friendshipProfile: saved || profile });
+      clearLocalFriendshipProfile(this.security.currentUserId() || '', friend.id);
+      this.modal.show('Friendship profile saved.');
+    } catch {
+      // Offline or demo server: keep it on this device and sync next time the list loads.
+      writeLocalFriendshipProfile(this.security.currentUserId() || '', friend.id, profile);
+      this.patchFriend(friend.id, { friendshipProfile: profile });
+      this.modal.show('Saved on this device. It will sync to your account when you are back online.');
+    } finally {
+      this.savingFriendshipProfile.set(false);
+      this.editingFriendshipProfile.set(false);
+    }
+  }
+
+  private patchFriend(friendId: string, patch: Partial<FriendSummary>): void {
+    this.friendSummaries.update((list) => list.map((f) => f.id === friendId ? { ...f, ...patch } : f));
+  }
+
+  // ---------- Pause / remove ----------
+  pauseFriendship(): void {
+    const friend = this.friend();
+    if (!friend) return;
+    this.modal.confirm(
+      `Pause your friendship with ${friend.username}? They move to your Paused list and, with notifications muted, you won't hear from them until you resume. Sharing stays active both ways, and they aren't told.`,
+      async () => {
+        try {
+          const state = await this.friendsApi.setPauseState(friend.id, true, true);
+          this.patchFriend(friend.id, { paused: state.paused, mutedNotifications: state.mutedNotifications });
+          this.modal.show(`Friendship with ${friend.username} paused. Resume any time.`);
+        } catch (error: any) {
+          this.modal.show(error?.message || 'Unable to pause this friendship right now.');
+        }
+      },
+      undefined,
+      { title: 'Pause friendship?', confirmLabel: 'Pause' }
+    );
+  }
+
+  async resumeFriendship(): Promise<void> {
+    const friend = this.friend();
+    if (!friend) return;
+    try {
+      const state = await this.friendsApi.setPauseState(friend.id, false);
+      this.patchFriend(friend.id, { paused: state.paused, mutedNotifications: state.mutedNotifications });
+      this.modal.show(`${friend.username} is back in your friends list.`);
+    } catch (error: any) {
+      this.modal.show(error?.message || 'Unable to resume this friendship right now.');
+    }
+  }
+
+  removeFriendship(): void {
+    const friend = this.friend();
+    if (!friend) return;
+    this.modal.confirm(
+      `Remove ${friend.username} as a friend? You both lose access to what you shared with each other. This cannot be undone.`,
+      async () => {
+        try {
+          await this.friendsApi.removeFriend(friend.id);
+          this.messaging.pruneConversation(friend.id, friend.username);
+          this.modal.show(`${friend.username} has been removed from your friends.`);
+          void this.router.navigate(['/friends']);
+        } catch (error: any) {
+          this.modal.show(error?.message || 'Unable to remove this friend right now.');
+        }
+      },
+      undefined,
+      { title: 'Remove friend?', confirmLabel: 'Remove', danger: true }
+    );
   }
 
   getRelationshipLabels(crush: CrushProfile): string[] {
@@ -470,25 +698,54 @@ export class UserProfileComponent {
       .filter((label, index, labels) => label.length > 0 && labels.indexOf(label) === index);
   }
 
-  private async loadFriendContext(friendId: string): Promise<void> {
+  private async loadFriendContext(param: string): Promise<void> {
     const requestId = ++this.friendLoadRequestId;
     this.profileLoading.set(true);
     this.friendSharedCrushesLoading.set(true);
 
-    const [friendsResult, sharedCrushesResult, profileResult] = await Promise.allSettled([
-      this.friendsApi.listFriends(),
+    // The URL carries a username (or an id from an old link): find the friend first.
+    let friends: FriendSummary[] = [];
+    try {
+      friends = await this.friendsApi.listFriends();
+    } catch (error) {
+      console.error('Failed to load friends for user profile.', error);
+    }
+    if (requestId !== this.friendLoadRequestId) return;
+    this.friendSummaries.set(friends);
+    const match = friends.find((item) => item.id === param || item.username === param) || null;
+    if (!match) {
+      this.friendNotFound.set(true);
+      this.friendSharedCrushes.set([]);
+      this.friendProfileDetailsState.set(null);
+      this.friendSharedCrushesLoading.set(false);
+      this.profileLoading.set(false);
+      return;
+    }
+    // The page lives at /friends/<username>; swap an id in the address bar for the username.
+    if (param !== match.username) {
+      const query = window.location.search || '';
+      this.location.replaceState(`/friends/${encodeURIComponent(match.username)}${query}`);
+    }
+    // Friendship profiles used to live only in this browser: hand a leftover copy to the server once.
+    if (!match.friendshipProfile) {
+      const local = readLocalFriendshipProfile(this.security.currentUserId() || '', match.id);
+      if (local) {
+        this.patchFriend(match.id, { friendshipProfile: local });
+        void this.friendsApi.saveFriendshipProfile(match.id, local)
+          .then(() => clearLocalFriendshipProfile(this.security.currentUserId() || '', match.id))
+          .catch(() => { /* keep the local copy */ });
+      }
+    }
+    if (this.pendingEdit) { this.pendingEdit = false; this.startEditingFriendshipProfile(); }
+    const friendId = match.id;
+    void this.messaging.loadConversation(friendId);
+
+    const [sharedCrushesResult, profileResult] = await Promise.allSettled([
       this.friendsApi.getFriendSharedCrushes(friendId),
       this.friendsApi.getFriendProfile(friendId)
     ]);
 
     if (requestId !== this.friendLoadRequestId) return;
-
-    if (friendsResult.status === 'fulfilled') {
-      this.friendSummaries.set(friendsResult.value);
-    } else {
-      console.error('Failed to load friends for user profile.', friendsResult.reason);
-      this.friendSummaries.set([]);
-    }
 
     if (sharedCrushesResult.status === 'fulfilled') {
       this.friendSharedCrushes.set(sharedCrushesResult.value);

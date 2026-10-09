@@ -432,7 +432,163 @@
   transition: all 0.2s;
 }
 
-.user-profile-avatar-link {
+/* Header actions and the Friendship Profile card (moved here from the old bio page) */
+.user-profile-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.user-profile-pill {
   display: inline-flex;
-  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.user-profile-pill--primary {
+  color: #fff;
+  border: none;
+}
+
+.user-profile-pill--ghost {
+  background: transparent;
+}
+
+.user-profile-pill:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.user-profile-fp-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.user-profile-fp-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-profile-fp-paused {
+  margin: 0 0 12px;
+  font-size: var(--fs-small);
+}
+
+.user-profile-fp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.user-profile-fp-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.user-profile-fp-field {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: var(--fs-body);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.user-profile-fp-field::placeholder {
+  opacity: 0.6;
+}
+
+.user-profile-fp-field--full {
+  grid-column: 1 / -1;
+}
+
+.user-profile-fp-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.user-profile-fp-view {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.user-profile-fp-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.user-profile-fp-row dt {
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+.user-profile-fp-row dd {
+  margin: 0;
+  font-size: var(--fs-small);
+  white-space: pre-wrap;
+  text-align: right;
+}
+
+.user-profile-fp-row--full {
+  flex-direction: column;
+}
+
+.user-profile-fp-row--full dd {
+  text-align: left;
+}
+
+.user-profile-fp-empty {
+  margin: 0;
+  font-style: italic;
+}
+
+@media (max-width: 600px) {
+  .user-profile-fp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-profile-fp-field--full {
+    grid-column: auto;
+  }
+
+  .user-profile-fp-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-profile-fp-row dd {
+    text-align: left;
+    width: 100%;
+  }
 }
