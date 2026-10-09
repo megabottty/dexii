@@ -10,6 +10,8 @@ import { EntriesApiService, SharedEntry } from './entries-api.service';
 import { ThemeService } from './theme.service';
 import { RealtimeService } from './realtime.service';
 import { CrushField, pickCrushPayload } from './crush-payload';
+import { CrushPhoto, mapCrushPhotos } from '../models/crush-profile.model';
+
 
 interface BackendCrush {
   _id: string;
@@ -58,6 +60,8 @@ interface BackendCrush {
   friends?: string[];
   sortOrder?: number;
   viewedBy?: Array<{ user: string; at: string }>;
+  photos?: Array<{ id?: string; _id?: string; url?: string; width?: number; height?: number; bytes?: number; addedAt?: string; audience?: 'shared' | 'friends'; friendIds?: string[] }>;
+  photoCount?: number;
 }
 
 @Injectable({
@@ -378,8 +382,64 @@ export class DataService {
       sortOrder: crush.sortOrder ?? 0,
       viewedBy: Array.isArray(crush.viewedBy)
         ? crush.viewedBy.map((view) => ({ userId: String(view.user), at: new Date(view.at) }))
-        : []
+        : [],
+      photos: mapCrushPhotos(crush.photos),
+      photoCount: typeof crush.photoCount === 'number' ? crush.photoCount : (Array.isArray(crush.photos) ? crush.photos.length : 0)
     };
+  }
+
+  /** Photos (with image data) of a crush you own or that a friend shared with you. */
+  public async loadCrushPhotos(crushId: string): Promise<CrushPhoto[]> {
+    const response = await this.authenticatedFetch(`/crushes/${crushId}/photos`);
+    if (!response || !response.ok) return [];
+    const photos = mapCrushPhotos(await response.json());
+    this.patchCrushPhotos(crushId, photos);
+    return photos;
+  }
+
+  public async addCrushPhoto(crushId: string, photo: { url: string; width?: number; height?: number }, audience: 'shared' | 'friends' = 'shared', friendIds: string[] = []): Promise<CrushPhoto | null> {
+    const response = await this.authenticatedFetch(`/crushes/${crushId}/photos`, {
+      method: 'POST',
+      body: JSON.stringify({ ...photo, audience, friendIds })
+    });
+    if (!response || !response.ok) {
+      const body = await response?.json().catch(() => ({}));
+      this.modal.show(body?.message || 'Could not add that photo right now.');
+      return null;
+    }
+    const saved = mapCrushPhotos([await response.json()])[0];
+    const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
+    this.patchCrushPhotos(crushId, [...current, saved]);
+    return saved;
+  }
+
+  public async removeCrushPhoto(crushId: string, photoId: string): Promise<boolean> {
+    const response = await this.authenticatedFetch(`/crushes/${crushId}/photos/${encodeURIComponent(photoId)}`, { method: 'DELETE' });
+    if (!response || !response.ok) { this.modal.show('Could not remove that photo right now.'); return false; }
+    const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
+    this.patchCrushPhotos(crushId, current.filter((p) => p.id !== photoId));
+    return true;
+  }
+
+  public async reorderCrushPhotos(crushId: string, ids: string[]): Promise<void> {
+    const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
+    const byId = new Map(current.map((p) => [p.id, p]));
+    this.patchCrushPhotos(crushId, [...ids.map((id) => byId.get(id)).filter((p): p is CrushPhoto => Boolean(p)), ...current.filter((p) => !ids.includes(p.id))]);
+    await this.authenticatedFetch(`/crushes/${crushId}/photos/order`, { method: 'PUT', body: JSON.stringify({ ids }) });
+  }
+
+  /** One photo's audience, or every photo's when `photoId` is omitted. */
+  public async setCrushPhotoAudience(crushId: string, photoId: string | null, audience: 'shared' | 'friends', friendIds: string[] = []): Promise<boolean> {
+    const path = photoId ? `/crushes/${crushId}/photos/${encodeURIComponent(photoId)}/audience` : `/crushes/${crushId}/photos/audience`;
+    const response = await this.authenticatedFetch(path, { method: 'PUT', body: JSON.stringify({ audience, friendIds }) });
+    if (!response || !response.ok) { this.modal.show('Could not update who can see that photo.'); return false; }
+    const current = this._allCrushes().find((c) => c.id === crushId)?.photos || [];
+    this.patchCrushPhotos(crushId, current.map((p) => (!photoId || p.id === photoId) ? { ...p, audience, friendIds: audience === 'friends' ? friendIds : [] } : p));
+    return true;
+  }
+
+  private patchCrushPhotos(crushId: string, photos: CrushPhoto[]): void {
+    this._allCrushes.update((crushes) => crushes.map((c) => c.id === crushId ? { ...c, photos, photoCount: photos.length } : c));
   }
 
   private getDemoCredentials() {

@@ -271,6 +271,9 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                          class="dashboard-component__s91">
                      {{ crush.status }}
                    </span>
+                   @if ((crush.photoCount || 0) > 0) {
+                     <span class="dashboard-photo-chip" [attr.aria-label]="crush.photoCount + ' photos'">📷 {{ crush.photoCount }}</span>
+                   }
                    @if ((crush.redFlags || 0) > 0) {
                      <button type="button"
                              (click)="$event.stopPropagation(); showRedFlagReason(crush)"

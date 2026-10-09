@@ -19,6 +19,36 @@ const UPDATABLE_CRUSH_FIELDS = [
   'memorableMoments', 'friends', 'sortOrder'
 ];
 
+const MAX_PHOTOS = 8;
+const MAX_PHOTO_CHARS = 560_000; // ~400KB of JPEG once base64-encoded
+const PHOTO_DATA_URI = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+
+/** A photo without its (large) data; what lists and the crush itself carry. */
+const photoMeta = (photo) => ({
+  id: String(photo._id),
+  width: photo.width,
+  height: photo.height,
+  bytes: photo.bytes,
+  addedAt: photo.addedAt,
+  audience: photo.audience || 'shared',
+  friendIds: photo.friendIds || []
+});
+
+/** Can this viewer see this photo? Owner: always. Friend: the crush must be shared and the photo must allow them. */
+const photoVisibleTo = (photo, viewerId) =>
+  (photo.audience || 'shared') === 'shared' || (photo.friendIds || []).map(String).includes(String(viewerId));
+
+/** The crush as sent over the wire: photo data stripped, counts added. `viewerId` null = owner. */
+const shapeCrushForWire = (crush, viewerId = null) => {
+  const plain = typeof crush.toObject === 'function' ? crush.toObject() : { ...crush };
+  const photos = Array.isArray(plain.photos) ? plain.photos : [];
+  const visible = viewerId ? photos.filter((p) => photoVisibleTo(p, viewerId)) : photos;
+  plain.photos = visible.map(photoMeta);
+  plain.photoCount = visible.length;
+  if (viewerId) delete plain.viewedBy;
+  return plain;
+};
+
 /** True when the crush's visibility list names this friend (by id or legacy username). */
 const visibilityIncludes = (crush, friendId, username) => {
   const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
@@ -80,8 +110,8 @@ const resolveRemovedVisibilityRecipients = async (ownerId, previousVisibility, n
 // @route   GET /api/crushes
 exports.getCrushes = async (req, res) => {
   try {
-    const crushes = await CrushProfile.find({ userId: req.user.id });
-    res.json(crushes);
+    const crushes = await CrushProfile.find({ userId: req.user.id }).lean();
+    res.json(crushes.map((crush) => shapeCrushForWire(crush)));
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -109,13 +139,13 @@ exports.getFriendSharedCrushes = async (req, res) => {
     const myId = String(req.user.id);
     const myUsername = typeof me.username === 'string' ? me.username : '';
 
-    const crushes = await CrushProfile.find({ userId: friendId }).select('-viewedBy');
+    const crushes = await CrushProfile.find({ userId: friendId }).select('-viewedBy').lean();
     const shared = crushes.filter((crush) => {
       const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
       return visibility.includes(myId) || (myUsername && visibility.includes(myUsername));
     });
 
-    res.json(shared);
+    res.json(shared.map((crush) => shapeCrushForWire(crush, myId)));
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -141,7 +171,7 @@ exports.getSharedCrushById = async (req, res) => {
 
     // If the requester actually owns this crush, just return it as-is.
     if (String(crush.userId) === myId) {
-      return res.json({ crush, owner: null });
+      return res.json({ crush: shapeCrushForWire(crush), owner: null });
     }
 
     const me = await User.findById(req.user.id).select('friends username').lean();
@@ -163,8 +193,7 @@ exports.getSharedCrushById = async (req, res) => {
 
     const owner = await User.findById(crush.userId).select('username firstName lastName').lean();
 
-    const plain = crush.toObject();
-    delete plain.viewedBy;
+    const plain = shapeCrushForWire(crush, myId);
     res.json({
       crush: plain,
       owner: owner
@@ -207,7 +236,10 @@ const recordCrushViewed = async (io, crush, viewerId) => {
 // @route   POST /api/crushes
 exports.createCrush = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = {};
+    for (const field of [...UPDATABLE_CRUSH_FIELDS, 'visibility']) {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) body[field] = req.body[field];
+    }
     if (body.status === 'Crushing') body.status = 'Plotting';
     const newCrush = new CrushProfile({
       ...body,
@@ -215,7 +247,7 @@ exports.createCrush = async (req, res) => {
     });
 
     const crush = await newCrush.save();
-    res.status(201).json(crush);
+    res.status(201).json(shapeCrushForWire(crush));
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -273,7 +305,7 @@ exports.updateCrush = async (req, res) => {
     const io = req.app.get('io');
     await notifyCrushShared(req.user.id, crush, newRecipients, io);
 
-    res.json(crush);
+    res.json(shapeCrushForWire(crush));
 
     emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(crush._id) });
     // Unshared with someone: take back their "shared a crush" notification.
@@ -310,7 +342,7 @@ exports.shareCrush = async (req, res) => {
       : crush;
 
     await notifyCrushShared(req.user.id, updated, added, req.app.get('io'));
-    res.json(updated);
+    res.json(shapeCrushForWire(updated));
     if (added.length) emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(updated._id) });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -337,7 +369,7 @@ exports.unshareCrush = async (req, res) => {
     if (friend?.username) values.push(friend.username);
 
     const updated = await CrushProfile.findByIdAndUpdate(id, { $pull: { visibility: { $in: values } } }, { new: true });
-    res.json(updated);
+    res.json(shapeCrushForWire(updated));
 
     const io = req.app.get('io');
     emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(updated._id) });
@@ -345,6 +377,128 @@ exports.unshareCrush = async (req, res) => {
       void recordActivity({ io, actor: req.user.id, counterpart: friend._id, type: 'crush_unshared', crushId: updated._id, meta: { nickname: updated.nickname } });
       setImmediate(() => { void retractCrushShares({ io, crushId: updated._id, recipients: [String(friend._id)] }); });
     }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+/** Loads a crush and checks the caller may see it: owner, or a friend it is shared with. */
+const loadCrushForViewer = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) { res.status(404).json({ message: 'Crush not found' }); return null; }
+  const crush = await CrushProfile.findById(req.params.id);
+  if (!crush) { res.status(404).json({ message: 'Crush not found' }); return null; }
+  const myId = String(req.user.id);
+  if (String(crush.userId) === myId) return { crush, owner: true, myId };
+  const me = await User.findById(req.user.id).select('friends username').lean();
+  const isFriend = (me?.friends || []).some((id) => String(id) === String(crush.userId));
+  if (!isFriend || !visibilityIncludes(crush, myId, me?.username)) {
+    res.status(403).json({ message: 'This crush has not been shared with you.' });
+    return null;
+  }
+  return { crush, owner: false, myId };
+};
+
+const loadOwnCrush = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) { res.status(404).json({ message: 'Crush not found' }); return null; }
+  const crush = await CrushProfile.findById(req.params.id);
+  if (!crush) { res.status(404).json({ message: 'Crush not found' }); return null; }
+  if (crush.userId.toString() !== req.user.id) { res.status(401).json({ message: 'User not authorized' }); return null; }
+  return crush;
+};
+
+const photoWithUrl = (photo) => ({ ...photoMeta(photo), url: photo.url });
+
+// @route   GET /api/crushes/:id/photos  (owner: all; a friend: only the photos they may see)
+exports.getCrushPhotos = async (req, res) => {
+  try {
+    const found = await loadCrushForViewer(req, res);
+    if (!found) return;
+    const { crush, owner, myId } = found;
+    const photos = (crush.photos || []).filter((p) => owner || photoVisibleTo(p, myId));
+    res.json(photos.map(photoWithUrl));
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @route   POST /api/crushes/:id/photos   body: { url, audience?, friendIds? }
+exports.addCrushPhoto = async (req, res) => {
+  try {
+    const crush = await loadOwnCrush(req, res);
+    if (!crush) return;
+    const url = String(req.body.url || '');
+    if (!PHOTO_DATA_URI.test(url)) return res.status(400).json({ message: 'Photos must be a JPEG, PNG or WebP image.' });
+    if (url.length > MAX_PHOTO_CHARS) return res.status(413).json({ message: 'That photo is too large. Please pick a smaller one.' });
+    if ((crush.photos || []).length >= MAX_PHOTOS) return res.status(400).json({ message: `You can keep up to ${MAX_PHOTOS} photos per crush.` });
+    const audience = req.body.audience === 'friends' ? 'friends' : 'shared';
+    const friendIds = audience === 'friends' && Array.isArray(req.body.friendIds) ? req.body.friendIds.map(String) : [];
+    crush.photos.push({
+      url,
+      width: Number(req.body.width) || undefined,
+      height: Number(req.body.height) || undefined,
+      bytes: Math.round(url.length * 0.75),
+      audience,
+      friendIds
+    });
+    await crush.save();
+    const photo = crush.photos[crush.photos.length - 1];
+    res.status(201).json(photoWithUrl(photo));
+    emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(crush._id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @route   DELETE /api/crushes/:id/photos/:photoId
+exports.removeCrushPhoto = async (req, res) => {
+  try {
+    const crush = await loadOwnCrush(req, res);
+    if (!crush) return;
+    const before = crush.photos.length;
+    crush.photos = crush.photos.filter((p) => String(p._id) !== String(req.params.photoId));
+    if (crush.photos.length === before) return res.status(404).json({ message: 'Photo not found' });
+    await crush.save();
+    res.json({ ok: true, photos: crush.photos.map(photoMeta) });
+    emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(crush._id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @route   PUT /api/crushes/:id/photos/order   body: { ids: string[] }
+exports.reorderCrushPhotos = async (req, res) => {
+  try {
+    const crush = await loadOwnCrush(req, res);
+    if (!crush) return;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String) : [];
+    const byId = new Map(crush.photos.map((p) => [String(p._id), p]));
+    const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
+    for (const p of crush.photos) if (!ids.includes(String(p._id))) ordered.push(p);
+    crush.photos = ordered;
+    await crush.save();
+    res.json({ ok: true, photos: crush.photos.map(photoMeta) });
+    emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(crush._id) });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @route   PUT /api/crushes/:id/photos/audience            body: { audience: 'shared' }      (every photo)
+// @route   PUT /api/crushes/:id/photos/:photoId/audience   body: { audience, friendIds? }   (one photo)
+exports.setCrushPhotoAudience = async (req, res) => {
+  try {
+    const crush = await loadOwnCrush(req, res);
+    if (!crush) return;
+    const audience = req.body.audience === 'friends' ? 'friends' : 'shared';
+    const friendIds = audience === 'friends' && Array.isArray(req.body.friendIds) ? req.body.friendIds.map(String) : [];
+    const targets = req.params.photoId
+      ? crush.photos.filter((p) => String(p._id) === String(req.params.photoId))
+      : crush.photos;
+    if (req.params.photoId && targets.length === 0) return res.status(404).json({ message: 'Photo not found' });
+    for (const p of targets) { p.audience = audience; p.friendIds = friendIds; }
+    await crush.save();
+    res.json({ ok: true, photos: crush.photos.map(photoMeta) });
+    emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(crush._id) });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

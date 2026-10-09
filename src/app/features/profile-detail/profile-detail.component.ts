@@ -15,6 +15,7 @@ import { FriendsApiService } from '../../core/services/friends-api.service';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
+import { CrushPhotoGalleryComponent } from '../../core/components/crush-photos/crush-photo-gallery.component';
 import { CrushFormValue, crushFormTextFields, crushToFormValue, emptyCrushFormValue, formValueToCrushPatch, parseCustomNotes } from '../../core/utils/crush-form.util';
 import { CRUSH_FORM_FIELDS } from '../../core/services/crush-payload';
 
@@ -26,7 +27,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -200,6 +201,8 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
               }
             </div>
           </div>
+
+          <app-crush-photo-gallery [crushId]="c.id" mode="viewer" [nickname]="getCrushDisplayName(c)"></app-crush-photo-gallery>
 
           @if (sharedEntriesForCrush().length > 0) {
             <div [style.background-color]="theme.colors().bgSecondary"
@@ -427,6 +430,8 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
               </div>
             }
           </div>
+
+          <app-crush-photo-gallery [crushId]="c.id" mode="owner" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl" [sharedFriends]="friendsSharedWith(c)"></app-crush-photo-gallery>
 
           <!-- Vibe Check Banner -->
           @if (showVibeBanner()) {
@@ -1869,6 +1874,11 @@ export class ProfileDetailComponent implements OnDestroy {
     const entry = this.entries().find((currentEntry) => currentEntry.id === entryId);
     if (!entry) return false;
     return entry.visibility.includes(friendId) || entry.visibility.includes('public');
+  }
+
+  /** Friends this crush is currently shared with (candidates for per-photo audiences). */
+  friendsSharedWith(crush: CrushProfile) {
+    return this.friends().filter((friend) => this.isShared(crush, friend.id));
   }
 
   isShared(crush: CrushProfile, friendId: string): boolean {

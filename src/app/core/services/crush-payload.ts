@@ -14,7 +14,7 @@ export const CRUSH_FORM_FIELDS: readonly CrushField[] = [
 ];
 
 /** Never part of an update payload: identity and server-managed lists. */
-const NEVER_SENT: ReadonlySet<string> = new Set(['id', 'userId', 'sharedEntries', 'viewedBy']);
+const NEVER_SENT: ReadonlySet<string> = new Set(['id', 'userId', 'sharedEntries', 'viewedBy', 'photos', 'photoCount']);
 
 /**
  * Builds the body for PUT /crushes/:id from just the fields an action changed.

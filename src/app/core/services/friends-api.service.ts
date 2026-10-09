@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
-import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
+import { CrushPhoto, CrushProfile, CrushStatus, mapCrushPhotos } from '../models/crush-profile.model';
 import { SecurityService } from './security.service';
 
 export type FriendRelationship = 'none' | 'friends' | 'request_sent' | 'request_received' | 'invite_sent';
@@ -242,7 +242,8 @@ export class FriendsApiService {
       occupation: crush.occupation,
       family: crush.family,
       memorableMoments: crush.memorableMoments,
-      friends: crush.friends || []
+      friends: crush.friends || [],
+      photoCount: typeof (crush as any).photoCount === 'number' ? (crush as any).photoCount : 0
     };
   }
 
@@ -295,6 +296,16 @@ export class FriendsApiService {
 
   nudgeRequest(requestId: string): Promise<FriendRequestSummary> {
     return this.request<FriendRequestSummary>(`/requests/${requestId}/nudge`, { method: 'POST' });
+  }
+
+  /** Photos of a crush a friend shared with you (only the ones you're allowed to see). */
+  async getSharedCrushPhotos(crushId: string): Promise<CrushPhoto[]> {
+    try {
+      const raw = await this.request<unknown>(`/${encodeURIComponent(crushId)}/photos`, {}, 'crushes');
+      return mapCrushPhotos(raw);
+    } catch {
+      return [];
+    }
   }
 
   /** Pause/resume a friendship and choose whether their notifications are muted. */

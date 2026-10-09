@@ -33,7 +33,7 @@ async function recordActivity({ io, actor, counterpart, type, crushId, entryId, 
     };
     if (source) row.source = source;
     const saved = source
-      ? await FriendActivity.findOneAndUpdate({ source }, { $setOnInsert: row }, { upsert: true, new: true })
+      ? await FriendActivity.findOneAndUpdate({ source }, { $setOnInsert: row }, { upsert: true, returnDocument: 'after' })
       : await FriendActivity.create(row);
     if (io) {
       for (const id of row.visibleTo) {

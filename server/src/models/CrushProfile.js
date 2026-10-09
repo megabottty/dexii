@@ -115,6 +115,20 @@ const CrushProfileSchema = new mongoose.Schema({
       at: { type: Date, required: true }
     }],
     default: []
+  },
+  // Up to 8 photos. `audience: 'shared'` = every friend the crush is shared with;
+  // 'friends' = only the listed friendIds (and only if the crush is shared with them).
+  photos: {
+    type: [{
+      url: { type: String, required: true },
+      width: Number,
+      height: Number,
+      bytes: Number,
+      addedAt: { type: Date, default: Date.now },
+      audience: { type: String, enum: ['shared', 'friends'], default: 'shared' },
+      friendIds: { type: [String], default: [] }
+    }],
+    default: []
   }
 }, { timestamps: true });
 

@@ -714,3 +714,12 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+.dashboard-photo-chip {
+  background-color: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+}
