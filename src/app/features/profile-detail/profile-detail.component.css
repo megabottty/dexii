@@ -233,13 +233,6 @@
   white-space: nowrap;
 }
 
-.share-dating-status-button {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  font-size: var(--fs-btn);
-  letter-spacing: 0.5px;
-}
-
 .action-btn-styled.primary {
   color: var(--primary);
   border-color: var(--primary);

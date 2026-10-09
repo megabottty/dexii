@@ -169,9 +169,9 @@
 }
 
 .user-profile-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid currentColor;
+  width: 32px;
+  height: 32px;
+  border: 3px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
   animation: user-profile-spin 0.75s linear infinite;
@@ -180,41 +180,6 @@
 @keyframes user-profile-spin {
   to {
    transform: rotate(360deg);
-  }
-}
-
-.share-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.share-modal-content {
-  width: 100%;
-  max-width: 500px;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
   }
 }
 
@@ -271,7 +236,7 @@
   }
 
   .user-profile-component__s17,
-  .user-profile-component__s16 > a:first-child {
+  .user-profile-shared-crush-card > div:first-child > a:first-child {
     min-width: 0;
     width: 100%;
   }
@@ -281,37 +246,12 @@
   }
 
   .user-profile-component__s21,
-  .user-profile-component__s16 > button:last-child {
+  .user-profile-shared-crush-card > div:first-child > button:last-child {
     align-self: flex-start;
   }
 
-  .share-modal-backdrop {
-    padding: 16px;
-  }
-
-  .share-modal-content {
-    width: min(500px, calc(100vw - 32px));
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .share-modal-content > div:first-child {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .share-modal-content > div:last-child {
-    padding-right: 0;
-  }
-
-  .share-modal-content > div:last-child > div {
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .share-modal-content > div:last-child > div > div:first-child {
-    flex: 1;
-    min-width: 0;
+  .user-profile-shared-crush-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -380,27 +320,7 @@
     font-size: 1.3rem;
   }
 
-  .share-modal-backdrop {
-    align-items: flex-end;
-    padding: 12px;
-  }
-
-  .share-modal-content {
-    width: min(500px, calc(100vw - 24px));
-    border-radius: 10px 10px 0 0;
-    padding: 1rem;
-  }
-
-  .share-modal-content > div:last-child {
-    max-height: 55vh;
-  }
-
-  .share-modal-content > div:last-child > div {
-    flex-direction: column;
-  }
-
-  .share-modal-content > div:last-child > div > button,
-  .user-profile-component__s16 > button:last-child {
+  .user-profile-shared-crush-card > div:first-child > button:last-child {
     width: 100%;
   }
 }
@@ -416,20 +336,44 @@
   }
 }
 
-.user-profile-share-btn {
+/* Each shared-crush row: the name/Seen/Unshare line, then an About-style detail grid. */
+.user-profile-shared-crush-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.user-profile-shared-crush-grid {
+  margin-top: 0;
+  padding-top: 10px;
+}
+
+.status-icon {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: var(--tap-min);
+  gap: 4px;
+  font-size: var(--fs-label);
+}
+
+.status-icon.pending {
+  font-style: italic;
+}
+
+.user-profile-history-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.user-profile-history-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-btn);
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
 }
 
 /* Header actions and the Friendship Profile card (moved here from the old bio page) */

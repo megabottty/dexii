@@ -20,6 +20,7 @@ import {
 } from '../../core/services/friends-api.service';
 import { User, SubscriptionTier } from '../../core/models/user.model';
 import { PageHintComponent } from '../../core/components/page-hint.component';
+import { CrushSharePickerComponent } from '../../core/components/crush-share-picker/crush-share-picker.component';
 
 interface FriendSearchResult extends Omit<Partial<ApiFriendSearchResult>, 'subscriptionTier'> {
   username: string;
@@ -82,7 +83,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent, CrushSharePickerComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
@@ -92,7 +93,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <app-page-hint
           hintKey="friends_inline"
           title="Friends Hint"
-          message="Add friends here. Tap a friend to open their page: what you share with each other, your history, and your private friendship profile. The pause and bin icons manage each friendship.">
+          message="Add friends here. Profile opens their page: what you share with each other, your history, and your private friendship profile. Share picks a crush for them to see. Pause and bin manage each friendship.">
         </app-page-hint>
 
         <h1 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
@@ -429,10 +430,15 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
                 <div class="friends-list-component__s59 friends-list-card-actions">
                   <a [routerLink]="['/friends', friend.username]"
-                     [attr.aria-label]="'Open your page with ' + friend.username + ': what you share with each other'"
-                     [style.color]="theme.colors().onBgPrimary"
-                     [style.border]="'1px solid ' + theme.colors().primary"
-                     class="friends-list-action-link">Share</a>
+                     [attr.aria-label]="'Open your friendship page with ' + friend.username"
+                     title="Profile"
+                     [style.color]="theme.colors().textSecondary"
+                     class="icon-btn"><app-icon name="profile" /></a>
+                  <button type="button" (click)="openSharePicker(friend)"
+                          [attr.aria-label]="'Share a crush with ' + friend.username"
+                          [style.color]="theme.colors().onBgPrimary"
+                          [style.border]="'1px solid ' + theme.colors().primary"
+                          class="friends-list-action-link">Share</button>
                   <a routerLink="/chat"
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
@@ -483,7 +489,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.mutedNotifications ? 'Paused · notifications muted' : 'Paused' }}</span>
                     </div>
                   </div>
-                  <div class="friends-list-component__s59">
+                  <div class="friends-list-component__s59 friends-list-card-actions">
                     <label class="friends-list-mute-toggle" [style.color]="theme.colors().text">
                       <input type="checkbox"
                              [checked]="friend.mutedNotifications"
@@ -496,6 +502,16 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                             class="friends-list-action-btn">
                       Resume friendship
                     </button>
+                    <a [routerLink]="['/friends', friend.username]"
+                       [attr.aria-label]="'Open your friendship page with ' + friend.username"
+                       title="Profile"
+                       [style.color]="theme.colors().textSecondary"
+                       class="icon-btn"><app-icon name="profile" /></a>
+                    <button type="button" (click)="openSharePicker(friend)"
+                            [attr.aria-label]="'Share a crush with ' + friend.username"
+                            [style.color]="theme.colors().onBgPrimary"
+                            [style.border]="'1px solid ' + theme.colors().primary"
+                            class="friends-list-action-link">Share</button>
                     <a routerLink="/chat"
                        [queryParams]="{ friendId: friend.id, friendName: friend.username }"
                        [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
@@ -514,6 +530,10 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           </div>
         }
       </div>
+
+      @if (shareForFriend(); as shareFriend) {
+        <app-crush-share-picker [friendId]="shareFriend.id" [friendName]="shareFriend.username" (closed)="shareForFriend.set(null)"></app-crush-share-picker>
+      }
 
       @if (addFriendCandidate()) {
         <div class="friends-list-component__s9">
@@ -685,6 +705,11 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   activeTab = signal<'friends' | 'find' | 'incoming' | 'sent' | 'paused'>('friends');
+  /** The friend whose crush-share picker is open, or null if none. */
+  shareForFriend = signal<FriendCardView | null>(null);
+  openSharePicker(friend: FriendCardView): void {
+    this.shareForFriend.set(friend);
+  }
   /** Every friend from the server, paused or not. */
   allFriends = signal<FriendCardView[]>([]);
   friends = computed(() => this.allFriends().filter((friend) => !friend.paused));

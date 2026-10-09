@@ -1,0 +1,172 @@
+.csp-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.csp-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.csp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 12px;
+}
+
+.csp-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.csp-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.csp-hint {
+  margin: 0 0 1rem;
+  font-size: var(--fs-body);
+}
+
+.csp-tools {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.csp-tool-btn {
+  background: transparent;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.csp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.csp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.csp-row-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.csp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.csp-name {
+  margin: 0;
+  font-weight: 500;
+}
+
+.csp-fullname {
+  margin: 0;
+  font-size: var(--fs-small);
+}
+
+.csp-toggle {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.csp-empty {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.csp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1.25rem;
+}
+
+.csp-cancel-btn,
+.csp-share-btn {
+  border-radius: var(--radius-pill);
+  padding: 10px 20px;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.csp-cancel-btn {
+  background: transparent;
+}
+
+.csp-share-btn {
+  border: none;
+  color: #fff;
+}
+
+.csp-share-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .csp-backdrop {
+    padding: 16px;
+  }
+
+  .csp-card {
+    width: min(480px, calc(100vw - 32px));
+  }
+
+  .csp-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .csp-toggle {
+    align-self: flex-start;
+  }
+}

@@ -174,7 +174,8 @@ const MAX_PHOTOS = 8;
 })
 export class CrushPhotoGalleryComponent {
   readonly crushId = input.required<string>();
-  readonly mode = input<'owner' | 'viewer'>('viewer');
+  /** 'owner': full management UI. 'viewer': a friend seeing what was shared with them. 'preview': the owner seeing their own crush the way any friend they've shared it with would -- same photos as 'viewer' (anything shared, not just one friend's slice), no management UI. */
+  readonly mode = input<'owner' | 'viewer' | 'preview'>('viewer');
   readonly nickname = input('this crush');
   /** Owner only: the current profile picture, to offer "Use as profile picture". */
   readonly avatarUrl = input<string | undefined>(undefined);
@@ -218,11 +219,20 @@ export class CrushPhotoGalleryComponent {
     });
   }
 
-  private async load(id: string, mode: 'owner' | 'viewer'): Promise<void> {
+  private async load(id: string, mode: 'owner' | 'viewer' | 'preview'): Promise<void> {
     if (!id) return;
     this.loading.set(true);
     try {
-      const photos = mode === 'owner' ? await this.dataService.loadCrushPhotos(id) : await this.friendsApi.getSharedCrushPhotos(id);
+      let photos: CrushPhoto[];
+      if (mode === 'owner') {
+        photos = await this.dataService.loadCrushPhotos(id);
+      } else if (mode === 'preview') {
+        // Your own photos, same slice any friend you've shared this crush with
+        // would see: shared with everyone, or shared with at least one friend.
+        photos = (await this.dataService.loadCrushPhotos(id)).filter((p) => p.audience === 'shared' || p.friendIds.length > 0);
+      } else {
+        photos = await this.friendsApi.getSharedCrushPhotos(id);
+      }
       this.photos.set(photos);
       this.index.set(0);
     } finally {

@@ -46,16 +46,23 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 
 ## Friends: one page per friend
 
-- **The friend page** lives at `/friends/<username>` (old `/user/<id>` links redirect there). It shows the
-  friend's bio and About details, the crushes they share with you, the crushes you share with them (with
-  seen/not-seen and Unshare), your History together, and, last, your **Friendship Profile** card: relationship
-  name, type, how you met, trust level and notes. Those notes are private to you and are saved on your
-  account (`PUT /api/friends/:id/friendship-profile`), so they follow you between devices. Anything saved in a
+- **The friend page** lives at `/friends/<username>` (old `/user/<id>` links redirect there). Top to bottom:
+  the friend's name/bio card with **Edit**, **+ Share crush** and **Chat**; their About details; the crushes
+  they share with you; the crushes you share with them — each with seen/not-seen, Unshare, and an About-style
+  detail grid (your dating status with that crush, their relationship status, labels, age, location,
+  occupation); **History**, last; and your **Friendship Profile** card: relationship name, type, how you met,
+  trust level and notes. Those notes are private to you and are saved on your account
+  (`PUT /api/friends/:id/friendship-profile`), so they follow you between devices. Anything saved in a
   browser before this existed is moved to the server the first time it is seen.
-- **Edit** in the header jumps to that card in edit mode; **Chat** opens the conversation. The pause (⏸) and
-  remove (🗑) icon buttons on the card manage the friendship.
-- **Friend cards** on the Friends page carry four actions: Share (opens the friend page), Chat, pause and
-  remove. Paused cards show Resume, Chat and remove plus the mute toggle.
+- **Edit** in the header jumps to the Friendship Profile card in edit mode; **+ Share crush** opens a picker
+  to choose any number of your crushes for this friend to see; **Chat** opens the conversation. The pause (⏸)
+  and remove (🗑) icon buttons on the Friendship Profile card manage the friendship.
+- **Friend cards** on the Friends page carry five actions: Profile (opens the friend page), Share (opens the
+  same crush picker in place, without leaving the list), Chat, pause and remove. Paused cards show the same
+  set plus Resume and the mute toggle.
+- **Crush page**: one Share button opens a picker of your friends to share that crush with. **View as
+  Friend** switches to a read-only preview — what any friend you've shared this crush with sees: public/
+  shared notes, shared photos, no edit/share/archive controls — with an **Exit preview** to return.
 - **Destructive actions always confirm** with a titled dialog whose button says what it does ("Remove",
   "Delete 3") in the outlined red danger style: removing a friend, deleting a vault photo, deleting crush
   photos.

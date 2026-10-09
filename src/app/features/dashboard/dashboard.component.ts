@@ -182,35 +182,39 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
         <!-- Filter tabs -->
         @if (!showArchived()) {
-          <div class="dashboard-component__s79" role="tablist" aria-label="Filter crushes" (keydown)="onFilterKeydown($event)">
-            @for (tab of filterTabs; track tab.id) {
+          <div class="dashboard-filter-row">
+            <div class="dashboard-component__s79" role="tablist" aria-label="Filter crushes" (keydown)="onFilterKeydown($event)">
+              @for (tab of filterTabs; track tab.id) {
+                <button type="button"
+                        role="tab"
+                        [id]="'crush-tab-' + tab.id"
+                        [attr.aria-selected]="selectedFilter() === tab.id"
+                        [attr.tabindex]="selectedFilter() === tab.id ? 0 : -1"
+                        aria-controls="crush-grid"
+                        (click)="selectedFilter.set(tab.id)"
+                        [style.color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().textSecondary"
+                        [style.border-bottom]="selectedFilter() === tab.id ? '2px solid ' + theme.colors().primary : '2px solid transparent'"
+                        class="dashboard-component__s81">
+                  <span aria-hidden="true">{{ tab.icon }}</span>
+                  {{ tab.label }}
+                  <span class="dashboard-filter-count"
+                        [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().border"
+                        [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().text"
+                        [attr.aria-label]="filterCounts()[tab.id] + ' crushes'">{{ filterCounts()[tab.id] }}</span>
+                </button>
+              }
+            </div>
+            <span class="info-icon-tooltip" data-tooltip="Dating is anyone whose status is Dating or Exclusive. Not dating is everyone else.">
               <button type="button"
-                      role="tab"
-                      [id]="'crush-tab-' + tab.id"
-                      [attr.aria-selected]="selectedFilter() === tab.id"
-                      [attr.tabindex]="selectedFilter() === tab.id ? 0 : -1"
-                      aria-controls="crush-grid"
-                      (click)="selectedFilter.set(tab.id)"
-                      [style.color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().textSecondary"
-                      [style.border-bottom]="selectedFilter() === tab.id ? '2px solid ' + theme.colors().primary : '2px solid transparent'"
-                      class="dashboard-component__s81">
-                <span aria-hidden="true">{{ tab.icon }}</span>
-                {{ tab.label }}
-                <span class="dashboard-filter-count"
-                      [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : theme.colors().border"
-                      [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().text"
-                      [attr.aria-label]="filterCounts()[tab.id] + ' crushes'">{{ filterCounts()[tab.id] }}</span>
-              </button>
-            }
+                        class="dashboard-filter-info"
+                        [style.color]="theme.colors().textSecondary"
+                        [style.border]="'1px solid ' + theme.colors().border"
+                        [attr.aria-expanded]="showFilterHelp()"
+                        aria-controls="crush-filter-help"
+                        aria-label="How these tabs work"
+                        (click)="toggleFilterHelp()">i</button>
+            </span>
           </div>
-          <button type="button"
-                    class="dashboard-filter-info"
-                    [style.color]="theme.colors().textSecondary"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [attr.aria-expanded]="showFilterHelp()"
-                    aria-controls="crush-filter-help"
-                    aria-label="How these tabs work"
-                    (click)="toggleFilterHelp()">i</button>
           @if (showFilterHelp()) {
             <p id="crush-filter-help"
                [style.color]="theme.colors().textSecondary"

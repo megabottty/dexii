@@ -45,13 +45,21 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
         <a href="#" (click)="goBack($event)" [style.color]="theme.colors().text" class="back-link">← {{ isReadOnlyFriendView() || friendCrushLoading() || friendCrushNotFound() || friendCrushError() ? 'Back' : 'Back to Dashboard' }}</a>
       </div>
 
-      @if (isReadOnlyFriendView() && crush(); as c) {
+      @if ((isReadOnlyFriendView() || previewAsFriend()) && crush(); as c) {
         <div class="profile-main-content">
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
-               style="border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;"
+               style="border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: space-between; gap: 12px;"
                [style.color]="theme.colors().onBgPrimary">
-            @if (friendCrushOwnerName()) {
+            @if (previewAsFriend()) {
+              <span>👁 Preview · what friends you've shared with see</span>
+              <button type="button" (click)="previewAsFriend.set(false)"
+                      [style.color]="theme.colors().onBgPrimary"
+                      [style.border]="'1px solid ' + theme.colors().primary"
+                      style="background: transparent; padding: 6px 14px; border-radius: var(--radius-pill); font-size: var(--fs-small); text-transform: none; letter-spacing: 0; font-weight: 700; cursor: pointer;">
+                Exit preview
+              </button>
+            } @else if (friendCrushOwnerName()) {
               Shared by {{ friendCrushOwnerName() }} · Read-only
             } @else {
               Shared crush · Read-only
@@ -203,17 +211,17 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             </div>
           </div>
 
-          <app-crush-photo-gallery [crushId]="c.id" mode="viewer" [nickname]="getCrushDisplayName(c)"></app-crush-photo-gallery>
+          <app-crush-photo-gallery [crushId]="c.id" [mode]="previewAsFriend() ? 'preview' : 'viewer'" [nickname]="getCrushDisplayName(c)"></app-crush-photo-gallery>
 
-          @if (sharedEntriesForCrush().length > 0) {
+          @if ((previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()).length > 0) {
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
                  style="border-radius: 16px; padding: 20px; margin-top: 16px;">
               <h3 [style.color]="theme.colors().textSecondary" style="margin: 0 0 12px 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px;">
-                Shared with you
+                {{ previewAsFriend() ? 'Shared' : 'Shared with you' }}
               </h3>
               <div style="display: flex; flex-direction: column; gap: 10px;">
-                @for (entry of sharedEntriesForCrush(); track entry.id) {
+                @for (entry of (previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()); track entry.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border"
                        style="border-radius: 10px; padding: 10px 12px;">
                     <p style="margin: 0; line-height: 1.5;">{{ entry.content }}</p>
@@ -354,7 +362,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="openShareSelector(c.id)" class="action-btn-styled primary">🔗 Share</button>
-                <button (click)="openDatingStatusShareSelector()" class="action-btn-styled primary share-dating-status-button">📣 Share Dating Status</button>
+                <button (click)="previewAsFriend.set(true)" class="action-btn-styled secondary">👁 View as Friend</button>
                 @if (gate.canUseSafetyCheck()) {
                   <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
                     {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
@@ -465,32 +473,22 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             <div class="selector-overlay" (click)="closeShareSelector()">
               <div class="selector-card" role="dialog" aria-modal="true" aria-labelledby="share-selector-title" appFocusTrap (escaped)="closeShareSelector()" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3 id="share-selector-title">{{ shareSelectorMode() === 'dating' ? 'Share dating status' : (pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend') }}</h3>
+                  <h3 id="share-selector-title">{{ pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend' }}</h3>
                   <div style="display: flex; gap: 8px; align-items: center;">
-                    @if (shareSelectorMode() === 'dating') {
-                      <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllDatingShareFriends()">
-                        {{ areAllDatingShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
-                      </button>
-                    } @else {
-                      <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllShareFriends()">
-                        {{ areAllShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
-                      </button>
-                    }
+                    <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllShareFriends()">
+                      {{ areAllShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
+                    </button>
                     <button class="close-btn" (click)="closeShareSelector()" aria-label="Close">✕</button>
                   </div>
                 </div>
                 <div class="friend-list-scroll">
                   @for (friend of friends(); track friend.id) {
-                    <button type="button" class="friend-item" (click)="shareSelectorMode() === 'dating' ? toggleDatingShareFriend(friend.id, friend.username) : toggleShareFriend(friend.id, friend.username)" [attr.aria-pressed]="shareSelectorMode() === 'dating' ? isDatingShareFriendSelected(friend.id) : isShareFriendSelected(friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
+                    <button type="button" class="friend-item" (click)="toggleShareFriend(friend.id, friend.username)" [attr.aria-pressed]="isShareFriendSelected(friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
                       <div class="friend-info">
                         <span class="friend-name">{{ friend.username }}</span>
-                        <span class="friend-status" [style.color]="shareSelectorMode() === 'dating' ? (isDatingShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary) : (isShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary)">
-                          @if (shareSelectorMode() === 'dating') {
-                            {{ isDatingShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
-                          } @else {
-                            {{ isShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
-                          }
+                        <span class="friend-status" [style.color]="isShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary">
+                          {{ isShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
                         </span>
                       </div>
                     </button>
@@ -501,19 +499,12 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                     </div>
                   }
                 </div>
-                @if (shareSelectorMode() === 'dating') {
-                  <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
-                    <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
-                    <button class="action-btn-styled primary" (click)="confirmDatingStatusShare(c.id)">Share with selected</button>
-                  </div>
-                } @else {
-                  <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
-                    <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
-                    <button class="action-btn-styled primary" (click)="confirmShareSelected(c.id)">
-                      {{ pendingShareEntryId() ? 'Share Note with Selected' : 'Share with Selected' }}
-                    </button>
-                  </div>
-                }
+                <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
+                  <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
+                  <button class="action-btn-styled primary" (click)="confirmShareSelected(c.id)">
+                    {{ pendingShareEntryId() ? 'Share Note with Selected' : 'Share with Selected' }}
+                  </button>
+                </div>
               </div>
             </div>
           }
@@ -939,7 +930,6 @@ export class ProfileDetailComponent implements OnDestroy {
   isEditMode = signal(false);
   showShareSelector = signal(false);
   showStatusVisibilityModal = signal(false);
-  shareSelectorMode = signal<'crush' | 'dating'>('crush');
   showVibeBanner = signal(true);
   showSafetySetup = signal(false);
   statusQuickEditOpen = signal(false);
@@ -951,8 +941,9 @@ export class ProfileDetailComponent implements OnDestroy {
   pendingVibe = signal(0);
   pendingShareEntryId = signal<string | null>(null);
   shareFriendIds = signal<string[]>([]);
-  datingShareFriendIds = signal<string[]>([]);
   pendingVisibilityFriendIds = signal<string[]>([]);
+  /** Owner-only: see this crush the way a friend you've shared it with sees it. */
+  previewAsFriend = signal(false);
   safetyDurationMinutes = signal<number>(60);
   safetyContactIds = signal<string[]>([]);
   safetyDurationOptions = [30, 60, 90, 120, 150, 180, 210, 240];
@@ -1006,6 +997,18 @@ export class ProfileDetailComponent implements OnDestroy {
       .slice()
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   });
+
+  /**
+   * Your own notes on this crush that are visible to at least one friend (public
+   * or shared with specific friends) -- what "View as Friend" shows in place of
+   * `sharedEntriesForCrush`, which is empty here since it's your own crush.
+   */
+  previewSharedEntries = computed(() =>
+    this.entries()
+      .filter((entry) => (entry.visibility || []).length > 0)
+      .slice()
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  );
 
   /** True if the crush being viewed has any additional public details beyond the brief header (used to show/hide the "Show more" button on the read-only friend view). */
   hasMoreCrushDetails = computed(() => {
@@ -1664,25 +1667,12 @@ export class ProfileDetailComponent implements OnDestroy {
     );
   }
 
-  openDatingStatusShareSelector(): void {
-    if (this.friends().length === 0) {
-      this.modal.show('Add at least one friend first to share your dating status.');
-      return;
-    }
-    this.pendingShareEntryId.set(null);
-    this.shareSelectorMode.set('dating');
-    this.shareFriendIds.set([]);
-    this.datingShareFriendIds.set([]);
-    this.showShareSelector.set(true);
-  }
-
   openShareSelector(crushId: string): void {
     if (this.friends().length === 0) {
       this.modal.show('Add at least one friend first to share.');
       return;
     }
     this.pendingShareEntryId.set(null);
-    this.shareSelectorMode.set('crush');
     this.shareFriendIds.set(this.friends().filter((friend) => this.crush() ? this.isShared(this.crush()!, friend.id) : false).map((friend) => friend.id));
     this.showShareSelector.set(true);
   }
@@ -1690,30 +1680,7 @@ export class ProfileDetailComponent implements OnDestroy {
   closeShareSelector(): void {
     this.showShareSelector.set(false);
     this.pendingShareEntryId.set(null);
-    this.shareSelectorMode.set('crush');
     this.shareFriendIds.set([]);
-    this.datingShareFriendIds.set([]);
-  }
-
-  toggleDatingShareFriend(friendId: string, friendName?: string): void {
-    this.datingShareFriendIds.update((ids) =>
-      ids.includes(friendId) ? ids.filter((id) => id !== friendId) : [...ids, friendId]
-    );
-  }
-
-  areAllDatingShareFriendsSelected(): boolean {
-    const friends = this.friends();
-    const selected = this.datingShareFriendIds();
-    return friends.length > 0 && selected.length === friends.length;
-  }
-
-  toggleSelectAllDatingShareFriends(): void {
-    if (this.areAllDatingShareFriendsSelected()) {
-      this.datingShareFriendIds.set([]);
-      return;
-    }
-
-    this.datingShareFriendIds.set(this.friends().map((friend) => friend.id));
   }
 
   isShareFriendSelected(friendId: string): boolean {
@@ -1734,58 +1701,6 @@ export class ProfileDetailComponent implements OnDestroy {
     }
 
     this.shareFriendIds.set(friends.map((friend) => friend.id));
-  }
-
-  isDatingShareFriendSelected(friendId: string): boolean {
-    return this.datingShareFriendIds().includes(friendId);
-  }
-
-  confirmDatingStatusShare(crushId: string): void {
-    const crush = this.crush();
-    if (!crush) {
-      this.modal.show('Unable to share dating status right now.');
-      return;
-    }
-
-    const selectedIds = this.datingShareFriendIds();
-    if (selectedIds.length === 0) {
-      this.modal.show('Select at least one friend to share your dating status.');
-      return;
-    }
-    const contacts = this.friends().filter((friend) => selectedIds.includes(friend.id));
-
-    const statusLabel = crush.relationshipStatus?.trim() || crush.status;
-    const parts = [
-      `Dating status update for ${crush.nickname}: ${statusLabel}.`
-    ];
-    if (crush.relationshipStatus === 'Heartbroken' && crush.heartbreakSong) {
-      parts.push(`Current song: ${crush.heartbreakSong}.`);
-    }
-    if (crush.relationshipStatus === 'Heartbroken' && crush.heartbreakRecovery) {
-      parts.push(`Getting over it by: ${crush.heartbreakRecovery}.`);
-    }
-    const content = parts.join(' ');
-
-    contacts.forEach((friend) => {
-      this.messaging.sendMessage({
-        senderId: 'me',
-        receiverId: friend.id,
-        content,
-        relatedCrushId: crushId,
-        kind: 'dating_status'
-      });
-    });
-
-    this.dataService.addEntry({
-      crushId,
-      type: 'Note',
-      content: `Shared dating status with ${contacts.length} friend${contacts.length === 1 ? '' : 's'}: ${statusLabel}.`,
-      isBurnAfterReading: false,
-      visibility: [],
-      isSensitive: false
-    });
-    this.closeShareSelector();
-    this.modal.show(`Dating status shared with ${contacts.length} friend${contacts.length === 1 ? '' : 's'}.`);
   }
 
   confirmShareSelected(crushId: string): void {
@@ -1865,7 +1780,6 @@ export class ProfileDetailComponent implements OnDestroy {
       this.modal.show('Add at least one friend first to share notes.');
       return;
     }
-    this.shareSelectorMode.set('crush');
     this.pendingShareEntryId.set(entryId);
     this.showShareSelector.set(true);
   }

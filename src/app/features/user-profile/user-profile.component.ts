@@ -1,12 +1,12 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
-import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ModalService } from '../../core/services/modal.service';
 import { SecurityService } from '../../core/services/security.service';
 import { IconComponent } from '../../core/components/icon/icon.component';
+import { CrushSharePickerComponent } from '../../core/components/crush-share-picker/crush-share-picker.component';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MessagingService } from '../../core/services/messaging.service';
@@ -23,7 +23,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, FocusTrapDirective, IconComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, IconComponent, CrushSharePickerComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -81,6 +81,12 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                             [style.color]="theme.colors().onBgPrimary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="user-profile-pill user-profile-pill--ghost">Edit</button>
+                    <button type="button" (click)="showSharePicker.set(true)"
+                            [style.color]="theme.colors().onBgPrimary"
+                            [style.border]="'1px solid ' + theme.colors().primary"
+                            class="user-profile-pill user-profile-pill--ghost">
+                      <span aria-hidden="true">+</span> Share crush
+                    </button>
                     <a [routerLink]="['/chat']"
                        [queryParams]="{ friendId: friendId(), friendName: profileDisplayName() }"
                        [style.background-color]="theme.colors().primary"
@@ -91,6 +97,10 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
             </div>
           </div>
         </div>
+
+        @if (showSharePicker()) {
+          <app-crush-share-picker [friendId]="friendId()" [friendName]="profileDisplayName()" (closed)="showSharePicker.set(false)"></app-crush-share-picker>
+        }
 
         @if (profileDetails(); as profile) {
         <div [style.background-color]="theme.colors().bgSecondary"
@@ -201,68 +211,10 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
               <div>
                 <h2 class="section-title">Crushes You've Shared</h2>
                 <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0; line-height: 1.5;">
-                  Crushes from your list that {{ profileDisplayName() }} can see ({{ sharedWithThem().length }}). Share another with the button, or unshare any time.
+                  Crushes from your list that {{ profileDisplayName() }} can see ({{ sharedWithThem().length }}). Use "+ Share crush" above to share another, or unshare any time.
                 </p>
               </div>
-              <button type="button"
-                      (click)="showShareSelector.set(!showShareSelector())"
-                      [style.background-color]="showShareSelector() ? theme.colors().bg : theme.colors().primary"
-                      [style.color]="showShareSelector() ? theme.colors().text : 'white'"
-                      [style.border]="'1px solid ' + theme.colors().primary"
-                      class="user-profile-share-btn">
-                <span aria-hidden="true">+</span> Share a crush
-              </button>
             </div>
-
-            @if (showShareSelector()) {
-              <div class="share-modal-backdrop" (click)="showShareSelector.set(false)">
-                <div [style.background-color]="theme.colors().bg"
-                     [style.border]="'1px solid ' + theme.colors().border"
-                     class="share-modal-content"
-                     role="dialog" aria-modal="true" aria-labelledby="share-crush-title" appFocusTrap (escaped)="showShareSelector.set(false)"
-                     (click)="$event.stopPropagation()">
-
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h3 id="share-crush-title" style="margin: 0; font-size: 1.2rem; font-weight: bold;">Share a crush with {{ profileDisplayName() }}</h3>
-                    <button (click)="showShareSelector.set(false)"
-                            [style.color]="theme.colors().textSecondary"
-                            aria-label="Close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0;">×</button>
-                  </div>
-
-                  <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 1rem; font-size: var(--fs-body);">Tap Share next to any crush. {{ profileDisplayName() }} will see its profile and whatever you share about it.</p>
-
-                  <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
-                    @for (crush of myCrushes(); track crush.id) {
-                      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-radius: 8px;"
-                           [style.background-color]="theme.colors().bgSecondary"
-                           [style.border]="'1px solid ' + theme.colors().border">
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                          <img [src]="crush.avatarUrl || 'https://i.pravatar.cc/150?u=' + crush.nickname"
-                               [alt]="crush.nickname"
-                               style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                          <div>
-                            <p style="margin: 0; font-weight: 500;">{{ crush.nickname }}</p>
-                            <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-size: var(--fs-small);">{{ crush.fullName }}</p>
-                          </div>
-                        </div>
-                        <button (click)="toggleShare(crush.id)"
-                                [style.background-color]="isShared(crush) ? theme.colors().primary : 'transparent'"
-                                [style.color]="isShared(crush) ? 'white' : theme.colors().text"
-                                [style.border]="'1px solid ' + (isShared(crush) ? theme.colors().primary : theme.colors().border)"
-                                style="padding: 8px 18px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer; font-weight: 500; transition: all 0.2s;">
-                          {{ isShared(crush) ? 'Shared' : 'Share' }}
-                        </button>
-                      </div>
-                    } @empty {
-                      <div style="text-align: center; padding: 2rem 0;">
-                        <p [style.color]="theme.colors().textSecondary">You have no crushes to share yet.</p>
-                        <a routerLink="/dashboard" (click)="showShareSelector.set(false)" [style.color]="theme.colors().onBgPrimary">Create a crush profile</a>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
 
             @if (sharedWithThem().length > 0) {
               <div class="user-profile-component__s15">
@@ -270,61 +222,58 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                   <div [style.background-color]="theme.colors().bg"
                        [style.border]="'1px solid ' + theme.colors().border"
                        [style.color]="theme.colors().text"
-                       class="user-profile-component__s16" style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
-                    <a [routerLink]="['/profile', crush.id]" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit; flex-grow: 1;">
-                      <img [src]="crush.avatarUrl || 'https://i.pravatar.cc/150?u=' + crush.nickname"
-                           [alt]="crush.nickname"
-                           class="user-profile-component__s18">
-                      <div>
-                        <p class="user-profile-component__s19">{{ crush.nickname }}</p>
-                        <div class="user-profile-component__s20" style="display: flex; align-items: center; gap: 0.5rem;">
-                           @if (crush.seenAt) {
-                             <span class="status-icon viewed" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️</span> Seen {{ crush.seenAt | date:'MMM d, h:mm a' }}</span>
-                           } @else {
-                             <span class="status-icon pending" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️‍🗨️</span> Not seen yet</span>
-                           }
+                       class="user-profile-component__s16 user-profile-shared-crush-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
+                      <a [routerLink]="['/profile', crush.id]" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit; flex-grow: 1;">
+                        <img [src]="crush.avatarUrl || 'https://i.pravatar.cc/150?u=' + crush.nickname"
+                             [alt]="crush.nickname"
+                             class="user-profile-component__s18">
+                        <div>
+                          <p class="user-profile-component__s19">{{ crush.nickname }}</p>
+                          <div class="user-profile-component__s20" style="display: flex; align-items: center; gap: 0.5rem;">
+                             @if (crush.seenAt) {
+                               <span class="status-icon viewed" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️</span> Seen {{ crush.seenAt | date:'MMM d, h:mm a' }}</span>
+                             } @else {
+                               <span class="status-icon pending" [style.color]="theme.colors().textSecondary"><span aria-hidden="true">👁️‍🗨️</span> Not seen yet</span>
+                             }
+                          </div>
                         </div>
-                      </div>
-                    </a>
-                    <button (click)="unshare(crush.id)"
-                            style="background: transparent; border: 1px solid #ef4444; color: var(--danger); padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer;">
-                      Unshare
-                    </button>
+                      </a>
+                      <button (click)="unshare(crush.id)"
+                              style="background: transparent; border: 1px solid #ef4444; color: var(--danger); padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer;">
+                        Unshare
+                      </button>
+                    </div>
+                    <div [style.border-top]="'1px solid ' + theme.colors().border" class="user-profile-details-grid user-profile-shared-crush-grid">
+                      <p><strong>Your status:</strong> {{ crush.status }}</p>
+                      @if (crush.relationshipStatus) {
+                        <p><strong>Relationship status:</strong> {{ crush.relationshipStatus }}</p>
+                      }
+                      @if (getRelationshipLabels(crush).length > 0) {
+                        <p><strong>Labels:</strong> {{ getRelationshipLabels(crush).join(', ') }}</p>
+                      }
+                      @if (crush.age) {
+                        <p><strong>Age:</strong> {{ crush.age }}</p>
+                      }
+                      @if (crush.location) {
+                        <p><strong>Location:</strong> {{ crush.location }}</p>
+                      }
+                      @if (crush.occupation) {
+                        <p><strong>Occupation:</strong> {{ crush.occupation }}</p>
+                      }
+                    </div>
                   </div>
                 }
               </div>
             } @else {
               <div [style.border]="'1px dashed ' + theme.colors().border" class="user-profile-component__s22">
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">You haven't shared any crushes with {{ profileDisplayName() }} yet. Use “Share a crush” to pick one.</p>
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">You haven't shared any crushes with {{ profileDisplayName() }} yet. Use "+ Share crush" above to pick one.</p>
               </div>
             }
           </div>
         }
 
         @if (!isSelf()) {
-          <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
-            <button (click)="auditLogView.set(!auditLogView())"
-                    [style.color]="theme.colors().onBgPrimary"
-                    [style.border]="'1px solid ' + theme.colors().primary"
-                    style="background: transparent; padding: 8px 16px; border-radius: var(--radius-pill); font-size: var(--fs-btn); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-              📜 {{ auditLogView() ? 'Close history' : 'History' }}
-            </button>
-          </div>
-
-          @if (auditLogView()) {
-            <div [style.background-color]="theme.colors().bgSecondary"
-                 [style.border]="'1px solid ' + theme.colors().border"
-                 class="user-profile-component__s11" style="margin-top: 1rem; animation: slideDown 0.3s ease-out;">
-              <div class="user-profile-component__s12" style="border-bottom: 1px solid {{theme.colors().border}}; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                <h2 class="section-title">History with {{ profileDisplayName() }}</h2>
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0;">
-                  Everything that has happened between you two, newest first.
-                </p>
-              </div>
-              <app-activity-timeline [friendId]="friendId()"></app-activity-timeline>
-            </div>
-          }
-
           @if (friendNotFound()) {
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
@@ -417,6 +366,32 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                 <p [style.color]="theme.colors().textSecondary" class="user-profile-fp-empty">No friendship profile saved yet. Tap Edit to add one.</p>
               }
             </section>
+          }
+
+          <div class="user-profile-history-row">
+            <button type="button" (click)="auditLogView.set(!auditLogView())"
+                    [attr.aria-expanded]="auditLogView()"
+                    aria-controls="friend-history"
+                    [style.color]="theme.colors().onBgPrimary"
+                    [style.border]="'1px solid ' + theme.colors().primary"
+                    class="user-profile-history-btn">
+              📜 {{ auditLogView() ? 'Close history' : 'History' }}
+            </button>
+          </div>
+
+          @if (auditLogView()) {
+            <div id="friend-history"
+                 [style.background-color]="theme.colors().bgSecondary"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 class="user-profile-component__s11" style="margin-top: 1rem; animation: slideDown 0.3s ease-out;">
+              <div class="user-profile-component__s12" style="border-bottom: 1px solid {{theme.colors().border}}; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                <h2 class="section-title">History with {{ profileDisplayName() }}</h2>
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0;">
+                  Everything that has happened between you two, newest first.
+                </p>
+              </div>
+              <app-activity-timeline [friendId]="friendId()"></app-activity-timeline>
+            </div>
           }
         }
       </div>
@@ -549,16 +524,7 @@ export class UserProfileComponent {
   });
 
 
-  myCrushes = computed(() => {
-    // Return all crushes. In the demo environment, this list is already filtered by owner on the backend.
-    return this.dataService.getAllCrushes()();
-  });
-
-  protected showShareSelector = signal(false);
-
-  isShared(crush: any): boolean {
-    return this.dataService.isCrushSharedWith(crush, this.friendId());
-  }
+  protected showSharePicker = signal(false);
 
   toggleShare(crushId: string) {
     const friendId = this.friendId();
@@ -607,6 +573,12 @@ export class UserProfileComponent {
     this.editingFriendshipProfile.set(false);
   }
 
+  /** Do the five text fields in `a` and `b` actually match (ignoring `updatedAt`)? */
+  private friendshipProfileMatches(a: FriendshipProfile, b: FriendshipProfile): boolean {
+    const fields: (keyof FriendshipProfile)[] = ['relationshipName', 'relationshipType', 'howMet', 'trustLevel', 'notes'];
+    return fields.every((field) => (a[field] || '') === (b[field] || ''));
+  }
+
   async saveFriendshipProfile(): Promise<void> {
     const friend = this.friend();
     if (!friend || this.savingFriendshipProfile()) return;
@@ -619,15 +591,33 @@ export class UserProfileComponent {
     };
     this.savingFriendshipProfile.set(true);
     try {
-      const saved = await this.friendsApi.saveFriendshipProfile(friend.id, profile);
-      this.patchFriend(friend.id, { friendshipProfile: saved || profile });
-      clearLocalFriendshipProfile(this.security.currentUserId() || '', friend.id);
-      this.modal.show('Friendship profile saved.');
-    } catch {
-      // Offline or demo server: keep it on this device and sync next time the list loads.
-      writeLocalFriendshipProfile(this.security.currentUserId() || '', friend.id, profile);
-      this.patchFriend(friend.id, { friendshipProfile: profile });
-      this.modal.show('Saved on this device. It will sync to your account when you are back online.');
+      await this.friendsApi.saveFriendshipProfile(friend.id, profile);
+      // The PUT can report success without it actually sticking (a friendship
+      // that only exists in one direction, a stale route on an old deploy, ...).
+      // Re-read the list instead of trusting the echo, so a save that didn't
+      // really land is never reported as "saved".
+      const refreshed = await this.friendsApi.listFriends();
+      this.friendSummaries.set(refreshed);
+      const match = refreshed.find((item) => item.id === friend.id);
+      if (match?.friendshipProfile && this.friendshipProfileMatches(match.friendshipProfile, profile)) {
+        clearLocalFriendshipProfile(this.security.currentUserId() || '', friend.id);
+        this.modal.show('Friendship profile saved.');
+      } else {
+        writeLocalFriendshipProfile(this.security.currentUserId() || '', friend.id, profile);
+        this.patchFriend(friend.id, { friendshipProfile: profile });
+        this.modal.show("Saved, but your account doesn't show it back yet. It's kept on this device and we'll keep trying to sync it.");
+      }
+    } catch (error: any) {
+      if (error?.status !== undefined) {
+        // The server actively rejected this: show what it said rather than
+        // quietly keeping a local copy that reads as success.
+        this.modal.show(error?.message || `Could not save your friendship profile (error ${error.status}).`);
+      } else {
+        // A genuine offline/network failure: keep it on this device and sync later.
+        writeLocalFriendshipProfile(this.security.currentUserId() || '', friend.id, profile);
+        this.patchFriend(friend.id, { friendshipProfile: profile });
+        this.modal.show('Saved on this device. It will sync to your account when you are back online.');
+      }
     } finally {
       this.savingFriendshipProfile.set(false);
       this.editingFriendshipProfile.set(false);

@@ -53,7 +53,7 @@ export const FIRST_CRUSH_SHARE_TOUR: WalkthroughStep[] = [
   {
     icon: '🔗',
     title: 'Pick who sees what',
-    body: 'On the Friends page, open the sharing controls for a friend. You choose each crush you want that specific friend to see.'
+    body: 'On the Friends page, tap Share on a friend\'s card. You choose each crush you want that specific friend to see.'
   },
   {
     icon: '🫖',
