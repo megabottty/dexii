@@ -160,7 +160,7 @@
 }
 
 .red-flag-chip-button {
-  color: #ef4444;
+  color: var(--danger);
   border-color: #ef4444;
 }
 
@@ -259,7 +259,7 @@
 }
 
 .action-btn-styled.danger {
-  color: #ff4d4d;
+  color: var(--danger);
   border-color: #ff4d4d;
 }
 
@@ -387,9 +387,9 @@
 }
 
 .extended-info-text {
+  /* no opacity: the themed secondary colour already reads at 4.5:1 */
   font-size: 16px;
   line-height: 1.8;
-  opacity: 0.85;
 }
 
 /* Social Icons */
@@ -1025,7 +1025,6 @@
 .vibe-entry-num {
   font-size: var(--fs-label);
   min-width: 30px;
-  opacity: 0.6;
 }
 
 .vibe-entry-stars {
@@ -1109,4 +1108,19 @@
   .profile-labels-row {
     justify-content: flex-start;
   }
+}
+
+/* Friend rows in the share pickers are buttons now (keyboard + screen readers) */
+button.friend-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+button.friend-item:disabled {
+  cursor: default;
 }

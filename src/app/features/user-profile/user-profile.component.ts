@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DataService } from '../../core/services/data.service';
@@ -17,7 +18,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent],
+  imports: [CommonModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, FocusTrapDirective],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -135,7 +136,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
             @if (isSelf()) {
               <a routerLink="/dashboard"
                  [queryParams]="{ newCrush: 1 }"
-                 [style.color]="theme.colors().primary"
+                 [style.color]="theme.colors().onBgPrimary"
                  class="user-profile-component__s14">
                 + Add New Crush
               </a>
@@ -167,7 +168,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                         <div class="user-profile-component__s25">
                           @for (label of getRelationshipLabels(crush); track label) {
                             <span [style.border-color]="theme.colors().primary"
-                                  [style.color]="theme.colors().primary"
+                                  [style.color]="theme.colors().onBgPrimary"
                                   class="user-profile-component__s26">
                               {{ label }}
                             </span>
@@ -217,13 +218,14 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                 <div [style.background-color]="theme.colors().bg"
                      [style.border]="'1px solid ' + theme.colors().border"
                      class="share-modal-content"
+                     role="dialog" aria-modal="true" aria-labelledby="share-crush-title" appFocusTrap (escaped)="showShareSelector.set(false)"
                      (click)="$event.stopPropagation()">
 
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: bold;">Share a crush with {{ profileDisplayName() }}</h3>
+                    <h3 id="share-crush-title" style="margin: 0; font-size: 1.2rem; font-weight: bold;">Share a crush with {{ profileDisplayName() }}</h3>
                     <button (click)="showShareSelector.set(false)"
                             [style.color]="theme.colors().textSecondary"
-                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0;">×</button>
+                            aria-label="Close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0;">×</button>
                   </div>
 
                   <p [style.color]="theme.colors().textSecondary" style="margin-bottom: 1rem; font-size: var(--fs-body);">Tap Share next to any crush. {{ profileDisplayName() }} will see its profile and whatever you share about it.</p>
@@ -235,6 +237,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                            [style.border]="'1px solid ' + theme.colors().border">
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                           <img [src]="crush.avatarUrl || 'https://i.pravatar.cc/150?u=' + crush.nickname"
+                               [alt]="crush.nickname"
                                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                           <div>
                             <p style="margin: 0; font-weight: 500;">{{ crush.nickname }}</p>
@@ -252,7 +255,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                     } @empty {
                       <div style="text-align: center; padding: 2rem 0;">
                         <p [style.color]="theme.colors().textSecondary">You have no crushes to share yet.</p>
-                        <a routerLink="/dashboard" (click)="showShareSelector.set(false)" [style.color]="theme.colors().primary">Create a crush profile</a>
+                        <a routerLink="/dashboard" (click)="showShareSelector.set(false)" [style.color]="theme.colors().onBgPrimary">Create a crush profile</a>
                       </div>
                     }
                   </div>
@@ -283,7 +286,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                       </div>
                     </a>
                     <button (click)="unshare(crush.id)"
-                            style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer;">
+                            style="background: transparent; border: 1px solid #ef4444; color: var(--danger); padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-small); cursor: pointer;">
                       Unshare
                     </button>
                   </div>
@@ -300,7 +303,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
         @if (!isSelf()) {
           <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
             <button (click)="auditLogView.set(!auditLogView())"
-                    [style.color]="theme.colors().primary"
+                    [style.color]="theme.colors().onBgPrimary"
                     [style.border]="'1px solid ' + theme.colors().primary"
                     style="background: transparent; padding: 8px 16px; border-radius: var(--radius-pill); font-size: var(--fs-btn); cursor: pointer; display: flex; align-items: center; gap: 4px;">
               📜 {{ auditLogView() ? 'Close history' : 'History' }}

@@ -11,7 +11,8 @@
     "smoke": "node scripts/smoke-test.js",
     "cap:sync": "npm run build && npx cap sync",
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
-    "cap:android": "npm run build && npx cap sync android && npx cap open android"
+    "cap:android": "npm run build && npx cap sync android && npx cap open android",
+    "a11y": "node scripts/a11y-sweep.mjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -55,6 +56,7 @@
     "@angular/build": "^21.1.2",
     "@angular/cli": "^21.1.2",
     "@angular/compiler-cli": "^21.1.0",
+    "@axe-core/playwright": "^4.13.0",
     "@tailwindcss/postcss": "^4.1.18",
     "autoprefixer": "^10.4.24",
     "jsdom": "^27.1.0",

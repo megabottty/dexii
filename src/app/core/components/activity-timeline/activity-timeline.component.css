@@ -12,9 +12,9 @@
 .at-text { margin: 0; font-size: var(--fs-body); line-height: 1.45; overflow-wrap: anywhere; }
 .at-link { margin-left: 6px; font-weight: 700; text-decoration: underline; }
 .at-meta { margin: 4px 0 0; font-size: var(--fs-label); }
-.at-unshare { align-self: center; min-height: 36px; padding: 6px 12px; border-radius: var(--radius-pill); background: transparent; color: #ef4444; font-size: var(--fs-label); font-weight: 700; cursor: pointer; }
+.at-unshare { align-self: center; min-height: 36px; padding: 6px 12px; border-radius: var(--radius-pill); background: transparent; color: var(--danger); font-size: var(--fs-label); font-weight: 700; cursor: pointer; }
 .at-more { align-self: center; min-height: var(--tap-min); padding: 10px 22px; border-radius: var(--radius-pill); background: transparent; font-size: var(--fs-btn); font-weight: 700; cursor: pointer; }
 .at-empty { padding: 24px; border-radius: 14px; text-align: center; }
 .at-empty p { margin: 0; }
-.at-error { margin: 0; color: #dc2626; font-size: var(--fs-small); }
+.at-error { margin: 0; color: var(--danger); font-size: var(--fs-small); }
 @media (max-width: 480px) { .at-row { grid-template-columns: 28px 1fr; } .at-unshare { grid-column: 2; justify-self: start; } .at-friend-filter { margin-left: 0; width: 100%; } }

@@ -12,7 +12,7 @@
 .admin-matrix__row > span:not(:first-child) { text-align: center; font-weight: 700; overflow-wrap: anywhere; }
 .admin-matrix__row--head { background: transparent; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
 .admin-add { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
-.admin-input { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 10px; outline: none; font-size: var(--fs-body); }
+.admin-input { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 10px; font-size: var(--fs-body); }
 .admin-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 200px; min-height: 44px; padding: 10px 22px; border-radius: 999px; background: transparent; font-size: var(--fs-btn); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; }
 .admin-btn--primary { border: none; color: #fff; }
 .admin-btn:disabled { opacity: 0.6; cursor: default; }

@@ -125,7 +125,7 @@ interface ListGroup {
 
       <!-- About them -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().primary" class="cf-section-title">About Them</h4>
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">About Them</h4>
 
         @for (group of listGroups; track group.key) {
           <div class="cf-field">
@@ -168,7 +168,7 @@ interface ListGroup {
 
       <!-- Social handles -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().primary" class="cf-section-title">Where I can find them</h4>
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">Where I can find them</h4>
         <div class="cf-social-list">
           @for (s of socialFields; track s.key) {
             <div class="cf-social-row">
@@ -184,7 +184,7 @@ interface ListGroup {
 
       <!-- Relationship status -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().primary" class="cf-section-title">Relationship Status</h4>
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">Relationship Status</h4>
         <p [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Pick everything that fits. The first one becomes the headline.</p>
         <div class="cf-tile-list" role="group" aria-label="Relationship status">
           @for (s of relationshipOptions(); track s) {
@@ -204,7 +204,7 @@ interface ListGroup {
               </div>
               <span class="cf-tile__text">{{ s === otherLabel ? 'Other / add my own' : s }}</span>
               @if (headlineLabel() === s && form().relationshipLabels.length > 1) {
-                <span [style.color]="theme.colors().primary" class="cf-headline-badge">Headline</span>
+                <span [style.color]="theme.colors().onBgPrimary" class="cf-headline-badge">Headline</span>
               }
             </div>
           }
@@ -319,7 +319,7 @@ interface ListGroup {
 
       <!-- More about them -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().primary" class="cf-section-title">More About Them</h4>
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">More About Them</h4>
 
         <div class="cf-field">
           <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-bio">Bio</label>

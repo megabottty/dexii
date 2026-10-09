@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, model, signal } from '@angular/core';
+import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../services/theme.service';
 import { ModalService } from '../../services/modal.service';
@@ -26,7 +27,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
   selector: 'app-avatar-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AvatarBuilderComponent, UpgradePromptComponent],
+  imports: [FormsModule, AvatarBuilderComponent, UpgradePromptComponent, FocusTrapDirective],
   styleUrl: './avatar-picker.component.css',
   template: `
     <div class="ap">
@@ -43,7 +44,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
         <div class="ap-current-actions">
           <button type="button" (click)="fileInput.click()"
                   [style.border]="'1px solid ' + theme.colors().primary"
-                  [style.color]="theme.colors().primary"
+                  [style.color]="theme.colors().onBgPrimary"
                   class="ap-btn">Upload photo</button>
           <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" class="ap-file">
           @if (cropSourceImage()) {
@@ -95,7 +96,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
         {{ showUrl() ? 'Hide' : 'Paste an image URL instead' }}
       </button>
       @if (showUrl()) {
-        <input type="url"
+        <input type="url" aria-label="Image URL"
                [ngModel]="isDataUrl() ? '' : url()"
                (ngModelChange)="setUrl($event)"
                [style.background-color]="theme.colors().bgSecondary"
@@ -119,7 +120,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
             <li>
               To pick every detail yourself, design one in the
               <a href="https://www.dicebear.com/playground/?style=avataaars" target="_blank" rel="noopener noreferrer"
-                 [style.color]="theme.colors().primary">DiceBear playground</a>,
+                 [style.color]="theme.colors().onBgPrimary">DiceBear playground</a>,
               copy the image URL it shows, and paste it above.
             </li>
           </ol>
@@ -143,7 +144,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
     }
 
     @if (showCropModal() && cropSourceImage()) {
-      <div class="ap-crop-overlay" role="dialog" aria-modal="true" aria-label="Crop photo">
+      <div class="ap-crop-overlay" role="dialog" aria-modal="true" aria-label="Crop photo" appFocusTrap (escaped)="showCropModal.set(false)">
         <div [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" class="ap-crop-modal">
           <h3 class="ap-crop-title" [style.color]="theme.colors().text">Crop photo</h3>
           <div [style.background-color]="theme.colors().bgSecondary" class="ap-crop-stage">

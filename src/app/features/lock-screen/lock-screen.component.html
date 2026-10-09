@@ -20,8 +20,8 @@
       </svg>
     </div>
 
-    <h2 [style.letter-spacing]="theme.isPearl() ? '4px' : '1px'"
-        class="lock-screen-component__s6">Dexii</h2>
+    <h1 [style.letter-spacing]="theme.isPearl() ? '4px' : '1px'"
+        class="lock-screen-component__s6">Dexii</h1>
     <p [style.color]="theme.colors().textSecondary" [style.letter-spacing]="'4px'" class="lock-screen-component__s7">
       The Private Vault
     </p>
@@ -30,10 +30,10 @@
     </p>
 
     @if (errorMessage()) {
-      <p class="lock-screen-component__s9">{{ errorMessage() }}</p>
+      <p class="lock-screen-component__s9" role="alert">{{ errorMessage() }}</p>
     }
 
-    <div class="lock-screen-component__s15" [class.pin-dots-shake]="isShaking()">
+    <div class="lock-screen-component__s15" [class.pin-dots-shake]="isShaking()" role="status" aria-live="polite" [attr.aria-label]="enteredPin().length + ' of 4 digits entered'">
       @for (dot of [1,2,3,4]; track $index) {
         <div [style.background-color]="enteredPin().length > $index ? theme.colors().primary : 'transparent'"
              [style.border]="'2px solid ' + (enteredPin().length > $index ? theme.colors().primary : theme.colors().textSecondary)"

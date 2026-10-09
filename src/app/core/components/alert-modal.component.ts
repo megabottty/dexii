@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { FocusTrapDirective } from '../a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalService } from '../services/modal.service';
@@ -8,12 +9,13 @@ import { ThemeService } from '../services/theme.service';
   selector: 'app-alert-modal',
   standalone: true,
   styleUrl: './alert-modal.component.css',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FocusTrapDirective],
   template: `
     @if (modal.message()) {
       <div (click)="close()" class="alert-modal-component__s1">
         <div (click)="$event.stopPropagation()"
-             (keydown.escape)="close()"
+             appFocusTrap
+             (escaped)="close()"
              tabindex="-1"
              role="dialog"
              aria-modal="true"
@@ -24,7 +26,7 @@ import { ThemeService } from '../services/theme.service';
              class="alert-modal-component__s2">
           <button (click)="close()" [style.color]="theme.colors().textSecondary" aria-label="Close notice" class="alert-modal-component__s3">✕</button>
           <h3 id="alert-modal-title" class="alert-modal-component__s4">Notice</h3>
-          <p id="alert-modal-message" [style.color]="theme.colors().textSecondary" class="alert-modal-component__s5">{{ modal.message() }}</p>
+          <p id="alert-modal-message" aria-live="polite" [style.color]="theme.colors().textSecondary" class="alert-modal-component__s5">{{ modal.message() }}</p>
 
           @if (modal.type() === 'prompt') {
             <input
@@ -35,6 +37,7 @@ import { ThemeService } from '../services/theme.service';
               [style.border]="'1px solid ' + theme.colors().border"
               [style.color]="theme.colors().text"
               class="alert-modal-prompt-input"
+              aria-labelledby="alert-modal-message"
               autofocus
             />
           }

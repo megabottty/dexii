@@ -76,7 +76,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
           </div>
           <button type="button"
                   class="tea-updates-mark-all"
-                  [style.color]="theme.colors().primary"
+                  [style.color]="theme.colors().onBgPrimary"
                   [disabled]="notifications.unreadCount() === 0"
                   (click)="markAllRead()">
             Mark all read
@@ -184,14 +184,14 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
           <div class="tea-card-body">
             <p class="tea-card-text" [style.color]="theme.colors().text">
               {{ item.text }}
-              @if (item.read === false) { <span [style.background-color]="theme.colors().primary" class="tea-update-dot" aria-label="Unread"></span> }
+              @if (item.read === false) { <span [style.background-color]="theme.colors().primary" class="tea-update-dot" role="img" aria-label="Unread"></span> }
             </p>
 
             @if (item.kind === 'crush_shared' && item.crush) {
               <div class="tea-crush" [style.border]="'1px solid ' + theme.colors().border" [style.background-color]="theme.colors().bg">
                 @if (item.crush.avatarUrl) { <img [src]="item.crush.avatarUrl" [alt]="item.crush.nickname || 'Crush'" class="tea-crush-avatar"> }
                 <div class="tea-crush-copy">
-                  <span class="tea-crush-name" [style.color]="theme.colors().primary">{{ item.crush.nickname || 'A crush' }}</span>
+                  <span class="tea-crush-name" [style.color]="theme.colors().onBgPrimary">{{ item.crush.nickname || 'A crush' }}</span>
                   @if (item.crush.bio) { <span class="tea-crush-bio" [style.color]="theme.colors().textSecondary">{{ item.crush.bio }}</span> }
                 </div>
               </div>
@@ -212,7 +212,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
         @if (item.kind === 'friend_request' || item.kind === 'nudge') {
           <div class="tea-card-actions">
             <button type="button" class="tea-action tea-action--primary"
-                    [style.background-color]="'#16a34a'"
+                    [style.background-color]="'#15803d'"
                     [disabled]="busyKey() === item.key"
                     (click)="respond(item, 'accept')">Accept</button>
             <button type="button" class="tea-action"
@@ -232,7 +232,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
         @if (item.read === true) {
           <button type="button"
                   class="tea-update-mark-unread"
-                  [style.color]="theme.colors().primary"
+                  [style.color]="theme.colors().onBgPrimary"
                   aria-label="Mark as unread"
                   (click)="tea.markUnread(item); $event.stopPropagation()">
             Mark as unread

@@ -142,7 +142,7 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
                         <img [src]="crush.avatarUrl" [alt]="crush.nickname + ' avatar'" class="sharing-component__crush-avatar">
                         <div>
                           <h4 class="sharing-component__crush-name">{{ crush.nickname }}</h4>
-                          <span [style.color]="theme.colors().primary" class="sharing-component__crush-status">{{ crush.status }}</span>
+                          <span [style.color]="theme.colors().onBgPrimary" class="sharing-component__crush-status">{{ crush.status }}</span>
                         </div>
                       </div>
                       <button (click)="toggleCrushSharing(crush.id)"

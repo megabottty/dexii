@@ -9,7 +9,7 @@
 .pg-btn { min-height: var(--tap-min); padding: 8px 14px; border: none; border-radius: var(--radius-pill); font-size: var(--fs-btn); font-weight: 700; cursor: pointer; }
 .pg-btn--ghost { background: transparent; }
 .pg-btn--primary { color: #fff; }
-.pg-btn--danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+.pg-btn--danger { background: transparent; border: 1px solid #ef4444; color: var(--danger); }
 .pg-btn:disabled { opacity: 0.4; cursor: default; }
 .pg-note { margin: 0; font-size: var(--fs-small); line-height: 1.5; }
 .pg-carousel { position: relative; }

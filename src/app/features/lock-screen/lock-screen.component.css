@@ -31,7 +31,7 @@
 }
 
 .lock-screen-component__s9 {
-  color: #ef4444; font-size: var(--fs-label); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--danger); font-size: var(--fs-label); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
 }
 
 .lock-screen-component__s10 {
@@ -43,11 +43,11 @@
 }
 
 .lock-screen-component__s12 {
-  width: 100%; padding: 10px; margin-bottom: 10px; font-family: 'Times New Roman', serif; outline: none;
+  width: 100%; padding: 10px; margin-bottom: 10px; font-family: 'Times New Roman', serif;
 }
 
 .lock-screen-component__s13 {
-  width: 100%; padding: 10px; margin-bottom: 12px; font-family: 'Times New Roman', serif; outline: none; resize: vertical;
+  width: 100%; padding: 10px; margin-bottom: 12px; font-family: 'Times New Roman', serif; resize: vertical;
 }
 
 .lock-screen-component__s14 {

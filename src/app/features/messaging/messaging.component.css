@@ -164,7 +164,7 @@
 }
 
 .messaging-component__s12 {
-  flex: 1; padding: 14px 20px; border-radius: 0px; outline: none; font-family: 'Times New Roman', serif;
+  flex: 1; padding: 14px 20px; border-radius: 0px; font-family: 'Times New Roman', serif;
 }
 
 .messaging-component__s13 {
@@ -251,7 +251,6 @@
   width: 100%;
   padding: 12px 14px;
   border-radius: 0;
-  outline: none;
   box-sizing: border-box;
   font-family: 'Times New Roman', serif;
   font-size: var(--fs-small);

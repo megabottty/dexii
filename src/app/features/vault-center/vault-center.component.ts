@@ -63,26 +63,26 @@ import { NotificationsService } from '../../core/services/notifications.service'
               <span class="logo-text d" [style.color]="theme.colors().text">d</span>
               <span class="logo-text e" [style.color]="theme.colors().text">e</span>
               <span class="logo-text x" [style.color]="theme.colors().text">x</span>
-              <div class="logo-icon boy" [style.color]="theme.colors().primary">
+              <div class="logo-icon boy" [style.color]="theme.colors().onBgPrimary">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="4" r="2"/>
                   <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
                 </svg>
               </div>
-              <div class="logo-icon girl" [style.color]="theme.colors().primary">
+              <div class="logo-icon girl" [style.color]="theme.colors().onBgPrimary">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="4" r="2.5"/>
                   <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
                 </svg>
               </div>
-              <span class="logo-text vault-label" [style.color]="theme.colors().text">vault</span>
+              <h1 class="logo-text vault-label" [style.color]="theme.colors().text">vault</h1>
             </div>
-            <p [style.color]="theme.colors().primary" class="vault-subtitle">Private Journal & Intimate Content</p>
+            <p [style.color]="theme.colors().onBgPrimary" class="vault-subtitle">Private Journal & Intimate Content</p>
           </div>
           <div class="vault-center-component__s12">
-             <button (click)="activeTab.set('journal')" [style.color]="activeTab() === 'journal' ? theme.colors().primary : theme.colors().textSecondary"
+             <button (click)="activeTab.set('journal')" [attr.aria-pressed]="activeTab() === 'journal'" [style.color]="activeTab() === 'journal' ? theme.colors().primary : theme.colors().textSecondary"
                      class="vault-center-component__s13">Journal</button>
-             <button (click)="activeTab.set('photos')" [style.color]="activeTab() === 'photos' ? theme.colors().primary : theme.colors().textSecondary"
+             <button (click)="activeTab.set('photos')" [attr.aria-pressed]="activeTab() === 'photos'" [style.color]="activeTab() === 'photos' ? theme.colors().primary : theme.colors().textSecondary"
                      class="vault-center-component__s13">Photo Vault</button>
           </div>
         </div>
@@ -94,7 +94,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
                <h3 class="vault-center-component__s15">New Journal Entry</h3>
                <div [style.border]="'1px solid ' + theme.colors().border" class="journal-prompt-card">
                  <div>
-                   <span [style.color]="theme.colors().primary" class="journal-prompt-label">Today's prompt</span>
+                   <span [style.color]="theme.colors().onBgPrimary" class="journal-prompt-label">Today's prompt</span>
                    <p [style.color]="theme.colors().text" class="journal-prompt-text">{{ journalPrompt() }}</p>
                    <small [style.color]="theme.colors().textSecondary">
                      {{ settings.settings().journalPromptFrequency }} · Reminder starts at {{ settings.settings().reminderTime }}
@@ -107,14 +107,14 @@ import { NotificationsService } from '../../core/services/notifications.service'
                      Use prompt
                    </button>
                    <button type="button" (click)="randomizeJournalPrompt()"
-                           [style.color]="theme.colors().primary"
+                           [style.color]="theme.colors().onBgPrimary"
                            [style.border]="'1px solid ' + theme.colors().primary"
                            class="journal-prompt-button journal-prompt-button--ghost">
                      New prompt
                    </button>
                  </div>
                </div>
-               <textarea [(ngModel)]="newJournalEntry" placeholder="Write your private thoughts here... (Never shared)"
+               <textarea [(ngModel)]="newJournalEntry" aria-label="New journal entry" placeholder="Write your private thoughts here... (Never shared)"
                          [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                          class="vault-center-component__s16"></textarea>
                <button (click)="saveJournal()" [style.background-color]="theme.colors().primary"
@@ -129,7 +129,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
               <div class="journal-book">
                 @for (group of journalGroups(); track group.dateKey) {
                   <div class="journal-day-divider">
-                    <span [style.background-color]="theme.colors().bg" [style.color]="theme.colors().primary" class="journal-day-label">
+                    <span [style.background-color]="theme.colors().bg" [style.color]="theme.colors().onBgPrimary" class="journal-day-label">
                       {{ group.dateKey }}
                     </span>
                     <span [style.background-color]="theme.colors().border" class="journal-day-line"></span>
@@ -141,7 +141,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
                                class="journal-page">
                         <div class="journal-page-fold" [style.background]="'linear-gradient(135deg, transparent 50%, ' + theme.colors().border + ' 50%)'"></div>
                         <header class="journal-page-header">
-                          <span [style.color]="theme.colors().primary" class="journal-page-icon">✦</span>
+                          <span [style.color]="theme.colors().onBgPrimary" class="journal-page-icon">✦</span>
                           <time [style.color]="theme.colors().textSecondary" class="journal-page-time">
                             {{ entry.timestamp | date:'h:mm a' }}
                           </time>
@@ -163,7 +163,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
                         </header>
 
                         @if (editingEntryId() === entry.id) {
-                          <textarea [(ngModel)]="editDraft" [style.background-color]="theme.colors().bgSecondary"
+                          <textarea [(ngModel)]="editDraft" aria-label="Edit journal entry" [style.background-color]="theme.colors().bgSecondary"
                                     [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                                     class="journal-page-edit-textarea"></textarea>
                           <div class="journal-page-edit-actions">
@@ -239,12 +239,15 @@ import { NotificationsService } from '../../core/services/notifications.service'
                 <div [style.border]="'1px solid ' + theme.colors().border" class="vault-photo-card">
                    <img [src]="file.url"
                         alt="Sensitive vault image"
-                        (mouseenter)="$any($event.target).style.filter = 'none'"
-                        (mouseleave)="$any($event.target).style.filter = 'blur(20px)'" class="vault-center-component__s30">
+                        [style.filter]="revealed().has(file.id) ? 'none' : 'blur(20px)'"
+                        class="vault-center-component__s30">
                    <button (click)="vault.deleteFile(file.id)" aria-label="Delete sensitive photo" class="vault-center-component__s31">✕</button>
-                   <div class="vault-center-component__s32">
-                     {{ file.uploadedAt | date:'MMM d' }} • TAP TO UNBLUR
-                   </div>
+                   <button type="button"
+                           (click)="toggleReveal(file.id)"
+                           [attr.aria-pressed]="revealed().has(file.id)"
+                           class="vault-center-component__s32 vault-reveal-btn">
+                     {{ file.uploadedAt | date:'MMM d' }} • {{ revealed().has(file.id) ? 'TAP TO BLUR' : 'TAP TO UNBLUR' }}
+                   </button>
                 </div>
               }
             </div>
@@ -256,6 +259,12 @@ import { NotificationsService } from '../../core/services/notifications.service'
   `
 })
 export class VaultCenterComponent implements OnDestroy {
+  /** Vault photos stay blurred until tapped (works for touch, mouse and keyboard). */
+  revealed = signal<Set<string>>(new Set());
+  toggleReveal(id: string): void {
+    this.revealed.update((set) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  }
+
   public vault = inject(VaultService);
   public dataService = inject(DataService);
   public theme = inject(ThemeService);

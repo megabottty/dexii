@@ -81,7 +81,7 @@ interface DayGroup {
                     <p class="at-text">
                       {{ row.text }}
                       @if (row.route) {
-                        <a [routerLink]="row.route" [queryParams]="row.queryParams" [style.color]="theme.colors().primary" class="at-link">Open</a>
+                        <a [routerLink]="row.route" [queryParams]="row.queryParams" [style.color]="theme.colors().onBgPrimary" class="at-link">Open</a>
                       }
                     </p>
                     <p [style.color]="theme.colors().textSecondary" class="at-meta">

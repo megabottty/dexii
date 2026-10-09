@@ -1,4 +1,5 @@
 import { Component, signal, inject, OnInit, OnDestroy, DestroyRef, computed, HostListener } from '@angular/core';
+import { FocusTrapDirective } from './core/a11y/focus-trap.directive';
 import { RouterOutlet, Router } from '@angular/router';
 import { NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -24,14 +25,14 @@ interface WalkthroughStep {
 @Component({
   selector: 'app-root',
   styleUrl: './app.component.css',
-  imports: [RouterOutlet, AlertModalComponent, WalkthroughComponent],
+  imports: [RouterOutlet, AlertModalComponent, WalkthroughComponent, FocusTrapDirective],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [class.is-chat-route]="currentPath().startsWith('/chat')"
          [class.is-group-chat-route]="currentPath().startsWith('/groups')"
          class="app-component__s1">
-      <a href="#main-content" class="app-skip-link">Skip to main content</a>
-      <main id="main-content">
+      <a href="#main-content" class="app-skip-link" (click)="skipToMain($event)">Skip to main content</a>
+      <main id="main-content" tabindex="-1">
       <router-outlet></router-outlet>
       </main>
 
@@ -44,7 +45,7 @@ interface WalkthroughStep {
              class="app-component__s2">
           <div class="app-component__s3">
             <div>
-              <p [style.color]="theme.colors().primary"
+              <p [style.color]="theme.colors().onBgPrimary"
                  class="app-component__s4">Quick Hint</p>
               <p class="app-component__s5">{{ activeHint() }}</p>
             </div>
@@ -93,6 +94,7 @@ interface WalkthroughStep {
                (keydown.escape)="showWalkthrough.set(false)"
                tabindex="-1"
                role="dialog"
+               appFocusTrap
                aria-modal="true"
                aria-labelledby="walkthrough-title"
                aria-describedby="walkthrough-description"
@@ -111,7 +113,7 @@ interface WalkthroughStep {
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bgSecondary"
                    class="app-component__s14">
-                <p [style.color]="theme.colors().primary"
+                <p [style.color]="theme.colors().onBgPrimary"
                    class="app-component__s15">
                   {{ activeWalkthroughStep().title }}
                 </p>
@@ -151,6 +153,7 @@ interface WalkthroughStep {
                [style.border]="'1px solid ' + theme.colors().border"
                tabindex="-1"
                role="dialog"
+               appFocusTrap
                aria-modal="true"
                aria-labelledby="next-steps-title"
                class="app-component__s9">
@@ -168,19 +171,19 @@ interface WalkthroughStep {
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bgSecondary"
                    class="app-component__s14">
-                <p [style.color]="theme.colors().primary" class="app-component__s15">1. Add friends</p>
+                <p [style.color]="theme.colors().onBgPrimary" class="app-component__s15">1. Add friends</p>
                 <p class="app-component__s16">Go to Friends to invite people and create friendship profiles.</p>
               </div>
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bgSecondary"
                    class="app-component__s14">
-                <p [style.color]="theme.colors().primary" class="app-component__s15">2. Learn sharing</p>
+                <p [style.color]="theme.colors().onBgPrimary" class="app-component__s15">2. Learn sharing</p>
                 <p class="app-component__s16">Use Sharing Controls to choose exactly what each friend can see.</p>
               </div>
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bgSecondary"
                    class="app-component__s14">
-                <p [style.color]="theme.colors().primary" class="app-component__s15">3. Unlock the friend tour</p>
+                <p [style.color]="theme.colors().onBgPrimary" class="app-component__s15">3. Unlock the friend tour</p>
                 <p class="app-component__s16">Once you’ve added at least one friend, Dexii can walk you through the friend tools.</p>
               </div>
             </div>
@@ -209,6 +212,7 @@ interface WalkthroughStep {
                [style.border]="'1px solid ' + theme.colors().border"
                tabindex="-1"
                role="dialog"
+               appFocusTrap
                aria-modal="true"
                aria-labelledby="friend-tour-title"
                aria-describedby="friend-tour-description"
@@ -227,7 +231,7 @@ interface WalkthroughStep {
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bgSecondary"
                    class="app-component__s14">
-                <p [style.color]="theme.colors().primary" class="app-component__s15">
+                <p [style.color]="theme.colors().onBgPrimary" class="app-component__s15">
                   {{ activeFriendTourStep().title }}
                 </p>
                 <p class="app-component__s16">{{ activeFriendTourStep().details }}</p>
@@ -266,6 +270,13 @@ interface WalkthroughStep {
   `
 })
 export class AppComponent implements OnInit, OnDestroy {
+  /** The skip link has to move keyboard focus, not just scroll. */
+  skipToMain(event: Event): void {
+    event.preventDefault();
+    const main = document.getElementById('main-content');
+    if (main) { main.focus({ preventScroll: false }); main.scrollIntoView({ block: 'start' }); }
+  }
+
   protected security = inject(SecurityService);
   protected theme = inject(ThemeService);
   private router = inject(Router);

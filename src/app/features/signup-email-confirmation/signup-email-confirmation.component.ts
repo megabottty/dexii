@@ -20,17 +20,18 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </app-page-hint>
 
         <div class="confirmation-header">
+           <h1 class="sr-only">Confirm your email</h1>
            <div class="logo-wrapper">
              <span class="logo-text d" [style.color]="theme.colors().text">d</span>
              <span class="logo-text e" [style.color]="theme.colors().text">e</span>
              <span class="logo-text x" [style.color]="theme.colors().text">x</span>
-             <div class="logo-icon boy" [style.color]="theme.colors().primary">
+             <div class="logo-icon boy" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2"/>
                  <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
                </svg>
              </div>
-             <div class="logo-icon girl" [style.color]="theme.colors().primary">
+             <div class="logo-icon girl" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2.5"/>
                  <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
@@ -60,6 +61,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               autocomplete="one-time-code"
               maxlength="6"
               class="code-box"
+              [attr.aria-label]="'Code digit ' + ($index + 1) + ' of 6'"
               [value]="codeDigits()[$index]"
               [style.background]="'transparent'"
               [style.border]="'1px solid ' + (codeDigits()[$index] ? theme.colors().primary : theme.colors().border)"
@@ -82,7 +84,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </button>
 
         <div class="actions">
-           <button (click)="resendCode()" [style.color]="theme.colors().primary" class="aux-btn">
+           <button (click)="resendCode()" [style.color]="theme.colors().onBgPrimary" class="aux-btn">
               Resend Code
            </button>
            <button routerLink="/signup-pin" [style.color]="theme.colors().textSecondary" class="aux-btn">
@@ -149,7 +151,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       line-height: 1.5;
     }
     .error-message {
-      color: #ef4444;
+      color: var(--danger);
       font-size: var(--fs-small);
     }
     .code-inputs {
@@ -163,7 +165,6 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       font-size: 1.5rem;
       text-align: center;
       border-radius: 8px;
-      outline: none;
       transition: all 0.2s;
     }
     .verify-button {

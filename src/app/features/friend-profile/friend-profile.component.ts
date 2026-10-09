@@ -49,7 +49,7 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
             ← Back to Inner Circle
           </a>
           <a routerLink="/dashboard"
-             [style.color]="theme.colors().primary"
+             [style.color]="theme.colors().onBgPrimary"
              [style.border]="'1px solid ' + theme.colors().primary"
              style="text-decoration: none; padding: 6px 12px; border-radius: var(--radius-pill); font-weight: 600;">
             Dashboard
@@ -65,7 +65,7 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
                    [alt]="f.username"
                    class="friend-profile-component__s6">
               <div>
-                <h2 class="friend-profile-component__s7">{{ f.username }}</h2>
+                <h1 class="friend-profile-component__s7">{{ f.username }}</h1>
                 <p [style.color]="theme.colors().textSecondary"
                    class="friend-profile-component__s8">
                   {{ f.subscriptionTier }} • {{ f.friendCategories[0] || 'Uncategorized' }}
@@ -79,13 +79,13 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
                   </a>
                   <a [routerLink]="['/chat']"
                      [queryParams]="{ friendId: f.id, friendName: f.username }"
-                     [style.color]="theme.colors().primary"
+                     [style.color]="theme.colors().onBgPrimary"
                      [style.border-color]="theme.colors().primary"
                      class="friend-profile-action friend-profile-action--secondary">
                     Open Chat
                   </a>
                   <button (click)="startEditingFriendshipProfile()"
-                          [style.color]="theme.colors().primary"
+                          [style.color]="theme.colors().onBgPrimary"
                           [style.border-color]="theme.colors().primary"
                           class="friend-profile-action friend-profile-action--secondary">
                     Edit
@@ -125,7 +125,7 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
               <h3 class="friend-profile-component__s10">Friendship Profile</h3>
               @if (!editingFriendshipProfile()) {
                 <button (click)="startEditingFriendshipProfile()"
-                        [style.color]="theme.colors().primary"
+                        [style.color]="theme.colors().onBgPrimary"
                         [style.border-color]="theme.colors().primary"
                         class="friend-profile-edit-link">
                   Edit
@@ -163,7 +163,7 @@ type FriendshipProfile = NonNullable<FriendView['friendshipProfile']>;
                   Save Changes
                 </button>
                 <button (click)="editingFriendshipProfile.set(false)"
-                        [style.color]="theme.colors().primary"
+                        [style.color]="theme.colors().onBgPrimary"
                         [style.border-color]="theme.colors().primary"
                         class="friend-profile-action friend-profile-action--secondary">
                   Cancel

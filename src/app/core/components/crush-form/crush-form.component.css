@@ -66,7 +66,6 @@
   min-height: var(--tap-min);
   padding: 12px 14px;
   border-radius: 0;
-  outline: none;
   font-size: var(--fs-body);
   font-family: 'Times New Roman', serif;
   box-sizing: border-box;
@@ -191,7 +190,6 @@
   width: 100%;
   min-height: var(--tap-min);
   padding: 12px 12px 12px 44px;
-  outline: none;
   font-size: var(--fs-btn);
   border-radius: 4px;
   box-sizing: border-box;

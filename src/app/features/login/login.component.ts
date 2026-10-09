@@ -21,17 +21,18 @@ import { getApiBaseUrl } from '../../core/config/api-config';
         </app-page-hint>
 
         <div class="login-header">
+           <h1 class="sr-only">Log in</h1>
            <div class="logo-wrapper">
              <span class="logo-text d" [style.color]="theme.colors().text">d</span>
              <span class="logo-text e" [style.color]="theme.colors().text">e</span>
              <span class="logo-text x" [style.color]="theme.colors().text">x</span>
-             <div class="logo-icon boy" [style.color]="theme.colors().primary">
+             <div class="logo-icon boy" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2"/>
                  <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
                </svg>
              </div>
-             <div class="logo-icon girl" [style.color]="theme.colors().primary">
+             <div class="logo-icon girl" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2.5"/>
                  <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
@@ -49,17 +50,17 @@ import { getApiBaseUrl } from '../../core/config/api-config';
              [style.border]="'1px solid ' + theme.colors().border"
              class="login-form">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Username or Email</label>
-          <input [ngModel]="username()" (ngModelChange)="username.set($event)"
+          <label for="login-1-username-or-email" [style.color]="theme.colors().textSecondary" class="form-label">Username or Email</label>
+          <input id="login-1-username-or-email" [ngModel]="username()" (ngModelChange)="username.set($event)"
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
                  autocomplete="username"
                  class="form-input" placeholder="Enter your username or email">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
+          <label for="login-2-password" [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
           <div class="password-input-wrapper">
-            <input [ngModel]="password()" (ngModelChange)="password.set($event)"
+            <input id="login-2-password" [ngModel]="password()" (ngModelChange)="password.set($event)"
                    [type]="showPassword() ? 'text' : 'password'"
                    autocomplete="current-password"
                    [style.background-color]="theme.colors().bg"
@@ -102,10 +103,10 @@ import { getApiBaseUrl } from '../../core/config/api-config';
           @if (resetMessage()) {
             <p class="reset-message">{{ resetMessage() }}</p>
             <input [ngModel]="resetCode()" (ngModelChange)="resetCode.set($event)"
-                   class="form-input" inputmode="numeric" maxlength="6" placeholder="Reset code">
+                   class="form-input" inputmode="numeric" maxlength="6" placeholder="Reset code" aria-label="Reset code">
             <div class="password-input-wrapper">
               <input [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
-                     [type]="showNewPassword() ? 'text' : 'password'" autocomplete="new-password"
+                     [type]="showNewPassword() ? 'text' : 'password'" autocomplete="new-password" aria-label="New password"
                      [style.background-color]="theme.colors().bg"
                      [style.border]="'1px solid ' + theme.colors().border"
                      [style.color]="theme.colors().text"
@@ -139,7 +140,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
 
           <div class="login-footer">
             <span [style.color]="theme.colors().textSecondary">Don't have an account?</span>
-            <a routerLink="/signup-profile" [style.color]="theme.colors().primary" class="signup-link">Create Account</a>
+            <a routerLink="/signup-profile" [style.color]="theme.colors().onBgPrimary" class="signup-link">Create Account</a>
           </div>
         </div>
       </div>
@@ -196,7 +197,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       margin-top: 8px;
     }
     .error-message {
-      color: #ef4444;
+      color: var(--danger);
       font-size: var(--fs-small);
       text-align: center;
     }
@@ -218,7 +219,6 @@ import { getApiBaseUrl } from '../../core/config/api-config';
       padding: 14px;
       border-radius: 10px;
       font-size: 1rem;
-      outline: none;
       width: 100%;
       box-sizing: border-box;
       font-family: inherit;

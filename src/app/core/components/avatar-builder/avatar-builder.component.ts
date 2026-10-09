@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
+import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
 import { NgTemplateOutlet } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { AvatarRenderService } from '../../services/avatar-render.service';
@@ -33,7 +34,7 @@ const TABS: TabDef[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './avatar-builder.component.css',
   template: `
-    <div class="ab-overlay" role="dialog" aria-modal="true" aria-labelledby="ab-title" (click)="cancelled.emit()">
+    <div class="ab-overlay" role="dialog" aria-modal="true" aria-labelledby="ab-title" appFocusTrap (escaped)="cancelled.emit()" (click)="cancelled.emit()">
       <div class="ab-modal"
            [style.background-color]="theme.colors().bg"
            [style.border]="'1px solid ' + theme.colors().border"
@@ -182,7 +183,7 @@ const TABS: TabDef[] = [
       </div>
     </ng-template>
   `,
-  imports: [NgTemplateOutlet]
+  imports: [NgTemplateOutlet, FocusTrapDirective]
 })
 export class AvatarBuilderComponent {
   protected theme = inject(ThemeService);

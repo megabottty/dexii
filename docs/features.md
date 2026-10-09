@@ -44,5 +44,28 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
   - **Gold ($15/mo)**: Enhanced vault storage, priority support, and all premium features.
 - **Feature Gating**: Limits on crushes and advanced vault sections for the Free tier.
 
+## Accessibility (WCAG 2.1 AA)
+
+The whole app is built to the WCAG 2.1 AA bar. The rules the code follows:
+
+- **Dialogs** use `role="dialog" aria-modal="true"` with a labelled title and the shared `appFocusTrap`
+  directive (`core/a11y/focus-trap.directive.ts`): focus moves in when a dialog opens, Tab wraps inside
+  it, Escape closes it and focus returns to where it was.
+- **Every control has a name**: visible `<label for>` on form fields, `aria-label` on icon-only buttons,
+  `alt` on images. Rows you can tap are real `<button>`s so they work from the keyboard.
+- **State is not colour alone**: tabs and toggles carry `aria-pressed`/`aria-selected`, the selected
+  avatar preset shows a check mark, the PIN read-out announces how many digits are entered.
+- **Contrast**: `ThemeService` exposes `onBgPrimary`, `onBgAccent`, `danger`, `text` and
+  `textSecondary` already nudged to read at 4.5:1 on every surface of the current theme. Use those for
+  coloured text (never raw `primary`/`accent`/hard-coded reds), and never fade text with `opacity`.
+- **Focus ring**: the global `:focus-visible` ring uses `--focus-ring`, set per theme (dark amber on
+  light themes, bright amber on dark ones). No component sets `outline: none`.
+- **Structure**: one `h1` per page, route titles ("Friends · Dexii") via `DexiiTitleStrategy`, and a
+  skip link that moves focus to `<main>`.
+- **Targets**: interactive elements are at least 44px (`--tap-min`), including the walkthrough dots,
+  the phone menu toggle and the avatar colour swatches.
+- **Check it**: `npm run a11y` runs axe-core (via Playwright) over the main screens at phone and
+  desktop widths against a local dev server and demo API, and fails on serious or critical issues.
+
 ---
 *Note: This is still a prototype. Crushes, entries, friends, and messages can use the backend when MongoDB is available; local state remains a demo/offline fallback. PINs and some settings are stored locally for testing.*

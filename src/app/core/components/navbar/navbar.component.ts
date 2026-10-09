@@ -241,7 +241,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
         <div class="navbar-links-section navbar-links-section--logout">
           <button (click)="logout()"
                   [style.background-color]="theme.colors().primary + '12'"
-                  [style.color]="theme.colors().primary"
+                  [style.color]="theme.colors().onBgPrimary"
                   [style.border]="'1px solid ' + theme.colors().primary"
                   class="navbar-btn-primary navbar-btn-outline-secondary navbar-account-action navbar-account-action--logout">
             Logout

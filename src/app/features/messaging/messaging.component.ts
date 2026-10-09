@@ -39,15 +39,15 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
             </a>
           }
           <div>
-            <h2 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().username : 'Chats' }}</h2>
-            <span [style.color]="theme.colors().primary" class="messaging-component__s6">
+            <h1 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().username : 'Chats' }}</h1>
+            <span [style.color]="theme.colors().onBgPrimary" class="messaging-component__s6">
               {{ hasActiveChat() ? 'End-to-end encrypted' : 'Your private conversations' }}
             </span>
           </div>
         </div>
         <div class="messaging-header-actions">
           <a routerLink="/dashboard"
-             [style.color]="theme.colors().primary"
+             [style.color]="theme.colors().onBgPrimary"
              [style.border]="'1px solid ' + theme.colors().primary"
              style="text-decoration: none; padding: 6px 12px; border-radius: var(--radius-pill); font-weight: 600;">
             Dashboard
@@ -82,7 +82,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
             </button>
           </div>
           @if (shareFeedback(); as feedback) {
-            <p [style.color]="theme.colors().primary" class="messaging-add-crush-panel__feedback">
+            <p [style.color]="theme.colors().onBgPrimary" class="messaging-add-crush-panel__feedback">
               ✓ {{ feedback }}
             </p>
           }
@@ -99,7 +99,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                      class="messaging-crush-picker-avatar">
                 <div class="messaging-crush-picker-info">
                   <h4 class="messaging-crush-picker-name">{{ crush.nickname }}</h4>
-                  <span [style.color]="theme.colors().primary" class="messaging-crush-picker-status">{{ crush.status }}</span>
+                  <span [style.color]="theme.colors().onBgPrimary" class="messaging-crush-picker-status">{{ crush.status }}</span>
                 </div>
                 <button type="button"
                         (click)="toggleShareCrushWithChatPartner(crush)"
@@ -114,7 +114,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
             } @empty {
               <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__empty">
                 You don't have any crushes yet.
-                <a routerLink="/dashboard" [style.color]="theme.colors().primary">Add one from your Dashboard</a>, then come back here to share it.
+                <a routerLink="/dashboard" [style.color]="theme.colors().onBgPrimary">Add one from your Dashboard</a>, then come back here to share it.
               </p>
             }
           </div>
@@ -229,7 +229,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
           <section class="chat-hub">
             <div class="chat-hub__toolbar">
               <div class="chat-hub__toolbar-copy">
-                <p [style.color]="theme.colors().primary" class="messaging-component__s6">Your chats</p>
+                <p [style.color]="theme.colors().onBgPrimary" class="messaging-component__s6">Your chats</p>
                 <span [style.color]="theme.colors().textSecondary" class="chat-hub__meta">
                   {{ conversationList().length }} conversation{{ conversationList().length === 1 ? '' : 's' }}
                   @if (messaging.unreadMessageCount() > 0) {
@@ -290,7 +290,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                       <span class="chat-hub__content">
                         <span class="chat-hub__title">{{ friend.username }}</span>
                       </span>
-                      @if (isGroupMemberSelected(friend.id)) { <span [style.color]="theme.colors().primary">✓</span> }
+                      @if (isGroupMemberSelected(friend.id)) { <span [style.color]="theme.colors().onBgPrimary">✓</span> }
                     </button>
                   } @empty {
                     <div [style.border]="'1px dashed ' + theme.colors().border" class="messaging-empty-state">
@@ -373,7 +373,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                          class="messaging-empty-state">
                       @if (friends().length === 0) {
                         <p [style.color]="theme.colors().textSecondary">Add a friend first to start a new chat.</p>
-                        <a routerLink="/friends" [style.color]="theme.colors().primary">Go to Friends</a>
+                        <a routerLink="/friends" [style.color]="theme.colors().onBgPrimary">Go to Friends</a>
                       } @else if (friendSearch().trim()) {
                         <p [style.color]="theme.colors().textSecondary">No friends match “{{ friendSearch() }}”.</p>
                       } @else {
@@ -478,7 +478,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
               <label [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px;">
                 Self-destruct after
               </label>
-              <select [(ngModel)]="selfDestructDurationMs"
+              <select aria-label="Disappearing message timer" [(ngModel)]="selfDestructDurationMs"
                       [style.background-color]="theme.colors().bg"
                       [style.border]="'1px solid ' + theme.colors().border"
                       [style.color]="theme.colors().text"

@@ -1,4 +1,5 @@
 import { Component, signal, inject, computed, OnDestroy, DestroyRef } from '@angular/core';
+import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +28,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -49,7 +50,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                style="border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;"
-               [style.color]="theme.colors().primary">
+               [style.color]="theme.colors().onBgPrimary">
             @if (friendCrushOwnerName()) {
               Shared by {{ friendCrushOwnerName() }} · Read-only
             } @else {
@@ -89,19 +90,19 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
               }
               <div class="profile-rating-row" aria-label="Rating">
-                <span class="profile-rating-stars" [style.color]="theme.colors().accent">
+                <span class="profile-rating-stars" [style.color]="theme.colors().onBgAccent">
                   @for (star of [1,2,3,4,5]; track star) { {{ (c.rating || 0) >= star ? '★' : '☆' }} }
                 </span>
                 @if ((c.redFlags || 0) > 0) {
                   <button type="button" (click)="showRedFlagReason(c)"
-                          [style.color]="'#ef4444'" [style.border]="'1px solid #ef4444'"
+                          [style.color]="theme.colors().danger" [style.border]="'1px solid #ef4444'"
                           class="profile-pill red-flag-chip-button" aria-label="Red flagged">🚩 Red flag</button>
                 } @else {
                   <span [style.color]="'#22c55e'" [style.border]="'1px solid #22c55e'" class="profile-pill" aria-label="No red flags">⚑ No flags</span>
                 }
               </div>
               <div class="profile-status-row">
-                <span [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="profile-pill profile-pill--status">
+                <span [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary" class="profile-pill profile-pill--status">
                   Status: {{ c.status }}
                 </span>
               </div>
@@ -118,7 +119,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 </div>
               }
               @if (c.location || getCrushAge(c)) {
-                <p [style.color]="theme.colors().primary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">
+                <p [style.color]="theme.colors().onBgPrimary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">
                   {{ c.location || 'Location Unknown' }}{{ getCrushAge(c) ? ' • ' + getCrushAge(c) + ' years' : '' }}
                 </p>
               }
@@ -129,7 +130,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
               @if (hasMoreCrushDetails()) {
                 <button type="button"
                         (click)="toggleFullCrushDetails()"
-                        [style.color]="theme.colors().primary"
+                        [style.color]="theme.colors().onBgPrimary"
                         [style.border]="'1px solid ' + theme.colors().primary"
                         style="margin-top: 14px; background: transparent; border-radius: 999px; padding: 6px 14px; font-size: var(--fs-label); font-weight: 700; cursor: pointer;">
                   {{ showFullCrushDetails() ? 'Show less ▲' : 'Show more details ▼' }}
@@ -182,7 +183,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                       <p style="margin: 0;"><strong>Heartbreak recovery:</strong> {{ c.heartbreakRecovery }}</p>
                     }
                     @if (c.redFlagReason) {
-                      <p style="margin: 0; color: #ef4444;"><strong>Red flag notes:</strong> {{ c.redFlagReason }}</p>
+                      <p style="margin: 0;" [style.color]="theme.colors().danger"><strong>Red flag notes:</strong> {{ c.redFlagReason }}</p>
                     }
                     @if (c.social?.instagram || c.social?.snapchat || c.social?.twitter || c.social?.facebook || c.social?.whatsapp) {
                       <div style="margin-top: 4px;">
@@ -232,7 +233,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                  [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().border)"
                  style="position: sticky; top: 12px; z-index: 30; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
               <div>
-                <div style="font-weight: 700;" [style.color]="safetyState() === 'Urgent' ? '#ef4444' : theme.colors().primary">
+                <div style="font-weight: 700;" [style.color]="safetyState() === 'Urgent' ? theme.colors().danger : theme.colors().onBgPrimary">
                   @if (safetyState() === 'Sent') { 🔒 Safety Check Active }
                   @if (safetyState() === 'Safe') { ✅ Safety Check Resolved }
                   @if (safetyState() === 'Urgent') { 🚨 Emergency Mode Active }
@@ -263,7 +264,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
 
                 <div class="profile-rating-row" aria-label="Vibe rating">
-                  <span class="profile-rating-stars" [style.color]="theme.colors().accent">
+                  <span class="profile-rating-stars" [style.color]="theme.colors().onBgAccent">
                     @for (star of [1,2,3,4,5]; track star) {
                       {{ (c.rating || 0) >= star ? '★' : '☆' }}
                     }
@@ -271,7 +272,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   @if ((c.redFlags || 0) > 0) {
                     <button type="button"
                             (click)="showRedFlagReason(c)"
-                            [style.color]="'#ef4444'"
+                            [style.color]="theme.colors().danger"
                             [style.border]="'1px solid #ef4444'"
                             class="profile-pill red-flag-chip-button"
                             title="Red flag logged">
@@ -291,7 +292,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   @if (!statusQuickEditOpen()) {
                     <button type="button"
                             (click)="openQuickStatusEditor(c)"
-                            [style.color]="theme.colors().primary"
+                            [style.color]="theme.colors().onBgPrimary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="profile-pill profile-pill--status status-chip-button">
                       Status: {{ c.status || 'Plotting' }}
@@ -301,7 +302,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                           aria-label="What does changing status do?">ℹ</span>
                   } @else {
                     <div class="status-quick-edit">
-                      <select [value]="quickStatusDraft() || c.status || statuses.Plotting"
+                      <select aria-label="Status" [value]="quickStatusDraft() || c.status || statuses.Plotting"
                               (change)="beginQuickStatusChange(c.id, asSelectValue($event))"
                               [style.background-color]="theme.colors().bg"
                               [style.border]="'1px solid ' + theme.colors().border"
@@ -339,7 +340,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                     }
                   </div>
                 }
-                <p [style.color]="theme.colors().primary" class="profile-subtitle">
+                <p [style.color]="theme.colors().onBgPrimary" class="profile-subtitle">
                   {{ c.location || 'Location Unknown' }} • {{ getCrushAge(c) ? getCrushAge(c) + ' years' : 'Age Unknown' }}
                 </p>
                 @if (c.bio) {
@@ -386,11 +387,11 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bg"
                    style="margin-top: 14px; border-radius: 10px; padding: 12px;">
-                <h3 [style.color]="theme.colors().primary" style="margin: 0 0 8px 0; font-size: 1rem;">Safety Check-In Setup</h3>
+                <h3 [style.color]="theme.colors().onBgPrimary" style="margin: 0 0 8px 0; font-size: 1rem;">Safety Check-In Setup</h3>
 
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 10px;">
                   <label [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">Check-in interval</label>
-                  <select [ngModel]="safetyDurationMinutes()"
+                  <select aria-label="Check-in length" [ngModel]="safetyDurationMinutes()"
                           (ngModelChange)="setSafetyDuration($event)"
                           [style.background-color]="theme.colors().bgSecondary"
                           [style.border]="'1px solid ' + theme.colors().border"
@@ -447,7 +448,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <div class="vibe-banner-stars">
                   @for (star of [1,2,3,4,5]; track star) {
                     <button (click)="logVibeInline(c.id, star)"
-                            [style.color]="theme.colors().accent"
+                            [style.color]="theme.colors().onBgAccent"
                             class="vibe-banner-star"
                             [attr.aria-label]="'Log vibe ' + star + ' stars'">★</button>
                   }
@@ -462,9 +463,9 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
           @if (showShareSelector()) {
             <div class="selector-overlay" (click)="closeShareSelector()">
-              <div class="selector-card" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
+              <div class="selector-card" role="dialog" aria-modal="true" aria-labelledby="share-selector-title" appFocusTrap (escaped)="closeShareSelector()" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3>{{ shareSelectorMode() === 'dating' ? 'Share dating status' : (pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend') }}</h3>
+                  <h3 id="share-selector-title">{{ shareSelectorMode() === 'dating' ? 'Share dating status' : (pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend') }}</h3>
                   <div style="display: flex; gap: 8px; align-items: center;">
                     @if (shareSelectorMode() === 'dating') {
                       <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllDatingShareFriends()">
@@ -475,12 +476,12 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                         {{ areAllShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
                       </button>
                     }
-                    <button class="close-btn" (click)="closeShareSelector()">✕</button>
+                    <button class="close-btn" (click)="closeShareSelector()" aria-label="Close">✕</button>
                   </div>
                 </div>
                 <div class="friend-list-scroll">
                   @for (friend of friends(); track friend.id) {
-                    <div class="friend-item" (click)="shareSelectorMode() === 'dating' ? toggleDatingShareFriend(friend.id, friend.username) : toggleShareFriend(friend.id, friend.username)" [style.border-bottom]="'1px solid ' + theme.colors().border">
+                    <button type="button" class="friend-item" (click)="shareSelectorMode() === 'dating' ? toggleDatingShareFriend(friend.id, friend.username) : toggleShareFriend(friend.id, friend.username)" [attr.aria-pressed]="shareSelectorMode() === 'dating' ? isDatingShareFriendSelected(friend.id) : isShareFriendSelected(friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
                       <div class="friend-info">
                         <span class="friend-name">{{ friend.username }}</span>
@@ -492,11 +493,11 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                           }
                         </span>
                       </div>
-                    </div>
+                    </button>
                   } @empty {
                     <div class="empty-state">
                       <p>No friends found.</p>
-                      <a routerLink="/friends" (click)="closeShareSelector()" [style.color]="theme.colors().primary">Add friends</a>
+                      <a routerLink="/friends" (click)="closeShareSelector()" [style.color]="theme.colors().onBgPrimary">Add friends</a>
                     </div>
                   }
                 </div>
@@ -520,12 +521,13 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
           @if (showStatusVisibilityModal()) {
             <div class="selector-overlay" (click)="cancelQuickStatusChange()">
               <div class="selector-card status-visibility-card"
+                   role="dialog" aria-modal="true" aria-labelledby="status-share-title" appFocusTrap (escaped)="cancelQuickStatusChange()"
                    [style.background-color]="theme.colors().bg"
                    [style.border]="'1px solid ' + theme.colors().border"
                    (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3>Share this update with more friends?</h3>
-                  <button class="close-btn" (click)="cancelQuickStatusChange()">✕</button>
+                  <h3 id="status-share-title">Share this update with more friends?</h3>
+                  <button class="close-btn" (click)="cancelQuickStatusChange()" aria-label="Close">✕</button>
                 </div>
 
                 <div class="status-visibility-body">
@@ -583,8 +585,8 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                       @if (friends().length > 0) {
                         <div class="friend-list-scroll status-visibility-private__friends">
                           @for (friend of friends(); track friend.id) {
-                            <div class="friend-item"
-                                 (click)="togglePendingVisibilityFriend(friend.id)"
+                            <button type="button" class="friend-item"
+                                 (click)="togglePendingVisibilityFriend(friend.id)" [attr.aria-pressed]="isPendingVisibilityFriendSelected(friend.id)" [disabled]="isAlreadySharedWith(friend.id)"
                                  [style.border-bottom]="'1px solid ' + theme.colors().border">
                               <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
                                    [alt]="friend.username"
@@ -596,7 +598,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                                   {{ isAlreadySharedWith(friend.id) ? '✓ Already shared' : (isPendingVisibilityFriendSelected(friend.id) ? '✓ Will be added' : 'Tap to add') }}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                           }
                         </div>
                       } @else {
@@ -621,7 +623,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="info-section-card edit-form">
-              <h2 [style.color]="theme.colors().primary" class="info-title">Edit Details</h2>
+              <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Edit Details</h2>
 
               <app-crush-form [form]="editForm"></app-crush-form>
 
@@ -635,7 +637,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="info-section-card">
-              <h2 [style.color]="theme.colors().primary" class="info-title">Vitals</h2>
+              <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Vitals</h2>
               <div class="info-grid">
                 <div class="info-row-styled">
                   <span class="info-label">Hair</span>
@@ -683,7 +685,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 }
                 <div class="info-row-styled">
                   <span class="info-label">Rating</span>
-                  <span [style.color]="theme.colors().accent" class="info-value">
+                  <span [style.color]="theme.colors().onBgAccent" class="info-value">
                     @for (star of [1,2,3,4,5]; track star) {
                       {{ (c.rating || 0) >= star ? '★' : '☆' }}
                     }
@@ -729,14 +731,14 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
               @if (c.memorableMoments) {
                 <div class="extended-info-section">
-                  <h3 [style.color]="theme.colors().primary" class="extended-info-title">Memorable Moments</h3>
+                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Memorable Moments</h3>
                   <p [style.color]="theme.colors().textSecondary" class="extended-info-text">{{ c.memorableMoments }}</p>
                 </div>
               }
 
               @if (parsedNotes().privateNotes) {
                 <div class="extended-info-section">
-                  <h3 [style.color]="theme.colors().primary" class="extended-info-title">Private Notes</h3>
+                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Private Notes</h3>
                   <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ parsedNotes().privateNotes }}</p>
                 </div>
               }
@@ -744,7 +746,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
               @if (redFlagEntries().length > 0) {
                 <div class="extended-info-section">
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                    <h3 [style.color]="'#ef4444'" class="extended-info-title" style="margin: 0;">🚩 Red Flag Entries</h3>
+                    <h3 [style.color]="theme.colors().danger" class="extended-info-title" style="margin: 0;">🚩 Red Flag Entries</h3>
                     <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ redFlagEntries().length }} total</span>
                   </div>
 
@@ -754,7 +756,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                            [style.background-color]="theme.colors().bg"
                            style="padding: 12px; border-radius: 8px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                          <span [style.color]="'#ef4444'" style="font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                          <span [style.color]="theme.colors().danger" style="font-size: var(--fs-label); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             🚩 Red Flag
                           </span>
                           <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
@@ -770,7 +772,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
               <div class="extended-info-section">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                  <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">Added Notes</h3>
+                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Added Notes</h3>
                   <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ noteEntries().length }} total</span>
                 </div>
 
@@ -814,10 +816,10 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                    [style.border]="'1px solid ' + theme.colors().border"
                    class="extended-info-section vibe-tracker-section">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                  <h3 [style.color]="theme.colors().primary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
+                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">Ask me</span>
-                    <select [ngModel]="vibePromptFrequencyHours()" (ngModelChange)="setVibePromptFrequency($event)"
+                    <select aria-label="How often to ask about the vibe" [ngModel]="vibePromptFrequencyHours()" (ngModelChange)="setVibePromptFrequency($event)"
                             [style.background-color]="theme.colors().bg"
                             [style.border]="'1px solid ' + theme.colors().border"
                             [style.color]="theme.colors().text"
@@ -850,7 +852,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                       @for (v of c.vibeHistory.slice().reverse(); track $index) {
                         <div class="vibe-history-row">
                           <span [style.color]="theme.colors().textSecondary" class="vibe-entry-num">#{{ c.vibeHistory.length - $index }}</span>
-                          <span [style.color]="theme.colors().accent" class="vibe-entry-stars">
+                          <span [style.color]="theme.colors().onBgAccent" class="vibe-entry-stars">
                             @for (star of [1,2,3,4,5]; track star) {
                               {{ v >= star ? '★' : '☆' }}
                             }
@@ -863,7 +865,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
               </div>
 
               <div class="social-links-section">
-                <h3 [style.color]="theme.colors().primary" class="extended-info-title">Social Connections</h3>
+                <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Social Connections</h3>
                 <div class="social-icons-grid">
                   @if (c.social?.snapchat) { <div class="social-icon-item" title="Snapchat">👻 <span>Snapchat</span></div> }
                   @if (c.social?.whatsapp) { <div class="social-icon-item" title="WhatsApp">💬 <span>WhatsApp</span></div> }
@@ -1067,7 +1069,7 @@ export class ProfileDetailComponent implements OnDestroy {
         detail: friendNames.length > 0
           ? `Visible to all friends: ${friendNames.join(', ')}`
           : 'Visible to all friends',
-        color: '#16a34a'
+        color: '#15803d'
       };
     }
 

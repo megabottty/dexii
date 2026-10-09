@@ -23,7 +23,7 @@
 }
 
 .alert-modal-prompt-input {
-  width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 0; outline: none; font-family: inherit;
+  width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 0; font-family: inherit;
 }
 
 .alert-modal-actions {

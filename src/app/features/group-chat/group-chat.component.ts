@@ -16,7 +16,7 @@ import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/service
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="group-chat-page">
       <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="group-chat-header">
-        <a routerLink="/chat" [style.color]="theme.colors().primary" class="group-chat-back">← Back to Chats</a>
+        <a routerLink="/chat" [style.color]="theme.colors().onBgPrimary" class="group-chat-back">← Back to Chats</a>
         @if (group(); as g) {
           <div class="group-chat-header__info">
             <span class="group-chat-header__icon">👥</span>
@@ -85,7 +85,7 @@ import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/service
       </div>
 
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="group-chat-composer">
-        <input [(ngModel)]="newMessage"
+        <input [(ngModel)]="newMessage" aria-label="Message"
                (keydown.enter)="send()"
                [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"

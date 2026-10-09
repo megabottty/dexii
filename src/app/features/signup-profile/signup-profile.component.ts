@@ -22,17 +22,18 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </app-page-hint>
 
         <div class="signup-header">
+           <h1 class="sr-only">Create your account</h1>
            <div class="logo-wrapper">
              <span class="logo-text d" [style.color]="theme.colors().text">d</span>
              <span class="logo-text e" [style.color]="theme.colors().text">e</span>
              <span class="logo-text x" [style.color]="theme.colors().text">x</span>
-             <div class="logo-icon boy" [style.color]="theme.colors().primary">
+             <div class="logo-icon boy" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2"/>
                  <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
                </svg>
              </div>
-             <div class="logo-icon girl" [style.color]="theme.colors().primary">
+             <div class="logo-icon girl" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2.5"/>
                  <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
@@ -41,7 +42,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
            </div>
            <p [style.color]="theme.colors().textSecondary" class="signup-subtitle">Create Your Profile</p>
            @if (inviterName()) {
-             <p [style.color]="theme.colors().primary"
+             <p [style.color]="theme.colors().onBgPrimary"
                 [style.border]="'1px solid ' + theme.colors().primary"
                 class="signup-invite-banner">
                ✦ {{ inviterName() }} invited you — you'll be friends automatically
@@ -55,25 +56,25 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
              class="signup-form">
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Username</label>
-          <input [ngModel]="username()" (ngModelChange)="username.set($event)"
+          <label for="signup-1-username" [style.color]="theme.colors().textSecondary" class="form-label">Username</label>
+          <input id="signup-1-username" [ngModel]="username()" (ngModelChange)="username.set($event)"
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
                  autocomplete="off"
                  class="form-input" placeholder="e.g. dev_user">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Email</label>
-          <input [ngModel]="email()" (ngModelChange)="email.set($event)"
+          <label for="signup-2-email" [style.color]="theme.colors().textSecondary" class="form-label">Email</label>
+          <input id="signup-2-email" [ngModel]="email()" (ngModelChange)="email.set($event)"
                  [style.background-color]="theme.colors().bg"
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
                  autocomplete="off"
                  class="form-input" placeholder="email@example.com">
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
+          <label for="signup-3-password" [style.color]="theme.colors().textSecondary" class="form-label">Password</label>
           <div class="password-input-wrapper">
-            <input [ngModel]="password()" (ngModelChange)="password.set($event)"
+            <input id="signup-3-password" [ngModel]="password()" (ngModelChange)="password.set($event)"
                    [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8"
                    [style.background-color]="theme.colors().bg"
                    [style.border]="'1px solid ' + theme.colors().border"
@@ -100,9 +101,9 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             </button>
           </div>
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Confirm Password</label>
+          <label for="signup-4-confirm-password" [style.color]="theme.colors().textSecondary" class="form-label">Confirm Password</label>
           <div class="password-input-wrapper">
-            <input [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
+            <input id="signup-4-confirm-password" [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
                    [type]="showConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8"
                    [style.background-color]="theme.colors().bg"
                    [style.border]="'1px solid ' + theme.colors().border"
@@ -132,8 +133,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             Use at least 8 characters. This password is for account login; your Vault PIN comes next.
           </p>
 
-          <label [style.color]="theme.colors().textSecondary" class="form-label">Bio (Optional)</label>
-          <textarea [ngModel]="bio()" (ngModelChange)="bio.set($event)"
+          <label for="signup-5-bio-optional" [style.color]="theme.colors().textSecondary" class="form-label">Bio (Optional)</label>
+          <textarea id="signup-5-bio-optional" [ngModel]="bio()" (ngModelChange)="bio.set($event)"
                     [style.background-color]="theme.colors().bg"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
@@ -143,8 +144,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
           <div class="love-life-section">
             <h3 [style.color]="theme.colors().text" class="section-title">Love Life Info</h3>
 
-            <label [style.color]="theme.colors().textSecondary" class="form-label">Relationship Status</label>
-            <select [ngModel]="relationshipStatus()" (ngModelChange)="relationshipStatus.set($event)"
+            <label for="signup-6-relationship-status" [style.color]="theme.colors().textSecondary" class="form-label">Relationship Status</label>
+            <select id="signup-6-relationship-status" [ngModel]="relationshipStatus()" (ngModelChange)="relationshipStatus.set($event)"
                     [style.background-color]="theme.colors().bg"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
@@ -158,8 +159,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               <option value="Other">Other</option>
             </select>
 
-            <label [style.color]="theme.colors().textSecondary" class="form-label">Looking For</label>
-            <select [ngModel]="lookingFor()" (ngModelChange)="lookingFor.set($event)"
+            <label for="signup-7-looking-for" [style.color]="theme.colors().textSecondary" class="form-label">Looking For</label>
+            <select id="signup-7-looking-for" [ngModel]="lookingFor()" (ngModelChange)="lookingFor.set($event)"
                     [style.background-color]="theme.colors().bg"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
@@ -172,8 +173,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               <option value="Other">Other</option>
             </select>
 
-            <label [style.color]="theme.colors().textSecondary" class="form-label">Interested In</label>
-            <select [ngModel]="interestedIn()" (ngModelChange)="interestedIn.set($event)"
+            <label for="signup-8-interested-in" [style.color]="theme.colors().textSecondary" class="form-label">Interested In</label>
+            <select id="signup-8-interested-in" [ngModel]="interestedIn()" (ngModelChange)="interestedIn.set($event)"
                     [style.background-color]="theme.colors().bg"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
@@ -185,8 +186,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               <option value="Other">Other</option>
             </select>
 
-            <label [style.color]="theme.colors().textSecondary" class="form-label">Love Language</label>
-            <select [ngModel]="loveLanguage()" (ngModelChange)="loveLanguage.set($event)"
+            <label for="signup-9-love-language" [style.color]="theme.colors().textSecondary" class="form-label">Love Language</label>
+            <select id="signup-9-love-language" [ngModel]="loveLanguage()" (ngModelChange)="loveLanguage.set($event)"
                     [style.background-color]="theme.colors().bg"
                     [style.border]="'1px solid ' + theme.colors().border"
                     [style.color]="theme.colors().text"
@@ -199,8 +200,8 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
               <option value="Physical Touch">Physical Touch</option>
             </select>
 
-            <label [style.color]="theme.colors().textSecondary" class="form-label">My Ideal Date</label>
-            <textarea [ngModel]="idealDate()" (ngModelChange)="idealDate.set($event)"
+            <label for="signup-10-my-ideal-date" [style.color]="theme.colors().textSecondary" class="form-label">My Ideal Date</label>
+            <textarea id="signup-10-my-ideal-date" [ngModel]="idealDate()" (ngModelChange)="idealDate.set($event)"
                       [style.background-color]="theme.colors().bg"
                       [style.border]="'1px solid ' + theme.colors().border"
                       [style.color]="theme.colors().text"
@@ -280,7 +281,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       margin-top: 8px;
     }
     .error-message {
-      color: #ef4444;
+      color: var(--danger);
       font-size: var(--fs-small);
       text-align: center;
     }
@@ -300,7 +301,6 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       padding: 12px;
       border-radius: 8px;
       font-size: 1rem;
-      outline: none;
       width: 100%;
       box-sizing: border-box;
       font-family: inherit;

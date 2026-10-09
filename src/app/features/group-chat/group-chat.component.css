@@ -177,7 +177,6 @@
 .group-chat-composer__input {
   flex: 1;
   padding: 14px 20px;
-  outline: none;
   font-family: 'Times New Roman', serif;
 }
 

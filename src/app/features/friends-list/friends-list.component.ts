@@ -1,4 +1,5 @@
 import { computed, Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
+import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -83,7 +84,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
@@ -96,9 +97,9 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           message="Add friends, open Bio for friend notes, and use Sharing Controls to manage crush and entry visibility by person.">
         </app-page-hint>
 
-        <h2 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
+        <h1 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
           The Inner Circle
-        </h2>
+        </h1>
 
         @if (!isAuthenticated()) {
           <div class="friends-list-auth-state" role="status">
@@ -110,27 +111,27 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         }
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-          <button (click)="activeTab.set('friends')"
+          <button (click)="activeTab.set('friends')" [attr.aria-pressed]="activeTab() === 'friends'"
                   [style.background-color]="activeTab() === 'friends' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'friends' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'friends' ? theme.colors().primary : theme.colors().border)"
                   class="friends-list-tab">Friends ({{ friends().length }})</button>
-          <button (click)="activeTab.set('find')"
+          <button (click)="activeTab.set('find')" [attr.aria-pressed]="activeTab() === 'find'"
                   [style.background-color]="activeTab() === 'find' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'find' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'find' ? theme.colors().primary : theme.colors().border)"
                   class="friends-list-tab">Add Friend</button>
-          <button (click)="activeTab.set('incoming')"
+          <button (click)="activeTab.set('incoming')" [attr.aria-pressed]="activeTab() === 'incoming'"
                   [style.background-color]="activeTab() === 'incoming' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'incoming' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'incoming' ? theme.colors().primary : theme.colors().border)"
                   class="friends-list-tab">Incoming ({{ incomingRequests().length }})</button>
-          <button (click)="activeTab.set('sent')"
+          <button (click)="activeTab.set('sent')" [attr.aria-pressed]="activeTab() === 'sent'"
                   [style.background-color]="activeTab() === 'sent' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'sent' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'sent' ? theme.colors().primary : theme.colors().border)"
                   class="friends-list-tab">Pending Sent ({{ outgoingRequests().length }})</button>
-          <button (click)="activeTab.set('paused')"
+          <button (click)="activeTab.set('paused')" [attr.aria-pressed]="activeTab() === 'paused'"
                   [style.background-color]="activeTab() === 'paused' ? theme.colors().primary : 'transparent'"
                   [style.color]="activeTab() === 'paused' ? 'white' : theme.colors().text"
                   [style.border]="'1px solid ' + (activeTab() === 'paused' ? theme.colors().primary : theme.colors().border)"
@@ -152,6 +153,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 [value]="searchQuery()"
                 (input)="searchQuery.set(asInputValue($event))"
                 (keyup.enter)="searchUsers()"
+                aria-label="Find people"
                 placeholder="Search by name, username, email, or phone"
                 [style.background-color]="theme.colors().bg"
                 [style.border]="'1px solid ' + theme.colors().border"
@@ -193,13 +195,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                           (click)="acceptSearchResult(candidate)"
                           [disabled]="isSubmittingFriendAction()"
                           [style.opacity]="isSubmittingFriendAction() ? '0.6' : '1'"
-                          [style.background-color]="'#16a34a'"
+                          [style.background-color]="'#15803d'"
                           class="friends-list-component__s8">
                           {{ candidateActionLabel(candidate) }}
                         </button>
                       } @else if (candidate.relationship === 'invite_sent') {
                         <span class="friends-list-pending-chip"
-                              [style.color]="theme.colors().primary"
+                              [style.color]="theme.colors().onBgPrimary"
                               [style.border]="'1px solid ' + theme.colors().primary">✉️ Invite sent {{ candidate.invite?.sentAt | date:'MMM d' }}</span>
                         <span [style.color]="theme.colors().textSecondary" class="friends-list-invite-note">They haven't joined Dexii yet. You can send the invite again or withdraw it.</span>
                         <button type="button"
@@ -216,7 +218,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                                 class="friends-list-action-btn">Withdraw invite</button>
                       } @else if (candidate.relationship === 'request_sent') {
                         <span class="friends-list-pending-chip"
-                              [style.color]="theme.colors().primary"
+                              [style.color]="theme.colors().onBgPrimary"
                               [style.border]="'1px solid ' + theme.colors().primary">⏳ Request pending</span>
                         @if (outgoingRequestFor(candidate); as pending) {
                           <button type="button"
@@ -300,7 +302,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       }
                     </span>
                     <div class="friends-list-component__s49">
-                      <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#16a34a'" class="friends-list-component__s50">Accept</button>
+                      <button (click)="respondToRequest(req, 'accept')" [style.background-color]="'#15803d'" class="friends-list-component__s50">Accept</button>
                       <button (click)="respondToRequest(req, 'decline')" [style.background-color]="'#ef4444'" class="friends-list-component__s50">Decline</button>
                     </div>
                   </div>
@@ -395,7 +397,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
           @if (friends().length > 0) {
             <label class="friends-list-filter">
               <span class="friends-list-filter__icon" aria-hidden="true">🔍</span>
-              <input type="search"
+              <input type="search" aria-label="Filter your friends"
                      [ngModel]="friendSearch()"
                      (ngModelChange)="friendSearch.set($event)"
                      [style.background-color]="theme.colors().bgSecondary"
@@ -440,13 +442,13 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                      [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-action-link">Sharing overview</a>
                   <button (click)="openFriendProfileFromFriend(friend)"
-                          [style.color]="theme.colors().primary"
+                          [style.color]="theme.colors().onBgPrimary"
                           [style.border]="'1px solid ' + theme.colors().primary"
                           class="friends-list-action-btn">
                     View Friendship
                   </button>
                   <a [routerLink]="['/sharing']" [queryParams]="{ friendId: friend.id }"
-                     [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary"
+                     [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary"
                      class="friends-list-action-link">Sharing controls</a>
                   <a routerLink="/chat"
                      [queryParams]="{ friendId: friend.id, friendName: friend.username }"
@@ -455,7 +457,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                   <button (click)="pauseFriend(friend)" [style.color]="theme.colors().textSecondary"
                           class="friends-list-component__s60">Pause friendship</button>
                   <button (click)="removeFriend(friend)"
-                          [style.color]="'#ef4444'"
+                          [style.color]="theme.colors().danger"
                           class="friends-list-component__s60">Remove Friend</button>
                 </div>
               </div>
@@ -504,7 +506,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       Mute notifications from {{ friend.username }}
                     </label>
                     <button (click)="resumeFriend(friend)"
-                            [style.color]="theme.colors().primary"
+                            [style.color]="theme.colors().onBgPrimary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="friends-list-action-btn">
                       Resume friendship
@@ -529,6 +531,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
         <div class="friends-list-component__s9">
           <div [style.background-color]="theme.colors().bg"
                [style.border]="'1px solid ' + theme.colors().border"
+               role="dialog" aria-modal="true" aria-label="Friendship profile" appFocusTrap (escaped)="closeFriendProfile()"
                class="friends-list-component__s10">
             <button (click)="closeFriendProfile()"
                     [style.color]="theme.colors().textSecondary"
@@ -615,7 +618,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
             @if (viewingFriendProfile()?.invite; as invite) {
               <div [style.border-top]="'1px solid ' + theme.colors().border" style="margin-top: 18px; padding-top: 18px;">
-                <p [style.color]="theme.colors().primary" style="margin: 0 0 10px 0; font-size: var(--fs-body); text-transform: uppercase; letter-spacing: 1px;">Invite Details</p>
+                <p [style.color]="theme.colors().onBgPrimary" style="margin: 0 0 10px 0; font-size: var(--fs-body); text-transform: uppercase; letter-spacing: 1px;">Invite Details</p>
                 <div class="friends-list-profile-grid">
                   <div class="friends-list-profile-row">
                     <span class="friends-list-profile-label">Method</span>

@@ -1,4 +1,5 @@
 import { Component, effect, inject, signal } from '@angular/core';
+import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,7 +31,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent, FocusTrapDirective],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -77,7 +78,7 @@ interface FriendChoice {
             <button type="button"
                     (click)="photoPickerOpen.set(!photoPickerOpen())"
                     [style.border]="'1px solid ' + theme.colors().primary"
-                    [style.color]="theme.colors().primary"
+                    [style.color]="theme.colors().onBgPrimary"
                     [attr.aria-expanded]="photoPickerOpen()"
                     aria-controls="settings-photo-picker"
                     class="settings-reset-btn settings-action-btn">
@@ -286,7 +287,7 @@ interface FriendChoice {
               @if (settings.settings().profileVisibility === 'Selected friends') {
                 <button (click)="openFriendPicker()"
                         [style.border]="'1px solid ' + theme.colors().primary"
-                        [style.color]="theme.colors().primary"
+                        [style.color]="theme.colors().onBgPrimary"
                         class="settings-photo-btn settings-photo-btn--ghost"
                         type="button">
                   Choose Friends ({{ settings.settings().selectedFriendIds.length }})
@@ -534,7 +535,7 @@ interface FriendChoice {
             <button type="button"
                     class="settings-reset-btn settings-action-btn settings-build-check"
                     [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().primary"
+                    [style.color]="theme.colors().onBgPrimary"
                     [disabled]="appUpdate.checking()"
                     (click)="appUpdate.checkNow()">
               @switch (appUpdate.lastCheck()) {
@@ -553,16 +554,17 @@ interface FriendChoice {
           <div [style.background-color]="theme.colors().bg"
                [style.border]="'1px solid ' + theme.colors().border"
                class="settings-modal-card"
+               role="dialog" aria-modal="true" aria-labelledby="settings-friend-picker-title" appFocusTrap (escaped)="closeFriendPicker()"
                (click)="$event.stopPropagation()">
             <div class="settings-modal-header">
               <div>
                 <p [style.color]="theme.colors().textSecondary" class="settings-modal-eyebrow">Selected Friends</p>
-                <h2 class="settings-modal-title">Pick who can see your profile</h2>
+                <h2 id="settings-friend-picker-title" class="settings-modal-title">Pick who can see your profile</h2>
               </div>
               <button (click)="closeFriendPicker()"
                       [style.color]="theme.colors().textSecondary"
                       class="settings-modal-close"
-                      type="button">✕</button>
+                      type="button" aria-label="Close">✕</button>
             </div>
 
             <p [style.color]="theme.colors().textSecondary" class="settings-modal-help">

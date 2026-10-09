@@ -68,7 +68,7 @@ import { isNativeApp } from '../../config/api-config';
             {{ busy() ? 'Turning on…' : 'Turn on notifications' }}
           </button>
         } @else if (state() === 'on') {
-          <span class="ns-on" [style.color]="theme.colors().primary">✓ Notifications are on</span>
+          <span class="ns-on" [style.color]="theme.colors().onBgPrimary">✓ Notifications are on</span>
           @if (mode() === 'settings' && !native) {
             <button type="button"
                     (click)="webPush.disable()"

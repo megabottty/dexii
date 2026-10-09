@@ -723,7 +723,6 @@
   flex: 1 1 220px;
   padding: 12px 14px;
   border-radius: 10px;
-  outline: none;
   font-size: var(--fs-body);
 }
 

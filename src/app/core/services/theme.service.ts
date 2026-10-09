@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, effect } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
 
 export type ThemeMode =
@@ -30,6 +30,18 @@ export interface ThemePalette {
   border: string;
   cardBg: string;
   accent: string;
+}
+
+/** A palette plus text-safe versions of the brand colours (see `withReadableText`). */
+export interface ReadablePalette extends ThemePalette {
+  /** `primary`, nudged until it reads at 4.5:1 on `bg`. Use for coloured text and links. */
+  onBgPrimary: string;
+  /** `accent`, nudged until it reads at 4.5:1 on `bg`. */
+  onBgAccent: string;
+  /** Red for destructive actions and errors, nudged until it reads on this theme. */
+  danger: string;
+  /** The keyboard focus ring colour that stands out on this background. */
+  focusRing: string;
 }
 
 export interface ThemeDefinition {
@@ -252,6 +264,64 @@ function mix(colorA: string, colorB: string, weight: number): string {
   );
 }
 
+/** WCAG relative luminance (0-1). */
+export function relativeLuminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex);
+  const channel = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+/** WCAG contrast ratio between two colours (1-21). */
+export function contrastRatio(a: string, b: string): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  const [light, dark] = la >= lb ? [la, lb] : [lb, la];
+  return (light + 0.05) / (dark + 0.05);
+}
+
+/**
+ * Moves `fg` towards black (on light backgrounds) or white (on dark ones) in
+ * small steps until it reads at `minRatio` on `bg`. Colours that already pass
+ * come back untouched, so themes that were fine don't change.
+ */
+export function readableOn(fg: string, bg: string, minRatio = 4.5): string {
+  if (contrastRatio(fg, bg) >= minRatio) return fg;
+  const towards = relativeLuminance(bg) > 0.4 ? '#000000' : '#ffffff';
+  for (let weight = 0.05; weight <= 1; weight += 0.05) {
+    const candidate = mix(fg, towards, weight);
+    if (contrastRatio(candidate, bg) >= minRatio) return candidate;
+  }
+  return towards;
+}
+
+/** Like `readableOn`, but the colour has to read on every surface text can sit on. */
+export function readableOnAll(fg: string, surfaces: string[], minRatio = 4.5): string {
+  let out = fg;
+  for (let pass = 0; pass < 3; pass++) {
+    for (const surface of surfaces) out = readableOn(out, surface, minRatio);
+    if (surfaces.every((surface) => contrastRatio(out, surface) >= minRatio)) break;
+  }
+  return out;
+}
+
+/** Adds the text-safe colours and focus ring to a palette. */
+export function withReadableText(palette: ThemePalette): ReadablePalette {
+  // Every surface body text sits on, including the 8% primary tint used for selected cards.
+  const surfaces = [palette.bg, palette.bgSecondary, palette.cardBg, mix(palette.bgSecondary, palette.primary, 0.08)];
+  return {
+    ...palette,
+    text: readableOnAll(palette.text, surfaces),
+    textSecondary: readableOnAll(palette.textSecondary, surfaces),
+    onBgPrimary: readableOnAll(palette.primary, surfaces),
+    onBgAccent: readableOnAll(palette.accent, surfaces),
+    danger: readableOnAll('#ef4444', surfaces),
+    focusRing: relativeLuminance(palette.bg) > 0.4 ? '#b45309' : '#fbbf24'
+  };
+}
+
 /** Perceived brightness (0-255); above ~140 is considered a "light" background. */
 function luminance(hex: string): number {
   const { r, g, b } = hexToRgb(hex);
@@ -299,11 +369,19 @@ export class ThemeService {
     this._mode() === 'custom' ? null : (THEME_MAP.get(this._mode()) || THEME_DEFINITIONS[0])
   );
 
-  public colors = computed<ThemePalette>(() => {
+  public colors = computed<ReadablePalette>(() => {
     if (this._mode() === 'custom') {
-      return buildCustomPalette(this._customColors());
+      return withReadableText(buildCustomPalette(this._customColors()));
     }
-    return (THEME_MAP.get(this._mode()) || THEME_DEFINITIONS[0]).colors;
+    return withReadableText((THEME_MAP.get(this._mode()) || THEME_DEFINITIONS[0]).colors);
+  });
+
+  /** Keeps the global focus ring and danger colour (styles.css) readable on the current theme. */
+  private readonly cssVarSync = effect(() => {
+    if (typeof document === 'undefined') return;
+    const colors = this.colors();
+    document.documentElement.style.setProperty('--focus-ring', colors.focusRing);
+    document.documentElement.style.setProperty('--danger', colors.danger);
   });
 
   public isPearl = computed(() => {

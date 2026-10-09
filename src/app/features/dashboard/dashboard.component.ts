@@ -52,7 +52,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
               @if (friends().length > 0) {
                 <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-share-section">
-                  <h4 [style.color]="theme.colors().primary" class="dashboard-share-title">Share with friends</h4>
+                  <h4 [style.color]="theme.colors().onBgPrimary" class="dashboard-share-title">Share with friends</h4>
                   <p [style.color]="theme.colors().textSecondary" class="dashboard-share-hint">
                     Pick who gets to see this crush right away. You can change this any time from Sharing.
                   </p>
@@ -114,7 +114,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
         <!-- Hero Section -->
         <div class="dashboard-component__s71">
           <div class="dashboard-component__s72">
-            <h2 class="dashboard-component__s73">The Rolodex</h2>
+            <h1 class="dashboard-component__s73">The Rolodex</h1>
             <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s74">
               Curating {{ activeCrushCount() }} active crushes
               @if (archivedCrushCount() > 0) {
@@ -128,7 +128,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
           <div class="dashboard-component__s76">
             <button (click)="goToFriends()"
                     [style.border]="'1px solid ' + theme.colors().accent"
-                    [style.color]="theme.colors().accent"
+                    [style.color]="theme.colors().onBgAccent"
                     class="dashboard-component__s78 dashboard-component__s78--friend">
                + Add Friend
             </button>
@@ -202,7 +202,8 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                       [attr.aria-label]="filterCounts()[tab.id] + ' crushes'">{{ filterCounts()[tab.id] }}</span>
               </button>
             }
-            <button type="button"
+          </div>
+          <button type="button"
                     class="dashboard-filter-info"
                     [style.color]="theme.colors().textSecondary"
                     [style.border]="'1px solid ' + theme.colors().border"
@@ -210,7 +211,6 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                     aria-controls="crush-filter-help"
                     aria-label="How these tabs work"
                     (click)="toggleFilterHelp()">i</button>
-          </div>
           @if (showFilterHelp()) {
             <p id="crush-filter-help"
                [style.color]="theme.colors().textSecondary"
@@ -225,7 +225,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 
         <!-- Grid -->
           <div class="dashboard-component__s82">
-             <h2 [style.color]="theme.colors().primary" class="dashboard-rolodex-mini-title">
+             <h2 [style.color]="theme.colors().onBgPrimary" class="dashboard-rolodex-mini-title">
                {{ showArchived() ? 'Archived' : 'Active Crushes' }}
              </h2>
              <button (click)="toggleArchived()"
@@ -267,7 +267,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                 <div class="dashboard-component__s89"></div>
                 <div class="dashboard-component__s90">
                    <span [style.background-color]="'rgba(255,255,255,0.9)'"
-                         [style.color]="theme.colors().primary"
+                         [style.color]="theme.colors().onBgPrimary"
                          class="dashboard-component__s91">
                      {{ crush.status }}
                    </span>
@@ -277,6 +277,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                    @if ((crush.redFlags || 0) > 0) {
                      <button type="button"
                              (click)="$event.stopPropagation(); showRedFlagReason(crush)"
+                             aria-label="Why this crush has a red flag"
                              class="dashboard-red-flag-chip dashboard-red-flag-chip-button">
                        🚩
                      </button>
@@ -288,7 +289,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
               <div class="dashboard-component__s92">
                 <h3 class="dashboard-component__s93">{{ getCrushDisplayName(crush) }}</h3>
 
-                <div [style.color]="theme.colors().accent" class="dashboard-component__s94">
+                <div [style.color]="theme.colors().onBgAccent" class="dashboard-component__s94">
                   @for (star of [1,2,3,4,5]; track star) {
                      {{ (crush.rating || 0) >= star ? '★' : '☆' }}
                   }
@@ -311,7 +312,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                     [style.border]="'2px dashed ' + theme.colors().border"
                     [style.color]="theme.colors().textSecondary"
                     class="dashboard-add-crush-ghost-card">
-              <span class="dashboard-add-crush-ghost-icon" [style.color]="theme.colors().primary">✦ +</span>
+              <span class="dashboard-add-crush-ghost-icon" [style.color]="theme.colors().onBgPrimary">✦ +</span>
               <span class="dashboard-add-crush-ghost-label">Add another crush</span>
             </button>
           }

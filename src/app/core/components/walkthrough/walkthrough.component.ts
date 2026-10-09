@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { WalkthroughService } from '../../services/walkthrough.service';
@@ -6,18 +7,19 @@ import { WalkthroughService } from '../../services/walkthrough.service';
 @Component({
   selector: 'app-walkthrough',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FocusTrapDirective],
   styleUrl: './walkthrough.component.css',
   template: `
     @if (walkthrough.isOpen()) {
       @if (walkthrough.currentStep(); as step) {
         <div class="walkthrough-overlay">
           <div role="dialog"
+               appFocusTrap
+               (escaped)="walkthrough.skip()"
                aria-modal="true"
                aria-labelledby="walkthrough-title"
                aria-describedby="walkthrough-body"
                tabindex="-1"
-               (keydown.escape)="walkthrough.skip()"
                [style.background-color]="theme.colors().bg"
                [style.border]="'1px solid ' + theme.colors().border"
                [style.color]="theme.colors().text"
@@ -35,7 +37,7 @@ import { WalkthroughService } from '../../services/walkthrough.service';
             }
 
             <h2 id="walkthrough-title"
-                [style.color]="theme.colors().primary"
+                [style.color]="theme.colors().onBgPrimary"
                 class="walkthrough-title">{{ step.title }}</h2>
 
             <p id="walkthrough-body"
@@ -46,10 +48,9 @@ import { WalkthroughService } from '../../services/walkthrough.service';
               <div class="walkthrough-dots">
                 @for (dot of dots(); track dot) {
                   <button (click)="walkthrough.goTo(dot)"
-                          [style.background-color]="dot === walkthrough.index() ? theme.colors().primary : theme.colors().border"
                           [attr.aria-label]="'Go to step ' + (dot + 1)"
                           [attr.aria-current]="dot === walkthrough.index() ? 'step' : null"
-                          class="walkthrough-dot"></button>
+                          class="walkthrough-dot"><span class="walkthrough-dot__mark" [style.background-color]="dot === walkthrough.index() ? theme.colors().primary : theme.colors().border"></span></button>
                 }
               </div>
             }

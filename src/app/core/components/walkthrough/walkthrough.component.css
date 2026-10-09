@@ -51,22 +51,33 @@
 
 .walkthrough-dots {
   display: flex;
-  gap: 7px;
+  gap: 0;
   justify-content: center;
-  margin: 22px 0 18px;
+  margin: 10px 0 6px;
 }
 
+/* An 8px dot inside a 44px hit area, so it's easy to tap and reachable by keyboard. */
 .walkthrough-dot {
-  width: 8px;
-  height: 8px;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: grid;
+  place-items: center;
   border-radius: 50%;
   border: none;
   padding: 0;
+  background: transparent;
   cursor: pointer;
+}
+
+.walkthrough-dot__mark {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
-.walkthrough-dot:hover {
+.walkthrough-dot:hover .walkthrough-dot__mark {
   transform: scale(1.25);
 }
 

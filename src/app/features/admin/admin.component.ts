@@ -55,7 +55,7 @@ import { ACCESS_LABELS, ACCESS_LEVELS, AccessLevel, PREMIUM_FEATURES, PremiumFea
           <h2 class="admin-section-title">Super admins</h2>
           <p [style.color]="theme.colors().textSecondary" class="admin-copy">Promote a Dexii account to super admin. Admins set by the server configuration can't be removed here.</p>
           <div class="admin-add">
-            <input [value]="draft()"
+            <input [value]="draft()" aria-label="Username to promote"
                    (input)="draft.set($any($event.target).value)"
                    (keyup.enter)="add()"
                    [style.background-color]="theme.colors().bg"

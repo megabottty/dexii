@@ -19,17 +19,18 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </app-page-hint>
 
         <div class="pin-header">
+           <h1 class="sr-only">Set your PIN</h1>
            <div class="logo-wrapper">
              <span class="logo-text d" [style.color]="theme.colors().text">d</span>
              <span class="logo-text e" [style.color]="theme.colors().text">e</span>
              <span class="logo-text x" [style.color]="theme.colors().text">x</span>
-             <div class="logo-icon boy" [style.color]="theme.colors().primary">
+             <div class="logo-icon boy" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2"/>
                  <path d="M15 7H9a1 1 0 0 0-1 1v7h2v7h4v-7h2V8a1 1 0 0 0-1-1z"/>
                </svg>
              </div>
-             <div class="logo-icon girl" [style.color]="theme.colors().primary">
+             <div class="logo-icon girl" [style.color]="theme.colors().onBgPrimary">
                <svg viewBox="0 0 24 24" fill="currentColor">
                  <circle cx="12" cy="4" r="2.5"/>
                  <path d="M12 7L18 16H6L12 7zM10 16h2v6h-2zm2 0h2v6h-2z"/>
@@ -42,14 +43,14 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         </div>
 
         @if (successMessage()) {
-          <p [style.color]="theme.colors().primary" class="success-message">{{ successMessage() }}</p>
+          <p [style.color]="theme.colors().onBgPrimary" class="success-message">{{ successMessage() }}</p>
         }
 
         @if (errorMessage()) {
           <p class="error-message">{{ errorMessage() }}</p>
         }
 
-        <div class="pin-dots" [class.pin-dots-shake]="isShaking()">
+        <div class="pin-dots" [class.pin-dots-shake]="isShaking()" role="status" aria-live="polite" [attr.aria-label]="enteredPin().length + ' of 4 digits entered'">
           @for (dot of [1,2,3,4]; track $index) {
             <div [style.background-color]="enteredPin().length > $index ? theme.colors().primary : 'transparent'"
                  [style.border]="'2px solid ' + (enteredPin().length > $index ? theme.colors().primary : theme.colors().textSecondary)"
@@ -88,7 +89,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
                     [style.box-shadow]="activeKey() === '0' ? '0 0 20px ' + theme.colors().primary : 'none'"
                     [class.is-active-press]="activeKey() === '0'"
                     class="keypad-btn">0</button>
-            <button (click)="clear()" [style.color]="theme.colors().primary" class="keypad-clear-btn">Clear</button>
+            <button (click)="clear()" [style.color]="theme.colors().onBgPrimary" class="keypad-clear-btn">Clear</button>
           </div>
         }
 
@@ -152,7 +153,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
       margin-top: 8px;
     }
     .error-message {
-      color: #ef4444;
+      color: var(--danger);
       font-size: var(--fs-small);
       text-align: center;
     }

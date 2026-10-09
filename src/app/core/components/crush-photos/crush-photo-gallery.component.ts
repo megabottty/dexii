@@ -81,7 +81,7 @@ const MAX_PHOTOS = 8;
                 <span class="pg-owner-audience">{{ photo.audience === 'friends' ? '🔒 ' + audienceLabel(photo) : '👁️ Everyone this crush is shared with' }}</span>
               </div>
               <div class="pg-owner-actions">
-                <button type="button" (click)="openAudience(photo)" [style.border]="'1px solid ' + theme.colors().primary" [style.color]="theme.colors().primary" class="pg-btn pg-btn--ghost">Who can see this</button>
+                <button type="button" (click)="openAudience(photo)" [style.border]="'1px solid ' + theme.colors().primary" [style.color]="theme.colors().onBgPrimary" class="pg-btn pg-btn--ghost">Who can see this</button>
                 @if (photo.url !== avatarUrl()) {
                   <button type="button" (click)="useAsProfile(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost">Use as profile picture</button>
                 }

@@ -55,7 +55,7 @@
 .ns-error {
   margin: 0;
   font-size: var(--fs-small);
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .ns-actions {

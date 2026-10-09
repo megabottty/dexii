@@ -69,9 +69,29 @@ textarea {
   touch-action: manipulation;
 }
 
+:root {
+  /* Set per theme by ThemeService: dark amber on light backgrounds, bright amber on dark ones. */
+  --focus-ring: #b45309;
+  /* Red for destructive actions and errors; ThemeService adjusts it per theme. */
+  --danger: #b91c1c;
+}
+
 :focus-visible {
-  outline: 3px solid #f59e0b;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* Visually hidden, still read by screen readers (page headings on logo-only screens). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Type scale. Rule of thumb: if it fits bigger, make it bigger. The floor is

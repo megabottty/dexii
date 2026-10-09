@@ -43,7 +43,7 @@
 .tea-push-banner-error {
   margin: 6px 0 0;
   font-size: var(--fs-small);
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .tea-push-banner-actions {
