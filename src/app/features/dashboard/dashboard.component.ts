@@ -1,4 +1,6 @@
 import { compatibilityLabel } from '../../core/utils/compatibility';
+import { CRUSH_VIEW_STORAGE_KEY, CrushViewMode, STACK_VIEW_ENABLED } from '../../core/config/dashboard-view'; // stack view
+import { CrushStackComponent } from '../../core/components/crush-stack/crush-stack.component'; // stack view
 import { Component, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -32,7 +34,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
   selector: 'app-dashboard',
   standalone: true,
   styleUrl: './dashboard.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, CrushFormComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, CrushFormComponent, CrushStackComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="dashboard-component__s1">
@@ -228,6 +230,18 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
              <h2 [style.color]="theme.colors().onBgPrimary" class="dashboard-rolodex-mini-title">
                {{ showArchived() ? 'Archived' : 'Active Crushes' }}
              </h2>
+             @if (stackEnabled) { <!-- stack view -->
+               <div class="dashboard-view-toggle" role="group" aria-label="Layout">
+                 <button type="button" (click)="setViewMode('stack')" [attr.aria-pressed]="viewMode() === 'stack'"
+                         [style.background-color]="viewMode() === 'stack' ? theme.colors().primary : 'transparent'"
+                         [style.color]="viewMode() === 'stack' ? '#fff' : theme.colors().textSecondary"
+                         class="dashboard-view-btn">🃏 Stack</button>
+                 <button type="button" (click)="setViewMode('grid')" [attr.aria-pressed]="viewMode() === 'grid'"
+                         [style.background-color]="viewMode() === 'grid' ? theme.colors().primary : 'transparent'"
+                         [style.color]="viewMode() === 'grid' ? '#fff' : theme.colors().textSecondary"
+                         class="dashboard-view-btn">▦ Grid</button>
+               </div>
+             }
              <button (click)="toggleArchived()"
                      [style.color]="theme.colors().textSecondary"
                      class="dashboard-component__s83">
@@ -235,6 +249,65 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
              </button>
           </div>
 
+        <!-- One card body for both the grid and the deck -->
+        <ng-template #crushCardBody let-crush>
+          <!-- Image Area -->
+          <div class="dashboard-component__s87">
+            <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
+                 [alt]="getCrushDisplayName(crush) + ' profile photo'"
+                 class="dashboard-component__s88">
+            <div class="dashboard-component__s89"></div>
+            <div class="dashboard-component__s90">
+               <span [style.background-color]="'rgba(255,255,255,0.9)'"
+                     [style.color]="theme.colors().onBgPrimary"
+                     class="dashboard-component__s91">
+                 {{ crush.status }}
+               </span>
+               @if ((crush.photoCount || 0) > 0) {
+                 <span class="dashboard-photo-chip" [attr.aria-label]="crush.photoCount + ' photos'">📷 {{ crush.photoCount }}</span>
+               }
+               @if (crush.compatibility?.score !== null && crush.compatibility?.score !== undefined) {
+                 <span class="dashboard-photo-chip dashboard-compat-chip" [title]="'Compatibility: ' + compatibilityLabel(crush.compatibility.score)" [attr.aria-label]="'Compatibility ' + crush.compatibility.score + ' percent, ' + compatibilityLabel(crush.compatibility.score)">💞 {{ crush.compatibility.score }}%</span>
+               }
+               @if ((crush.redFlags || 0) > 0) {
+                 <button type="button"
+                         (click)="$event.stopPropagation(); showRedFlagReason(crush)"
+                         aria-label="Why this crush has a red flag"
+                         class="dashboard-red-flag-chip dashboard-red-flag-chip-button">
+                   🚩
+                 </button>
+               }
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="dashboard-component__s92">
+            <h3 class="dashboard-component__s93">{{ getCrushDisplayName(crush) }}</h3>
+
+            <div [style.color]="theme.colors().onBgAccent" class="dashboard-component__s94">
+              @for (star of [1,2,3,4,5]; track star) {
+                 {{ (crush.rating || 0) >= star ? '★' : '☆' }}
+              }
+            </div>
+
+            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s95">
+              "{{ crush.bio || 'A crush waiting to be defined.' }}"
+            </p>
+
+            <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-component__s96">
+              <span [style.color]="theme.colors().textSecondary" class="dashboard-component__s97">Profile Active • {{ crush.lastInteraction | date:'MMM d' }}</span>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- stack view: the deck, or the classic grid -->
+        @if (stackEnabled && viewMode() === 'stack' && displayCrushes().length > 0) {
+          <div id="crush-grid" class="dashboard-stack-wrap">
+            <app-crush-stack [crushes]="displayCrushes()" [cardTemplate]="crushCardBody"
+                             cardClass="dashboard-component__s85 dashboard-stack-card"
+                             (open)="openCrush($event)"></app-crush-stack>
+          </div>
+        } @else {
         <div id="crush-grid" class="dashboard-component__s84">
           @for (crush of displayCrushes(); track crush.id) {
             <div [routerLink]="draggingId() ? null : ['/profile', crush.id]"
@@ -261,53 +334,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                 ⠿
               </button>
 
-              <!-- Image Area -->
-              <div class="dashboard-component__s87">
-                <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
-                     [alt]="getCrushDisplayName(crush) + ' profile photo'"
-                     class="dashboard-component__s88">
-                <div class="dashboard-component__s89"></div>
-                <div class="dashboard-component__s90">
-                   <span [style.background-color]="'rgba(255,255,255,0.9)'"
-                         [style.color]="theme.colors().onBgPrimary"
-                         class="dashboard-component__s91">
-                     {{ crush.status }}
-                   </span>
-                   @if ((crush.photoCount || 0) > 0) {
-                     <span class="dashboard-photo-chip" [attr.aria-label]="crush.photoCount + ' photos'">📷 {{ crush.photoCount }}</span>
-                   }
-                   @if (crush.compatibility?.score !== null && crush.compatibility?.score !== undefined) {
-                     <span class="dashboard-photo-chip dashboard-compat-chip" [title]="'Compatibility: ' + compatibilityLabel(crush.compatibility.score)" [attr.aria-label]="'Compatibility ' + crush.compatibility.score + ' percent, ' + compatibilityLabel(crush.compatibility.score)">💞 {{ crush.compatibility.score }}%</span>
-                   }
-                   @if ((crush.redFlags || 0) > 0) {
-                     <button type="button"
-                             (click)="$event.stopPropagation(); showRedFlagReason(crush)"
-                             aria-label="Why this crush has a red flag"
-                             class="dashboard-red-flag-chip dashboard-red-flag-chip-button">
-                       🚩
-                     </button>
-                   }
-                </div>
-              </div>
-
-              <!-- Content -->
-              <div class="dashboard-component__s92">
-                <h3 class="dashboard-component__s93">{{ getCrushDisplayName(crush) }}</h3>
-
-                <div [style.color]="theme.colors().onBgAccent" class="dashboard-component__s94">
-                  @for (star of [1,2,3,4,5]; track star) {
-                     {{ (crush.rating || 0) >= star ? '★' : '☆' }}
-                  }
-                </div>
-
-                <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s95">
-                  "{{ crush.bio || 'A crush waiting to be defined.' }}"
-                </p>
-
-                <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-component__s96">
-                  <span [style.color]="theme.colors().textSecondary" class="dashboard-component__s97">Profile Active • {{ crush.lastInteraction | date:'MMM d' }}</span>
-                </div>
-              </div>
+              <ng-container *ngTemplateOutlet="crushCardBody; context: { $implicit: crush }"></ng-container>
             </div>
           }
 
@@ -344,6 +371,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
             </div>
           }
         </div>
+        }
       </main>
     </div>
   `
@@ -566,6 +594,22 @@ export class DashboardComponent implements OnInit {
     } catch {
       this.friends.set([]);
     }
+  }
+
+  // stack view: the deck is the default; the choice is remembered on this device.
+  readonly stackEnabled = STACK_VIEW_ENABLED;
+  viewMode = signal<CrushViewMode>(this.initialViewMode());
+  private initialViewMode(): CrushViewMode {
+    if (!STACK_VIEW_ENABLED) return 'grid';
+    try { return localStorage.getItem(CRUSH_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'stack'; } catch { return 'stack'; }
+  }
+  setViewMode(mode: CrushViewMode): void {
+    this.viewMode.set(mode);
+    try { localStorage.setItem(CRUSH_VIEW_STORAGE_KEY, mode); } catch { /* ignore */ }
+    if (mode === 'grid') this.dealKey.update((n) => n + 1);
+  }
+  openCrush(crush: { id: string }): void {
+    void this.router.navigate(['/profile', crush.id]);
   }
 
   /** Bumped whenever the set of cards changes on purpose; its parity swaps the animation name so every card deals again. */

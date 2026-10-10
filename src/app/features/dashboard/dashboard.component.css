@@ -785,3 +785,37 @@
 .dashboard-compat-chip {
   background-color: rgba(190, 24, 93, 0.75);
 }
+
+/* ---- stack view ---- */
+.dashboard-stack-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  animation: dashboard-crush-grid-fade-in 0.5s ease both;
+}
+.dashboard-stack-card {
+  animation: none;
+}
+.dashboard-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  margin-right: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  background: rgba(127, 127, 127, 0.1);
+}
+.dashboard-view-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .dashboard-view-btn { padding: 6px 10px; }
+}

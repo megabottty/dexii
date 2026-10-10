@@ -1,0 +1,90 @@
+/* The deck: the front card sits in normal flow (so the block takes its height);
+   the cards behind are stacked underneath it with a small offset and shrink. */
+.cs {
+  position: relative;
+  width: min(360px, 100%);
+  margin: 0 auto;
+  padding-bottom: 36px; /* room for the cards peeking out below */
+  outline-offset: 6px;
+  border-radius: 24px;
+}
+
+.cs-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  transform-origin: 50% 100%;
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s ease;
+  animation: none !important; /* the grid's deal-in animation does not apply here */
+}
+
+.cs-card--front {
+  position: relative;
+  cursor: grab;
+}
+
+.cs-card--dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.cs-card--leaving {
+  transition: transform 0.26s ease-in, opacity 0.26s ease-in;
+  opacity: 0 !important;
+}
+
+.cs-card--still,
+.cs-card--still.cs-card--leaving {
+  transition: none;
+}
+
+/* Grid hover lift would fight the stack transforms */
+.cs-card:hover {
+  transform: inherit;
+}
+
+.cs-card img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.cs-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.cs-btn {
+  min-height: var(--tap-min);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cs-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cs-counter {
+  min-width: 64px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.cs-hint {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: var(--fs-small);
+}
