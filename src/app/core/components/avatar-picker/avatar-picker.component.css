@@ -21,7 +21,7 @@
 .ap-preview {
   width: 72px;
   height: 72px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -120,7 +120,7 @@
 
 .ap-preset {
   aspect-ratio: 1;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   padding: 0;
   overflow: hidden;
   cursor: pointer;
@@ -232,7 +232,7 @@
   height: min(280px, 70vw);
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   position: relative;
   border: 2px solid rgba(255, 255, 255, 0.25);
   background: #111;

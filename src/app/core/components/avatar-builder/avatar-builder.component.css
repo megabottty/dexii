@@ -62,7 +62,7 @@
 .ab-preview {
   width: 200px;
   height: 200px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -162,7 +162,7 @@
 .ab-option-placeholder {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   display: block;
 }
 

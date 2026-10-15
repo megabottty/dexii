@@ -274,7 +274,7 @@
 .feed-item-avatar {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -411,7 +411,7 @@
 .tea-crush-avatar {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--radius-avatar);
   object-fit: cover;
   flex-shrink: 0;
 }

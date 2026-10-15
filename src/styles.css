@@ -5,10 +5,12 @@
 }
 
 /* Buttons are pills everywhere. Cards, tiles, keypad keys and purely text tabs opt
-   out below; round controls keep their 50%. */
+   out below; round controls keep their 50%. Avatars are rounded squares: every avatar
+   element is square, so a percentage radius keeps the corners circular at any size. */
 :root {
   --radius-pill: 999px;
   --radius-card: 14px;
+  --radius-avatar: 25%;
 }
 
 button,
@@ -45,9 +47,12 @@ button,
 
 .keypad-btn,
 .ab-swatch,
-.ap-preset,
 .cf-order-btn {
   border-radius: 50%;
+}
+
+.ap-preset {
+  border-radius: var(--radius-avatar);
 }
 
 html, body {

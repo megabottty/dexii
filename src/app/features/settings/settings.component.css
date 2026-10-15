@@ -75,7 +75,7 @@
 .settings-avatar {
   width: 96px;
   height: 96px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   object-fit: cover;
   border: 2px solid rgba(255, 255, 255, 0.08);
 }
@@ -482,7 +482,7 @@
 .settings-modal-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   object-fit: cover;
 }
 

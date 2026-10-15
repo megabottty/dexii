@@ -769,7 +769,7 @@
 .dashboard-share-chip__avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-avatar);
   object-fit: cover;
 }
 

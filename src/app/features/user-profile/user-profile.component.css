@@ -27,7 +27,7 @@
 }
 
 .user-profile-component__s7 {
-  width: 86px; height: 86px; border-radius: 50%; object-fit: cover;
+  width: 86px; height: 86px; border-radius: var(--radius-avatar); object-fit: cover;
   order: 2;
   margin-left: auto;
 }
@@ -93,7 +93,7 @@
 }
 
 .user-profile-component__s18 {
-  width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+  width: 44px; height: 44px; border-radius: var(--radius-avatar); object-fit: cover;
 }
 
 .user-profile-component__s19 {
