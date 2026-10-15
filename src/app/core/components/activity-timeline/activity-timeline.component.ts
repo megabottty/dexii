@@ -1,3 +1,4 @@
+import { AppSelectComponent } from '../app-select/app-select.component';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -32,7 +33,7 @@ interface DayGroup {
 @Component({
   selector: 'app-activity-timeline',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AppSelectComponent],
   styleUrl: './activity-timeline.component.css',
   template: `
     <div class="at">
@@ -50,12 +51,8 @@ interface DayGroup {
           @if (friendOptions().length > 1) {
             <label class="at-friend-filter" [style.color]="theme.colors().textSecondary">
               Friend
-              <select [value]="friendFilter() || ''" (change)="friendFilter.set($any($event.target).value || null)"
-                      [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-                      class="at-select" aria-label="Filter by friend">
-                <option value="">Everyone</option>
-                @for (f of friendOptions(); track f.id) { <option [value]="f.id">{{ f.name }}</option> }
-              </select>
+              <app-select class="at-select" inline compact ariaLabel="Filter by friend"
+                          [options]="friendSelectOptions()" [value]="friendFilter() || ''" (valueChange)="friendFilter.set($event || null)"></app-select>
             </label>
           }
         </div>
@@ -225,4 +222,7 @@ export class ActivityTimelineComponent {
     if (!row.event.crushId || !row.friendId) return;
     void this.dataService.unshareCrushWith(row.event.crushId, row.friendId);
   }
+
+  /** "Everyone" plus each friend, for the filter dropdown. */
+  readonly friendSelectOptions = computed(() => [{ value: '', label: 'Everyone' }, ...this.friendOptions().map((f) => ({ value: f.id, label: f.name }))]);
 }

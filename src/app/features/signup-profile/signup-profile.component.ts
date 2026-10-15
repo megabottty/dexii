@@ -1,3 +1,4 @@
+import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +12,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 @Component({
   selector: 'app-signup-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, AppSelectComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="signup-page">
       <div class="signup-container">
@@ -145,60 +146,16 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
             <h3 [style.color]="theme.colors().text" class="section-title">Love Life Info</h3>
 
             <label for="signup-6-relationship-status" [style.color]="theme.colors().textSecondary" class="form-label">Relationship Status</label>
-            <select id="signup-6-relationship-status" [ngModel]="relationshipStatus()" (ngModelChange)="relationshipStatus.set($event)"
-                    [style.background-color]="theme.colors().bg"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    class="form-input">
-              <option value="">Select Status</option>
-              <option value="Single">Single</option>
-              <option value="In a Relationship">In a Relationship</option>
-              <option value="Married">Married</option>
-              <option value="It's Complicated">It's Complicated</option>
-              <option value="Open Relationship">Open Relationship</option>
-              <option value="Other">Other</option>
-            </select>
+            <app-select id="signup-6-relationship-status" [options]="relationshipStatusOptions" [ngModel]="relationshipStatus()" (ngModelChange)="relationshipStatus.set($event || '')"></app-select>
 
             <label for="signup-7-looking-for" [style.color]="theme.colors().textSecondary" class="form-label">Looking For</label>
-            <select id="signup-7-looking-for" [ngModel]="lookingFor()" (ngModelChange)="lookingFor.set($event)"
-                    [style.background-color]="theme.colors().bg"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    class="form-input">
-              <option value="">Select Goal</option>
-              <option value="Long-term">Long-term</option>
-              <option value="Short-term">Short-term</option>
-              <option value="Friendship">Friendship</option>
-              <option value="Not Sure">Not Sure</option>
-              <option value="Other">Other</option>
-            </select>
+            <app-select id="signup-7-looking-for" [options]="lookingForOptions" [ngModel]="lookingFor()" (ngModelChange)="lookingFor.set($event || '')"></app-select>
 
             <label for="signup-8-interested-in" [style.color]="theme.colors().textSecondary" class="form-label">Interested In</label>
-            <select id="signup-8-interested-in" [ngModel]="interestedIn()" (ngModelChange)="interestedIn.set($event)"
-                    [style.background-color]="theme.colors().bg"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    class="form-input">
-              <option value="">Select Interest</option>
-              <option value="Men">Men</option>
-              <option value="Women">Women</option>
-              <option value="Everyone">Everyone</option>
-              <option value="Other">Other</option>
-            </select>
+            <app-select id="signup-8-interested-in" [options]="interestedInOptions" [ngModel]="interestedIn()" (ngModelChange)="interestedIn.set($event || '')"></app-select>
 
             <label for="signup-9-love-language" [style.color]="theme.colors().textSecondary" class="form-label">Love Language</label>
-            <select id="signup-9-love-language" [ngModel]="loveLanguage()" (ngModelChange)="loveLanguage.set($event)"
-                    [style.background-color]="theme.colors().bg"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    class="form-input">
-              <option value="">Select Love Language</option>
-              <option value="Words of Affirmation">Words of Affirmation</option>
-              <option value="Acts of Service">Acts of Service</option>
-              <option value="Receiving Gifts">Receiving Gifts</option>
-              <option value="Quality Time">Quality Time</option>
-              <option value="Physical Touch">Physical Touch</option>
-            </select>
+            <app-select id="signup-9-love-language" [options]="loveLanguageOptions" [ngModel]="loveLanguage()" (ngModelChange)="loveLanguage.set($event || '')"></app-select>
 
             <label for="signup-10-my-ideal-date" [style.color]="theme.colors().textSecondary" class="form-label">My Ideal Date</label>
             <textarea id="signup-10-my-ideal-date" [ngModel]="idealDate()" (ngModelChange)="idealDate.set($event)"
@@ -475,4 +432,10 @@ export class SignupProfileComponent implements OnInit {
     this.errorMessage.set('');
     this.router.navigate(['/signup-pin']);
   }
+
+  // Dropdown choices (app-select).
+  readonly relationshipStatusOptions = [{ value: '', label: 'Select Status' }, ...['Single', 'In a Relationship', 'Married', "It's Complicated", 'Open Relationship', 'Other'].map((v) => ({ value: v, label: v }))];
+  readonly lookingForOptions = [{ value: '', label: 'Select Goal' }, ...['Long-term', 'Short-term', 'Friendship', 'Not Sure', 'Other'].map((v) => ({ value: v, label: v }))];
+  readonly interestedInOptions = [{ value: '', label: 'Select Interest' }, ...['Men', 'Women', 'Everyone', 'Other'].map((v) => ({ value: v, label: v }))];
+  readonly loveLanguageOptions = [{ value: '', label: 'Select Love Language' }, ...['Words of Affirmation', 'Acts of Service', 'Receiving Gifts', 'Quality Time', 'Physical Touch'].map((v) => ({ value: v, label: v }))];
 }

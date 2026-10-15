@@ -1,3 +1,4 @@
+import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Message } from '../../core/models/message.model';
 import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit, HostListener } from '@angular/core';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
@@ -17,7 +18,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
   selector: 'app-messaging',
   standalone: true,
   styleUrl: './messaging.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, AppSelectComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="messaging-component__s1">
@@ -478,15 +479,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
               <label [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px;">
                 Self-destruct after
               </label>
-              <select aria-label="Disappearing message timer" [(ngModel)]="selfDestructDurationMs"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text"
-                      style="padding: 8px 10px; border-radius: 0; font-family: 'Times New Roman', serif;">
-                @for (option of selfDestructOptions; track option.ms) {
-                  <option [ngValue]="option.ms">{{ option.label }}</option>
-                }
-              </select>
+              <app-select inline compact ariaLabel="Disappearing message timer" [options]="selfDestructSelectOptions" [(ngModel)]="selfDestructDurationMs"></app-select>
               <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                 Type “secret” to trigger the timer.
               </span>
@@ -878,4 +871,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     const seconds = Math.max(1, Math.round(ms / 1000));
     return `${seconds} sec${seconds === 1 ? '' : 's'}`;
   }
+
+  // Dropdown choices (app-select).
+  readonly selfDestructSelectOptions = this.selfDestructOptions.map((option) => ({ value: option.ms, label: option.label }));
 }
