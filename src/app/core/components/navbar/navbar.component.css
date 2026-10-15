@@ -138,10 +138,7 @@
   text-transform: uppercase;
 }
 
-.navbar-link,
-.navbar-btn-outline,
-.navbar-btn-primary,
-.navbar-link-vault {
+.navbar-link {
   min-height: 48px;
   width: 100%;
   display: flex;
@@ -157,24 +154,6 @@
   font-size: var(--fs-btn);
   letter-spacing: 1.6px;
   font-weight: 700;
-}
-
-.navbar-links-section--account .navbar-btn-outline,
-.navbar-links-section--account .navbar-btn-primary {
-  font-size: var(--fs-btn);
-  letter-spacing: 1.7px;
-}
-
-.navbar-account-action {
-  opacity: 0.92;
-}
-
-.navbar-account-action--logout {
-  opacity: 1;
-}
-
-.navbar-link-vault {
-  margin-top: 2px;
 }
 
 .navbar-links-section--account {
@@ -394,55 +373,6 @@
   50% { transform: scale(1.08); box-shadow: 0 0 14px rgba(245, 158, 11, 0.85); }
 }
 
-.navbar-btn-outline {
-  padding: 10px 20px;
-  border-radius: 9999px;
-  font-size: var(--fs-btn);
-  font-weight: 700;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.navbar-btn-primary {
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 9999px;
-  font-size: var(--fs-btn);
-  font-weight: 700;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
-}
-
-.navbar-btn-outline-secondary {
-  box-shadow: none;
-}
-
-.navbar-account-action--logout {
-  box-shadow: none;
-}
-
-.navbar-link-vault {
-  color: white;
-  text-decoration: none;
-  padding: 10px 24px;
-  border-radius: 9999px;
-  font-size: var(--fs-btn);
-  font-weight: 700;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: left;
-  box-sizing: border-box;
-}
-
 @keyframes navbar-backdrop-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -580,4 +510,27 @@
   .navbar-brand-copy {
     display: none;
   }
+}
+
+/* Brand navigation icons (public/icons/nav): friends, crushes, chat and tea replace the emoji. */
+.navbar-nav-icon {
+  width: 26px;
+  height: 26px;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.navbar-nav-icon--drawer {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Account actions are buttons styled exactly like the Navigation links. */
+.navbar-account-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }

@@ -38,7 +38,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
            [style.border]="'1px solid ' + (incomingFriendRequestCount() > 0 ? theme.colors().accent : theme.colors().border)"
            aria-label="Open your friends">
           <span class="navbar-tea-icon-wrap">
-            <span aria-hidden="true">👥</span>
+            <img src="icons/nav/friends.svg" alt="" class="navbar-nav-icon">
             @if (incomingFriendRequestCount() > 0) {
               <span [style.background-color]="theme.colors().accent"
                     [style.--navbar-badge-ring]="theme.colors().bg"
@@ -56,7 +56,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
          [style.color]="theme.colors().text"
          [style.border]="'1px solid ' + theme.colors().border"
          aria-label="View your crushes">
-        <span aria-hidden="true">💘</span>
+        <img src="icons/nav/crushes.svg" alt="" class="navbar-nav-icon">
         <span class="navbar-quick-link-label">Crushes</span>
         </a>
         <a routerLink="/chat"
@@ -64,7 +64,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
          [style.color]="theme.colors().text"
          [style.border]="'1px solid ' + theme.colors().border"
          aria-label="Open chat">
-        <span aria-hidden="true">💬</span>
+        <img src="icons/nav/chat.svg" alt="" class="navbar-nav-icon">
         <span class="navbar-quick-link-label">Chat</span>
         </a>
         <a routerLink="/feed"
@@ -74,7 +74,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
            [style.border]="'1px solid ' + (notifications.unreadCount() > 0 ? theme.colors().accent : theme.colors().border)"
            aria-label="Open Tea">
            <span class="navbar-tea-icon-wrap">
-             <span aria-hidden="true">🍵</span>
+             <img src="icons/nav/tea.svg" alt="" class="navbar-nav-icon">
              @if (notifications.unreadCount() > 0) {
                <span [style.background-color]="theme.colors().accent"
                      [style.--navbar-badge-ring]="theme.colors().bg"
@@ -141,13 +141,14 @@ import { SupportMenuService } from '../../services/support-menu.service';
              (click)="closeMobileMenu()"
              [style.color]="theme.colors().text"
              class="navbar-link">
+            <img src="icons/nav/crushes.svg" alt="" class="navbar-nav-icon navbar-nav-icon--drawer">
             Crushes
           </a>
           <a routerLink="/feed"
              (click)="closeMobileMenu()"
              [style.color]="theme.colors().text"
              class="navbar-link">
-            <span class="navbar-tea-icon" aria-hidden="true">🍵</span>
+            <img src="icons/nav/tea.svg" alt="" class="navbar-nav-icon navbar-nav-icon--drawer">
             Tea
             @if (notifications.unreadCount() > 0) {
               <span [style.background-color]="theme.colors().accent"
@@ -161,6 +162,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
              (click)="closeMobileMenu()"
              [style.color]="theme.colors().text"
              class="navbar-link">
+            <img src="icons/nav/friends.svg" alt="" class="navbar-nav-icon navbar-nav-icon--drawer">
             Friends
             @if (incomingFriendRequestCount() > 0) {
               <span [style.background-color]="theme.colors().primary"
@@ -180,6 +182,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
              (click)="closeMobileMenu()"
              [style.color]="theme.colors().text"
              class="navbar-link">
+            <img src="icons/nav/chat.svg" alt="" class="navbar-nav-icon navbar-nav-icon--drawer">
             Chat
             @if (messaging.unreadMessageCount() > 0) {
               <span [style.background]="messaging.unreadSelfDestructCount() > 0 ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : theme.colors().primary"
@@ -211,39 +214,26 @@ import { SupportMenuService } from '../../services/support-menu.service';
 
         <div class="navbar-links-section navbar-links-section--account">
           <span [style.color]="theme.colors().textSecondary" class="navbar-section-title">Account</span>
-          <button (click)="goToThemeSettings()"
-                  [style.background-color]="'transparent'"
-                  [style.color]="theme.colors().textSecondary"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  class="navbar-btn-outline navbar-account-action">
-            🎨 Theme
+          <!-- Same plain links as Navigation; Logout alone is red, as the one that ends the session. -->
+          <button type="button" (click)="goToThemeSettings()" [style.color]="theme.colors().text" class="navbar-link navbar-account-link">
+            Theme
           </button>
-          <button (click)="lockApp()"
-                  [style.background-color]="theme.colors().primary"
-                  class="navbar-btn-primary navbar-account-action">
+          <button type="button" (click)="lockApp()" [style.color]="theme.colors().text" class="navbar-link navbar-account-link">
             Lock
           </button>
-          <button (click)="switchAccount()"
-                  [style.background-color]="'transparent'"
-                  [style.color]="theme.colors().textSecondary"
-                  [style.border]="'1px solid ' + theme.colors().border"
-                  class="navbar-btn-primary navbar-btn-outline-secondary navbar-account-action">
+          <button type="button" (click)="switchAccount()" [style.color]="theme.colors().text" class="navbar-link navbar-account-link">
             Switch Account
           </button>
           <a routerLink="/vault"
              (click)="closeMobileMenu()"
-             [style.background-color]="theme.colors().accent"
-             class="navbar-link-vault">
+             [style.color]="theme.colors().text"
+             class="navbar-link">
             Vault
           </a>
         </div>
 
         <div class="navbar-links-section navbar-links-section--logout">
-          <button (click)="logout()"
-                  [style.background-color]="theme.colors().primary + '12'"
-                  [style.color]="theme.colors().onBgPrimary"
-                  [style.border]="'1px solid ' + theme.colors().primary"
-                  class="navbar-btn-primary navbar-btn-outline-secondary navbar-account-action navbar-account-action--logout">
+          <button type="button" (click)="logout()" [style.color]="theme.colors().danger" class="navbar-link navbar-account-link">
             Logout
           </button>
         </div>
