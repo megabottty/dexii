@@ -3,7 +3,7 @@
 }
 
 .alert-modal-component__s2 {
-  width: 100%; max-width: 420px; padding: 28px; border-radius: 0px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; text-align: center;
+  width: 100%; max-width: 420px; padding: 28px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; text-align: center;
 }
 
 .alert-modal-component__s3 {
@@ -11,11 +11,11 @@
 }
 
 .alert-modal-component__s4 {
-  font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 0 0 12px;
+  font-size: var(--fs-h-md); font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 0 0 12px;
 }
 
 .alert-modal-component__s5 {
-  font-size: var(--fs-modal); line-height: 1.6; margin: 0 0 20px;
+  font-size: 1.25rem; line-height: 1.6; margin: 0 0 20px; /* a notch above --fs-modal: the notice is the only thing on screen */
 }
 
 .alert-modal-component__s6 {
@@ -23,7 +23,7 @@
 }
 
 .alert-modal-prompt-input {
-  width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 0; font-family: inherit;
+  width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 12px; font-family: inherit;
 }
 
 .alert-modal-actions {
@@ -42,7 +42,7 @@
   }
 
   .alert-modal-component__s4 {
-    font-size: 16px;
+    font-size: var(--fs-h-sm);
     letter-spacing: 2px;
   }
 }
