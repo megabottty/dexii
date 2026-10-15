@@ -8,8 +8,8 @@ import { FriendsApiService, FriendSummary } from '../../services/friends-api.ser
 import { ModalService } from '../../services/modal.service';
 import { CrushPhoto } from '../../models/crush-profile.model';
 import { UnreadableImageError, resizeImageFile } from '../../utils/image-resize';
+import { MAX_PHOTOS } from '../../config/photos';
 
-const MAX_PHOTOS = 8;
 
 interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
 
@@ -52,15 +52,22 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
           }
         </div>
         @if (slides().length > 1) {
-          <div class="pg-dots pg-dots--hero" aria-hidden="true">
+          <!-- Thumbnails in carousel order: tap one to jump to it; moving a photo visibly shifts it here. -->
+          <div class="pg-thumbs pg-thumbs--hero" role="tablist" aria-label="Photos in order">
             @for (slide of slides(); track slide.key; let i = $index) {
-              <span class="pg-dot" [style.background-color]="i === index() ? theme.colors().primary : theme.colors().border"></span>
+              <button type="button" role="tab" class="pg-thumb" [class.pg-thumb--current]="i === index()"
+                      (click)="goTo(i)"
+                      [attr.aria-selected]="i === index()"
+                      [style.border-color]="i === index() ? theme.colors().primary : theme.colors().border"
+                      [attr.aria-label]="(i === 0 ? 'Profile picture' : 'Photo ' + (i + 1)) + ' of ' + slides().length">
+                <img [src]="slide.url" alt="" class="pg-thumb__img" loading="lazy">
+              </button>
             }
           </div>
           <p class="pg-counter pg-counter--hero" [style.color]="theme.colors().textSecondary" aria-live="polite">{{ index() + 1 }} / {{ slides().length }}</p>
         }
-        @if (busy()) {
-          <p [style.color]="theme.colors().textSecondary" class="pg-note pg-note--hero" role="status">{{ busy() }}</p>
+        @if (busy() || note()) {
+          <p [style.color]="theme.colors().textSecondary" class="pg-note pg-note--hero" role="status">{{ busy() || note() }}</p>
         }
         @if (mode() === 'owner') {
           <div class="pg-hero-tools">
@@ -73,9 +80,14 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
             @if (currentHeroPhoto(); as photo) {
               <button type="button" (click)="openAudience(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero" [attr.title]="photo.audience === 'friends' ? audienceLabel(photo) : 'Everyone this crush is shared with'">{{ photo.audience === 'friends' ? '🔒 Who sees' : '👁️ Who sees' }}</button>
               <button type="button" (click)="useAsProfile(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero">Set as picture</button>
-              <button type="button" (click)="move(photo, -1)" [disabled]="photoIndex(photo) === 0" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero pg-btn--icon" aria-label="Move this photo earlier">◀</button>
-              <button type="button" (click)="move(photo, 1)" [disabled]="photoIndex(photo) === photos().length - 1" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero pg-btn--icon" aria-label="Move this photo later">▶</button>
+              <!-- ◀ ▶ flip between photos (what they look like they do); reordering has its own labelled buttons. -->
+              <button type="button" (click)="step(-1)" [disabled]="index() === 0" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero pg-btn--icon" aria-label="Previous photo" title="Previous photo">◀</button>
+              <button type="button" (click)="step(1)" [disabled]="index() === slides().length - 1" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero pg-btn--icon" aria-label="Next photo" title="Next photo">▶</button>
               <button type="button" (click)="remove(photo)" class="pg-btn pg-btn--danger pg-btn--hero">Remove</button>
+              @if (visiblePhotos().length > 1) {
+                <button type="button" (click)="move(photo, -1)" [disabled]="visibleIndex(photo) <= 0" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero" title="Show this photo earlier in the carousel">Move earlier</button>
+                <button type="button" (click)="move(photo, 1)" [disabled]="visibleIndex(photo) === visiblePhotos().length - 1" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero" title="Show this photo later in the carousel">Move later</button>
+              }
             }
             @if (photos().length > 1) {
               <button type="button" (click)="openSelect()" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero">Select</button>
@@ -265,6 +277,14 @@ export class CrushPhotoGalleryComponent {
   readonly photos = signal<CrushPhoto[]>([]);
   readonly loading = signal(false);
   readonly busy = signal('');
+  /** Short confirmation under the hero after a move ("Now photo 2 of 3"). */
+  readonly note = signal('');
+  private noteTimer: ReturnType<typeof setTimeout> | null = null;
+  private flash(text: string): void {
+    this.note.set(text);
+    if (this.noteTimer) clearTimeout(this.noteTimer);
+    this.noteTimer = setTimeout(() => this.note.set(''), 2000);
+  }
   readonly index = signal(0);
   readonly lightboxIndex = signal<number | null>(null);
   readonly audienceFor = signal<CrushPhoto | null>(null);
@@ -286,6 +306,9 @@ export class CrushPhotoGalleryComponent {
   /** Hero layout: the photo under the current slide (null on the profile-picture slide). */
   readonly currentHeroPhoto = computed(() => this.slides()[this.index()]?.photo || null);
   photoIndex(photo: CrushPhoto): number { return this.photos().findIndex((p) => p.id === photo.id); }
+  /** Photos in the order the viewer actually sees them (the hero hides the photo that is the profile picture). */
+  readonly visiblePhotos = computed<CrushPhoto[]>(() => this.slides().map((slide) => slide.photo).filter((p): p is CrushPhoto => Boolean(p)));
+  visibleIndex(photo: CrushPhoto): number { return this.visiblePhotos().findIndex((p) => p.id === photo.id); }
   readonly hasHiddenPhotos = computed(() => this.photos().some((p) => p.audience === 'friends'));
 
   constructor() {
@@ -335,6 +358,8 @@ export class CrushPhotoGalleryComponent {
     if (!el || el.clientWidth === 0) return;
     this.index.set(Math.max(0, Math.min(this.slides().length - 1, Math.round(el.scrollLeft / el.clientWidth))));
   }
+
+  goTo(i: number): void { this.step(i - this.index()); }
 
   step(delta: number): void {
     const next = Math.max(0, Math.min(this.slides().length - 1, this.index() + delta));
@@ -409,17 +434,23 @@ export class CrushPhotoGalleryComponent {
     this.index.update((i) => Math.max(0, Math.min(i, this.photos().length - 1)));
   }
 
+  /** Swaps the photo with its visible neighbour, so a photo hidden from the carousel (the profile picture) is skipped over. */
   async move(photo: CrushPhoto, delta: number): Promise<void> {
+    const visible = this.visiblePhotos();
+    const neighbour = visible[visible.findIndex((p) => p.id === photo.id) + delta];
+    if (!neighbour) return;
     const list = [...this.photos()];
     const from = list.findIndex((p) => p.id === photo.id);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= list.length) return;
+    const to = list.findIndex((p) => p.id === neighbour.id);
+    if (from < 0 || to < 0) return;
     list.splice(from, 1); list.splice(to, 0, photo);
     this.photos.set(list);
     const target = this.layout() === 'hero' ? Math.max(0, this.slides().findIndex((slide) => slide.photo?.id === photo.id)) : to;
     this.index.set(target);
     const el = this.track()?.nativeElement;
     el?.scrollTo({ left: target * el.clientWidth, behavior: 'auto' });
+    const position = this.visibleIndex(photo) + 1;
+    this.flash(`Now photo ${position} of ${this.visiblePhotos().length}`);
     await this.dataService.reorderCrushPhotos(this.crushId(), list.map((p) => p.id));
   }
 

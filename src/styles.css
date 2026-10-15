@@ -192,7 +192,7 @@ body {
   }
 
   /* Mobile tap target: every button and button-role element is at least --tap-min tall. */
-  button:not(.ab-swatch):not(.ab-option):not(.ap-preset):not(.messaging-reaction-picker__option):not(.group-chat-reaction-picker__option):not(.navbar-menu-toggle), [role="button"] { min-height: var(--tap-min); }
+  button:not(.ab-swatch):not(.ab-option):not(.ap-preset):not(.messaging-reaction-picker__option):not(.group-chat-reaction-picker__option):not(.navbar-menu-toggle):not(.pg-thumb), [role="button"] { min-height: var(--tap-min); }
 }
 
 @media (prefers-reduced-motion: reduce) {
