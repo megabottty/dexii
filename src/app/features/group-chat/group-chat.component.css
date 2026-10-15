@@ -79,7 +79,7 @@
 
 .group-chat-message__bubble {
   padding: 12px 18px;
-  border-radius: 0;
+  border-radius: 18px;
 }
 
 .group-chat-message__time {
@@ -177,6 +177,7 @@
 .group-chat-composer__input {
   flex: 1;
   padding: 14px 20px;
+  border-radius: var(--radius-pill);
   font-family: 'Times New Roman', serif;
 }
 

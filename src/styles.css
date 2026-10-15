@@ -19,11 +19,9 @@ button,
 }
 
 .navbar-drawer-backdrop,
-.chat-hub__card,
 .user-profile-component__s16,
 .settings-theme-card,
 .settings-plan-option,
-.status-visibility-option,
 .ab-option,
 .vault-center-component__s26,
 .dashboard-component__s80,
@@ -36,7 +34,9 @@ button,
 .settings-chip,
 .cf-tile,
 .cf-order-chip,
-.sharing-component__friend-row {
+.sharing-component__friend-row,
+.status-visibility-option,
+.chat-hub__card {
   border-radius: var(--radius-card);
 }
 

@@ -39,7 +39,7 @@
 }
 
 .messaging-component__s9 {
-  padding: 12px 20px; border-radius: 0px; font-size: var(--fs-small); position: relative;
+  padding: 12px 20px; border-radius: 18px; font-size: var(--fs-small); position: relative;
 }
 
 .messaging-component__s10 {
@@ -164,7 +164,7 @@
 }
 
 .messaging-component__s12 {
-  flex: 1; padding: 14px 20px; border-radius: 0px; font-family: 'Times New Roman', serif;
+  flex: 1; padding: 14px 20px; border-radius: var(--radius-pill); font-family: 'Times New Roman', serif;
 }
 
 .messaging-component__s13 {
@@ -250,7 +250,7 @@
 .chat-hub__search {
   width: 100%;
   padding: 12px 14px;
-  border-radius: 0;
+  border-radius: var(--radius-pill);
   box-sizing: border-box;
   font-family: 'Times New Roman', serif;
   font-size: var(--fs-small);
