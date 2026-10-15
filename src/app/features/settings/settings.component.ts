@@ -452,17 +452,19 @@ interface FriendChoice {
 
           <div class="settings-divider"></div>
 
-          <section class="settings-plan-section">
-            <div class="settings-plan-header">
-              <div>
-                <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
-                <h2 class="settings-section-title">Notifications</h2>
+          @if (!webPush.offInDevBuild) {
+            <section class="settings-plan-section">
+              <div class="settings-plan-header">
+                <div>
+                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
+                  <h2 class="settings-section-title">Notifications</h2>
+                </div>
               </div>
-            </div>
-            <app-notification-setup mode="settings"></app-notification-setup>
-          </section>
+              <app-notification-setup mode="settings"></app-notification-setup>
+            </section>
 
-          <div class="settings-divider"></div>
+            <div class="settings-divider"></div>
+          }
 
           @if (gate.canManageSuperAdmins()) {
             <section class="settings-plan-section">
@@ -534,22 +536,25 @@ interface FriendChoice {
             </div>
           </div>
 
-          <div class="settings-build" [style.color]="theme.colors().textSecondary">
-            <span>Dexii v{{ appUpdate.version }} · build {{ appUpdate.build }}</span>
-            <button type="button"
-                    class="settings-reset-btn settings-action-btn settings-build-check"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().onBgPrimary"
-                    [disabled]="appUpdate.checking()"
-                    (click)="appUpdate.checkNow()">
-              @switch (appUpdate.lastCheck()) {
-                @case ('current') { You're up to date }
-                @case ('updating') { Updating… }
-                @case ('unavailable') { Reload the page to update }
-                @default { {{ appUpdate.checking() ? 'Checking…' : 'Check for updates' }} }
-              }
-            </button>
-          </div>
+          <!-- Version and update check: admin only -->
+          @if (gate.canManageSuperAdmins()) {
+            <div class="settings-build" [style.color]="theme.colors().textSecondary">
+              <span>Dexii v{{ appUpdate.version }} · build {{ appUpdate.build }}</span>
+              <button type="button"
+                      class="settings-reset-btn settings-action-btn settings-build-check"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.color]="theme.colors().onBgPrimary"
+                      [disabled]="appUpdate.checking()"
+                      (click)="appUpdate.checkNow()">
+                @switch (appUpdate.lastCheck()) {
+                  @case ('current') { You're up to date }
+                  @case ('updating') { Updating… }
+                  @case ('unavailable') { Reload the page to update }
+                  @default { {{ appUpdate.checking() ? 'Checking…' : 'Check for updates' }} }
+                }
+              </button>
+            </div>
+          }
         </section>
       </main>
 

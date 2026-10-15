@@ -56,6 +56,8 @@ export class WebPushService {
   readonly diagnostics = signal('');
   /** Plain-language reason when push is unavailable here. */
   readonly unsupportedReason = signal('');
+  /** The service worker is off in the dev build (app.config.ts), so Settings hides the notifications section. */
+  readonly offInDevBuild = isDevMode();
   /** Requirements that depend only on the browser/device (set once at startup). */
   private readonly deviceChecks = signal<WebPushCheck[]>([]);
 
