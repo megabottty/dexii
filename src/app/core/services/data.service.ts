@@ -616,7 +616,7 @@ export class DataService {
     this.lastCrushFetchAt = Date.now();
   }
 
-  private async persistNewCrush(localId: string, crush: CrushProfile, shareWith: string[] = []): Promise<void> {
+  private async persistNewCrush(localId: string, crush: CrushProfile, shareWith: string[] = []): Promise<CrushProfile | null> {
     try {
       const payload = {
         nickname: crush.nickname,
@@ -684,7 +684,7 @@ export class DataService {
           ? 'Image too large. Please use a smaller profile picture.'
           : 'Failed to save crush to database.';
         this.modal.show(errorMsg);
-        return;
+        return null;
       }
 
       const savedCrush = await response.json() as BackendCrush;
@@ -698,9 +698,11 @@ export class DataService {
       this.modal.show(shareWith.length
         ? `Profile secured in the Stash and shared with ${shareWith.length} friend${shareWith.length === 1 ? '' : 's'}.`
         : 'Profile secured in the Stash.');
+      return mapped;
     } catch (err) {
       console.error('Error persisting new crush:', err);
       this.modal.show('Connection error. Could not save profile.');
+      return null;
     }
   }
 
@@ -787,7 +789,8 @@ export class DataService {
     }
   }
 
-  public addEntry(entry: Omit<Entry, 'id' | 'timestamp'>) {
+  /** Adds an entry and resolves with it as saved (server id once synced, so callers can act on it, e.g. share it). */
+  public async addEntry(entry: Omit<Entry, 'id' | 'timestamp'>): Promise<Entry> {
     const newEntry: Entry = {
       ...entry,
       id: Math.random().toString(36).substring(7),
@@ -795,7 +798,7 @@ export class DataService {
     };
     this._entries.update(prev => [newEntry, ...prev]);
     this.persistEntries();
-    void this.persistNewEntry(newEntry);
+    return (await this.persistNewEntry(newEntry)) ?? newEntry;
   }
 
   /**
@@ -814,9 +817,9 @@ export class DataService {
     await this.persistEntryUpdate(updatedEntry);
   }
 
-  private async persistNewEntry(entry: Entry): Promise<void> {
+  private async persistNewEntry(entry: Entry): Promise<Entry | null> {
     if (!this.entriesApi.isAuthenticated()) {
-      return;
+      return null;
     }
 
     try {
@@ -826,11 +829,13 @@ export class DataService {
         existing.id === id ? savedEntry : existing
       ));
       this.persistEntries();
+      return savedEntry;
     } catch (error) {
       localStorage.removeItem(this.getEntriesMigrationStorageKey(this._activeOwner()));
       console.error('Error persisting new entry:', error);
       const message = error instanceof Error ? error.message : 'Connection error.';
       this.modal.show(`Entry saved locally, but could not sync yet: ${message}`);
+      return null;
     }
   }
 
@@ -924,8 +929,19 @@ export class DataService {
     };
 
     this._allCrushes.update(prev => [newCrush, ...prev]);
-    void this.persistNewCrush(localId, newCrush, options.shareWith || []);
+    const saving = this.persistNewCrush(localId, newCrush, options.shareWith || []);
+    this.crushSaves.set(localId, saving);
+    void saving.finally(() => this.crushSaves.delete(localId));
     return newCrush;
+  }
+
+  private readonly crushSaves = new Map<string, Promise<CrushProfile | null>>();
+
+  /** The server copy of a crush just created with `addCrush` (its id differs from the local one), or null if the save failed. */
+  public async savedCrush(localId: string): Promise<CrushProfile | null> {
+    const pending = this.crushSaves.get(localId);
+    if (pending) return pending;
+    return this._allCrushes().find((c) => c.id === localId) ?? null;
   }
 
   private _currentViewerFriendId = signal<string | null>(null);

@@ -1,3 +1,4 @@
+import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
@@ -31,7 +32,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent, FocusTrapDirective],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent, FocusTrapDirective, AppSelectComponent],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -172,49 +173,17 @@ interface FriendChoice {
 
             <label class="settings-field">
               Looking For
-              <select [value]="settings.settings().lookingFor"
-                      (change)="setLookingFor($event)"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text">
-                <option value="">Select Goal</option>
-                <option value="Long-term">Long-term</option>
-                <option value="Short-term">Short-term</option>
-                <option value="Friendship">Friendship</option>
-                <option value="Not Sure">Not Sure</option>
-                <option value="Other">Other</option>
-              </select>
+              <app-select ariaLabel="Looking for" [options]="lookingForOptions" [value]="settings.settings().lookingFor" (valueChange)="update('lookingFor', $any($event) || '')"></app-select>
             </label>
 
             <label class="settings-field">
               Interested In
-              <select [value]="settings.settings().interestedIn"
-                      (change)="setInterestedIn($event)"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text">
-                <option value="">Select Interest</option>
-                <option value="Men">Men</option>
-                <option value="Women">Women</option>
-                <option value="Everyone">Everyone</option>
-                <option value="Other">Other</option>
-              </select>
+              <app-select ariaLabel="Interested in" [options]="interestedInOptions" [value]="settings.settings().interestedIn" (valueChange)="update('interestedIn', $any($event) || '')"></app-select>
             </label>
 
             <label class="settings-field">
               Love Language
-              <select [value]="settings.settings().loveLanguage"
-                      (change)="setLoveLanguage($event)"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text">
-                <option value="">Select Love Language</option>
-                <option value="Words of Affirmation">Words of Affirmation</option>
-                <option value="Acts of Service">Acts of Service</option>
-                <option value="Receiving Gifts">Receiving Gifts</option>
-                <option value="Quality Time">Quality Time</option>
-                <option value="Physical Touch">Physical Touch</option>
-              </select>
+              <app-select ariaLabel="Love language" [options]="loveLanguageOptions" [value]="settings.settings().loveLanguage" (valueChange)="update('loveLanguage', $any($event) || '')"></app-select>
             </label>
 
             <label class="settings-field settings-field--full">
@@ -252,16 +221,7 @@ interface FriendChoice {
 
             <label class="settings-field">
               Journal Prompt Frequency
-              <select [value]="settings.settings().journalPromptFrequency"
-                      (change)="setJournalPromptFrequency($event)"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text">
-                <option>Off</option>
-                <option>Daily</option>
-                <option>Twice daily</option>
-                <option>Every 4 hours</option>
-              </select>
+              <app-select ariaLabel="Journal prompt frequency" [options]="journalPromptFrequencyOptions" [value]="settings.settings().journalPromptFrequency" (valueChange)="update('journalPromptFrequency', $any($event))"></app-select>
             </label>
 
             <label class="settings-field settings-field--full">
@@ -276,16 +236,7 @@ interface FriendChoice {
 
             <label class="settings-field">
               Profile Visibility
-              <select [value]="settings.settings().profileVisibility"
-                      (change)="setProfileVisibility($event)"
-                      [style.background-color]="theme.colors().bg"
-                      [style.border]="'1px solid ' + theme.colors().border"
-                      [style.color]="theme.colors().text">
-                      <option>Public</option>
-                      <option>Friends only</option>
-                <option>Selected friends</option>
-                <option>Private</option>
-              </select>
+              <app-select ariaLabel="Profile visibility" [options]="profileVisibilityOptions" [value]="settings.settings().profileVisibility" (valueChange)="update('profileVisibility', $any($event))"></app-select>
               @if (settings.settings().profileVisibility === 'Selected friends') {
                 <button (click)="openFriendPicker()"
                         [style.border]="'1px solid ' + theme.colors().primary"
@@ -826,4 +777,11 @@ export class SettingsComponent {
     }
   }
 
+
+  // Dropdown choices (app-select).
+  readonly lookingForOptions = [{ value: '', label: 'Select Goal' }, ...['Long-term', 'Short-term', 'Friendship', 'Not Sure', 'Other'].map((v) => ({ value: v, label: v }))];
+  readonly interestedInOptions = [{ value: '', label: 'Select Interest' }, ...['Men', 'Women', 'Everyone', 'Other'].map((v) => ({ value: v, label: v }))];
+  readonly loveLanguageOptions = [{ value: '', label: 'Select Love Language' }, ...['Words of Affirmation', 'Acts of Service', 'Receiving Gifts', 'Quality Time', 'Physical Touch'].map((v) => ({ value: v, label: v }))];
+  readonly journalPromptFrequencyOptions = ['Off', 'Daily', 'Twice daily', 'Every 4 hours'].map((v) => ({ value: v, label: v }));
+  readonly profileVisibilityOptions = ['Public', 'Friends only', 'Selected friends', 'Private'].map((v) => ({ value: v, label: v }));
 }

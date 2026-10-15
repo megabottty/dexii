@@ -41,7 +41,7 @@ const cleanCompatibility = (raw) => {
 const compatibilityChanged = (before, after) =>
   !before || before.score !== after.score || (before.note || '') !== (after.note || '') || JSON.stringify(before.factors || []) !== JSON.stringify(after.factors || []);
 
-const MAX_PHOTOS = 8;
+const MAX_PHOTOS = 20; // mirrored in src/app/core/config/photos.ts; photos are data URIs inside the crush document (16 MB BSON ceiling)
 const MAX_PHOTO_CHARS = 560_000; // ~400KB of JPEG once base64-encoded
 const PHOTO_DATA_URI = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 
@@ -587,11 +587,13 @@ exports.reorderCrushPhotos = async (req, res) => {
     const crush = await loadOwnCrush(req, res);
     if (!crush) return;
     const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String) : [];
+    console.log(`[photos/order] crush=${crush._id} before=${crush.photos.map((p) => String(p._id)).join(",")} requested=${ids.join(",")}`);
     const byId = new Map(crush.photos.map((p) => [String(p._id), p]));
     const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
     for (const p of crush.photos) if (!ids.includes(String(p._id))) ordered.push(p);
     crush.photos = ordered;
     await crush.save();
+    console.log(`[photos/order] saved=${crush.photos.map((p) => String(p._id)).join(",")}`);
     res.json({ ok: true, photos: crush.photos.map(photoMeta) });
     emitToUser(req.app.get('io'), req.user.id, 'crushesChanged', { crushId: String(crush._id) });
   } catch (err) {

@@ -1,4 +1,6 @@
+import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { computed, Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
+import { LoadingService } from '../../core/services/loading.service';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { IconComponent } from '../../core/components/icon/icon.component';
 import { CommonModule } from '@angular/common';
@@ -83,7 +85,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent, CrushSharePickerComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent, CrushSharePickerComponent, AppSelectComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
@@ -576,18 +578,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
               <label class="friends-list-add-modal-label">
                 Relationship Type
-                <select [value]="addFriendRelationshipType()"
-                        (change)="addFriendRelationshipType.set(asSelectValue($event))"
-                        [style.background-color]="theme.colors().bgSecondary"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.color]="theme.colors().text"
-                        class="friends-list-add-modal-input">
-                  <option value="Close Friend">Close Friend</option>
-                  <option value="Bestie">Bestie</option>
-                  <option value="Work Friend">Work Friend</option>
-                  <option value="Family Friend">Family Friend</option>
-                  <option value="New Friend">New Friend</option>
-                </select>
+                <app-select ariaLabel="Relationship type" [options]="relationshipTypeOptions" [value]="addFriendRelationshipType()" (valueChange)="addFriendRelationshipType.set($any($event))"></app-select>
               </label>
 
               <label class="friends-list-add-modal-label">
@@ -603,16 +594,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
               <label class="friends-list-add-modal-label">
                 Trust Level
-                <select [value]="addFriendTrustLevel()"
-                        (change)="addFriendTrustLevel.set(asSelectValue($event))"
-                        [style.background-color]="theme.colors().bgSecondary"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.color]="theme.colors().text"
-                        class="friends-list-add-modal-input">
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
+                <app-select ariaLabel="Trust level" [options]="trustLevelOptions" [value]="addFriendTrustLevel()" (valueChange)="addFriendTrustLevel.set($any($event))"></app-select>
               </label>
 
               <label class="friends-list-add-modal-label friends-list-add-modal-label--full">
@@ -629,18 +611,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
               <label class="friends-list-add-modal-label">
                 Invite Method
-                <select [value]="addFriendInviteMethod()"
-                        (change)="setInviteMethod(asSelectValue($event))"
-                        [style.background-color]="theme.colors().bgSecondary"
-                        [style.border]="'1px solid ' + theme.colors().border"
-                        [style.color]="theme.colors().text"
-                        class="friends-list-add-modal-input">
-                  <option value="email">Email</option>
-                  <option value="sms">SMS</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="copy">Copy Message</option>
-                  <option value="share">Share Sheet</option>
-                </select>
+                <app-select ariaLabel="Invite method" [options]="inviteMethodOptions" [value]="addFriendInviteMethod()" (valueChange)="setInviteMethod($any($event))"></app-select>
               </label>
 
               <label class="friends-list-add-modal-label">
@@ -1514,4 +1485,12 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   lockApp() {
     this.security.lockApp();
   }
+
+  /** Page-level loading feeds the global overlay (app-loading-overlay). */
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => this.isLoadingFriends()));
+
+  // Dropdown choices (app-select).
+  readonly relationshipTypeOptions = ['Close Friend', 'Bestie', 'Work Friend', 'Family Friend', 'New Friend'].map((v) => ({ value: v, label: v }));
+  readonly trustLevelOptions = ['Low', 'Medium', 'High'].map((v) => ({ value: v, label: v }));
+  readonly inviteMethodOptions = [{ value: 'email', label: 'Email' }, { value: 'sms', label: 'SMS' }, { value: 'whatsapp', label: 'WhatsApp' }, { value: 'copy', label: 'Copy Message' }, { value: 'share', label: 'Share Sheet' }];
 }

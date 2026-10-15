@@ -1,4 +1,6 @@
+import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { LoadingService } from '../../core/services/loading.service';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
 import { CommonModule } from '@angular/common';
@@ -23,7 +25,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, IconComponent, CrushSharePickerComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, IconComponent, CrushSharePickerComponent, AppSelectComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -323,22 +325,14 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
                   </label>
                   <label for="fp-relationship-type">Relationship Type
-                    <select id="fp-relationship-type" [(ngModel)]="friendshipDraft.relationshipType"
-                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
-                      <option value="">Choose…</option>
-                      @for (type of relationshipTypes; track type) { <option [value]="type">{{ type }}</option> }
-                    </select>
+                    <app-select id="fp-relationship-type" [options]="relationshipTypeOptions" [(ngModel)]="friendshipDraft.relationshipType"></app-select>
                   </label>
                   <label for="fp-how-met">How You Met
                     <input id="fp-how-met" [(ngModel)]="friendshipDraft.howMet" placeholder="e.g. College" maxlength="500"
                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
                   </label>
                   <label for="fp-trust">Trust Level
-                    <select id="fp-trust" [(ngModel)]="friendshipDraft.trustLevel"
-                            [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="user-profile-fp-field">
-                      <option value="">Choose…</option>
-                      @for (level of trustLevels; track level) { <option [value]="level">{{ level }}</option> }
-                    </select>
+                    <app-select id="fp-trust" [options]="trustLevelOptions" [(ngModel)]="friendshipDraft.trustLevel"></app-select>
                   </label>
                   <label class="user-profile-fp-field--full" for="fp-notes">Notes
                     <textarea id="fp-notes" [(ngModel)]="friendshipDraft.notes" rows="3" placeholder="Anything worth remembering" maxlength="2000"
@@ -753,4 +747,11 @@ export class UserProfileComponent {
     this.friendSharedCrushesLoading.set(false);
     this.profileLoading.set(false);
   }
+
+  /** Page-level loading feeds the global overlay (app-loading-overlay). */
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => this.profileLoading() || this.friendSharedCrushesLoading()));
+
+  // Dropdown choices (app-select).
+  readonly relationshipTypeOptions = [{ value: '', label: 'Choose…' }, ...this.relationshipTypes.map((v) => ({ value: v, label: v }))];
+  readonly trustLevelOptions = [{ value: '', label: 'Choose…' }, ...this.trustLevels.map((v) => ({ value: v, label: v }))];
 }

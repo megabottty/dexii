@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, computed, inject, signal, HostListener } from '@angular/core';
+import { LoadingService } from '../../core/services/loading.service';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -243,4 +244,7 @@ export class GroupChatComponent implements OnInit, OnDestroy {
     await this.groupsApi.leaveGroup(this.groupId);
     this.router.navigate(['/chat']);
   }
+
+  /** Page-level loading feeds the global overlay (app-loading-overlay). */
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => this.loading()));
 }

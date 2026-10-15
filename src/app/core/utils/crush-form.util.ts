@@ -7,6 +7,9 @@ import { CrushPronoun, HEARTBROKEN_LABEL, OTHER_LABEL, relationshipStatusOptions
  * The value behind the shared crush form. Both the New Crush modal and Edit Profile
  * bind to this shape, and both save through `formValueToCrushPatch`.
  */
+/** A resized photo waiting for its crush to be created. */
+export interface PendingPhoto { url: string; width: number; height: number; }
+
 export interface CrushFormValue {
   nickname: string;
   fullName: string;
@@ -21,6 +24,8 @@ export interface CrushFormValue {
   hair: string[];
   eyes: string[];
   build: string[];
+  /** Form-only (New Crush): photos picked before the crush exists; uploaded right after it is saved. */
+  pendingPhotos: PendingPhoto[];
   /** Form-only: packed into `customNotes` on save. */
   hairNotes: string;
   eyeNotes: string;
@@ -105,6 +110,7 @@ export function emptyCrushFormValue(): CrushFormValue {
     hair: [],
     eyes: [],
     build: [],
+    pendingPhotos: [],
     hairNotes: '',
     eyeNotes: '',
     buildNotes: '',

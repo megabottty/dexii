@@ -381,3 +381,19 @@
 @media (max-width: 480px) {
   .cf-compat-scale { padding: 0 8px; }
 }
+
+/* Relationship status: the user's own labels, each with edit (pencil) and delete (trash). */
+.cf-custom-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.cf-custom-chip { display: flex; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 4px 6px 4px 14px; border-radius: 22px; }
+.cf-custom-chip__input { flex: 1; min-width: 0; }
+.cf-order-btn svg { width: 16px; height: 16px; }
+.cf-order-btn--danger { color: #ef4444; }
+
+/* New Crush: queued photos. */
+.cf-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; margin: 10px 0; }
+.cf-photo { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; }
+.cf-photo__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cf-photo__remove { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; min-height: 28px; padding: 0; border: none; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 14px; cursor: pointer; }
+.cf-photo-add { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 10px 18px; border-radius: var(--radius-pill); font-size: var(--fs-btn); font-weight: 700; cursor: pointer; }
+.cf-photo-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cf-hint--error { color: #ef4444; }

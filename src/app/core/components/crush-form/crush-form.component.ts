@@ -1,9 +1,13 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { AppSelectComponent } from '../app-select/app-select.component';
+import { Component, booleanAttribute, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { COMPATIBILITY_PROMPTS, CompatibilityZone, compatibilityZone } from '../../utils/compatibility';
 import { ThemeService } from '../../services/theme.service';
 import { AvatarPickerComponent } from '../avatar-picker/avatar-picker.component';
+import { IconComponent } from '../icon/icon.component';
 import { CrushFormValue } from '../../utils/crush-form.util';
+import { UnreadableImageError, resizeImageFile } from '../../utils/image-resize';
+import { MAX_PHOTOS } from '../../config/photos';
 import {
   BUILD_OPTIONS,
   CRUSH_STATUS_OPTIONS,
@@ -37,7 +41,7 @@ interface ListGroup {
 @Component({
   selector: 'app-crush-form',
   standalone: true,
-  imports: [FormsModule, AvatarPickerComponent],
+  imports: [FormsModule, AvatarPickerComponent, IconComponent, AppSelectComponent],
   styleUrl: './crush-form.component.css',
   template: `
     <div class="cf">
@@ -69,6 +73,32 @@ interface ListGroup {
 
       <app-avatar-picker [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"></app-avatar-picker>
 
+      @if (allowPhotos()) {
+        <!-- New Crush: queue as many photos as the cap allows; they upload once the crush is saved. -->
+        <div class="cf-field cf-photos">
+          <span [style.color]="theme.colors().textSecondary" class="cf-label">Photos</span>
+          <p [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Pick as many as you like, up to {{ maxPhotos }} per crush. Without a profile picture, the first one becomes it. You can add, reorder or remove photos later from their page.</p>
+          @if (form().pendingPhotos.length) {
+            <div class="cf-photo-grid">
+              @for (photo of form().pendingPhotos; track $index; let i = $index) {
+                <div class="cf-photo" [style.border]="inputBorder()">
+                  <img [src]="photo.url" alt="" class="cf-photo__img">
+                  <button type="button" class="cf-photo__remove" (click)="removePendingPhoto(i)" [attr.aria-label]="'Remove photo ' + (i + 1)">✕</button>
+                </div>
+              }
+            </div>
+          }
+          @if (form().pendingPhotos.length < maxPhotos) {
+            <label class="cf-photo-add" [style.border]="inputBorder()" [style.color]="theme.colors().text" [style.background-color]="theme.colors().bgSecondary">
+              <span aria-hidden="true">＋</span> {{ form().pendingPhotos.length ? 'Add more photos' : 'Add photos' }}
+              <input type="file" accept="image/*" multiple (change)="onPhotosPicked($event)" class="cf-photo-input" aria-label="Add photos of this crush">
+            </label>
+          }
+          @if (photoBusy()) { <p [style.color]="theme.colors().textSecondary" class="cf-hint" role="status">{{ photoBusy() }}</p> }
+          @if (photoError()) { <p class="cf-hint cf-hint--error" role="alert">{{ photoError() }}</p> }
+        </div>
+      }
+
       <div class="cf-field">
         <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-nickname">Nickname (Optional)</label>
         <input id="cf-nickname" [(ngModel)]="form().nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
@@ -81,20 +111,12 @@ interface ListGroup {
 
       <div class="cf-field">
         <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-display-name">Name shown on cards</label>
-        <select id="cf-display-name" [(ngModel)]="form().displayName" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input cf-select">
-          @for (option of displayNameOptions; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
+        <app-select id="cf-display-name" [options]="displayNameOptions" [(ngModel)]="form().displayName"></app-select>
       </div>
 
       <div class="cf-field">
         <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-status">Status</label>
-        <select id="cf-status" [(ngModel)]="form().status" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input cf-select">
-          @for (option of statusOptions; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
+        <app-select id="cf-status" [options]="statusOptions" [(ngModel)]="form().status"></app-select>
         <span [style.color]="theme.colors().textSecondary" class="cf-hint">Where things stand right now.</span>
       </div>
 
@@ -209,6 +231,31 @@ interface ListGroup {
             </div>
           }
         </div>
+
+        @if (customRelationshipLabels().length > 0) {
+          <div class="cf-subfield">
+            <span [style.color]="theme.colors().textSecondary" class="cf-hint">Your own labels</span>
+            <div class="cf-custom-list" role="list">
+              @for (label of customRelationshipLabels(); track label) {
+                <div role="listitem" [style.border]="'1px solid ' + theme.colors().primary" [style.color]="theme.colors().text" class="cf-custom-chip">
+                  @if (editingCustomLabel() === label) {
+                    <input [(ngModel)]="customLabelEditDraft" name="customLabelEdit" maxlength="40"
+                           (keydown.enter)="saveCustomLabelEdit(label); $event.preventDefault()"
+                           (keydown.escape)="cancelCustomLabelEdit()"
+                           [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text"
+                           class="cf-input cf-custom-chip__input" aria-label="Edit label">
+                    <button type="button" class="cf-order-btn" (click)="saveCustomLabelEdit(label)" aria-label="Save label" title="Save">✓</button>
+                    <button type="button" class="cf-order-btn" (click)="cancelCustomLabelEdit()" aria-label="Cancel editing" title="Cancel">✕</button>
+                  } @else {
+                    <span class="cf-order-chip__text">{{ label }}</span>
+                    <button type="button" class="cf-order-btn" (click)="startCustomLabelEdit(label)" [attr.aria-label]="'Edit ' + label" title="Edit"><app-icon name="pencil" /></button>
+                    <button type="button" class="cf-order-btn cf-order-btn--danger" (click)="removeCustomLabel(label)" [attr.aria-label]="'Delete ' + label" title="Delete"><app-icon name="trash" /></button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         @if (form().relationshipLabels.length > 1) {
           <div class="cf-subfield">
@@ -485,6 +532,42 @@ interface ListGroup {
 export class CrushFormComponent {
   /** The parent owns this object; the form edits it in place. */
   readonly form = input.required<CrushFormValue>();
+  /** New Crush only: show the multi-photo picker (photos upload after the crush is created). */
+  readonly allowPhotos = input(false, { transform: booleanAttribute });
+  readonly maxPhotos = MAX_PHOTOS;
+  readonly photoBusy = signal('');
+  readonly photoError = signal('');
+
+  async onPhotosPicked(event: Event): Promise<void> {
+    const inputEl = event.target as HTMLInputElement;
+    const files = Array.from(inputEl.files || []);
+    inputEl.value = '';
+    this.photoError.set('');
+    const form = this.form();
+    const room = this.maxPhotos - form.pendingPhotos.length;
+    if (files.length > room) this.photoError.set(`You can add ${room} more photo${room === 1 ? '' : 's'} (${this.maxPhotos} per crush).`);
+    for (const file of files.slice(0, Math.max(0, room))) {
+      this.photoBusy.set(`Adding ${file.name}…`);
+      try {
+        const resized = await resizeImageFile(file, { maxEdge: 1024, quality: 0.82 });
+        if (!form.avatarUrl) {
+          // No profile picture yet: the first photo becomes it, and the rest go into the carousel.
+          form.avatarUrl = resized.url;
+          form.avatarConfig = undefined;
+          continue;
+        }
+        form.pendingPhotos = [...form.pendingPhotos, resized];
+      } catch (err) {
+        this.photoError.set(err instanceof UnreadableImageError ? err.message : `Could not read ${file.name}.`);
+      }
+    }
+    this.photoBusy.set('');
+  }
+
+  removePendingPhoto(index: number): void {
+    const form = this.form();
+    form.pendingPhotos = form.pendingPhotos.filter((_, i) => i !== index);
+  }
 
   readonly theme = inject(ThemeService);
   readonly todayDate = new Date().toISOString().slice(0, 10);
@@ -598,6 +681,45 @@ export class CrushFormComponent {
       form.relationshipLabels = [...form.relationshipLabels, label];
     }
     form.customRelationshipLabelDraft = '';
+  }
+
+  // ---- Labels the user typed themselves: edit in place or delete ----
+  readonly editingCustomLabel = signal<string | null>(null);
+  customLabelEditDraft = '';
+
+  /** Picked labels that are not in the preset list. */
+  customRelationshipLabels(): string[] {
+    const presets = this.relationshipOptions();
+    return this.form().relationshipLabels.filter((label) => !presets.includes(label));
+  }
+
+  startCustomLabelEdit(label: string): void {
+    this.editingCustomLabel.set(label);
+    this.customLabelEditDraft = label;
+  }
+
+  cancelCustomLabelEdit(): void {
+    this.editingCustomLabel.set(null);
+    this.customLabelEditDraft = '';
+  }
+
+  /** Renames the label in place (keeps its position); merging into an existing label just drops the old one. */
+  saveCustomLabelEdit(label: string): void {
+    const next = this.customLabelEditDraft.trim();
+    if (!next) return;
+    const form = this.form();
+    if (next !== label) {
+      form.relationshipLabels = form.relationshipLabels.includes(next)
+        ? form.relationshipLabels.filter((l) => l !== label)
+        : form.relationshipLabels.map((l) => (l === label ? next : l));
+    }
+    this.cancelCustomLabelEdit();
+  }
+
+  removeCustomLabel(label: string): void {
+    const form = this.form();
+    form.relationshipLabels = form.relationshipLabels.filter((l) => l !== label);
+    if (this.editingCustomLabel() === label) this.cancelCustomLabelEdit();
   }
 
   moveRelationshipLabel(label: string, delta: -1 | 1): void {

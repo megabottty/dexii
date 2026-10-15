@@ -145,3 +145,14 @@ The whole app is built to the WCAG 2.1 AA bar. The rules the code follows:
 - **Red flags and Safety Check** are parked behind `PARKED_FEATURES_ENABLED` in `core/config/premium-features.ts`
   (flag chip, Red Flag button and entries; Safety Check button, setup panel and banner, the Settings default toggle
   and the tour step are hidden). Flip it to bring them back, possibly as a mid-tier feature.
+
+## Shared UI pieces
+
+- **Dropdowns**: every select is `app-select` (`core/components/app-select`): a themed field whose list is pinned under
+  it (fixed-positioned, flips up when there is no room), with arrow-key / Enter / Escape support. Works with `ngModel`
+  or `[value]` + `(valueChange)`; pass `[options]="[{ value, label }]"`, `inline` for row layouts, `compact` for small.
+- **Loading**: `LoadingService` + `app-loading-overlay` (centred spinner over a dimmed page, above everything). Pages
+  register their loading signal with `bindHere(...)`; route changes report in from `AppComponent`.
+- **New Crush photos**: the form queues any number of photos (cap `MAX_PHOTOS` = 20, `core/config/photos.ts`); the first
+  becomes the profile picture when none is set, the rest upload once the crush is saved. Photos are data URIs inside the
+  crush document, so the cap guards the 16 MB record limit.

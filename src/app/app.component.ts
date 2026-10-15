@@ -1,12 +1,14 @@
 import { Component, signal, inject, OnInit, OnDestroy, DestroyRef, computed, HostListener } from '@angular/core';
 import { FocusTrapDirective } from './core/a11y/focus-trap.directive';
 import { RouterOutlet, Router } from '@angular/router';
-import { NavigationEnd } from '@angular/router';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SecurityService } from './core/services/security.service';
 import { ThemeService } from './core/services/theme.service';
 import { AlertModalComponent } from './core/components/alert-modal.component';
+import { LoadingOverlayComponent } from './core/components/loading-overlay.component';
+import { LoadingService } from './core/services/loading.service';
 import { WalkthroughComponent } from './core/components/walkthrough/walkthrough.component';
 import { FriendsApiService } from './core/services/friends-api.service';
 import { WalkthroughService } from './core/services/walkthrough.service';
@@ -25,7 +27,7 @@ interface WalkthroughStep {
 @Component({
   selector: 'app-root',
   styleUrl: './app.component.css',
-  imports: [RouterOutlet, AlertModalComponent, WalkthroughComponent, FocusTrapDirective],
+  imports: [RouterOutlet, AlertModalComponent, LoadingOverlayComponent, WalkthroughComponent, FocusTrapDirective],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [class.is-chat-route]="currentPath().startsWith('/chat')"
@@ -266,6 +268,7 @@ interface WalkthroughStep {
 
       <app-alert-modal></app-alert-modal>
       <app-walkthrough></app-walkthrough>
+      <app-loading-overlay></app-loading-overlay>
     </div>
   `
 })
@@ -281,6 +284,12 @@ export class AppComponent implements OnInit, OnDestroy {
   protected theme = inject(ThemeService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private loadingOverlay = inject(LoadingService);
+  /** Route changes (lazy pages included) show the global loading overlay until the navigation settles. */
+  private readonly navigationWatch = this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+    if (event instanceof NavigationStart) this.loadingOverlay.setNavigating(true);
+    else if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) this.loadingOverlay.setNavigating(false);
+  });
   private friendsApi = inject(FriendsApiService);
   private walkthroughService = inject(WalkthroughService);
   protected supportMenu = inject(SupportMenuService);

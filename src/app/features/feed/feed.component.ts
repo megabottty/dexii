@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { LoadingService } from '../../core/services/loading.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
@@ -308,4 +309,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (weeks < 5) return `${weeks}w ago`;
     return new Date(date).toLocaleDateString();
   }
+
+  /** Page-level loading feeds the global overlay (app-loading-overlay). */
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => this.tea.loading() && this.tea.items().length === 0));
 }

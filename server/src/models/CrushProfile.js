@@ -146,7 +146,7 @@ const CrushProfileSchema = new mongoose.Schema({
     }],
     default: []
   },
-  // Up to 8 photos. `audience: 'shared'` = every friend the crush is shared with;
+  // Up to MAX_PHOTOS (20) photos. `audience: 'shared'` = every friend the crush is shared with;
   // 'friends' = only the listed friendIds (and only if the crush is shared with them).
   photos: {
     type: [{

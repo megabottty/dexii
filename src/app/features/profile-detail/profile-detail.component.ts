@@ -1,4 +1,6 @@
+import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Entry } from '../../core/models/entry.model';
+import { LoadingService } from '../../core/services/loading.service';
 import { OTHER_LABEL } from '../../core/config/crush-form-options';
 import { PARKED_FEATURES_ENABLED } from '../../core/config/premium-features';
 import { IconComponent } from '../../core/components/icon/icon.component';
@@ -33,7 +35,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent, AppSelectComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -386,21 +388,9 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                     </button>
                   } @else {
                     <div class="status-quick-edit">
-                      <select aria-label="Status" [value]="quickStatusDraft() || c.status || statuses.Plotting"
-                              (change)="beginQuickStatusChange(c.id, asSelectValue($event))"
-                              [style.background-color]="theme.colors().bg"
-                              [style.border]="'1px solid ' + theme.colors().border"
-                              [style.color]="theme.colors().text"
-                              class="status-quick-select">
-                        <option [value]="statuses.Crush">Crush</option>
-                        <option [value]="statuses.Plotting">Plotting</option>
-                        <option [value]="statuses.Dating">Dating</option>
-                        <option [value]="statuses.Exclusive">Exclusive</option>
-                        <option [value]="statuses.BrokenUp">Broken Up</option>
-                        <option [value]="statuses.Heartbroken">Heartbroken</option>
-                        <option [value]="statuses.Archived">Archived</option>
-                        <option [value]="statuses.Friend">Friend</option>
-                      </select>
+                      <app-select class="status-quick-select" inline compact ariaLabel="Status"
+                                  [options]="statusSelectOptions" [value]="quickStatusDraft() || c.status || statuses.Plotting"
+                                  (valueChange)="beginQuickStatusChange(c.id, $any($event))"></app-select>
                       <button type="button"
                               (click)="closeQuickStatusEditor()"
                               [style.border]="'1px solid ' + theme.colors().border"
@@ -473,16 +463,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 10px;">
                   <label [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">Check-in interval</label>
-                  <select aria-label="Check-in length" [ngModel]="safetyDurationMinutes()"
-                          (ngModelChange)="setSafetyDuration($event)"
-                          [style.background-color]="theme.colors().bgSecondary"
-                          [style.border]="'1px solid ' + theme.colors().border"
-                          [style.color]="theme.colors().text"
-                          style="padding: 6px 10px; border-radius: 6px;">
-                    @for (minutes of safetyDurationOptions; track minutes) {
-                      <option [ngValue]="minutes">{{ minutes }} min</option>
-                    }
-                  </select>
+                  <app-select inline compact ariaLabel="Check-in length" [options]="safetyDurationSelectOptions" [ngModel]="safetyDurationMinutes()" (ngModelChange)="setSafetyDuration($event)"></app-select>
                   <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
                     We’ll pop a halfway check-in prompt automatically.
                   </span>
@@ -950,15 +931,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">✨ Vibe Tracker</h3>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">Ask me</span>
-                    <select aria-label="How often to ask about the vibe" [ngModel]="vibePromptFrequencyHours()" (ngModelChange)="setVibePromptFrequency($event)"
-                            [style.background-color]="theme.colors().bg"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.color]="theme.colors().text"
-                            style="padding: 4px 8px; border-radius: 6px; font-size: var(--fs-label);">
-                      @for (option of vibePromptOptions; track option.hours) {
-                        <option [ngValue]="option.hours">{{ option.label }}</option>
-                      }
-                    </select>
+                    <app-select inline compact ariaLabel="How often to ask about the vibe" [options]="vibePromptSelectOptions" [ngModel]="vibePromptFrequencyHours()" (ngModelChange)="setVibePromptFrequency($event)"></app-select>
                   </div>
                 </div>
 
@@ -1827,33 +1800,24 @@ export class ProfileDetailComponent implements OnDestroy {
     );
   }
 
+  /** Add Note: save it, then straight to "who should see it?" (Cancel keeps it private). */
   addNote(id: string) {
     this.modal.prompt("What's the tea?", "", (tea) => {
-      if (tea) {
-        if (!this.security.moderateContent(tea)) {
-          this.modal.show('Note flagged by AI moderation for safety.');
-          return;
-        }
-        this.modal.confirm("Should this note disappear after reading?", () => {
-          this.dataService.addEntry({
-            crushId: id,
-            type: 'Note',
-            content: tea,
-            isBurnAfterReading: true,
-            visibility: [],
-            isSensitive: false
-          });
-        }, () => {
-          this.dataService.addEntry({
-            crushId: id,
-            type: 'Note',
-            content: tea,
-            isBurnAfterReading: false,
-            visibility: [],
-            isSensitive: false
-          });
-        });
+      if (!tea) return;
+      if (!this.security.moderateContent(tea)) {
+        this.modal.show('Note flagged by AI moderation for safety.');
+        return;
       }
+      void this.dataService.addEntry({
+        crushId: id,
+        type: 'Note',
+        content: tea,
+        isBurnAfterReading: false,
+        visibility: [],
+        isSensitive: false
+      }).then((saved) => {
+        if (this.friends().length > 0) this.startSharingNote(saved.id);
+      });
     });
   }
 
@@ -2065,7 +2029,9 @@ export class ProfileDetailComponent implements OnDestroy {
         const updatedCrush = { ...crush, status: newStatus };
         this.dataService.updateCrush(updatedCrush, { fields: ['status'] });
         this.modal.show(isRestoring ? 'Crush restored from archive.' : 'Crush archived.');
-      }
+      },
+      undefined,
+      { title: isRestoring ? 'Restore crush?' : 'Archive crush?', confirmLabel: isRestoring ? 'Restore' : 'Archive' }
     );
   }
 
@@ -2254,10 +2220,15 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   deleteCrush(crushId: string): void {
-    this.modal.confirm('Delete this crush profile? This cannot be undone.', () => {
-      this.dataService.deleteCrush(crushId);
-      this.router.navigate(['/dashboard']);
-    });
+    this.modal.confirm(
+      'Delete this crush and everything saved about them: notes, photos, history and anything you shared? This cannot be undone.',
+      () => {
+        this.dataService.deleteCrush(crushId);
+        this.router.navigate(['/dashboard']);
+      },
+      undefined,
+      { title: 'Delete crush?', confirmLabel: 'Delete', danger: true }
+    );
   }
 
   toggleEditMode() {
@@ -2349,4 +2320,16 @@ export class ProfileDetailComponent implements OnDestroy {
     }
     this.isEditMode.set(false);
   }
+
+  /** Page-level loading feeds the global overlay (app-loading-overlay). */
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => this.friendCrushLoading()));
+
+  // Dropdown choices (app-select).
+  readonly statusSelectOptions = [
+    { value: CrushStatus.Crush, label: 'Crush' }, { value: CrushStatus.Plotting, label: 'Plotting' }, { value: CrushStatus.Dating, label: 'Dating' },
+    { value: CrushStatus.Exclusive, label: 'Exclusive' }, { value: CrushStatus.BrokenUp, label: 'Broken Up' }, { value: CrushStatus.Heartbroken, label: 'Heartbroken' },
+    { value: CrushStatus.Archived, label: 'Archived' }, { value: CrushStatus.Friend, label: 'Friend' }
+  ];
+  readonly safetyDurationSelectOptions = this.safetyDurationOptions.map((minutes) => ({ value: minutes, label: `${minutes} min` }));
+  readonly vibePromptSelectOptions = this.vibePromptOptions.map((option) => ({ value: option.hours, label: option.label }));
 }

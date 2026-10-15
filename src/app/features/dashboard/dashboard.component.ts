@@ -1,4 +1,5 @@
 import { compatibilityLabel } from '../../core/utils/compatibility';
+import { LoadingService } from '../../core/services/loading.service';
 import { CRUSH_VIEW_STORAGE_KEY, CrushViewMode, STACK_VIEW_ENABLED } from '../../core/config/dashboard-view'; // stack view
 import { CrushStackComponent } from '../../core/components/crush-stack/crush-stack.component'; // stack view
 import { Component, signal, inject, computed, OnInit } from '@angular/core';
@@ -23,7 +24,7 @@ type CrushFilter = 'All' | 'Dating' | 'NotDating';
 const isDatingStatus = (status: CrushStatus | string | undefined): boolean =>
   status === CrushStatus.Dating || status === CrushStatus.Exclusive;
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
-import { CrushFormValue, crushFormTextFields, emptyCrushFormValue, formValueToCrushPatch } from '../../core/utils/crush-form.util';
+import { CrushFormValue, crushFormTextFields, emptyCrushFormValue, formValueToCrushPatch, PendingPhoto } from '../../core/utils/crush-form.util';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { SubscriptionTier } from '../../core/models/user.model';
 
@@ -51,7 +52,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
             <h3 class="dashboard-component__s5">New Crush</h3>
 
             <div class="dashboard-component__s6">
-              <app-crush-form [form]="newCrush"></app-crush-form>
+              <app-crush-form [form]="newCrush" allowPhotos></app-crush-form>
 
               @if (friends().length > 0) {
                 <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-share-section">
@@ -94,11 +95,14 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
       <app-navbar></app-navbar>
 
       <main class="dashboard-component__s70">
-        <app-page-hint
-          hintKey="dashboard_inline"
-          title="Dashboard Hint"
-          message="Use New Crush to add a crush. Keep notes private/public, then control who sees what from Friends > Sharing Controls.">
-        </app-page-hint>
+        <!-- The hint belongs to the Stash itself; it steps aside while the New Crush modal is open. -->
+         @if (!showNewEntryModal()) {
+          <app-page-hint
+            hintKey="dashboard_inline"
+            title="Dashboard Hint"
+            message="Use New Crush to add a crush. Keep notes private/public, then control who sees what from Friends > Sharing Controls.">
+          </app-page-hint>
+        }
 
         @if (!dataService.hasLoaded()) {
           <div class="dashboard-crush-loading"
@@ -673,6 +677,7 @@ export class DashboardComponent implements OnInit {
       this.newCrush.avatarUrl = await this.avatarRenderer.render(this.newCrush.avatarConfig, 256);
     }
 
+    const pendingPhotos = [...this.newCrush.pendingPhotos];
     const createdCrush = this.dataService.addCrush({
       ...formValueToCrushPatch(this.newCrush),
       visibility: []
@@ -692,9 +697,25 @@ export class DashboardComponent implements OnInit {
 
     this.closeModal();
 
+    // Photos picked in the form need the crush's server id, so they go up once it is saved.
+    if (pendingPhotos.length) void this.uploadPendingPhotos(createdCrush.id, pendingPhotos);
+
     // First crush ever: guide them through sharing it with a friend.
     if (this.dataService.getAllCrushes()().length === 1) {
       this.walkthrough.start(FIRST_CRUSH_SHARE_TOUR_KEY, FIRST_CRUSH_SHARE_TOUR);
+    }
+  }
+
+  /** Uploads the New Crush photos one by one; the global overlay shows while they go up. */
+  readonly photoUploadBusy = signal(false);
+  private async uploadPendingPhotos(localId: string, photos: PendingPhoto[]): Promise<void> {
+    this.photoUploadBusy.set(true);
+    try {
+      const saved = await this.dataService.savedCrush(localId);
+      if (!saved) return;
+      for (const photo of photos) await this.dataService.addCrushPhoto(saved.id, photo);
+    } finally {
+      this.photoUploadBusy.set(false);
     }
   }
 
@@ -702,4 +723,7 @@ export class DashboardComponent implements OnInit {
     this.newCrush = emptyCrushFormValue();
     this.shareWith.set([]);
   }
+
+  /** Page-level loading feeds the global overlay (app-loading-overlay). */
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => !this.dataService.hasLoaded() || this.photoUploadBusy()));
 }
