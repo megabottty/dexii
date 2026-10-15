@@ -217,7 +217,7 @@
   padding: 9px 12px;
   min-height: 38px;
   border: 1.5px solid var(--border);
-  border-radius: 7px; /* the crush page action grid keeps its softer corners on purpose */
+  border-radius: var(--radius-pill); /* pills, like every other button in the app */
   background: transparent;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1208,3 +1208,11 @@ button.friend-item:disabled {
 .status-visibility-card .selector-header,
 .status-visibility-card .status-visibility-actions { flex-shrink: 0; }
 .status-visibility-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+/* Added Notes: Share / Edit / Delete on each note, and the inline editor. */
+.note-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.note-btn { background: transparent; padding: 4px 12px; min-height: 32px; border-radius: 999px; font-size: var(--fs-label); font-weight: 700; cursor: pointer; }
+.note-edit-textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; font: inherit; font-size: var(--fs-body); line-height: 1.5; resize: vertical; }
+.note-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.note-edit-actions .action-btn-styled { width: auto; }
+.note-icon-btn { width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }

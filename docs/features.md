@@ -30,7 +30,9 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 ## 👥 Friends & Sharing
 - **Inner Circle**: Manage your friends list. Includes categories like "Close Friends", "Casual", and "Work".
 - **One-to-One Sharing**: All sharing is strictly one-to-one. No groups or public profiles.
-- **Granular Controls**: Decide which friend can see which crush profile or specific "Tea" (Notes). (Simulated UI).
+- **Granular Controls**: Decide which friend can see which crush profile or specific "Tea" (Notes). On the crush page each
+  note has Share, Edit and Delete; the share picker opens with the note's current audience selected (all friends when it is
+  public), deselecting everyone makes it private, and only newly added friends get a message.
 - **In-App Messaging**: Secure, end-to-end encrypted style chat between friends.
 - **Self-Destructing Messages**: Messages containing the word "secret" are automatically flagged for self-destruction/deletion.
 - **Crush Tier Limits**: Free keeps up to 3 crushes, Premium 8, Gold unlimited. Friends are never limited.

@@ -13,6 +13,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       @case ('play') {
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M7 4.8v14.4a1 1 0 0 0 1.52.86l11.2-7.2a1 1 0 0 0 0-1.72L8.52 3.94A1 1 0 0 0 7 4.8z"/></svg>
       }
+      @case ('pencil') {
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      }
       @case ('trash') {
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
       }
@@ -26,5 +29,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   `
 })
 export class IconComponent {
-  readonly name = input.required<'pause' | 'play' | 'trash' | 'profile' | 'share'>();
+  readonly name = input.required<'pause' | 'play' | 'trash' | 'profile' | 'share' | 'pencil'>();
 }

@@ -1,3 +1,5 @@
+import { Entry } from '../../core/models/entry.model';
+import { IconComponent } from '../../core/components/icon/icon.component';
 import { Component, signal, inject, computed, OnDestroy, DestroyRef, effect, untracked } from '@angular/core';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -29,7 +31,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -43,7 +45,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
       <div [style.background]="'linear-gradient(135deg, ' + theme.colors().primary + '22, ' + theme.colors().accent + '22)'"
            class="header-gradient-container">
-        <a href="#" (click)="goBack($event)" [style.color]="theme.colors().text" class="back-link">← {{ isReadOnlyFriendView() || friendCrushLoading() || friendCrushNotFound() || friendCrushError() ? 'Back' : 'Back to Dashboard' }}</a>
+        <a href="#" (click)="goBack($event)" [style.color]="theme.colors().text" class="back-link">← {{ isReadOnlyFriendView() || friendCrushLoading() || friendCrushNotFound() || friendCrushError() ? 'Back' : 'Back to Your Stash' }}</a>
       </div>
 
       @if ((isReadOnlyFriendView() || previewAsFriend()) && crush(); as c) {
@@ -370,9 +372,6 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                             class="profile-pill profile-pill--status status-chip-button">
                       Status: {{ c.status || 'Plotting' }}
                     </button>
-                    <span class="status-visibility-info"
-                          title="Status tracks where things stand: Crush → Plotting → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend if it ends. Changing status will ask whether to make the update Public (everyone on your friends list can see it) or Private (only friends you pick can see it)."
-                          aria-label="What does changing status do?">ℹ</span>
                   } @else {
                     <div class="status-quick-edit">
                       <select aria-label="Status" [value]="quickStatusDraft() || c.status || statuses.Plotting"
@@ -747,40 +746,48 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                  class="info-section-card">
               <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Vitals</h2>
               <div class="info-grid">
-                <div class="info-row-styled">
-                  <span class="info-label">Hair</span>
-                  <span class="info-value">{{ c.hair?.join(', ') || 'N/A' }}</span>
-                </div>
+                @if (c.hair?.length) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Hair</span>
+                    <span class="info-value">{{ c.hair!.join(', ') }}</span>
+                  </div>
+                }
                 @if (parsedNotes().hairNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Hair Notes</span>
                      <span class="info-value note-text">{{ parsedNotes().hairNotes }}</span>
                    </div>
                 }
-                <div class="info-row-styled">
-                  <span class="info-label">Eyes</span>
-                  <span class="info-value">{{ c.eyes?.join(', ') || 'N/A' }}</span>
-                </div>
+                @if (c.eyes?.length) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Eyes</span>
+                    <span class="info-value">{{ c.eyes!.join(', ') }}</span>
+                  </div>
+                }
                 @if (parsedNotes().eyeNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Eye Notes</span>
                      <span class="info-value note-text">{{ parsedNotes().eyeNotes }}</span>
                    </div>
                 }
-                <div class="info-row-styled">
-                  <span class="info-label">Build</span>
-                  <span class="info-value">{{ c.build?.join(', ') || 'N/A' }}</span>
-                </div>
+                @if (c.build?.length) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Build</span>
+                    <span class="info-value">{{ c.build!.join(', ') }}</span>
+                  </div>
+                }
                 @if (parsedNotes().buildNotes) {
                    <div class="info-row-styled full-width note-detail">
                      <span class="info-label">Build Notes</span>
                      <span class="info-value note-text">{{ parsedNotes().buildNotes }}</span>
                    </div>
                 }
-                <div class="info-row-styled">
-                  <span class="info-label">Pronouns</span>
-                  <span class="info-value">{{ c.pronouns || 'N/A' }}</span>
-                </div>
+                @if (c.pronouns) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Pronouns</span>
+                    <span class="info-value">{{ c.pronouns }}</span>
+                  </div>
+                }
                 <div class="info-row-styled">
                   <span class="info-label">Crush Status</span>
                   <span class="info-value">{{ c.status }}</span>
@@ -811,30 +818,42 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                     <span class="info-value note-text">{{ c.heartbreakRecovery }}</span>
                   </div>
                 }
-                <div class="info-row-styled">
-                  <span class="info-label">How we met</span>
-                  <span class="info-value">{{ c.howWeMet || 'N/A' }}</span>
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">When we met</span>
-                  <span class="info-value">{{ c.whenWeMet || 'N/A' }}</span>
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Grade</span>
-                  <span class="info-value">{{ c.grade || 'N/A' }}</span>
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Occupation</span>
-                  <span class="info-value">{{ c.occupation || 'N/A' }}</span>
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Family</span>
-                  <span class="info-value">{{ c.family || 'N/A' }}</span>
-                </div>
-                <div class="info-row-styled">
-                  <span class="info-label">Friends</span>
-                  <span class="info-value">{{ c.friends?.join(', ') || 'None' }}</span>
-                </div>
+                @if (c.howWeMet) {
+                  <div class="info-row-styled">
+                    <span class="info-label">How we met</span>
+                    <span class="info-value">{{ c.howWeMet }}</span>
+                  </div>
+                }
+                @if (c.whenWeMet) {
+                  <div class="info-row-styled">
+                    <span class="info-label">When we met</span>
+                    <span class="info-value">{{ c.whenWeMet }}</span>
+                  </div>
+                }
+                @if (c.grade) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Grade</span>
+                    <span class="info-value">{{ c.grade }}</span>
+                  </div>
+                }
+                @if (c.occupation) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Occupation</span>
+                    <span class="info-value">{{ c.occupation }}</span>
+                  </div>
+                }
+                @if (c.family) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Family</span>
+                    <span class="info-value">{{ c.family }}</span>
+                  </div>
+                }
+                @if (c.friends?.length) {
+                  <div class="info-row-styled">
+                    <span class="info-label">Friends</span>
+                    <span class="info-value">{{ c.friends!.join(', ') }}</span>
+                  </div>
+                }
               </div>
 
               @if (c.memorableMoments) {
@@ -898,16 +917,28 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                               {{ noteVisibility(entry).label }}
                             </span>
                             <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
-                              {{ entry.timestamp | date:'MMM d, h:mm a' }}
+                              {{ entry.timestamp | date:'MMM d, h:mm a' }}@if (entry.editedAt) { · edited }
                             </span>
                           </div>
-                          <button (click)="startSharingNote(entry.id)"
-                                  [style.background-color]="theme.colors().primary"
-                                  style="border: none; color: white; border-radius: 999px; padding: 4px 10px; font-size: var(--fs-label); cursor: pointer;">
-                            Share note
-                          </button>
+                          <div class="note-actions">
+                            <button type="button" (click)="startSharingNote(entry.id)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="note-btn">Share</button>
+                            <button type="button" (click)="startEditNote(entry)" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="note-icon-btn" aria-label="Edit note" title="Edit note"><app-icon name="pencil" /></button>
+                            <button type="button" (click)="deleteNote(entry)" [style.color]="theme.colors().danger" [style.border]="'1px solid ' + theme.colors().danger" class="note-icon-btn" aria-label="Delete note" title="Delete note"><app-icon name="trash" /></button>
+                          </div>
                         </div>
-                        <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                        @if (editingNoteId() === entry.id) {
+                          <textarea [(ngModel)]="noteDraft" rows="4" aria-label="Edit note"
+                                    [style.background-color]="theme.colors().bgSecondary"
+                                    [style.border]="'1px solid ' + theme.colors().border"
+                                    [style.color]="theme.colors().text"
+                                    class="note-edit-textarea"></textarea>
+                          <div class="note-edit-actions">
+                            <button type="button" (click)="cancelEditNote()" class="action-btn-styled secondary">Cancel</button>
+                            <button type="button" (click)="saveEditNote(entry)" class="action-btn-styled primary">Save</button>
+                          </div>
+                        } @else {
+                          <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                        }
                         <p [style.color]="theme.colors().textSecondary" style="margin: 8px 0 0; font-size: var(--fs-label);">
                           {{ noteVisibility(entry).detail }}
                         </p>
@@ -2065,7 +2096,8 @@ export class ProfileDetailComponent implements OnDestroy {
 
   confirmShareSelected(crushId: string): void {
     const selectedIds = this.shareFriendIds();
-    if (selectedIds.length === 0) {
+    const entryId = this.pendingShareEntryId();
+    if (selectedIds.length === 0 && !entryId) {
       this.modal.show('Select at least one friend to share with.');
       return;
     }
@@ -2076,21 +2108,18 @@ export class ProfileDetailComponent implements OnDestroy {
       return;
     }
 
-    const entryId = this.pendingShareEntryId();
     const selectedFriends = this.friends().filter((friend) => selectedIds.includes(friend.id));
     const selectedSet = new Set(selectedIds);
 
     if (entryId) {
-      const currentSet = new Set(this.friends().filter((friend) => this.isEntrySharedWithFriend(friend.id)).map((friend) => friend.id));
-      this.friends().forEach((friend) => {
-        const shouldBeSelected = selectedSet.has(friend.id);
-        const isSelected = currentSet.has(friend.id);
-        if (shouldBeSelected !== isSelected) {
-          this.dataService.toggleEntryVisibility(entryId, friend.id);
-        }
-      });
+      // The picker opened with the current audience selected, so the selection is the new audience.
+      // Everyone selected is stored as 'public' so friends added later see it too.
+      const before = new Set(this.currentNoteAudience(entryId));
+      const everyone = selectedIds.length > 0 && selectedIds.length === this.friends().length;
+      this.dataService.setEntryVisibility(entryId, everyone ? ['public'] : selectedIds);
 
-      selectedFriends.forEach((friend) => {
+      const newlyShared = selectedFriends.filter((friend) => !before.has(friend.id));
+      newlyShared.forEach((friend) => {
         this.messaging.sendMessage({
           senderId: 'me',
           receiverId: friend.id,
@@ -2102,7 +2131,9 @@ export class ProfileDetailComponent implements OnDestroy {
       });
 
       this.closeShareSelector();
-      this.modal.show(`Note shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
+      if (selectedFriends.length === 0) this.modal.show('Note is now private.');
+      else if (everyone) this.modal.show('Note shared with all your friends.');
+      else this.modal.show(`Note shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
       return;
     }
 
@@ -2141,7 +2172,57 @@ export class ProfileDetailComponent implements OnDestroy {
       return;
     }
     this.pendingShareEntryId.set(entryId);
+    this.shareFriendIds.set(this.currentNoteAudience(entryId));
     this.showShareSelector.set(true);
+  }
+
+  /** Friend ids a note is shared with today; 'public' means every friend. */
+  private currentNoteAudience(entryId: string): string[] {
+    const entry = this.entries().find((e) => e.id === entryId);
+    if (!entry) return [];
+    const friendIds = this.friends().map((friend) => friend.id);
+    if (entry.visibility.includes('public')) return friendIds;
+    return entry.visibility.filter((id) => friendIds.includes(id));
+  }
+
+  // ---- Edit / delete a note ----
+  editingNoteId = signal<string | null>(null);
+  noteDraft = '';
+
+  startEditNote(entry: Entry): void {
+    this.editingNoteId.set(entry.id);
+    this.noteDraft = entry.content;
+  }
+
+  cancelEditNote(): void {
+    this.editingNoteId.set(null);
+    this.noteDraft = '';
+  }
+
+  async saveEditNote(entry: Entry): Promise<void> {
+    const draft = this.noteDraft.trim();
+    if (!draft) return;
+    if (!this.security.moderateContent(draft)) {
+      this.modal.show('Note flagged by AI moderation for safety.');
+      return;
+    }
+    if (draft === entry.content) {
+      this.cancelEditNote();
+      return;
+    }
+    await this.dataService.updateEntryContent(entry.id, draft);
+    this.cancelEditNote();
+    this.modal.show('Note updated.');
+  }
+
+  deleteNote(entry: Entry): void {
+    const shared = entry.visibility.length > 0;
+    this.modal.confirm(
+      shared ? 'Delete this note? Friends you shared it with will lose it too. This cannot be undone.' : 'Delete this note? This cannot be undone.',
+      () => { void this.dataService.deleteEntry(entry.id); },
+      undefined,
+      { title: 'Delete note', confirmLabel: 'Delete', danger: true }
+    );
   }
 
   isEntrySharedWithFriend(friendId: string): boolean {

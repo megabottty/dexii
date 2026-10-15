@@ -1184,6 +1184,32 @@ export class DataService {
     }
   }
 
+  /** Sets exactly who can see an entry: friend ids, ['public'] for every friend, or [] for private. */
+  public setEntryVisibility(entryId: string, visibility: string[]): void {
+    const entry = this._entries().find((e) => e.id === entryId);
+    if (!entry) return;
+    const updatedEntry: Entry = { ...entry, visibility: [...visibility] };
+    this._entries.update((entries) => entries.map((e) => (e.id === entryId ? updatedEntry : e)));
+    this.persistEntries();
+    void this.persistEntryUpdate(updatedEntry);
+  }
+
+  /** Removes an entry here and on the server. Friends it was shared with lose it too. */
+  public async deleteEntry(entryId: string): Promise<void> {
+    const entry = this._entries().find((e) => e.id === entryId);
+    if (!entry) return;
+    this._entries.update((entries) => entries.filter((e) => e.id !== entryId));
+    this.persistEntries();
+    if (!this.entriesApi.isAuthenticated()) return;
+    try {
+      await this.entriesApi.delete(entryId);
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      const message = error instanceof Error ? error.message : 'Connection error.';
+      this.modal.show(`Note removed on this device, but the server could not be reached yet: ${message}`);
+    }
+  }
+
   public toggleEntryVisibility(entryId: string, friendId: string): void {
     let updatedEntry: Entry | null = null;
 
