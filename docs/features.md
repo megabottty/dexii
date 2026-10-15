@@ -84,7 +84,8 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Friends' read**: friends you've shared the crush with get a "Weigh in" slider on their view
   (`PUT/DELETE /api/crushes/:id/compatibility/vote`). The owner sees the average, each friend's score and note,
   and a one-liner comparing the two reads. A vote logs `compatibility_voted` in History and lands in Tea.
-- Shown as a card under the crush header and as a 💞 chip on the dashboard card. Helpers live in
+- On your crush page it is a collapsed section just above Social Connections (tap Show to expand; a one-line
+  summary shows your read and how many friends weighed in). Also a 💞 chip on the dashboard card. Helpers live in
   `core/utils/compatibility.ts`.
 - **Weekly check-in**: when your read is 7+ days old the crush page asks "Still 72% Really clicking with Sunny?"
   with a slider; "Same as before" snoozes it for a week (`compat_checked_<id>` on the device), "Update my read"

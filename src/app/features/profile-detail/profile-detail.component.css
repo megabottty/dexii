@@ -1193,3 +1193,18 @@ button.friend-item:disabled {
   .compat-reveal { animation: none; }
   .compat-reveal-piece { animation: none; opacity: 0; }
 }
+
+/* Owner page: the Compatibility section sits above Social Connections and starts collapsed (DEX-7). */
+.compat-section .extended-info-title { margin-bottom: 0; }
+.compat-toggle { width: auto; padding: 8px 16px; }
+.compat-summary { margin: 12px 0 0; font-size: var(--fs-small); }
+.compat-panel { display: grid; gap: 18px; margin-top: 16px; }
+.compat-panel-actions { display: flex; }
+.compat-panel-actions .action-btn-styled { width: auto; }
+
+/* Status-sharing modal: the card is capped at 80vh, so the body scrolls while the header and the
+   Cancel / Save Status row stay in view. Before this, picking "Keep current sharing" grew the friend
+   list past the cap and the action row was clipped off the bottom. */
+.status-visibility-card .selector-header,
+.status-visibility-card .status-visibility-actions { flex-shrink: 0; }
+.status-visibility-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
