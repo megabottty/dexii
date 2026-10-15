@@ -1,4 +1,5 @@
 import { WalkthroughStep } from '../services/walkthrough.service';
+import { PARKED_FEATURES_ENABLED } from './premium-features';
 
 /** Shown once, the first time a user lands on the dashboard after signing in. */
 export const FIRST_LOGIN_TOUR_KEY = 'first_login';
@@ -12,7 +13,7 @@ export const FIRST_LOGIN_TOUR: WalkthroughStep[] = [
   {
     icon: '🗂',
     title: 'Add your crushes',
-    body: 'Tap "New Crush" on your dashboard to add someone. Track their vibe, how you met, red flags, and anything else worth remembering.'
+    body: 'Tap "New Crush" on your dashboard to add someone. Track their vibe, how you met, and anything else worth remembering.'
   },
   {
     icon: '👥',
@@ -24,11 +25,12 @@ export const FIRST_LOGIN_TOUR: WalkthroughStep[] = [
     title: 'Share only what you want',
     body: 'Sharing is one-to-one and opt-in. You pick which crush, and which friend sees it. Everything else stays private.'
   },
-  {
+  // Safety Check is parked (PARKED_FEATURES_ENABLED), so its step only shows when it's back.
+  ...(PARKED_FEATURES_ENABLED ? [{
     icon: '🛡️',
     title: 'Stay safe out there',
     body: 'Open any crush profile and use Safety Check to set a check-in before a date, so a trusted friend knows where you are.'
-  },
+  }] : []),
   {
     icon: '🔒',
     title: 'Your vault',

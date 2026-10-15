@@ -95,6 +95,11 @@ export const crushLimitLabel = (limit: number): string =>
  */
 export const TIER_GATING_ENABLED = false;
 
+/** Parked for a later release, possibly as a mid-tier feature: red flags (the 🚩 chip, the Red Flag button and
+ *  the Red Flag Entries list on the crush page) and Safety Check (the crush page button, setup panel and status
+ *  banner, the Settings default toggle, the tour step). Flip to true to bring them all back. */
+export const PARKED_FEATURES_ENABLED = false;
+
 /** True when `level` is at or above the feature's minimum (or the gate is off). */
 export const accessAllows = (level: AccessLevel, feature: PremiumFeatureKey, gatingEnabled: boolean = TIER_GATING_ENABLED): boolean => {
   const entry = PREMIUM_FEATURES[feature];

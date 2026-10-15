@@ -1,4 +1,6 @@
 import { Entry } from '../../core/models/entry.model';
+import { OTHER_LABEL } from '../../core/config/crush-form-options';
+import { PARKED_FEATURES_ENABLED } from '../../core/config/premium-features';
 import { IconComponent } from '../../core/components/icon/icon.component';
 import { Component, signal, inject, computed, OnDestroy, DestroyRef, effect, untracked } from '@angular/core';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
@@ -102,11 +104,11 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <span class="profile-rating-stars" [style.color]="theme.colors().onBgAccent">
                   @for (star of [1,2,3,4,5]; track star) { {{ (c.rating || 0) >= star ? '★' : '☆' }} }
                 </span>
-                @if ((c.redFlags || 0) > 0) {
+                @if (parkedFeaturesEnabled && (c.redFlags || 0) > 0) {
                   <button type="button" (click)="showRedFlagReason(c)"
                           [style.color]="theme.colors().danger" [style.border]="'1px solid #ef4444'"
                           class="profile-pill red-flag-chip-button" aria-label="Red flagged">🚩 Red flag</button>
-                } @else {
+                } @else if (parkedFeaturesEnabled) {
                   <span [style.color]="'#22c55e'" [style.border]="'1px solid #22c55e'" class="profile-pill" aria-label="No red flags">⚑ No flags</span>
                 }
               </div>
@@ -191,7 +193,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                     @if (c.heartbreakRecovery) {
                       <p style="margin: 0;"><strong>Heartbreak recovery:</strong> {{ c.heartbreakRecovery }}</p>
                     }
-                    @if (c.redFlagReason) {
+                    @if (parkedFeaturesEnabled && c.redFlagReason) {
                       <p style="margin: 0;" [style.color]="theme.colors().danger"><strong>Red flag notes:</strong> {{ c.redFlagReason }}</p>
                     }
                     @if (c.social?.instagram || c.social?.snapchat || c.social?.twitter || c.social?.facebook || c.social?.whatsapp) {
@@ -305,7 +307,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
         </div>
       } @else if (crush(); as c) {
         <div class="profile-main-content">
-          @if (safetyState() !== 'Draft') {
+          @if (parkedFeaturesEnabled && safetyState() !== 'Draft') {
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + (safetyState() === 'Urgent' ? '#ef4444' : theme.colors().border)"
                  style="position: sticky; top: 12px; z-index: 30; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
@@ -333,10 +335,20 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                class="profile-header-card">
             <div class="profile-header-flex">
               <div class="profile-avatar-wrap">
-                <app-crush-photo-gallery layout="hero" size="large" [crushId]="c.id" mode="owner" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'" [sharedFriends]="friendsSharedWith(c)"></app-crush-photo-gallery>
+                <app-crush-photo-gallery layout="hero" size="large" [crushId]="c.id" mode="owner" (editRequested)="editPhoto()" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop'" [sharedFriends]="friendsSharedWith(c)"></app-crush-photo-gallery>
               </div>
               <div class="profile-title-section">
-                <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
+                <div class="profile-name-row">
+                  <h1 class="profile-name">{{ getCrushDisplayName(c) }}</h1>
+                  @if (!isEditMode()) {
+                    <div class="profile-quick-actions" aria-label="Crush actions">
+                      <button type="button" (click)="toggleEditMode()" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="profile-quick-action" aria-label="Edit profile" title="Edit profile"><app-icon name="pencil" /></button>
+                      <button type="button" (click)="openShareSelector(c.id)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="profile-quick-action" aria-label="Share with a friend" title="Share"><app-icon name="share" /></button>
+                      <button type="button" (click)="toggleArchive(c)" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="profile-quick-action" [attr.aria-label]="c.status === statuses.Archived ? 'Restore from archive' : 'Archive'" [attr.title]="c.status === statuses.Archived ? 'Restore from archive' : 'Archive'"><app-icon [name]="c.status === statuses.Archived ? 'restore' : 'archive'" /></button>
+                      <button type="button" (click)="deleteCrush(c.id)" [style.color]="theme.colors().danger" [style.border]="'1px solid ' + theme.colors().danger" class="profile-quick-action" aria-label="Delete crush" title="Delete"><app-icon name="trash" /></button>
+                    </div>
+                  }
+                </div>
 
                 <div class="profile-rating-row" aria-label="Vibe rating">
                   <span class="profile-rating-stars" [style.color]="theme.colors().onBgAccent">
@@ -344,7 +356,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                       {{ (c.rating || 0) >= star ? '★' : '☆' }}
                     }
                   </span>
-                  @if ((c.redFlags || 0) > 0) {
+                  @if (parkedFeaturesEnabled && (c.redFlags || 0) > 0) {
                     <button type="button"
                             (click)="showRedFlagReason(c)"
                             [style.color]="theme.colors().danger"
@@ -353,7 +365,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                             title="Red flag logged">
                       🚩 Red flag
                     </button>
-                  } @else {
+                  } @else if (parkedFeaturesEnabled) {
                     <span [style.color]="'#22c55e'"
                           [style.border]="'1px solid #22c55e'"
                           class="profile-pill"
@@ -423,39 +435,37 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
 
             @if (!isEditMode()) {
               <div class="action-buttons-grid">
-                <button (click)="toggleEditMode()" class="action-btn-styled secondary">Edit Profile</button>
                 <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
-                <button (click)="openShareSelector(c.id)" class="action-btn-styled primary">🔗 Share</button>
                 <button (click)="previewAsFriend.set(true)" class="action-btn-styled secondary">👁 View as Friend</button>
-                @if (gate.canUseSafetyCheck()) {
-                  <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
-                    {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
-                  </button>
-                } @else {
-                  <button (click)="showSafetyUpgrade.set(!showSafetyUpgrade())" class="action-btn-styled safety">
-                    🛡️ Safety Check · Premium
-                  </button>
+                @if (parkedFeaturesEnabled) {
+                  @if (gate.canUseSafetyCheck()) {
+                    <button (click)="toggleSafetySetup()" class="action-btn-styled safety">
+                      {{ showSafetySetup() ? 'Hide Safety Check' : '🛡️ Safety Check' }}
+                    </button>
+                  } @else {
+                    <button (click)="showSafetyUpgrade.set(!showSafetyUpgrade())" class="action-btn-styled safety">
+                      🛡️ Safety Check · Premium
+                    </button>
+                  }
                 }
 
-                <button (click)="toggleArchive(c)" class="action-btn-styled secondary">
-                  {{ c.status === statuses.Archived ? '📂 Restore' : '📁 Archive' }}
-                </button>
-                @if ((c.redFlags || 0) > 0) {
-                  <button (click)="removeRedFlag(c.id)" class="action-btn-styled danger">🧹 Remove Red Flag</button>
-                } @else {
-                  <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
+                @if (parkedFeaturesEnabled) {
+                  @if ((c.redFlags || 0) > 0) {
+                    <button (click)="removeRedFlag(c.id)" class="action-btn-styled danger">🧹 Remove Red Flag</button>
+                  } @else {
+                    <button (click)="logRedFlag(c.id)" class="action-btn-styled danger">🚩 Red Flag</button>
+                  }
                 }
-                <button (click)="deleteCrush(c.id)" class="action-btn-styled danger">🗑️ Delete</button>
               </div>
             }
 
-            @if (!isEditMode() && showSafetyUpgrade() && !gate.canUseSafetyCheck()) {
+            @if (parkedFeaturesEnabled && !isEditMode() && showSafetyUpgrade() && !gate.canUseSafetyCheck()) {
               <div style="margin-top: 14px;">
                 <app-upgrade-prompt feature="safetyCheck"></app-upgrade-prompt>
               </div>
             }
 
-            @if (!isEditMode() && showSafetySetup() && gate.canUseSafetyCheck()) {
+            @if (parkedFeaturesEnabled && !isEditMode() && showSafetySetup() && gate.canUseSafetyCheck()) {
               <div [style.border]="'1px solid ' + theme.colors().border"
                    [style.background-color]="theme.colors().bg"
                    style="margin-top: 14px; border-radius: 10px; padding: 12px;">
@@ -744,43 +754,25 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
             <div [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="info-section-card">
-              <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Vitals</h2>
+              <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Info</h2>
               <div class="info-grid">
                 @if (c.hair?.length) {
                   <div class="info-row-styled">
                     <span class="info-label">Hair</span>
-                    <span class="info-value">{{ c.hair!.join(', ') }}</span>
+                    <span class="info-value">{{ listWithOther(c.hair, parsedNotes().hairNotes) }}</span>
                   </div>
-                }
-                @if (parsedNotes().hairNotes) {
-                   <div class="info-row-styled full-width note-detail">
-                     <span class="info-label">Hair Notes</span>
-                     <span class="info-value note-text">{{ parsedNotes().hairNotes }}</span>
-                   </div>
                 }
                 @if (c.eyes?.length) {
                   <div class="info-row-styled">
                     <span class="info-label">Eyes</span>
-                    <span class="info-value">{{ c.eyes!.join(', ') }}</span>
+                    <span class="info-value">{{ listWithOther(c.eyes, parsedNotes().eyeNotes) }}</span>
                   </div>
-                }
-                @if (parsedNotes().eyeNotes) {
-                   <div class="info-row-styled full-width note-detail">
-                     <span class="info-label">Eye Notes</span>
-                     <span class="info-value note-text">{{ parsedNotes().eyeNotes }}</span>
-                   </div>
                 }
                 @if (c.build?.length) {
                   <div class="info-row-styled">
                     <span class="info-label">Build</span>
-                    <span class="info-value">{{ c.build!.join(', ') }}</span>
+                    <span class="info-value">{{ listWithOther(c.build, parsedNotes().buildNotes) }}</span>
                   </div>
-                }
-                @if (parsedNotes().buildNotes) {
-                   <div class="info-row-styled full-width note-detail">
-                     <span class="info-label">Build Notes</span>
-                     <span class="info-value note-text">{{ parsedNotes().buildNotes }}</span>
-                   </div>
                 }
                 @if (c.pronouns) {
                   <div class="info-row-styled">
@@ -870,7 +862,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 </div>
               }
 
-              @if (redFlagEntries().length > 0) {
+              @if (parkedFeaturesEnabled && redFlagEntries().length > 0) {
                 <div class="extended-info-section">
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                     <h3 [style.color]="theme.colors().danger" class="extended-info-title" style="margin: 0;">🚩 Red Flag Entries</h3>
@@ -1234,6 +1226,15 @@ export class ProfileDetailComponent implements OnDestroy {
   gapLine(crush: CrushProfile): string { return readGap(crush.compatibility?.score ?? null, friendsRead(crush.friendCompatibility)); }
   compatTrend(crush: CrushProfile): string { return compatibilityTrend(crush.compatibilityHistory); }
   historyFor(crush: CrushProfile) { return [...(crush.compatibilityHistory || [])].reverse().slice(0, 8); }
+  /** Tap on the profile picture: Edit Profile, scrolled to the photo picker (change, re-crop, resize). */
+  editPhoto(): void {
+    if (!this.isEditMode()) this.toggleEditMode();
+    setTimeout(() => {
+      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.querySelector('app-avatar-picker')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }, 80);
+  }
+
   /** Opens Edit Profile and scrolls to the Compatibility Check section. */
   editCompatibility(): void {
     if (!this.isEditMode()) this.toggleEditMode();
@@ -1348,6 +1349,16 @@ export class ProfileDetailComponent implements OnDestroy {
 
   /** The "Other" detail notes and private notes, split out of customNotes for the view. */
   parsedNotes = computed(() => parseCustomNotes(this.crush()?.customNotes));
+  /** Red flags and Safety Check are parked for a later release (PARKED_FEATURES_ENABLED). */
+  readonly parkedFeaturesEnabled = PARKED_FEATURES_ENABLED;
+
+  /** Hair / Eyes / Build for the Info grid: the picked options, with the "Other" answer written out in its place. */
+  listWithOther(items: ReadonlyArray<string> | undefined, otherText: string): string {
+    const picked = (items || []).filter((item) => item !== OTHER_LABEL);
+    const other = otherText.trim();
+    if (other) picked.push(other);
+    return picked.length ? picked.join(', ') : (items?.length ? OTHER_LABEL : '');
+  }
 
   crush = computed(() => {
     const id = this.crushId();

@@ -37,18 +37,18 @@
 
 /* Header Card (Avatar + Title + Actions) */
 .profile-header-card {
-  padding: 40px;
-  margin-bottom: 24px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
 .profile-header-flex {
   display: flex;
-  gap: 28px;
+  gap: 20px;
   align-items: flex-start;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 
 .profile-avatar {
@@ -98,7 +98,7 @@
 
 .profile-name {
   margin: 0;
-  font-size: 42px;
+  font-size: 32px;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -1px;
@@ -293,7 +293,7 @@
 
 /* Info Section Card */
 .info-section-card {
-  padding: 40px;
+  padding: 24px 28px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
@@ -303,23 +303,29 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2.5px;
-  margin: 0 0 32px 0;
+  margin: 0 0 12px 0;
   border-bottom: 2px solid var(--primary);
   padding-bottom: 8px;
   display: inline-block;
 }
 
+/* Two or three columns of label-over-value rows, so the whole Info block fits one screen (DEX-19). */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 0 48px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 24px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
 }
 
 .info-row-styled {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -343,6 +349,7 @@
 .info-value {
   font-size: 16px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .note-detail {
@@ -366,8 +373,8 @@
 
 /* Extended Sections */
 .extended-info-section, .social-links-section {
-  margin-top: 50px;
-  padding-top: 30px;
+  margin-top: 28px;
+  padding-top: 18px;
   border-top: 1px solid var(--border);
 }
 
@@ -811,7 +818,7 @@
 
   .profile-header-card,
   .info-section-card {
-    padding: 28px 22px;
+    padding: 20px 16px;
   }
 
   .profile-header-flex {
@@ -862,11 +869,9 @@
     white-space: normal;
   }
 
-  .info-grid,
-  .info-row-styled {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
   }
 
   .info-value {
@@ -1216,3 +1221,8 @@ button.friend-item:disabled {
 .note-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .note-edit-actions .action-btn-styled { width: auto; }
 .note-icon-btn { width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+
+/* Name row: the four everyday actions (edit, share, archive, delete) as small round icon buttons (DEX-20). */
+.profile-name-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.profile-quick-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.profile-quick-action { width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }

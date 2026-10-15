@@ -13,6 +13,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       @case ('play') {
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M7 4.8v14.4a1 1 0 0 0 1.52.86l11.2-7.2a1 1 0 0 0 0-1.72L8.52 3.94A1 1 0 0 0 7 4.8z"/></svg>
       }
+      @case ('archive') {
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg>
+      }
+      @case ('restore') {
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M12 17v-6"/><path d="m9 14 3-3 3 3"/></svg>
+      }
       @case ('pencil') {
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
       }
@@ -29,5 +35,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   `
 })
 export class IconComponent {
-  readonly name = input.required<'pause' | 'play' | 'trash' | 'profile' | 'share' | 'pencil'>();
+  readonly name = input.required<'pause' | 'play' | 'trash' | 'profile' | 'share' | 'pencil' | 'archive' | 'restore'>();
 }

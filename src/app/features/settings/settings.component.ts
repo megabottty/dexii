@@ -17,7 +17,7 @@ import { NotificationSetupComponent } from '../../core/components/notification-s
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
 import { AppUpdateService } from '../../core/services/app-update.service';
 import { FeatureGateService } from '../../core/services/feature-gate.service';
-import { PREMIUM_FEATURES, PremiumFeatureKey } from '../../core/config/premium-features';
+import { PARKED_FEATURES_ENABLED, PREMIUM_FEATURES, PremiumFeatureKey } from '../../core/config/premium-features';
 import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
 import { ActivatedRoute } from '@angular/router';
 
@@ -317,12 +317,14 @@ interface FriendChoice {
                      (change)="update('showUsername', checkedValue($event))">
               Show username in app headers
             </label>
-            <label class="settings-toggle">
-              <input type="checkbox"
-                     [checked]="settings.settings().defaultSafetyCheck"
-                     (change)="update('defaultSafetyCheck', checkedValue($event))">
-              Default safety check on updates
-            </label>
+            @if (parkedFeaturesEnabled) {
+              <label class="settings-toggle">
+                <input type="checkbox"
+                       [checked]="settings.settings().defaultSafetyCheck"
+                       (change)="update('defaultSafetyCheck', checkedValue($event))">
+                Default safety check on updates
+              </label>
+            }
             <label class="settings-toggle">
               <input type="checkbox"
                      [checked]="settings.settings().allowInvites"
@@ -627,6 +629,8 @@ export class SettingsComponent {
   photoPickerOpen = signal(false);
   appUpdate = inject(AppUpdateService);
   gate = inject(FeatureGateService);
+  /** Safety Check is parked (see premium-features.ts), so its default toggle hides with it. */
+  readonly parkedFeaturesEnabled = PARKED_FEATURES_ENABLED;
   private route = inject(ActivatedRoute);
   /** Set when a route guard sent the user here because a screen needs a higher level. */
   lockedFeature = signal<PremiumFeatureKey | null>(null);

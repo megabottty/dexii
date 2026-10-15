@@ -1,6 +1,7 @@
-import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
+import { IconComponent } from '../icon/icon.component';
 import { ThemeService } from '../../services/theme.service';
 import { DataService } from '../../services/data.service';
 import { FriendsApiService, FriendSummary } from '../../services/friends-api.service';
@@ -20,7 +21,7 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
 @Component({
   selector: 'app-crush-photo-gallery',
   standalone: true,
-  imports: [CommonModule, FocusTrapDirective],
+  imports: [CommonModule, FocusTrapDirective, IconComponent],
   styleUrl: './crush-photo-gallery.component.css',
   template: `
     @if (layout() === 'hero') {
@@ -30,9 +31,15 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
           <div #track class="pg-track pg-track--hero" (scroll)="onScroll()" tabindex="0" (keydown.arrowright)="step(1); $event.preventDefault()" (keydown.arrowleft)="step(-1); $event.preventDefault()">
             @for (slide of slides(); track slide.key; let i = $index) {
               <div class="pg-slide pg-slide--hero" role="group" [attr.aria-label]="(i === 0 ? 'Profile picture' : 'Photo ' + (i + 1)) + ' of ' + slides().length" [attr.aria-roledescription]="'slide'">
-                <button type="button" class="pg-slide-btn" (click)="openLightbox(i)" [attr.aria-label]="'Open ' + (i === 0 ? 'profile picture' : 'photo ' + (i + 1)) + ' full screen'">
+                <!-- Owner: tapping the profile picture edits it (change, re-crop, resize); other photos open full screen. -->
+                <button type="button" class="pg-slide-btn" [class.pg-slide-btn--edit]="i === 0 && mode() === 'owner'"
+                        (click)="i === 0 && mode() === 'owner' ? editRequested.emit() : openLightbox(i)"
+                        [attr.aria-label]="i === 0 && mode() === 'owner' ? 'Edit profile picture' : 'Open ' + (i === 0 ? 'profile picture' : 'photo ' + (i + 1)) + ' full screen'">
                   <img [src]="slide.url" [alt]="nickname() + (i === 0 ? '' : ', photo ' + (i + 1))" class="pg-img" [attr.loading]="i === 0 ? 'eager' : 'lazy'">
                 </button>
+                @if (i === 0 && mode() === 'owner') {
+                  <span class="pg-edit-badge" aria-hidden="true" [style.background-color]="theme.colors().primary"><app-icon name="pencil" /></span>
+                }
                 @if (mode() === 'owner' && slide.photo?.audience === 'friends') {
                   <span class="pg-badge pg-badge--hero" [style.background-color]="theme.colors().primary" [attr.title]="audienceLabel(slide.photo!)">🔒</span>
                 }
@@ -234,6 +241,8 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
   `
 })
 export class CrushPhotoGalleryComponent {
+  /** Owner tapped the profile picture: the page opens Edit Profile at the photo picker. */
+  readonly editRequested = output<void>();
   readonly crushId = input.required<string>();
   /** 'owner': full management UI. 'viewer': a friend seeing what was shared with them. 'preview': the owner seeing their own crush the way any friend they've shared it with would -- same photos as 'viewer' (anything shared, not just one friend's slice), no management UI. */
   readonly mode = input<'owner' | 'viewer' | 'preview'>('viewer');

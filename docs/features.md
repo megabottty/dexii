@@ -134,3 +134,14 @@ The whole app is built to the WCAG 2.1 AA bar. The rules the code follows:
 
 ---
 *Note: This is still a prototype. Crushes, entries, friends, and messages can use the backend when MongoDB is available; local state remains a demo/offline fallback. PINs and some settings are stored locally for testing.*
+
+## Crush page (owner view)
+
+- **Header**: name with four small round icon buttons beside it: pencil (Edit Profile), share, archive / restore, trash.
+  Tapping the profile picture (pencil badge) opens Edit Profile at the photo picker to change, re-crop or resize it.
+- **Info** (was "Vitals"): label-over-value rows in two or three columns so it fits one screen; a row only shows when
+  the field is filled in, and a Hair / Eyes / Build "Other" answer is written out in the row itself.
+- **Compatibility** sits above Social Connections, collapsed with a one-line summary.
+- **Red flags and Safety Check** are parked behind `PARKED_FEATURES_ENABLED` in `core/config/premium-features.ts`
+  (flag chip, Red Flag button and entries; Safety Check button, setup panel and banner, the Settings default toggle
+  and the tour step are hidden). Flip it to bring them back, possibly as a mid-tier feature.
