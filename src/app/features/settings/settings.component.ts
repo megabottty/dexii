@@ -123,12 +123,16 @@ interface FriendChoice {
 
             <label class="settings-field">
               Email
+              <!-- The account email: shown, not edited. Changing it would need a verification flow of its own. -->
               <input type="email"
-                     [value]="settings.settings().email"
-                     (input)="update('email', inputValue($event))"
-                     [style.background-color]="theme.colors().bg"
+                     [value]="settings.settings().email || ''"
+                     readonly
+                     aria-readonly="true"
+                     class="settings-input--readonly"
+                     [style.background-color]="theme.colors().bgSecondary"
                      [style.border]="'1px solid ' + theme.colors().border"
-                     [style.color]="theme.colors().text">
+                     [style.color]="theme.colors().textSecondary">
+              <span [style.color]="theme.colors().textSecondary" class="settings-field-hint">Tied to your account and used to sign in, so it can't be changed here.</span>
             </label>
 
             <label class="settings-field settings-field--full">

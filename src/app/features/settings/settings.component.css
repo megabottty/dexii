@@ -903,3 +903,7 @@
 .settings-modal-friend-name {
   font-size: var(--fs-modal);
 }
+
+/* Read-only account facts (email). */
+.settings-input--readonly { cursor: default; opacity: 0.85; }
+.settings-field-hint { font-size: var(--fs-label); line-height: 1.4; }

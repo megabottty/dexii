@@ -23,6 +23,8 @@ export const SERVER_BACKED_KEYS: readonly (keyof UserSettings)[] = [
 
 /** What /auth/me returns that matters here. */
 export interface ServerProfile {
+  /** The account email (read-only in Settings). */
+  email?: string | null;
   avatarUrl?: string | null;
   avatarConfig?: UserSettings['avatarConfig'] | null;
   profileSettings?: Partial<Record<keyof UserSettings, unknown>> | null;
@@ -43,6 +45,8 @@ export function mergeServerSettings(local: UserSettings, me: ServerProfile | nul
     }
   }
   if (typeof me.avatarUrl === 'string') merged.avatarUrl = me.avatarUrl;
+  // The account email is the server's to know; the device copy only fills in while offline.
+  if (typeof me.email === 'string' && me.email) merged.email = me.email;
   if (me.avatarConfig !== undefined) merged.avatarConfig = me.avatarConfig ?? undefined;
   if (!merged.displayName) merged.displayName = local.displayName;
   return merged;
