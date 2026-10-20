@@ -112,6 +112,17 @@
   letter-spacing: 2px;
 }
 
+.ap-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .ap-presets {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));

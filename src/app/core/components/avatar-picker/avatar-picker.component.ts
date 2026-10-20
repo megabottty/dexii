@@ -75,7 +75,12 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
         </div>
       }
 
-      <p class="ap-section" [style.color]="theme.colors().textSecondary">Or pick a look</p>
+      <!-- Collapsed by default: most people upload or build, and the preset grid is busy (DEX-28). -->
+      <button type="button" class="ap-section ap-section-toggle" [style.color]="theme.colors().textSecondary"
+              (click)="presetsOpen.set(!presetsOpen())" [attr.aria-expanded]="presetsOpen()">
+        Choose an avatar <span aria-hidden="true">{{ presetsOpen() ? '▲' : '▼' }}</span>
+      </button>
+      @if (presetsOpen()) {
       <div class="ap-presets" role="listbox" aria-label="Preset avatars">
         @for (preset of presets; track preset.id) {
           <button type="button" role="option" class="ap-preset"
@@ -91,6 +96,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
           </button>
         }
       </div>
+      }
 
       <button type="button" class="ap-toggle-url" [style.color]="theme.colors().textSecondary" (click)="showUrl.set(!showUrl())">
         {{ showUrl() ? 'Hide' : 'Paste an image URL instead' }}
@@ -191,6 +197,8 @@ export class AvatarPickerComponent {
   protected readonly selectedPresetId = signal<string | null>(null);
   protected readonly builderOpen = signal(false);
   protected readonly showUrl = signal(false);
+  /** The preset grid starts folded away (DEX-28). */
+  protected readonly presetsOpen = signal(false);
   protected readonly uploadedName = signal('');
 
   // Crop tool state (moved here from the dashboard so both forms share it).
