@@ -436,24 +436,22 @@
   position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
 }
 
-.dashboard-component__s91 {
-  padding: 7px 16px;
-  border-radius: 999px;
-  font-size: var(--fs-micro);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(4px);
-}
-
 .dashboard-component__s92 {
-  padding: 28px 26px 24px;
+  padding: 18px 26px 20px;
   text-align: center;
 }
 
-.dashboard-component__s93 {
-  font-size: 24px; font-weight: 200; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;
+/* The name sits on the photo over the gradient: all caps, bold, white (DEX-31). */
+.dashboard-card-name {
+  position: absolute; left: 20px; right: 20px; bottom: 16px; margin: 0;
+  font-size: 24px; font-weight: 700; color: #fff; text-align: left; text-transform: uppercase; letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Status under the photo as plain text, not a bubble. */
+.dashboard-card-status {
+  margin: 0 0 8px 0; font-size: var(--fs-label); font-weight: 800; text-transform: uppercase; letter-spacing: 2.5px;
 }
 
 .dashboard-component__s94 {
@@ -667,10 +665,11 @@
   }
 
   .dashboard-component__s92 {
-    padding: 24px 18px;
+    padding: 16px 18px 18px;
   }
 
-  .dashboard-component__s93 {
+  .dashboard-card-name {
+    left: 16px; right: 16px; bottom: 12px;
     font-size: 22px;
     letter-spacing: 1px;
   }
@@ -771,19 +770,6 @@
   height: 32px;
   border-radius: var(--radius-avatar);
   object-fit: cover;
-}
-
-.dashboard-photo-chip {
-  background-color: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: var(--fs-micro);
-  font-weight: 700;
-}
-
-.dashboard-compat-chip {
-  background-color: rgba(190, 24, 93, 0.75);
 }
 
 /* ---- stack view ---- */

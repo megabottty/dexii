@@ -256,18 +256,9 @@ import { PersonNamePipe } from '../../core/utils/person-name';
                  [alt]="getCrushDisplayName(crush) + ' profile photo'"
                  class="dashboard-component__s88">
             <div class="dashboard-component__s89"></div>
+            <!-- Name on the photo, dating-app style; status, compatibility and photo count live below / on the profile (DEX-31). -->
+            <h3 class="dashboard-card-name">{{ getCrushDisplayName(crush) }}</h3>
             <div class="dashboard-component__s90">
-               <span [style.background-color]="'rgba(255,255,255,0.9)'"
-                     [style.color]="theme.colors().onBgPrimary"
-                     class="dashboard-component__s91">
-                 {{ crush.status }}
-               </span>
-               @if ((crush.photoCount || 0) > 0) {
-                 <span class="dashboard-photo-chip" [attr.aria-label]="crush.photoCount + ' photos'">📷 {{ crush.photoCount }}</span>
-               }
-               @if (crush.compatibility?.score !== null && crush.compatibility?.score !== undefined) {
-                 <span class="dashboard-photo-chip dashboard-compat-chip" [title]="'Compatibility: ' + compatibilityLabel(crush.compatibility.score)" [attr.aria-label]="'Compatibility ' + crush.compatibility.score + ' percent, ' + compatibilityLabel(crush.compatibility.score)">💞 {{ crush.compatibility.score }}%</span>
-               }
                @if ((crush.redFlags || 0) > 0) {
                  <button type="button"
                          (click)="$event.stopPropagation(); showRedFlagReason(crush)"
@@ -281,7 +272,7 @@ import { PersonNamePipe } from '../../core/utils/person-name';
 
           <!-- Content -->
           <div class="dashboard-component__s92">
-            <h3 class="dashboard-component__s93">{{ getCrushDisplayName(crush) }}</h3>
+            <p [style.color]="theme.colors().text" class="dashboard-card-status">{{ crush.status }}</p>
 
             <div [style.color]="theme.colors().onBgAccent" class="dashboard-component__s94">
               @for (star of [1,2,3,4,5]; track star) {
