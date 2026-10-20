@@ -136,12 +136,6 @@ import { PersonNamePipe } from '../../core/utils/person-name';
             }
           </div>
           <div class="dashboard-component__s76">
-            <button (click)="goToFriends()"
-                    [style.border]="'1px solid ' + theme.colors().accent"
-                    [style.color]="theme.colors().onBgAccent"
-                    class="dashboard-component__s78 dashboard-component__s78--friend">
-               + Add Friend
-            </button>
             <button (click)="openNewEntryModal()"
                     [style.background-color]="theme.colors().primary"
                     [style.border]="'1px solid ' + theme.colors().primary"
@@ -630,9 +624,6 @@ export class DashboardComponent implements OnInit {
     this.showArchived.update(v => !v);
   }
 
-  goToFriends() {
-    this.router.navigate(['/friends'], { queryParams: { tab: 'find' } });
-  }
 
   showRedFlagReason(crush: any) {
     const reason = (crush.redFlagReason || '').trim();
