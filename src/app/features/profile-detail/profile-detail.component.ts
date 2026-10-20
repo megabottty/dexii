@@ -132,10 +132,8 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   }
                 </div>
               }
-              @if (c.location || getCrushAge(c)) {
-                <p [style.color]="theme.colors().onBgPrimary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">
-                  {{ c.location || 'Location Unknown' }}{{ getCrushAge(c) ? ' • ' + getCrushAge(c) + ' years' : '' }}
-                </p>
+              @if (crushSubtitle(c); as subtitle) {
+                <p [style.color]="theme.colors().onBgPrimary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">{{ subtitle }}</p>
               }
               @if (c.bio) {
                 <p style="margin-top: 12px; line-height: 1.6;">{{ c.bio }}</p>
@@ -415,9 +413,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     }
                   </div>
                 }
-                <p [style.color]="theme.colors().onBgPrimary" class="profile-subtitle">
-                  {{ c.location || 'Location Unknown' }} • {{ getCrushAge(c) ? getCrushAge(c) + ' years' : 'Age Unknown' }}
-                </p>
+                @if (crushSubtitle(c); as subtitle) {
+                  <p [style.color]="theme.colors().onBgPrimary" class="profile-subtitle">{{ subtitle }}</p>
+                }
                 @if (c.bio) {
                   <p [style.color]="theme.colors().textSecondary" class="profile-bio">{{ c.bio }}</p>
                 }
@@ -1409,6 +1407,14 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   pronounLabel = pronounLabel;
+
+  /** "Denver • 29 years": only the parts that are filled in; empty when neither is (DEX-13). */
+  crushSubtitle(crush: CrushProfile): string {
+    const age = this.getCrushAge(crush);
+    return [crush.location?.trim(), age !== null ? `${age} years` : '']
+      .filter(Boolean)
+      .join(' • ');
+  }
 
   getCrushAge(crush: CrushProfile): number | null {
     if (!crush.dateOfBirth) return null;
