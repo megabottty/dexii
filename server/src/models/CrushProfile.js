@@ -23,6 +23,8 @@ const CrushProfileSchema = new mongoose.Schema({
     default: undefined
   },
   bio: String,
+  // One line, the most important thing to know (DEX-33). Shown under the name.
+  headline: { type: String, default: '', maxlength: 65 },
   status: {
     type: String,
     enum: ['Crush', 'Plotting', 'Dating', 'Exclusive', 'Broken Up', 'Heartbroken', 'Archived', 'Friend'],

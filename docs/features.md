@@ -16,6 +16,8 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - Sharing has two tabs: Controls (what each friend can see) and History (the log of what you've shared, with viewed status).
 
 ## 🗂 The Stash (Dashboard)
+- **Card layout**: name in bold white caps on the photo, status as plain caps text under it, then stars, the Headline and
+  the date. Compatibility and photo count are on the crush page only.
 
 - **Stack view (default)**: crushes sit in a deck; swipe the front card left or right (or use Prev / Next, the
   arrow keys) to send it to the back and bring up the next one; tap a card to open it. **Grid** is one tap away
@@ -144,6 +146,10 @@ The whole app is built to the WCAG 2.1 AA bar. The rules the code follows:
 
 - **Header**: name with four small round icon buttons beside it: pencil (Edit Profile), share, archive / restore, trash.
   Tapping the profile picture (pencil badge) opens Edit Profile at the photo picker to change, re-crop or resize it.
+  The picture is a 280px rounded square with a + badge (add photos) and the pencil badge.
+- **Headline** (`headline`, max 65 characters): the one line that matters most, asked right under the name in the crush
+  form. It shows under the name on the crush page and on the Stash card; until it's written the card shows the prompt
+  "What's the most important thing to know?". The bio no longer appears on the card.
 - **Info** (was "Vitals"): label-over-value rows in two or three columns so it fits one screen; a row only shows when
   the field is filled in, and a Hair / Eyes / Build "Other" answer is written out in the row itself.
 - **Compatibility** sits above Social Connections, collapsed with a one-line summary.

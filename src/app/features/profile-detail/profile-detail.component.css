@@ -103,6 +103,14 @@
   letter-spacing: 0.5px;
 }
 
+/* The Headline: one bold line right under the name (DEX-33). */
+.profile-headline {
+  margin: 6px 0 0 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .profile-bio {
   margin: 16px 0 0 0;
   max-width: 600px;

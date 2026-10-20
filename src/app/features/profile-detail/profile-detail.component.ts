@@ -132,6 +132,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   }
                 </div>
               }
+              @if (c.headline) {
+                <p class="profile-headline">{{ c.headline }}</p>
+              }
               @if (crushSubtitle(c); as subtitle) {
                 <p [style.color]="theme.colors().onBgPrimary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">{{ subtitle }}</p>
               }
@@ -412,6 +415,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                       </span>
                     }
                   </div>
+                }
+                @if (c.headline) {
+                  <p class="profile-headline">{{ c.headline }}</p>
                 }
                 @if (crushSubtitle(c); as subtitle) {
                   <p [style.color]="theme.colors().onBgPrimary" class="profile-subtitle">{{ subtitle }}</p>

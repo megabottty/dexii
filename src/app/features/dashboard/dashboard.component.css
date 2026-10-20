@@ -459,9 +459,12 @@
 }
 
 .dashboard-component__s95 {
-  font-size: var(--fs-small); line-height: 1.8; margin: 0 0 24px 0; font-style: italic;
+  font-size: var(--fs-small); line-height: 1.8; margin: 0 0 24px 0; font-weight: 600;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
+
+/* No headline yet: the prompt reads as a prompt, not as the crush's line. */
+.dashboard-card-headline--empty { font-style: italic; font-weight: 400; opacity: 0.8; }
 
 .dashboard-component__s96 {
   display: flex; justify-content: center; align-items: center; padding-top: 18px;

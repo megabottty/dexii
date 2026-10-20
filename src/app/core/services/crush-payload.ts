@@ -7,7 +7,7 @@ export type CrushField = keyof CrushProfile;
  * (a spec asserts they match) so the edit form sends exactly what it owns.
  */
 export const CRUSH_FORM_FIELDS: readonly CrushField[] = [
-  'nickname', 'fullName', 'displayName', 'pronouns', 'avatarUrl', 'avatarConfig', 'bio', 'status',
+  'nickname', 'fullName', 'displayName', 'pronouns', 'avatarUrl', 'avatarConfig', 'bio', 'headline', 'status',
   'rating', 'initialRating', 'hair', 'eyes', 'build', 'social', 'relationshipStatus', 'relationshipLabels',
   'heartbreakSong', 'heartbreakRecovery', 'customNotes', 'location', 'dateOfBirth', 'howWeMet', 'whenWeMet',
   'schoolOrWork', 'grade', 'occupation', 'family', 'friends', 'memorableMoments', 'compatibility'

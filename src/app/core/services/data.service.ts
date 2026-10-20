@@ -22,6 +22,7 @@ interface BackendCrush {
   avatarUrl?: string;
   avatarConfig?: AvatarConfig;
   bio?: string;
+  headline?: string;
   status?: string;
   visibility?: string[];
   redFlagReason?: string;
@@ -351,6 +352,7 @@ export class DataService {
       avatarUrl: crush.avatarUrl,
       avatarConfig: crush.avatarConfig,
       bio: crush.bio,
+      headline: crush.headline || '',
       status: this.toCrushStatus(crush.status),
       visibility: (crush.visibility || []).map(String),
       sharedEntries: [],
@@ -625,6 +627,7 @@ export class DataService {
         avatarUrl: crush.avatarUrl,
         avatarConfig: crush.avatarConfig,
         bio: crush.bio,
+        headline: crush.headline,
         status: crush.status,
         visibility: crush.visibility,
         lastInteraction: crush.lastInteraction,

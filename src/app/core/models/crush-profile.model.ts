@@ -23,6 +23,8 @@ export interface CrushProfile {
   /** Builder options when the avatar was made with the in-app avatar builder. */
   avatarConfig?: AvatarConfig;
   bio?: string;
+  /** One line, max 65 characters: the most important thing to know. Shown under the name. */
+  headline?: string;
   status: CrushStatus;
   visibility: string[]; // List of friend IDs who can see basic info
   sharedEntries: string[]; // List of specific entry IDs shared with friends

@@ -280,8 +280,9 @@ import { PersonNamePipe } from '../../core/utils/person-name';
               }
             </div>
 
-            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s95">
-              "{{ crush.bio || 'A crush waiting to be defined.' }}"
+            <!-- The Headline; until it's written, a nudge to write one (DEX-33). -->
+            <p [style.color]="theme.colors().textSecondary" class="dashboard-component__s95" [class.dashboard-card-headline--empty]="!crush.headline">
+              {{ crush.headline || 'What’s the most important thing to know?' }}
             </p>
 
             <div [style.border-top]="'1px solid ' + theme.colors().border" class="dashboard-component__s96">

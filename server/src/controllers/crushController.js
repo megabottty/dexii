@@ -12,13 +12,16 @@ const { recordActivity } = require('../services/activityLog');
  * read receipts are managed by their own endpoints, never by a plain update.
  */
 const UPDATABLE_CRUSH_FIELDS = [
-  'nickname', 'fullName', 'displayName', 'avatarUrl', 'avatarConfig', 'bio', 'status',
+  'nickname', 'fullName', 'displayName', 'avatarUrl', 'avatarConfig', 'bio', 'headline', 'status',
   'lastInteraction', 'rating', 'initialRating', 'redFlags', 'redFlagReason', 'vibeHistory',
   'category', 'hair', 'eyes', 'build', 'social', 'relationshipStatus', 'relationshipLabels',
   'heartbreakSong', 'heartbreakRecovery', 'pronouns', 'customNotes', 'location', 'dateOfBirth',
   'age', 'howWeMet', 'whenWeMet', 'schoolOrWork', 'grade', 'occupation', 'family',
   'memorableMoments', 'friends', 'sortOrder', 'compatibility'
 ];
+
+/** The headline is one short line: trimmed and capped at 65 characters. */
+const cleanHeadline = (value) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, 65) : '');
 
 const COMPATIBILITY_FACTOR_MAX = 12;
 const clampScore = (value) => {
@@ -265,6 +268,7 @@ exports.createCrush = async (req, res) => {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) body[field] = req.body[field];
     }
     if (body.status === 'Crushing') body.status = 'Plotting';
+    if (Object.prototype.hasOwnProperty.call(body, 'headline')) body.headline = cleanHeadline(body.headline);
     if (Object.prototype.hasOwnProperty.call(body, 'compatibility')) {
       const clean = cleanCompatibility(body.compatibility);
       body.compatibility = clean ? { ...clean, updatedAt: clean.score === null ? null : new Date() } : undefined;
@@ -315,6 +319,7 @@ exports.updateCrush = async (req, res) => {
     for (const field of UPDATABLE_CRUSH_FIELDS) {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) updatePayload[field] = req.body[field];
     }
+    if (Object.prototype.hasOwnProperty.call(updatePayload, 'headline')) updatePayload.headline = cleanHeadline(updatePayload.headline);
     if (Object.prototype.hasOwnProperty.call(updatePayload, 'relationshipLabels') && !Array.isArray(updatePayload.relationshipLabels)) {
       updatePayload.relationshipLabels = [];
     }

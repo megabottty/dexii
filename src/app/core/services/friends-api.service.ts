@@ -122,6 +122,7 @@ interface BackendCrushProfile {
   fullName?: string;
   avatarUrl?: string;
   bio?: string;
+  headline?: string;
   status?: string;
   visibility?: string[];
   sharedEntries?: string[];
@@ -259,6 +260,7 @@ export class FriendsApiService {
       fullName: crush.fullName,
       avatarUrl: crush.avatarUrl,
       bio: crush.bio,
+      headline: crush.headline || '',
       status: this.toCrushStatus(crush.status),
       visibility: Array.isArray(crush.visibility) ? crush.visibility.map(String) : [],
       sharedEntries: Array.isArray(crush.sharedEntries) ? crush.sharedEntries.map(String) : [],

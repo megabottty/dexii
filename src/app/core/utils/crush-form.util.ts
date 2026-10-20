@@ -51,6 +51,8 @@ export interface CrushFormValue {
   /** null means "Skip": the current vibe is the same as the initial one. */
   currentRating: number | null;
   bio: string;
+  /** One line, max 65 characters. */
+  headline: string;
   location: string;
   /** YYYY-MM-DD or ''. */
   dateOfBirth: string;
@@ -82,7 +84,7 @@ export interface ParsedCustomNotes {
 }
 
 export type CrushFormPatch = Pick<CrushProfile,
-  'nickname' | 'fullName' | 'displayName' | 'pronouns' | 'avatarUrl' | 'avatarConfig' | 'bio' | 'status'
+  'nickname' | 'fullName' | 'displayName' | 'pronouns' | 'avatarUrl' | 'avatarConfig' | 'bio' | 'headline' | 'status'
   | 'rating' | 'initialRating' | 'hair' | 'eyes' | 'build' | 'social' | 'relationshipStatus' | 'relationshipLabels'
   | 'heartbreakSong' | 'heartbreakRecovery' | 'customNotes' | 'location' | 'dateOfBirth' | 'howWeMet' | 'whenWeMet'
   | 'schoolOrWork' | 'grade' | 'occupation' | 'family' | 'friends' | 'memorableMoments' | 'compatibility'>;
@@ -124,6 +126,7 @@ export function emptyCrushFormValue(): CrushFormValue {
     initialRating: 3,
     currentRating: null,
     bio: '',
+    headline: '',
     location: '',
     dateOfBirth: '',
     howWeMet: '',
@@ -224,6 +227,7 @@ export function crushToFormValue(crush: CrushProfile): CrushFormValue {
     initialRating: crush.initialRating || crush.rating || 3,
     currentRating: crush.rating ?? null,
     bio: crush.bio || '',
+    headline: crush.headline || '',
     location: crush.location || '',
     dateOfBirth: crush.dateOfBirth ? String(crush.dateOfBirth).slice(0, 10) : '',
     howWeMet: crush.howWeMet || '',
@@ -259,6 +263,7 @@ export function formValueToCrushPatch(value: CrushFormValue): CrushFormPatch {
     avatarUrl: value.avatarUrl,
     avatarConfig: value.avatarConfig,
     bio: value.bio,
+    headline: value.headline.replace(/\s+/g, ' ').trim().slice(0, 65),
     status: value.status,
     rating: value.currentRating ?? value.initialRating,
     initialRating: value.initialRating,
@@ -307,6 +312,7 @@ export function crushFormTextFields(value: CrushFormValue): string[] {
     value.privateNotes,
     value.relationshipNotes,
     value.bio,
+    value.headline,
     value.memorableMoments,
     value.compatibilityNote,
     value.compatibilityPause,

@@ -109,6 +109,14 @@ interface ListGroup {
         <input id="cf-full-name" [(ngModel)]="form().fullName" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
       </div>
 
+      <!-- The Headline: one line under the name on the Stash and the crush page (DEX-33). -->
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-headline">Headline</label>
+        <input id="cf-headline" [(ngModel)]="form().headline" maxlength="65" placeholder="What’s the most important thing to know?" aria-describedby="cf-headline-hint"
+               [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+        <span id="cf-headline-hint" [style.color]="theme.colors().textSecondary" class="cf-hint">Max 65 characters · {{ (form().headline || '').length }}/65</span>
+      </div>
+
       <div class="cf-field">
         <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-display-name">Name shown on cards</label>
         <app-select id="cf-display-name" [options]="displayNameOptions" [(ngModel)]="form().displayName"></app-select>
