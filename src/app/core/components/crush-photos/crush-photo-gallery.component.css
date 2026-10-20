@@ -74,7 +74,6 @@
 .pg-counter--hero { margin: 0; font-size: var(--fs-micro); }
 .pg-note--hero { text-align: center; font-size: var(--fs-micro); }
 .pg-hero-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: 220px; max-width: calc(100vw - 32px); margin-top: 4px; }
-.pg-add--hero { padding: 6px 12px; min-height: 36px; font-size: var(--fs-micro); letter-spacing: 0.5px; }
 .pg-btn--hero { min-height: 36px; padding: 6px 10px; font-size: var(--fs-micro); font-weight: 600; }
 .pg-btn--icon { min-width: 36px; padding: 6px 8px; }
 @media (max-width: 900px) {
@@ -87,6 +86,10 @@
 .pg-slide-btn--edit { cursor: pointer; }
 .pg-edit-badge { position: absolute; right: 6px; bottom: 6px; width: 28px; height: 28px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); pointer-events: none; }
 .pg-edit-badge svg { width: 15px; height: 15px; }
+
+/* Owner: the + on the picture adds photos (DEX-27). Top-right, clear of the pencil (bottom-right) and the lock (bottom-left). */
+.pg-add-badge { position: absolute; right: 6px; top: 6px; width: 28px; height: 28px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; line-height: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); cursor: pointer; overflow: hidden; }
+.pg-add-badge:focus-within { outline: 3px solid #f59e0b; outline-offset: 2px; }
 
 /* Thumbnail strip under the hero: the carousel order at a glance (replaces the dots there). */
 .pg-thumbs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: 220px; max-width: calc(100vw - 32px); margin-top: 6px; }

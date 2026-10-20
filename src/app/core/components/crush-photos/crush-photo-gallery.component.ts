@@ -51,6 +51,13 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
             <button type="button" class="pg-nav pg-nav--hero pg-nav--prev" (click)="step(-1)" [disabled]="index() === 0" aria-label="Previous photo" [style.background-color]="theme.colors().bg">‹</button>
             <button type="button" class="pg-nav pg-nav--hero pg-nav--next" (click)="step(1)" [disabled]="index() === slides().length - 1" aria-label="Next photo" [style.background-color]="theme.colors().bg">›</button>
           }
+          <!-- Owner: a small + on the picture adds photos; it replaces a whole button row (DEX-27). -->
+          @if (mode() === 'owner' && photos().length < max) {
+            <label class="pg-add-badge" [style.background-color]="theme.colors().primary" title="Add photos">
+              <span aria-hidden="true">+</span>
+              <input type="file" accept="image/*" multiple (change)="onFilesPicked($event)" class="pg-file" aria-label="Add photos of this crush">
+            </label>
+          }
         </div>
         @if (slides().length > 1) {
           <!-- Thumbnails in carousel order: tap one to jump to it; moving a photo visibly shifts it here. -->
@@ -72,12 +79,6 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
         }
         @if (mode() === 'owner') {
           <div class="pg-hero-tools">
-            @if (photos().length < max) {
-              <label class="pg-add pg-add--hero" [style.background-color]="theme.colors().primary">
-                <span aria-hidden="true">＋</span> Photos
-                <input type="file" accept="image/*" multiple (change)="onFilesPicked($event)" class="pg-file" aria-label="Add photos of this crush">
-              </label>
-            }
             @if (currentHeroPhoto(); as photo) {
               <button type="button" (click)="openAudience(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero" [attr.title]="photo.audience === 'friends' ? audienceLabel(photo) : 'Everyone this crush is shared with'">{{ photo.audience === 'friends' ? '🔒 Who sees' : '👁️ Who sees' }}</button>
               <button type="button" (click)="useAsProfile(photo)" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text" class="pg-btn pg-btn--ghost pg-btn--hero">Set as picture</button>
