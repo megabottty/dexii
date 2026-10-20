@@ -30,12 +30,13 @@ import { CRUSH_FORM_FIELDS } from '../../core/services/crush-payload';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { UpgradePromptComponent } from '../../core/components/upgrade-prompt/upgrade-prompt.component';
 import { FeatureGateService } from '../../core/services/feature-gate.service';
+import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
 @Component({
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent, AppSelectComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent, AppSelectComponent, PersonNamePipe],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -249,8 +250,8 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 <ul class="compat-votes">
                   @for (vote of c.friendCompatibility || []; track vote.userId) {
                     <li class="compat-vote" [style.border]="'1px solid ' + theme.colors().border">
-                      <img [src]="vote.avatarUrl || 'https://i.pravatar.cc/150?u=' + vote.userId" [alt]="vote.username || 'friend'" class="compat-vote-avatar">
-                      <span class="compat-vote-body"><strong>{{ vote.userId === security.currentUserId() ? 'You' : (vote.username || 'A friend') }}</strong> · {{ vote.score }}% {{ compatLabel(vote.score) }}@if (vote.note) { <span [style.color]="theme.colors().textSecondary"> — “{{ vote.note }}”</span> }</span>
+                      <img [src]="vote.avatarUrl || 'https://i.pravatar.cc/150?u=' + vote.userId" [alt]="vote | personName" class="compat-vote-avatar">
+                      <span class="compat-vote-body"><strong>{{ vote.userId === security.currentUserId() ? 'You' : ((vote | personName)) }}</strong> · {{ vote.score }}% {{ compatLabel(vote.score) }}@if (vote.note) { <span [style.color]="theme.colors().textSecondary"> — “{{ vote.note }}”</span> }</span>
                     </li>
                   }
                 </ul>
@@ -477,7 +478,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                             [style.color]="isSafetyContact(friend.id) ? 'white' : theme.colors().text"
                             [style.border]="'1px solid ' + (isSafetyContact(friend.id) ? theme.colors().primary : theme.colors().border)"
                             style="padding: 5px 10px; border-radius: 999px; cursor: pointer; font-size: var(--fs-btn);">
-                      {{ isSafetyContact(friend.id) ? '✓ ' : '' }}{{ friend.username }}
+                      {{ isSafetyContact(friend.id) ? '✓ ' : '' }}{{ friend | personName }}
                     </button>
                   } @empty {
                     <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">No friends found. Add friends first.</span>
@@ -504,7 +505,7 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                   @for (piece of burstPieces; track piece) { <span class="compat-reveal-piece" [style.--i]="piece"></span> }
                 </div>
                 <p [style.color]="theme.colors().textSecondary" class="compat-reveal-eyebrow">{{ revealIsFirst() ? "Your first friends' read" : 'A friend weighed in' }}</p>
-                <h2 id="compat-reveal-title" class="compat-reveal-title">{{ vote.username || 'A friend' }} weighed in on {{ getCrushDisplayName(c) }}</h2>
+                <h2 id="compat-reveal-title" class="compat-reveal-title">{{ (vote | personName) }} weighed in on {{ getCrushDisplayName(c) }}</h2>
                 <div class="compat-reveal-score" aria-live="polite">
                   <span class="compat-reveal-number">{{ revealShown() }}%</span>
                   <span class="compat-reveal-zone">{{ compatLabel(vote.score) }}</span>
@@ -590,10 +591,10 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                 </div>
                 <div class="friend-list-scroll">
                   @for (friend of friends(); track friend.id) {
-                    <button type="button" class="friend-item" (click)="toggleShareFriend(friend.id, friend.username)" [attr.aria-pressed]="isShareFriendSelected(friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
-                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username" class="friend-avatar">
+                    <button type="button" class="friend-item" (click)="toggleShareFriend(friend.id)" [attr.aria-pressed]="isShareFriendSelected(friend.id)" [style.border-bottom]="'1px solid ' + theme.colors().border">
+                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend | personName" class="friend-avatar">
                       <div class="friend-info">
-                        <span class="friend-name">{{ friend.username }}</span>
+                        <span class="friend-name">{{ friend | personName }}</span>
                         <span class="friend-status" [style.color]="isShareFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary">
                           {{ isShareFriendSelected(friend.id) ? '✓ Selected' : 'Tap to select' }}
                         </span>
@@ -687,10 +688,10 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                                  (click)="togglePendingVisibilityFriend(friend.id)" [attr.aria-pressed]="isPendingVisibilityFriendSelected(friend.id)" [disabled]="isAlreadySharedWith(friend.id)"
                                  [style.border-bottom]="'1px solid ' + theme.colors().border">
                               <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
-                                   [alt]="friend.username"
+                                   [alt]="friend | personName"
                                    class="friend-avatar">
                               <div class="friend-info">
-                                <span class="friend-name">{{ friend.username }}</span>
+                                <span class="friend-name">{{ friend | personName }}</span>
                                 <span class="friend-status"
                                       [style.color]="isPendingVisibilityFriendSelected(friend.id) ? theme.colors().primary : theme.colors().textSecondary">
                                   {{ isAlreadySharedWith(friend.id) ? '✓ Already shared' : (isPendingVisibilityFriendSelected(friend.id) ? '✓ Will be added' : 'Tap to add') }}
@@ -1011,8 +1012,8 @@ import { FeatureGateService } from '../../core/services/feature-gate.service';
                         <ul class="compat-votes">
                           @for (vote of c.friendCompatibility || []; track vote.userId) {
                             <li class="compat-vote" [style.border]="'1px solid ' + theme.colors().border">
-                              <img [src]="vote.avatarUrl || 'https://i.pravatar.cc/150?u=' + vote.userId" [alt]="vote.username || 'friend'" class="compat-vote-avatar">
-                              <span class="compat-vote-body"><strong>{{ vote.username || 'A friend' }}</strong> · {{ vote.score }}% {{ compatLabel(vote.score) }}@if (vote.note) { <span [style.color]="theme.colors().textSecondary"> — “{{ vote.note }}”</span> }</span>
+                              <img [src]="vote.avatarUrl || 'https://i.pravatar.cc/150?u=' + vote.userId" [alt]="vote | personName" class="compat-vote-avatar">
+                              <span class="compat-vote-body"><strong>{{ (vote | personName) }}</strong> · {{ vote.score }}% {{ compatLabel(vote.score) }}@if (vote.note) { <span [style.color]="theme.colors().textSecondary"> — “{{ vote.note }}”</span> }</span>
                             </li>
                           }
                         </ul>
@@ -1178,7 +1179,7 @@ export class ProfileDetailComponent implements OnDestroy {
     const mine = crush.compatibility?.score;
     if (mine === null || mine === undefined) return 'Add your own read to compare.';
     const diff = vote.score - mine;
-    if (Math.abs(diff) <= 5) return `${vote.username || 'They'} and you see it the same way 🤝`;
+    if (Math.abs(diff) <= 5) return `${personName(vote, 'They')} and you see it the same way 🤝`;
     return diff > 0 ? `${diff} points more optimistic than you 👀` : `${-diff} points below your read 😌`;
   }
   closeReveal(crushId: string): void {
@@ -1437,7 +1438,7 @@ export class ProfileDetailComponent implements OnDestroy {
   noteVisibility(entry: { visibility?: string[] }): { label: string; detail: string; color: string } {
     const visibility = entry.visibility || [];
     if (visibility.includes('public')) {
-      const friendNames = this.friends().map((friend) => friend.username);
+      const friendNames = this.friends().map((friend) => personName(friend));
       return {
         label: 'Public',
         detail: friendNames.length > 0
@@ -1456,7 +1457,7 @@ export class ProfileDetailComponent implements OnDestroy {
     }
 
     const friendNames = visibility.map((friendId) =>
-      this.friends().find((friend) => friend.id === friendId)?.username || 'Friend'
+      personName(this.friends().find((friend) => friend.id === friendId), 'Friend')
     );
     return {
       label: 'Shared',
@@ -1468,7 +1469,7 @@ export class ProfileDetailComponent implements OnDestroy {
   selectedSafetyContactNames = computed(() => {
     const selected = this.safetyContactIds();
     if (selected.length === 0) return '';
-    const byId = new Map(this.friends().map((friend) => [friend.id, friend.username]));
+    const byId = new Map(this.friends().map((friend) => [friend.id, personName(friend)]));
     return selected.map((id) => byId.get(id) || id).join(', ');
   });
 
@@ -1636,6 +1637,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.friends.set(data.map(f => ({
         id: f.id || f.username,
         username: f.username,
+        displayName: f.displayName || '',
         friends: [],
         blockedUsers: [],
         subscriptionTier: SubscriptionTier.Free,
@@ -1909,7 +1911,7 @@ export class ProfileDetailComponent implements OnDestroy {
             this.dataService.addEntry({
               crushId,
               type: 'SafetyCheck',
-              content: `Halfway check-in sent to ${friend.username}: safe and having fun.`,
+              content: `Halfway check-in sent to ${personName(friend)}: safe and having fun.`,
               visibility: [],
               isSensitive: true,
               safetyStatus: 'Sent',
@@ -1943,7 +1945,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.dataService.addEntry({
         crushId: id,
         type: 'SafetyCheck',
-        content: `Safety check started and shared with ${friend.username}.`,
+        content: `Safety check started and shared with ${personName(friend)}.`,
         visibility: [],
         isSensitive: true,
         safetyStatus: 'Sent',
@@ -1979,7 +1981,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.dataService.addEntry({
         crushId: id,
         type: 'SafetyCheck',
-        content: `Safety check resolved: marked safe with ${friend.username}.`,
+        content: `Safety check resolved: marked safe with ${personName(friend)}.`,
         visibility: [],
         isSensitive: true,
         safetyStatus: 'Safe',
@@ -2002,7 +2004,7 @@ export class ProfileDetailComponent implements OnDestroy {
       this.dataService.addEntry({
         crushId: id,
         type: 'SafetyCheck',
-        content: `Emergency mode escalated and sent to ${friend.username}.`,
+        content: `Emergency mode escalated and sent to ${personName(friend)}.`,
         visibility: [],
         isSensitive: true,
         safetyStatus: 'Urgent',
@@ -2275,11 +2277,11 @@ export class ProfileDetailComponent implements OnDestroy {
 
   private describeFriendsForShare(selectedFriends: User[]): string {
     if (selectedFriends.length === 0) return 'your selected friends';
-    if (selectedFriends.length === 1) return selectedFriends[0].username;
+    if (selectedFriends.length === 1) return personName(selectedFriends[0]);
     if (selectedFriends.length === 2) {
-      return `${selectedFriends[0].username} and ${selectedFriends[1].username}`;
+      return `${personName(selectedFriends[0])} and ${personName(selectedFriends[1])}`;
     }
-    return `${selectedFriends[0].username}, ${selectedFriends[1].username}, and ${selectedFriends.length - 2} others`;
+    return `${personName(selectedFriends[0])}, ${personName(selectedFriends[1])}, and ${selectedFriends.length - 2} others`;
   }
 
   async saveEdit(crushId: string) {

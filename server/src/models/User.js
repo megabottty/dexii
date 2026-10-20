@@ -43,6 +43,13 @@ const UserSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  // The name friends see (chosen in Settings). Mirrors profileSettings.displayName
+  // so every list that populates users gets it without reading the whole settings blob.
+  displayName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   pin: {
     type: String, // Hashed PIN
     required: true

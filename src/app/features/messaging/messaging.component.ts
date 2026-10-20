@@ -13,12 +13,13 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
 import { DataService } from '../../core/services/data.service';
 import { GroupChatApiService, GroupChatSummary } from '../../core/services/group-chat-api.service';
+import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
 @Component({
   selector: 'app-messaging',
   standalone: true,
   styleUrl: './messaging.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, AppSelectComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, AppSelectComponent, PersonNamePipe],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="messaging-component__s1">
@@ -33,14 +34,14 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
              [attr.aria-label]="hasActiveChat() ? 'Back' : 'Back to friends'"
              class="messaging-component__s4">←</a>
           @if (hasActiveChat()) {
-            <a [routerLink]="['/friends', currentChatPartner().username]"
-               [attr.aria-label]="'Open your friendship page with ' + currentChatPartner().username"
+            <a [routerLink]="['/friends', currentChatPartner().id]"
+               [attr.aria-label]="'Open your friendship page with ' + currentChatPartner().name"
                class="messaging-partner-avatar-link">
               <img [src]="chatPartnerAvatar()" alt="" class="messaging-partner-avatar">
             </a>
           }
           <div>
-            <h1 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().username : 'Chats' }}</h1>
+            <h1 class="messaging-component__s5">{{ hasActiveChat() ? currentChatPartner().name : 'Chats' }}</h1>
             <span [style.color]="theme.colors().onBgPrimary" class="messaging-component__s6">
               {{ hasActiveChat() ? 'End-to-end encrypted' : 'Your private conversations' }}
             </span>
@@ -72,7 +73,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
              class="messaging-add-crush-panel">
           <div class="messaging-add-crush-panel__header">
             <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__label">
-              Share one of your crushes with {{ currentChatPartner().username }}
+              Share one of your crushes with {{ currentChatPartner().name }}
             </p>
             <button type="button"
                     (click)="toggleAddCrush()"
@@ -136,7 +137,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                  [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().textSecondary"
                  class="messaging-not-friends-banner">
-              You're no longer friends with {{ currentChatPartner().username }}, so you can't send new messages here.
+              You're no longer friends with {{ currentChatPartner().name }}, so you can't send new messages here.
               Your past conversation is still shown below.
             </div>
           }
@@ -286,10 +287,10 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                             [style.color]="theme.colors().text"
                             class="chat-hub__card">
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
-                           [alt]="friend.username + ' avatar'"
+                           [alt]="(friend | personName) + ' avatar'"
                            class="chat-hub__avatar">
                       <span class="chat-hub__content">
-                        <span class="chat-hub__title">{{ friend.username }}</span>
+                        <span class="chat-hub__title">{{ friend | personName }}</span>
                       </span>
                       @if (isGroupMemberSelected(friend.id)) { <span [style.color]="theme.colors().onBgPrimary">✓</span> }
                     </button>
@@ -360,10 +361,10 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
                             [style.color]="theme.colors().text"
                             class="chat-hub__card">
                       <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
-                           [alt]="friend.username + ' avatar'"
+                           [alt]="(friend | personName) + ' avatar'"
                            class="chat-hub__avatar">
                       <span class="chat-hub__content">
-                        <span class="chat-hub__title">{{ friend.username }}</span>
+                        <span class="chat-hub__title">{{ friend | personName }}</span>
                         <span [style.color]="theme.colors().textSecondary" class="chat-hub__preview">
                           Tap to start messaging
                         </span>
@@ -491,7 +492,7 @@ import { GroupChatApiService, GroupChatSummary } from '../../core/services/group
              [style.color]="theme.colors().textSecondary"
              class="messaging-component__s11"
              style="text-align: center; padding: 16px; font-size: var(--fs-small);">
-          Messaging is disabled because you're no longer friends with {{ currentChatPartner().username }}.
+          Messaging is disabled because you're no longer friends with {{ currentChatPartner().name }}.
         </div>
       }
     </div>
@@ -544,10 +545,12 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
 
   currentChatPartner = computed(() => {
     const id = this.chatPartnerId();
+    const friend = this.friends().find((item) => item.id === id);
     const fallbackName = this.chatPartnerName() || id;
     return {
       id,
-      username: this.chatDisplayName({ id, username: fallbackName })
+      username: friend?.username || fallbackName,
+      name: friend ? personName(friend) : this.chatDisplayName({ id, username: fallbackName })
     };
   });
   hasActiveChat = computed(() => Boolean(this.currentChatPartner().id));
@@ -670,7 +673,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
   send() {
     if (!this.hasActiveChat() || !this.newMessage.trim()) return;
     if (!this.isChatPartnerFriend()) {
-      this.modal.show(`You're no longer friends with ${this.currentChatPartner().username}, so this message can't be sent.`);
+      this.modal.show(`You're no longer friends with ${this.currentChatPartner().name}, so this message can't be sent.`);
       return;
     }
 
@@ -783,7 +786,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     // The data service posts the "Shared a crush" bubble once the share saves.
     this.dataService.toggleCrushVisibility(crush.id, friend.id);
 
-    this.showShareFeedback(`${crush.nickname} ${wasShared ? 'is no longer shared with' : 'was shared with'} ${friend.username}.`);
+    this.showShareFeedback(`${crush.nickname} ${wasShared ? 'is no longer shared with' : 'was shared with'} ${personName(friend)}.`);
   }
 
   private showShareFeedback(message: string): void {
@@ -828,14 +831,15 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     const term = this.friendSearch().trim().toLowerCase();
     return this.friends()
       .filter((friend) => !existing.has(friend.id) && !existing.has(friend.username))
-      .filter((friend) => !term || friend.username.toLowerCase().includes(term))
-      .sort((a, b) => a.username.localeCompare(b.username));
+      .filter((friend) => !term || personName(friend).toLowerCase().includes(term) || friend.username.toLowerCase().includes(term))
+      .sort((a, b) => personName(a).localeCompare(personName(b)));
   });
 
-  chatDisplayName(friend: { id: string; username: string }): string {
+  chatDisplayName(friend: { id: string; username: string; displayName?: string }): string {
     const match = this.friends().find((item) => item.id === friend.id || item.username === friend.username);
-    if (match?.username) return match.username;
-    return this.looksLikeObjectId(friend.username) ? 'Unknown friend' : friend.username;
+    if (match) return personName(match);
+    const own = personName(friend, '');
+    return !own || this.looksLikeObjectId(own) ? 'Unknown friend' : own;
   }
 
   openRelatedCrush(msg: { relatedCrushId?: string }): void {

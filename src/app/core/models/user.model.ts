@@ -7,6 +7,8 @@ export enum SubscriptionTier {
 export interface User {
   id: string;
   username: string;
+  /** The name they chose in Settings (friends see this instead of the username). */
+  displayName?: string;
   email?: string;
   bio?: string;
   friends: string[]; // array of user IDs

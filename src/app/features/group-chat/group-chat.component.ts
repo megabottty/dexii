@@ -8,6 +8,7 @@ import { ThemeService } from '../../core/services/theme.service';
 import { SecurityService } from '../../core/services/security.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/services/group-chat-api.service';
+import { personName } from '../../core/utils/person-name';
 
 @Component({
   selector: 'app-group-chat',
@@ -41,7 +42,7 @@ import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/service
           @for (msg of messages(); track msg.id) {
             <div [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'" class="group-chat-message">
               @if (!isMine(msg)) {
-                <span [style.color]="theme.colors().textSecondary" class="group-chat-message__sender">{{ msg.senderUsername || 'Friend' }}</span>
+                <span [style.color]="theme.colors().textSecondary" class="group-chat-message__sender">{{ msg.senderDisplayName || msg.senderUsername || 'Friend' }}</span>
               }
               <div [style.background-color]="isMine(msg) ? theme.colors().primary : theme.colors().bgSecondary"
                    [style.color]="isMine(msg) ? 'white' : theme.colors().text"
@@ -172,7 +173,7 @@ export class GroupChatComponent implements OnInit, OnDestroy {
   memberNames(g: GroupChat): string {
     return g.members
       .filter((m) => m.id !== this.selfId())
-      .map((m) => m.username)
+      .map((m) => personName(m))
       .join(', ');
   }
 

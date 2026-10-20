@@ -38,7 +38,7 @@ exports.createGroup = async (req, res) => {
     });
 
     await group.save();
-    const populated = await GroupChat.findById(group._id).populate('members', 'username avatarUrl').lean();
+    const populated = await GroupChat.findById(group._id).populate('members', 'username displayName avatarUrl').lean();
     res.json(populated);
   } catch (err) {
     console.error('Create group error:', err.message);
@@ -53,7 +53,7 @@ exports.listGroups = async (req, res) => {
   try {
     const userId = req.user.id;
     const groups = await GroupChat.find({ members: userId })
-      .populate('members', 'username avatarUrl')
+      .populate('members', 'username displayName avatarUrl')
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -117,7 +117,7 @@ exports.getGroupMessages = async (req, res) => {
 
     const messages = await Message.find({ group: groupId })
       .sort({ createdAt: 1 })
-      .populate('sender', 'username avatarUrl')
+      .populate('sender', 'username displayName avatarUrl')
       .lean();
 
     res.json(messages);
@@ -149,7 +149,7 @@ exports.sendGroupMessage = async (req, res) => {
       crushId
     });
     await message.save();
-    await message.populate('sender', 'username avatarUrl');
+    await message.populate('sender', 'username displayName avatarUrl');
 
     group.updatedAt = new Date();
     await group.save();
@@ -217,7 +217,7 @@ exports.addMember = async (req, res) => {
       await group.save();
     }
 
-    const populated = await GroupChat.findById(group._id).populate('members', 'username avatarUrl').lean();
+    const populated = await GroupChat.findById(group._id).populate('members', 'username displayName avatarUrl').lean();
     res.json(populated);
   } catch (err) {
     console.error('Add group member error:', err.message);

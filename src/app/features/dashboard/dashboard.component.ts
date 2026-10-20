@@ -30,12 +30,13 @@ import { SubscriptionTier } from '../../core/models/user.model';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
+import { PersonNamePipe } from '../../core/utils/person-name';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   styleUrl: './dashboard.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, CrushFormComponent, CrushStackComponent],
+  imports: [CommonModule, RouterModule, FormsModule, PageHintComponent, NavbarComponent, CrushFormComponent, CrushStackComponent, PersonNamePipe],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="dashboard-component__s1">
@@ -70,7 +71,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
                               [style.border]="'1px solid ' + (shareWith().includes(friend.id) ? theme.colors().primary : theme.colors().border)"
                               class="dashboard-share-chip">
                         <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/80?u=' + friend.id" alt="" class="dashboard-share-chip__avatar">
-                        {{ friend.username }}
+                        {{ friend | personName }}
                         @if (shareWith().includes(friend.id)) { <span aria-hidden="true">✓</span> }
                       </button>
                     }

@@ -900,6 +900,10 @@ exports.updateProfileSettings = async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(profileSettings, 'avatarUrl')) {
       update.avatarUrl = typeof profileSettings.avatarUrl === 'string' ? profileSettings.avatarUrl : '';
     }
+    // Same for the display name: friend lists, chats and the feed read the top-level copy.
+    if (Object.prototype.hasOwnProperty.call(profileSettings, 'displayName')) {
+      update.displayName = typeof profileSettings.displayName === 'string' ? profileSettings.displayName.trim().slice(0, 80) : '';
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,

@@ -9,6 +9,7 @@ export interface ChatSummary {
   friend: {
     id: string;
     username: string;
+    displayName?: string;
     avatarUrl?: string;
     friendCategories?: string[];
   };
@@ -475,6 +476,7 @@ export class MessagingService {
           friend: {
             id: String(row.friend.id),
             username: String(row.friend.username || row.friend.id),
+            displayName: typeof row.friend.displayName === 'string' ? row.friend.displayName : '',
             avatarUrl: row.friend.avatarUrl,
             friendCategories: Array.isArray(row.friend.friendCategories) ? row.friend.friendCategories : []
           },

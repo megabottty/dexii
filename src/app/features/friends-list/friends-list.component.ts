@@ -71,6 +71,7 @@ interface FriendCardView {
   mutedNotifications?: boolean;
   id: string;
   username: string;
+  displayName?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -80,12 +81,13 @@ interface FriendCardView {
 }
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
+import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
 @Component({
   selector: 'app-friends-list',
   standalone: true,
   styleUrl: './friends-list.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent, CrushSharePickerComponent, AppSelectComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, FocusTrapDirective, IconComponent, CrushSharePickerComponent, AppSelectComponent, PersonNamePipe],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="friends-list-component__s1">
@@ -421,36 +423,36 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                    class="friends-list-component__s54">
 
                 <div class="friends-list-component__s55">
-                  <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + friend.username" class="friends-list-avatar-link">
-                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                  <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + (friend | personName)" class="friends-list-avatar-link">
+                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="(friend | personName) + ' avatar'" class="friends-list-component__s56">
                   </a>
                   <div>
-                    <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
+                    <h4 class="friends-list-component__s57">{{ friend | personName }}</h4>
                     <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
                   </div>
                 </div>
 
                 <div class="friends-list-component__s59 friends-list-card-actions">
                   <a [routerLink]="['/friends', friend.username]"
-                     [attr.aria-label]="'Open your friendship page with ' + friend.username"
+                     [attr.aria-label]="'Open your friendship page with ' + (friend | personName)"
                      title="Profile"
                      [style.color]="theme.colors().textSecondary"
                      class="icon-btn"><app-icon name="profile" /></a>
                   <button type="button" (click)="openSharePicker(friend)"
-                          [attr.aria-label]="'Share a crush with ' + friend.username"
+                          [attr.aria-label]="'Share a crush with ' + (friend | personName)"
                           [style.color]="theme.colors().onBgPrimary"
                           [style.border]="'1px solid ' + theme.colors().primary"
                           class="friends-list-action-link">Share</button>
                   <a routerLink="/chat"
-                     [queryParams]="{ friendId: friend.id, friendName: friend.username }"
+                     [queryParams]="{ friendId: friend.id, friendName: (friend | personName) }"
                      [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-action-link">Chat</a>
                   <button type="button" (click)="pauseFriend(friend)"
-                          [attr.aria-label]="'Pause friendship with ' + friend.username" title="Pause friendship"
+                          [attr.aria-label]="'Pause friendship with ' + (friend | personName)" title="Pause friendship"
                           [style.color]="theme.colors().textSecondary"
                           class="icon-btn"><app-icon name="pause" /></button>
                   <button type="button" (click)="removeFriend(friend)"
-                          [attr.aria-label]="'Remove ' + friend.username + ' as a friend'" title="Remove friend"
+                          [attr.aria-label]="'Remove ' + (friend | personName) + ' as a friend'" title="Remove friend"
                           class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
                 </div>
               </div>
@@ -483,11 +485,11 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                 <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
                      class="friends-list-component__s54">
                   <div class="friends-list-component__s55">
-                    <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + friend.username" class="friends-list-avatar-link">
-                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="friend.username + ' avatar'" class="friends-list-component__s56">
+                    <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + (friend | personName)" class="friends-list-avatar-link">
+                      <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="(friend | personName) + ' avatar'" class="friends-list-component__s56">
                     </a>
                     <div>
-                      <h4 class="friends-list-component__s57">{{ friend.username }}</h4>
+                      <h4 class="friends-list-component__s57">{{ friend | personName }}</h4>
                       <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.mutedNotifications ? 'Paused · notifications muted' : 'Paused' }}</span>
                     </div>
                   </div>
@@ -496,7 +498,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       <input type="checkbox"
                              [checked]="friend.mutedNotifications"
                              (change)="setMuted(friend, $any($event.target).checked)">
-                      Mute notifications from {{ friend.username }}
+                      Mute notifications from {{ friend | personName }}
                     </label>
                     <button (click)="resumeFriend(friend)"
                             [style.color]="theme.colors().onBgPrimary"
@@ -505,21 +507,21 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
                       Resume friendship
                     </button>
                     <a [routerLink]="['/friends', friend.username]"
-                       [attr.aria-label]="'Open your friendship page with ' + friend.username"
+                       [attr.aria-label]="'Open your friendship page with ' + (friend | personName)"
                        title="Profile"
                        [style.color]="theme.colors().textSecondary"
                        class="icon-btn"><app-icon name="profile" /></a>
                     <button type="button" (click)="openSharePicker(friend)"
-                            [attr.aria-label]="'Share a crush with ' + friend.username"
+                            [attr.aria-label]="'Share a crush with ' + (friend | personName)"
                             [style.color]="theme.colors().onBgPrimary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="friends-list-action-link">Share</button>
                     <a routerLink="/chat"
-                       [queryParams]="{ friendId: friend.id, friendName: friend.username }"
+                       [queryParams]="{ friendId: friend.id, friendName: (friend | personName) }"
                        [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                        class="friends-list-action-link">Chat</a>
                     <button type="button" (click)="removeFriend(friend)"
-                            [attr.aria-label]="'Remove ' + friend.username + ' as a friend'" title="Remove friend"
+                            [attr.aria-label]="'Remove ' + (friend | personName) + ' as a friend'" title="Remove friend"
                             class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
                   </div>
                 </div>
@@ -534,7 +536,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
       </div>
 
       @if (shareForFriend(); as shareFriend) {
-        <app-crush-share-picker [friendId]="shareFriend.id" [friendName]="shareFriend.username" (closed)="shareForFriend.set(null)"></app-crush-share-picker>
+        <app-crush-share-picker [friendId]="shareFriend.id" [friendName]="shareFriend | personName" (closed)="shareForFriend.set(null)"></app-crush-share-picker>
       }
 
       @if (addFriendCandidate()) {
@@ -550,7 +552,7 @@ import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 
             <h3 class="friends-list-component__s12">Add Friend</h3>
             <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s13">
-              Create a friendship profile and send an invite to {{ addFriendCandidate()?.username }}.
+              Create a friendship profile and send an invite to {{ addFriendCandidate() | personName }}.
             </p>
 
             <label class="friends-list-add-modal-skip" [style.color]="theme.colors().textSecondary">
@@ -776,8 +778,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   candidateDisplayName(candidate: FriendSearchResult): string {
-    const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
-    return fullName || candidate.username;
+    return personName(candidate, candidate.username);
   }
 
   isAuthenticated(): boolean {
@@ -856,6 +857,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     return {
       id,
       username: friend.username,
+      displayName: friend.displayName || '',
       firstName: friend.firstName || '',
       lastName: friend.lastName || '',
       avatarUrl: friend.avatarUrl,
@@ -872,8 +874,8 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     const to = request.to || {};
     const fromId = typeof from === 'object' ? from.id : undefined;
     const toId = typeof to === 'object' ? to.id : undefined;
-    const fromUsername = typeof from === 'string' ? from : from.username || fromId || 'Unknown user';
-    const toUsername = typeof to === 'string' ? to : to.username || toId || 'Unknown user';
+    const fromUsername = typeof from === 'string' ? from : personName(from, fromId || 'Unknown user');
+    const toUsername = typeof to === 'string' ? to : personName(to, toId || 'Unknown user');
     const profileTarget = this.currentUserId === fromId ? toId : fromId;
 
     return {
@@ -1367,13 +1369,13 @@ export class FriendsListComponent implements OnInit, OnDestroy {
   }
 
   async removeFriend(friend: FriendCardView) {
-    this.modal.confirm(`Remove ${friend.username} as a friend? You both lose access to what you shared with each other. This cannot be undone.`, async () => {
+    this.modal.confirm(`Remove ${personName(friend)} as a friend? You both lose access to what you shared with each other. This cannot be undone.`, async () => {
       try {
         await this.friendsApi.removeFriend(friend.id);
         this.allFriends.update((items) => items.filter((item) => item.id !== friend.id));
         this.messaging.pruneConversation(friend.id, friend.username);
         await this.loadFriends();
-        this.modal.show(`${friend.username} removed from your friends.`);
+        this.modal.show(`${personName(friend)} removed from your friends.`);
       } catch (error: any) {
         this.modal.show(error?.message || 'Unable to remove friend right now.');
       }
@@ -1382,12 +1384,12 @@ export class FriendsListComponent implements OnInit, OnDestroy {
 
   async pauseFriend(friend: FriendCardView) {
     this.modal.confirm(
-      `Pause your friendship with ${friend.username}? They move to your Paused list and, with notifications muted, you won't hear from them until you resume. Sharing stays active both ways, and they aren't told.`,
+      `Pause your friendship with ${personName(friend)}? They move to your Paused list and, with notifications muted, you won't hear from them until you resume. Sharing stays active both ways, and they aren't told.`,
       async () => {
         try {
           const state = await this.friendsApi.setPauseState(friend.id, true, true);
           this.applyPauseState(friend.id, state.paused, state.mutedNotifications);
-          this.modal.show(`Friendship with ${friend.username} paused. Resume any time from the Paused tab.`);
+          this.modal.show(`Friendship with ${personName(friend)} paused. Resume any time from the Paused tab.`);
         } catch (error: any) {
           this.modal.show(error?.message || 'Unable to pause this friendship right now.');
         }
@@ -1399,7 +1401,7 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     try {
       const state = await this.friendsApi.setPauseState(friend.id, false);
       this.applyPauseState(friend.id, state.paused, state.mutedNotifications);
-      this.modal.show(`${friend.username} is back in your friends list.`);
+      this.modal.show(`${personName(friend)} is back in your friends list.`);
     } catch (error: any) {
       this.modal.show(error?.message || 'Unable to resume this friendship right now.');
     }

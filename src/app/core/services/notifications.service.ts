@@ -16,6 +16,7 @@ export type NotificationType =
 export interface NotificationActor {
   id: string;
   username?: string;
+  displayName?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;

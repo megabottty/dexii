@@ -8,14 +8,11 @@
  */
 const User = require('../models/User');
 const push = require('./pushService');
+const { personName } = require('../utils/personName');
 
 const PREVIEW_LIMIT = 120;
 
-const displayName = (user) => {
-  if (!user) return 'A friend';
-  const full = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-  return full || user.username || 'A friend';
-};
+const displayName = (user) => personName(user);
 
 const preview = (message) => {
   if (message.isSafetyAlert) return 'sent you a safety alert';
@@ -36,7 +33,7 @@ async function notifyDirectMessage(message, senderId) {
   try {
     if (!(await push.isEnabled())) return;
     const [sender, recipient] = await Promise.all([
-      User.findById(senderId).select('username firstName lastName').lean(),
+      User.findById(senderId).select('username displayName firstName lastName').lean(),
       User.findById(message.recipient).select('profileSettings pausedFriends').lean()
     ]);
     if (!recipient || !wantsChatPush(recipient) || hasMutedSender(recipient, senderId)) return;
@@ -60,7 +57,7 @@ async function notifyGroupMessage(group, message, senderId) {
     if (!memberIds.length) return;
 
     const [sender, members] = await Promise.all([
-      User.findById(senderId).select('username firstName lastName').lean(),
+      User.findById(senderId).select('username displayName firstName lastName').lean(),
       User.find({ _id: { $in: memberIds } }).select('profileSettings pausedFriends').lean()
     ]);
     const name = displayName(sender);

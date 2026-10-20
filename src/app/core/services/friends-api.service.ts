@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
 import { CrushPhoto, CrushProfile, CrushStatus, mapCrushPhotos, mapCompatibility, mapFriendCompatibility } from '../models/crush-profile.model';
 import { SecurityService } from './security.service';
+import { personName } from '../utils/person-name';
 
 export type FriendRelationship = 'none' | 'friends' | 'request_sent' | 'request_received' | 'invite_sent';
 
@@ -26,6 +27,8 @@ export type SharedCrushResult =
 export interface FriendSearchResult {
   id: string;
   username: string;
+  /** The name they chose in Settings (may be empty). */
+  displayName?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -49,6 +52,8 @@ export interface FriendshipProfile {
 export interface FriendSummary {
   id: string;
   username: string;
+  /** The name they chose in Settings (may be empty). */
+  displayName?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -94,6 +99,7 @@ export function clearLocalFriendshipProfile(ownerId: string, friendId: string): 
 export interface FriendProfileDetails {
   id: string;
   username: string;
+  displayName?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -387,15 +393,13 @@ export class FriendsApiService {
    */
   async getSharedCrush(crushId: string): Promise<SharedCrushResult> {
     try {
-      const result = await this.request<{ crush: BackendCrushProfile; owner: { id: string; username: string; firstName?: string; lastName?: string } | null }>(
+      const result = await this.request<{ crush: BackendCrushProfile; owner: { id: string; username: string; displayName?: string; firstName?: string; lastName?: string } | null }>(
         `/shared/${encodeURIComponent(crushId)}`,
         {},
         'crushes'
       );
       if (!result?.crush) return { kind: 'not_found' };
-      const ownerName = result.owner
-        ? ([result.owner.firstName, result.owner.lastName].filter(Boolean).join(' ') || result.owner.username || null)
-        : null;
+      const ownerName = result.owner ? (personName(result.owner, '') || null) : null;
       return { kind: 'ok', crush: this.mapCrush(result.crush), ownerId: result.owner?.id ? String(result.owner.id) : null, ownerName };
     } catch (err: any) {
       if (err?.status === 403) return { kind: 'not_shared' };

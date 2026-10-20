@@ -4,7 +4,7 @@ const User = require('../models/User');
 const push = require('../services/pushService');
 const { hasMuted } = require('../services/pauseState');
 
-const ACTOR_FIELDS = 'username firstName lastName avatarUrl';
+const ACTOR_FIELDS = 'username displayName firstName lastName avatarUrl';
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -23,6 +23,7 @@ const shapeActor = (actor) => {
   return {
     id: String(actor._id || actor.id),
     username: actor.username,
+    displayName: actor.displayName || '',
     firstName: actor.firstName,
     lastName: actor.lastName,
     avatarUrl: actor.avatarUrl

@@ -8,16 +8,13 @@ const sendSms = require('../utils/sendSms');
 const { buildInviteEmail } = require('../utils/inviteEmail');
 const { createNotification, retractCrushShares, retractFriendRequestNotifications } = require('./notificationController');
 const { recordActivity } = require('../services/activityLog');
+const { personName } = require('../utils/personName');
 
 const INVITE_DAILY_LIMIT = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** Prefers a real name, falling back to the username. */
-const buildDisplayName = (user) => {
-  if (!user) return 'A friend';
-  const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-  return name || user.username || 'A friend';
-};
+/** The name friends see: chosen display name, else real name, else the username. */
+const buildDisplayName = (user) => personName(user);
 
 /** Public origin for invite links, honoring proxies and an explicit override. */
 const buildInviteUrl = (req, token) => {
@@ -53,8 +50,8 @@ const requireDb = (res) => {
   return true;
 };
 
-const PUBLIC_USER_FIELDS = 'username firstName lastName avatarUrl subscriptionTier friendCategories';
-const PUBLIC_INVITER_FIELDS = 'username firstName lastName';
+const PUBLIC_USER_FIELDS = 'username displayName firstName lastName avatarUrl subscriptionTier friendCategories';
+const PUBLIC_INVITER_FIELDS = 'username displayName firstName lastName';
 
 const shapeUser = (user) => {
   if (!user) return null;
@@ -116,7 +113,7 @@ exports.getFriends = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
       .select('friends pausedFriends friendshipProfiles')
-      .populate('friends', 'username firstName lastName avatarUrl friendCategories');
+      .populate('friends', 'username displayName firstName lastName avatarUrl friendCategories');
     const paused = new Map((user?.pausedFriends || []).map((entry) => [String(entry.user), entry]));
     const profiles = new Map((user?.friendshipProfiles || []).map((entry) => [String(entry.user), entry]));
     res.json((user?.friends || []).map((friend) => {
@@ -227,7 +224,7 @@ exports.getFriendProfile = async (req, res) => {
   try {
     const viewer = await User.findById(req.user.id).select('friends');
     const friend = await User.findById(req.params.friendId).select(
-      'username firstName lastName avatarUrl friends profileSettings'
+      'username displayName firstName lastName avatarUrl friends profileSettings'
     );
     if (!viewer || !friend) return res.status(404).json({ message: 'Friend not found.' });
 
@@ -245,6 +242,7 @@ exports.getFriendProfile = async (req, res) => {
     res.json({
       id: String(friend._id),
       username: friend.username,
+      displayName: friend.displayName || settings.displayName || '',
       firstName: friend.firstName || '',
       lastName: friend.lastName || '',
       avatarUrl: friend.avatarUrl || '',
@@ -347,12 +345,12 @@ exports.searchUsers = async (req, res) => {
     // Try exact email/phone lookup first
     if (normalizedEmail && normalizedEmail.includes('@')) {
       users = await User.find({ ...baseFilter, email: normalizedEmail })
-        .select('username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
+        .select('username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .limit(50)
         .lean();
     } else if (normalizedPhone) {
       users = await User.find({ ...baseFilter, phoneE164: normalizedPhone })
-        .select('username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
+        .select('username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .limit(50)
         .lean();
     }
@@ -368,7 +366,7 @@ exports.searchUsers = async (req, res) => {
           { searchName: rx }
         ]
       })
-        .select('username firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
+        .select('username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
         .limit(50)
         .lean();
     }

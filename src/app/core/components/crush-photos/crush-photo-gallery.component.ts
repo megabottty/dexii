@@ -9,6 +9,7 @@ import { ModalService } from '../../services/modal.service';
 import { CrushPhoto } from '../../models/crush-profile.model';
 import { UnreadableImageError, resizeImageFile } from '../../utils/image-resize';
 import { MAX_PHOTOS } from '../../config/photos';
+import { personName, PersonNamePipe } from '../../utils/person-name';
 
 
 interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
@@ -21,7 +22,7 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
 @Component({
   selector: 'app-crush-photo-gallery',
   standalone: true,
-  imports: [CommonModule, FocusTrapDirective, IconComponent],
+  imports: [CommonModule, FocusTrapDirective, IconComponent, PersonNamePipe],
   styleUrl: './crush-photo-gallery.component.css',
   template: `
     @if (layout() === 'hero') {
@@ -213,7 +214,7 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
                             [style.background-color]="draftFriendIds().includes(friend.id) ? theme.colors().primary : 'transparent'"
                             [style.color]="draftFriendIds().includes(friend.id) ? '#fff' : theme.colors().text"
                             [style.border]="'1px solid ' + (draftFriendIds().includes(friend.id) ? theme.colors().primary : theme.colors().border)"
-                            class="pg-chip">{{ friend.username }}</button>
+                            class="pg-chip">{{ friend | personName }}</button>
                   } @empty {
                     <p [style.color]="theme.colors().textSecondary" class="pg-note">Share {{ nickname() }} with a friend first; then you can pick them here.</p>
                   }
@@ -349,7 +350,7 @@ export class CrushPhotoGalleryComponent {
   }
 
   audienceLabel(photo: CrushPhoto): string {
-    const names = photo.friendIds.map((id) => this.sharedFriends().find((f) => f.id === id)?.username || 'a friend');
+    const names = photo.friendIds.map((id) => personName(this.sharedFriends().find((f) => f.id === id), 'a friend'));
     return names.length ? `Only ${names.join(', ')}` : 'Only friends you pick';
   }
 

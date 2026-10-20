@@ -165,7 +165,7 @@ exports.getConversations = async (req, res) => {
 
     const user = await User.findById(userId)
       .select('friends pausedFriends')
-      .populate('friends', 'username avatarUrl friendCategories')
+      .populate('friends', 'username displayName avatarUrl friendCategories')
       .lean();
 
     if (!user) {
@@ -182,6 +182,7 @@ exports.getConversations = async (req, res) => {
         return [id, {
           id,
           username: friend.username || id,
+          displayName: friend.displayName || '',
           avatarUrl: friend.avatarUrl,
           friendCategories: friend.friendCategories || []
         }];

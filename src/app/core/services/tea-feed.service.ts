@@ -6,6 +6,7 @@ import { DataService } from './data.service';
 import { ModalService } from './modal.service';
 import { CrushProfile } from '../models/crush-profile.model';
 import { SharedEntry } from './entries-api.service';
+import { personName } from '../utils/person-name';
 
 /**
  * "Tea" = what your friends share with you and requests waiting for you.
@@ -54,7 +55,7 @@ export interface TeaItem {
   actionLabel?: string;
 }
 
-export type SharedCrush = CrushProfile & { ownerId: string; ownerUsername: string; ownerAvatarUrl?: string };
+export type SharedCrush = CrushProfile & { ownerId: string; ownerUsername: string; ownerName?: string; ownerAvatarUrl?: string };
 
 export const ENTRY_TYPE_VERBS: Record<string, string> = {
   Note: 'shared a note about',
@@ -66,8 +67,7 @@ export const ENTRY_TYPE_VERBS: Record<string, string> = {
 
 const actorFromNotification = (actor: AppNotification['actor']): TeaActor => {
   if (!actor) return { id: '', name: 'A friend' };
-  const fullName = [actor.firstName, actor.lastName].filter(Boolean).join(' ').trim();
-  return { id: actor.id, name: fullName || actor.username || 'A friend', username: actor.username, avatarUrl: actor.avatarUrl };
+  return { id: actor.id, name: personName(actor), username: actor.username, avatarUrl: actor.avatarUrl };
 };
 
 const kindOf = (type: string): TeaKind => {
@@ -163,8 +163,8 @@ export function mergeTeaItems(
       kind: 'crush_shared',
       read: null,
       timestamp: crush.lastInteraction ? new Date(crush.lastInteraction) : new Date(0),
-      actor: { id: crush.ownerId, name: crush.ownerUsername, username: crush.ownerUsername, avatarUrl: crush.ownerAvatarUrl },
-      text: `${crush.ownerUsername} shared a crush with you`,
+      actor: { id: crush.ownerId, name: crush.ownerName || crush.ownerUsername, username: crush.ownerUsername, avatarUrl: crush.ownerAvatarUrl },
+      text: `${crush.ownerName || crush.ownerUsername} shared a crush with you`,
       crush: { id: crush.id, nickname: crush.nickname, avatarUrl: crush.avatarUrl, bio: crush.bio },
       route: ['/profile', crush.id]
     });
@@ -174,7 +174,7 @@ export function mergeTeaItems(
     const key = `entry:${entry.id}`;
     if (byKey.has(key)) continue;
     const crush = crushById.get(entry.crushId);
-    const ownerName = entry.owner?.username || 'A friend';
+    const ownerName = personName(entry.owner);
     byKey.set(key, {
       key,
       kind: 'entry_shared',
@@ -290,7 +290,7 @@ export class TeaFeedService {
       }));
       const list: SharedCrush[] = [];
       for (const { friend, crushes } of results) {
-        for (const crush of crushes) list.push({ ...crush, ownerId: friend.id, ownerUsername: friend.username, ownerAvatarUrl: friend.avatarUrl });
+        for (const crush of crushes) list.push({ ...crush, ownerId: friend.id, ownerUsername: friend.username, ownerName: personName(friend), ownerAvatarUrl: friend.avatarUrl });
       }
       this.sharedCrushes.set(list);
     } catch {

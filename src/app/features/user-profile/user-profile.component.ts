@@ -20,12 +20,13 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { BackLinkComponent } from '../../core/components/back-link.component';
+import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
 @Component({
   selector: 'app-user-profile',
   standalone: true,
   styleUrl: './user-profile.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, IconComponent, CrushSharePickerComponent, AppSelectComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, NavbarComponent, BackLinkComponent, ActivityTimelineComponent, IconComponent, CrushSharePickerComponent, AppSelectComponent, PersonNamePipe],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -294,7 +295,7 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                 <div>
                   <h2 class="section-title">Friendship Profile</h2>
                   <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0; margin: 4px 0 0;">
-                    Your private notes on this friendship. {{ f.username }} can't see them.
+                    Your private notes on this friendship. {{ f | personName }} can't see them.
                   </p>
                 </div>
                 <div class="user-profile-fp-tools">
@@ -305,17 +306,17 @@ import { BackLinkComponent } from '../../core/components/back-link.component';
                             class="user-profile-pill user-profile-pill--ghost">Edit</button>
                   }
                   <button type="button" (click)="f.paused ? resumeFriendship() : pauseFriendship()"
-                          [attr.aria-label]="(f.paused ? 'Resume friendship with ' : 'Pause friendship with ') + f.username"
+                          [attr.aria-label]="(f.paused ? 'Resume friendship with ' : 'Pause friendship with ') + (f | personName)"
                           [title]="f.paused ? 'Resume friendship' : 'Pause friendship'"
                           [style.color]="theme.colors().textSecondary"
                           class="icon-btn"><app-icon [name]="f.paused ? 'play' : 'pause'" /></button>
                   <button type="button" (click)="removeFriendship()"
-                          [attr.aria-label]="'Remove ' + f.username + ' as a friend'" title="Remove friend"
+                          [attr.aria-label]="'Remove ' + (f | personName) + ' as a friend'" title="Remove friend"
                           class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
                 </div>
               </div>
               @if (f.paused) {
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-fp-paused">⏸ This friendship is paused. Resume it to hear from {{ f.username }} again.</p>
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-fp-paused">⏸ This friendship is paused. Resume it to hear from {{ f | personName }} again.</p>
               }
 
               @if (editingFriendshipProfile()) {
@@ -465,8 +466,7 @@ export class UserProfileComponent {
     const friend = this.friendSummaries().find((item) => item.id === id || item.username === id);
     if (!friend) return id === 'me' ? this.dataService.getUserId() : id;
 
-    const name = [friend.firstName, friend.lastName].filter(Boolean).join(' ').trim();
-    return name || friend.username || id;
+    return personName(friend, id);
   });
   profileUsername = computed(() => {
     if (this.isSelf()) return this.dataService.getUserId();
@@ -627,12 +627,12 @@ export class UserProfileComponent {
     const friend = this.friend();
     if (!friend) return;
     this.modal.confirm(
-      `Pause your friendship with ${friend.username}? They move to your Paused list and, with notifications muted, you won't hear from them until you resume. Sharing stays active both ways, and they aren't told.`,
+      `Pause your friendship with ${personName(friend)}? They move to your Paused list and, with notifications muted, you won't hear from them until you resume. Sharing stays active both ways, and they aren't told.`,
       async () => {
         try {
           const state = await this.friendsApi.setPauseState(friend.id, true, true);
           this.patchFriend(friend.id, { paused: state.paused, mutedNotifications: state.mutedNotifications });
-          this.modal.show(`Friendship with ${friend.username} paused. Resume any time.`);
+          this.modal.show(`Friendship with ${personName(friend)} paused. Resume any time.`);
         } catch (error: any) {
           this.modal.show(error?.message || 'Unable to pause this friendship right now.');
         }
@@ -648,7 +648,7 @@ export class UserProfileComponent {
     try {
       const state = await this.friendsApi.setPauseState(friend.id, false);
       this.patchFriend(friend.id, { paused: state.paused, mutedNotifications: state.mutedNotifications });
-      this.modal.show(`${friend.username} is back in your friends list.`);
+      this.modal.show(`${personName(friend)} is back in your friends list.`);
     } catch (error: any) {
       this.modal.show(error?.message || 'Unable to resume this friendship right now.');
     }
@@ -658,12 +658,12 @@ export class UserProfileComponent {
     const friend = this.friend();
     if (!friend) return;
     this.modal.confirm(
-      `Remove ${friend.username} as a friend? You both lose access to what you shared with each other. This cannot be undone.`,
+      `Remove ${personName(friend)} as a friend? You both lose access to what you shared with each other. This cannot be undone.`,
       async () => {
         try {
           await this.friendsApi.removeFriend(friend.id);
           this.messaging.pruneConversation(friend.id, friend.username);
-          this.modal.show(`${friend.username} has been removed from your friends.`);
+          this.modal.show(`${personName(friend)} has been removed from your friends.`);
           void this.router.navigate(['/friends']);
         } catch (error: any) {
           this.modal.show(error?.message || 'Unable to remove this friend right now.');

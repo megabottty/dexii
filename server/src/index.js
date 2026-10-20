@@ -40,6 +40,18 @@ if (enableMongo) {
       } catch (err) {
         console.warn('Crushing→Plotting migration skipped:', err.message);
       }
+      // One-time backfill: copy each account's chosen display name up to the top level.
+      try {
+        const User = require('./models/User');
+        const result = await User.updateMany(
+          { $or: [{ displayName: { $exists: false } }, { displayName: '' }], 'profileSettings.displayName': { $type: 'string', $ne: '' } },
+          [{ $set: { displayName: { $trim: { input: '$profileSettings.displayName' } } } }],
+          { updatePipeline: true }
+        );
+        if (result.modifiedCount) console.log(`Backfilled the display name on ${result.modifiedCount} account(s).`);
+      } catch (err) {
+        console.warn('Display name backfill skipped:', err.message);
+      }
     })
     .catch((err) => {
       console.warn('MongoDB connection error:', err.message);

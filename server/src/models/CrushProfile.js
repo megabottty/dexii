@@ -85,6 +85,7 @@ const CrushProfileSchema = new mongoose.Schema({
     type: [{
       user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
       username: { type: String, default: '' },
+      displayName: { type: String, default: '' },
       avatarUrl: { type: String, default: '' },
       score: { type: Number, min: 0, max: 100, required: true },
       note: { type: String, default: '', maxlength: 300 },

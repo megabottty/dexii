@@ -18,6 +18,7 @@ const shapeOwner = (owner) => {
   return {
     id: String(owner._id || owner.id),
     username: owner.username,
+    displayName: owner.displayName || '',
     avatarUrl: owner.avatarUrl
   };
 };
@@ -100,7 +101,7 @@ exports.getSharedEntries = async (req, res) => {
       $nor: [{ isBurnAfterReading: true, hasViewed: true }]
     })
       .sort({ timestamp: -1 })
-      .populate('userId', 'username avatarUrl')
+      .populate('userId', 'username displayName avatarUrl')
       .lean();
 
     res.json(entries.map(shapeEntry));

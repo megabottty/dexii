@@ -12,6 +12,7 @@ import { MessagingService } from '../../core/services/messaging.service';
 import { DataService } from '../../core/services/data.service';
 import { FriendsApiService, FriendSummary } from '../../core/services/friends-api.service';
 import { SharedHistoryPanelComponent } from './shared-history-panel.component';
+import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
 /**
  * A dedicated, top-level "Sharing" page (linked directly from the main nav)
@@ -26,7 +27,7 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
 @Component({
   selector: 'app-sharing',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, SharedHistoryPanelComponent, BackLinkComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, SharedHistoryPanelComponent, BackLinkComponent, PersonNamePipe],
   styleUrl: './sharing.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="sharing-component__page">
@@ -96,9 +97,9 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
                         [style.color]="theme.colors().text"
                         class="sharing-component__friend-row">
                   <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
-                       [alt]="friend.username + ' avatar'"
+                       [alt]="(friend | personName) + ' avatar'"
                        class="sharing-component__friend-avatar">
-                  <span class="sharing-component__friend-name">{{ friend.username }}</span>
+                  <span class="sharing-component__friend-name">{{ friend | personName }}</span>
                   <span [style.color]="theme.colors().textSecondary" class="sharing-component__friend-count">
                     {{ sharedCrushCountFor(friend.id) }} shared
                   </span>
@@ -123,14 +124,14 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
               <p [style.color]="theme.colors().textSecondary" class="sharing-component__empty">Select a friend to view sharing controls.</p>
             } @else {
               <div [style.border]="'1px solid ' + theme.colors().border" class="sharing-component__friend-banner">
-                <a [routerLink]="['/friends', selectedFriend()?.username]" [attr.aria-label]="'Open your friendship page with ' + selectedFriend()?.username" class="sharing-component__friend-banner-link">
+                <a [routerLink]="['/friends', selectedFriend()?.username]" [attr.aria-label]="'Open your friendship page with ' + (selectedFriend() | personName)" class="sharing-component__friend-banner-link">
                   <img [src]="selectedFriend()?.avatarUrl || 'https://i.pravatar.cc/150?u=' + selectedFriend()?.id"
-                       [alt]="selectedFriend()?.username || 'Selected friend'"
+                       [alt]="selectedFriend() | personName"
                        class="sharing-component__friend-banner-avatar">
                 </a>
                 <div>
                   <p [style.color]="theme.colors().textSecondary" class="sharing-component__friend-banner-label">Sharing with</p>
-                  <p class="sharing-component__friend-banner-name">{{ selectedFriend()?.username }}</p>
+                  <p class="sharing-component__friend-banner-name">{{ selectedFriend() | personName }}</p>
                 </div>
               </div>
 
@@ -150,7 +151,7 @@ import { SharedHistoryPanelComponent } from './shared-history-panel.component';
                               [style.color]="isCrushShared(crush) ? 'white' : theme.colors().text"
                               [style.border]="'1px solid ' + (isCrushShared(crush) ? theme.colors().primary : theme.colors().border)"
                               [attr.aria-pressed]="isCrushShared(crush)"
-                              [attr.aria-label]="(isCrushShared(crush) ? 'Unshare ' : 'Share ') + crush.nickname + ' with ' + (selectedFriend()?.username || 'selected friend')"
+                              [attr.aria-label]="(isCrushShared(crush) ? 'Unshare ' : 'Share ') + crush.nickname + ' with ' + (selectedFriend() | personName)"
                               class="sharing-component__crush-toggle">
                         {{ isCrushShared(crush) ? 'Unshare' : 'Share' }}
                       </button>
@@ -265,7 +266,7 @@ export class SharingComponent implements OnInit {
   filteredFriends = computed(() => {
     const term = this.friendSearch().trim().toLowerCase();
     if (!term) return this.friends();
-    return this.friends().filter((f) => f.username.toLowerCase().includes(term));
+    return this.friends().filter((f) => personName(f).toLowerCase().includes(term) || f.username.toLowerCase().includes(term));
   });
 
   /** Every crush that's currently shared with at least one friend, with the friend names resolved for display. */
@@ -276,7 +277,7 @@ export class SharingComponent implements OnInit {
         const visibility: string[] = crush.visibility || [];
         const friendNames = friends
           .filter((f) => visibility.includes(f.id))
-          .map((f) => f.username);
+          .map((f) => personName(f));
         return { id: crush.id, nickname: crush.nickname, friendNames };
       })
       .filter((entry) => entry.friendNames.length > 0);
@@ -377,7 +378,7 @@ export class SharingComponent implements OnInit {
         relatedEntryId: entry.id,
         kind: 'entry_share'
       });
-      this.modal.show(`Shared entry sent to ${friend.username}.`);
+      this.modal.show(`Shared entry sent to ${personName(friend)}.`);
     }
   }
 
@@ -417,7 +418,7 @@ export class SharingComponent implements OnInit {
     const newEntry = this.getEntries(crushId).find((entry) => entry.content === content);
 
     this.quickEntryDrafts[crushId] = '';
-    this.modal.show(`Private note added. Tap the lock to share it with ${friend.username}.`);
+    this.modal.show(`Private note added. Tap the lock to share it with ${personName(friend)}.`);
   }
 
   showShareDestinationInfo(): void {

@@ -97,6 +97,7 @@ export interface CompatibilityPoint {
 export interface FriendCompatibilityVote {
   userId: string;
   username?: string;
+  displayName?: string;
   avatarUrl?: string;
   score: number;
   note?: string;
@@ -125,7 +126,7 @@ export function mapFriendCompatibility(raw: unknown): FriendCompatibilityVote[] 
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((v) => v && typeof v === 'object' && typeof (v as Record<string, unknown>)['score'] === 'number')
-    .map((v) => { const r = v as Record<string, unknown>; return { userId: String(r['userId'] ?? r['user'] ?? ''), username: typeof r['username'] === 'string' ? r['username'] : '', avatarUrl: typeof r['avatarUrl'] === 'string' ? r['avatarUrl'] : '', score: r['score'] as number, note: typeof r['note'] === 'string' ? r['note'] : '', at: (r['at'] as string) || undefined }; });
+    .map((v) => { const r = v as Record<string, unknown>; return { userId: String(r['userId'] ?? r['user'] ?? ''), username: typeof r['username'] === 'string' ? r['username'] : '', displayName: typeof r['displayName'] === 'string' ? r['displayName'] : '', avatarUrl: typeof r['avatarUrl'] === 'string' ? r['avatarUrl'] : '', score: r['score'] as number, note: typeof r['note'] === 'string' ? r['note'] : '', at: (r['at'] as string) || undefined }; });
 }
 
 /** One photo of a crush. `url` is only present once the gallery has loaded it. */

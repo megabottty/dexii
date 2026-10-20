@@ -6,6 +6,7 @@ import { SecurityService } from './security.service';
 export interface SharedEntryOwner {
   id: string;
   username: string;
+  displayName?: string;
   avatarUrl?: string;
 }
 
@@ -76,6 +77,7 @@ export class EntriesApiService {
       owner: {
         id: String(entry.owner?.id || ''),
         username: String(entry.owner?.username || ''),
+        displayName: typeof entry.owner?.displayName === 'string' ? entry.owner.displayName : '',
         avatarUrl: entry.owner?.avatarUrl
       }
     };

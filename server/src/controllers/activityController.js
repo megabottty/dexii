@@ -4,7 +4,7 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 
 const PAGE = 40;
-const ACTOR_FIELDS = 'username firstName lastName avatarUrl';
+const ACTOR_FIELDS = 'username displayName firstName lastName avatarUrl';
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -15,7 +15,7 @@ const requireDb = (res) => {
 };
 
 const shapeUser = (user) => user
-  ? { id: String(user._id), username: user.username, firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
+  ? { id: String(user._id), username: user.username, displayName: user.displayName || '', firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
   : null;
 
 const shapeEvent = (row, users) => ({

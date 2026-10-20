@@ -33,6 +33,11 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Granular Controls**: Decide which friend can see which crush profile or specific "Tea" (Notes). On the crush page each
   note has Share, Edit and Delete; the share picker opens with the note's current audience selected (all friends when it is
   public), deselecting everyone makes it private, and only newly added friends get a message.
+- **What friends call you**: everywhere a friend is named (Friends, Chats, Tea, share pickers, notes audience, compatibility
+  votes, push previews) the app shows the display name chosen in Settings, else first + last name, else the @username. A display
+  name that merely repeats the username doesn't count. Links and lookups still use the username. Client: `personName()` /
+  `| personName` in `src/app/core/utils/person-name.ts`; server: `server/src/utils/personName.js` plus a top-level `displayName`
+  on `User` that Settings keeps in step (backfilled once on boot).
 - **In-App Messaging**: Secure, end-to-end encrypted style chat between friends.
 - **Self-Destructing Messages**: Messages containing the word "secret" are automatically flagged for self-destruction/deletion.
 - **Crush Tier Limits**: Free keeps up to 3 crushes, Premium 8, Gold unlimited. Friends are never limited.

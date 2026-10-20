@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { personName } from '../utils/person-name';
 import { getApiBaseUrl } from '../config/api-config';
 import { SecurityService } from './security.service';
 import { RealtimeService } from './realtime.service';
@@ -16,6 +17,7 @@ export type ActivityType =
 export interface ActivityPerson {
   id: string;
   username?: string;
+  displayName?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -49,8 +51,6 @@ export function activityGroup(type: ActivityType): ActivityGroup {
   return 'friendship';
 }
 
-const personName = (p: ActivityPerson | null | undefined): string =>
-  p ? ([p.firstName, p.lastName].filter(Boolean).join(' ') || p.username || 'A friend') : 'A friend';
 
 /**
  * Turns an event into one plain sentence from the signed-in person's point of view,

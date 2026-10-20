@@ -6,6 +6,7 @@ import { Message } from '../models/message.model';
 export interface GroupMember {
   id: string;
   username: string;
+  displayName?: string;
   avatarUrl?: string;
 }
 
@@ -24,6 +25,7 @@ export interface GroupChatSummary {
 
 export interface GroupMessage extends Message {
   senderUsername?: string;
+  senderDisplayName?: string;
   senderAvatarUrl?: string;
   groupId: string;
 }
@@ -51,6 +53,7 @@ export class GroupChatApiService {
         ? raw.members.map((m: any) => ({
             id: String(m._id || m.id),
             username: m.username,
+            displayName: m.displayName || '',
             avatarUrl: m.avatarUrl
           }))
         : []
@@ -68,6 +71,7 @@ export class GroupChatApiService {
       timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
       relatedCrushId: row.crushId ? String(row.crushId) : undefined,
       senderUsername: typeof row.sender === 'object' ? row.sender.username : undefined,
+      senderDisplayName: typeof row.sender === 'object' ? row.sender.displayName || undefined : undefined,
       senderAvatarUrl: typeof row.sender === 'object' ? row.sender.avatarUrl : undefined,
       reactions: Array.isArray(row.reactions)
         ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { personName } = require('../utils/personName');
 const CrushProfile = require('../models/CrushProfile');
 const Entry = require('../models/Entry');
 const User = require('../models/User');
@@ -214,13 +215,13 @@ exports.getSharedCrushById = async (req, res) => {
       return res.status(403).json({ message: 'This crush has not been shared with you.' });
     }
 
-    const owner = await User.findById(crush.userId).select('username firstName lastName').lean();
+    const owner = await User.findById(crush.userId).select('username displayName firstName lastName').lean();
 
     const plain = shapeCrushForWire(crush, myId);
     res.json({
       crush: plain,
       owner: owner
-        ? { id: String(owner._id), username: owner.username, firstName: owner.firstName, lastName: owner.lastName }
+        ? { id: String(owner._id), username: owner.username, displayName: owner.displayName || '', firstName: owner.firstName, lastName: owner.lastName }
         : null
     });
 
@@ -515,8 +516,8 @@ exports.voteCompatibility = async (req, res) => {
     const score = clampScore(req.body?.score);
     if (score === null) return res.status(400).json({ message: 'Score must be 0-100' });
     const note = typeof req.body?.note === 'string' ? req.body.note.trim().slice(0, 300) : '';
-    const me = await User.findById(req.user.id).select('username avatarUrl').lean();
-    const entry = { user: req.user.id, username: me?.username || '', avatarUrl: me?.avatarUrl || '', score, note, at: new Date() };
+    const me = await User.findById(req.user.id).select('username displayName firstName lastName avatarUrl').lean();
+    const entry = { user: req.user.id, username: me?.username || '', displayName: personName(me, ''), avatarUrl: me?.avatarUrl || '', score, note, at: new Date() };
     const existing = (crush.friendCompatibility || []).findIndex((v) => String(v.user) === String(req.user.id));
     if (existing >= 0) crush.friendCompatibility[existing] = entry; else crush.friendCompatibility.push(entry);
     await crush.save();
@@ -548,7 +549,7 @@ exports.retractCompatibilityVote = async (req, res) => {
   }
 };
 
-const shapeVote = (v) => ({ userId: String(v.user), username: v.username || '', avatarUrl: v.avatarUrl || '', score: v.score, note: v.note || '', at: v.at });
+const shapeVote = (v) => ({ userId: String(v.user), username: v.username || '', displayName: v.displayName || '', avatarUrl: v.avatarUrl || '', score: v.score, note: v.note || '', at: v.at });
 
 /** A crush the caller can see because its owner shared it with them (404/403 otherwise). */
 async function loadSharedCrushForViewer(req, res) {

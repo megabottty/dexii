@@ -1,4 +1,5 @@
 import { AppSelectComponent } from '../app-select/app-select.component';
+import { personName } from '../../utils/person-name';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -147,7 +148,7 @@ export class ActivityTimelineComponent {
     const seen = new Map<string, string>();
     for (const e of this.events()) {
       const other = this.isMine(e) ? e.counterpart : e.actor;
-      if (other?.id && other.id !== this.meId) seen.set(other.id, [other.firstName, other.lastName].filter(Boolean).join(' ') || other.username || other.id);
+      if (other?.id && other.id !== this.meId) seen.set(other.id, personName(other, other.id));
     }
     return [...seen.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   });
