@@ -103,6 +103,10 @@ export class SecurityService {
       this.subscription.setTier(data?.user?.subscriptionTier);
       this._currentUser.set(data.user?.username || trimmedUser);
       this._isLoggedIn.set(true);
+      // Credentials were just typed, so there's nothing to re-prove: the PIN only
+      // guards a session that's resumed or locked later (DEX-23).
+      this._isLocked.set(false);
+      this._needsPinSetup.set(false);
       return true;
     } catch (err: any) {
       console.error('Auth API error:', err);

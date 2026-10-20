@@ -17,7 +17,7 @@ import { getApiBaseUrl } from '../../core/config/api-config';
         <app-page-hint
           hintKey="login_screen"
           title="Login"
-          message="Use your account password to sign in. Your Vault PIN unlocks the app afterward.">
+          message="Use your account password to sign in. Your Vault PIN only comes up when you reopen or lock the app.">
         </app-page-hint>
 
         <div class="login-header">
@@ -325,13 +325,12 @@ export class LoginComponent {
     this.errorMessage.set('');
 
     try {
-      // Temporarily store username for verifyPin to use
       localStorage.setItem('dexii_api_username', this.username());
 
       const success = await this.security.verifyPassword(this.username(), this.password());
 
       if (success) {
-        this.router.navigate(['/lock']);
+        this.router.navigate(['/dashboard']);
       } else {
         this.errorMessage.set('Invalid username or password.');
         this.isLoading.set(false);
