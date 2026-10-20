@@ -326,11 +326,9 @@
   align-items: flex-start;
   gap: 2px;
   padding: 10px 0;
+  /* Every cell keeps its line: in a 2–3 column grid, dropping it from the last cell
+     only (as before) left the final row — usually Friends — without one (DEX-25). */
   border-bottom: 1px solid var(--border);
-}
-
-.info-row-styled:last-child {
-  border-bottom: none;
 }
 
 .info-row-styled.full-width {
