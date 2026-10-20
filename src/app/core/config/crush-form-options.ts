@@ -13,6 +13,12 @@ export const PRONOUN_OPTIONS: ReadonlyArray<{ label: string; value: CrushPronoun
   { label: 'They/Them', value: 'they' }
 ];
 
+/** "he" → "He/Him" for display; anything unknown comes back as typed. */
+export function pronounLabel(value: string | null | undefined): string {
+  if (!value) return '';
+  return PRONOUN_OPTIONS.find((option) => option.value === value)?.label || value;
+}
+
 /** The enum values double as their display labels. */
 export const CRUSH_STATUS_OPTIONS: ReadonlyArray<{ label: string; value: CrushStatus }> =
   Object.values(CrushStatus).map((value) => ({ label: value, value }));

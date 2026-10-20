@@ -1,7 +1,7 @@
 import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Entry } from '../../core/models/entry.model';
 import { LoadingService } from '../../core/services/loading.service';
-import { OTHER_LABEL } from '../../core/config/crush-form-options';
+import { OTHER_LABEL, pronounLabel } from '../../core/config/crush-form-options';
 import { PARKED_FEATURES_ENABLED } from '../../core/config/premium-features';
 import { IconComponent } from '../../core/components/icon/icon.component';
 import { Component, signal, inject, computed, OnDestroy, DestroyRef, effect, untracked } from '@angular/core';
@@ -158,7 +158,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                       <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
                     }
                     @if (c.pronouns) {
-                      <p style="margin: 0;"><strong>Pronouns:</strong> {{ c.pronouns }}</p>
+                      <p style="margin: 0;"><strong>Pronouns:</strong> {{ pronounLabel(c.pronouns) }}</p>
                     }
                     @if (c.category) {
                       <p style="margin: 0;"><strong>Category:</strong> {{ c.category }}</p>
@@ -759,7 +759,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 @if (c.pronouns) {
                   <div class="info-row-styled">
                     <span class="info-label">Pronouns</span>
-                    <span class="info-value">{{ c.pronouns }}</span>
+                    <span class="info-value">{{ pronounLabel(c.pronouns) }}</span>
                   </div>
                 }
                 <div class="info-row-styled">
@@ -1407,6 +1407,8 @@ export class ProfileDetailComponent implements OnDestroy {
       ? crush.fullName
       : crush.nickname;
   }
+
+  pronounLabel = pronounLabel;
 
   getCrushAge(crush: CrushProfile): number | null {
     if (!crush.dateOfBirth) return null;
