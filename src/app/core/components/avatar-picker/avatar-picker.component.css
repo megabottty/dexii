@@ -11,16 +11,22 @@
   margin-bottom: 10px;
 }
 
+/* The picture and, beside it, every way to get one (DEX-39). Buttons alternate outline / solid (DEX-34). */
 .ap-current {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-start;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
+.ap-preview-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
 .ap-preview {
-  width: 72px;
-  height: 72px;
+  width: 128px;
+  height: 128px;
   border-radius: var(--radius-avatar);
   overflow: hidden;
   display: flex;
@@ -37,23 +43,91 @@
 }
 
 .ap-preview-empty {
-  font-size: 26px;
+  font-size: 34px;
   opacity: 0.35;
 }
 
 /* The crush's initial while there is no picture yet: a name, not a question mark. */
 .ap-preview-empty--initial {
-  font-size: 34px;
+  font-size: 48px;
   font-weight: 800;
   letter-spacing: 1px;
   opacity: 0.55;
 }
 
+/* Pencil on the picture: opens re-crop / edit avatar / remove. */
+.ap-edit-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.ap-edit-badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ap-edit-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  z-index: 20;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+  display: grid;
+  gap: 2px;
+}
+
+.ap-edit-menu__item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.ap-edit-menu__item:hover {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.ap-edit-menu__item--danger {
+  color: var(--danger);
+}
+
 .ap-current-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+@media (min-width: 760px) {
+  .ap-current-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-self: center;
+  }
 }
 
 .ap-btn {
@@ -64,7 +138,12 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
+  text-align: center;
   cursor: pointer;
+}
+
+.ap-btn-outline {
+  background: transparent;
 }
 
 .ap-btn-primary {
@@ -72,17 +151,15 @@
   color: #fff;
 }
 
+.ap-caret {
+  font-size: 0.7em;
+  margin-left: 4px;
+}
+
 .ap-btn-quiet {
   letter-spacing: 1px;
   padding: 8px 12px;
   font-size: var(--fs-btn);
-}
-
-.ap-btn-link {
-  border: none;
-  padding: 6px 4px;
-  font-size: var(--fs-btn);
-  letter-spacing: 1px;
 }
 
 .ap-file {
@@ -112,26 +189,8 @@
   font-size: var(--fs-label);
 }
 
-.ap-section {
-  margin: 14px 0 8px;
-  font-size: var(--fs-label);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.ap-section-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-
 .ap-presets {
+  margin-top: 14px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
   gap: 8px;
@@ -156,18 +215,8 @@
   display: block;
 }
 
-.ap-toggle-url {
-  margin-top: 12px;
-  border: none;
-  background: transparent;
-  padding: 0;
-  font-size: var(--fs-btn);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .ap-url {
-  margin-top: 8px;
+  margin-top: 14px;
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, model, signal } from '@angular/core';
 import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../services/theme.service';
@@ -11,6 +11,7 @@ import { AvatarConfig } from '../../models/avatar-config.model';
 import { AVATAR_PRESETS, AvatarPreset } from '../../data/avatar-presets';
 import { AvatarBuilderComponent } from '../avatar-builder/avatar-builder.component';
 import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.component';
+import { IconComponent } from '../icon/icon.component';
 
 /**
  * Everything to do with picking a crush's picture, shared by the new-crush
@@ -27,42 +28,68 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
   selector: 'app-avatar-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AvatarBuilderComponent, UpgradePromptComponent, FocusTrapDirective],
+  imports: [FormsModule, AvatarBuilderComponent, UpgradePromptComponent, FocusTrapDirective, IconComponent],
   styleUrl: './avatar-picker.component.css',
   template: `
     <div class="ap">
       <label [style.color]="theme.colors().textSecondary" class="ap-label">{{ label() }}</label>
 
+      <!-- DEX-39 / DEX-34: a big square with every way to get a picture beside it; the pencil on the picture edits or removes it. -->
       <div class="ap-current">
-        <div class="ap-preview" [style.border]="'1px solid ' + theme.colors().border" [style.background-color]="theme.colors().bgSecondary">
+        <div class="ap-preview-wrap">
+          <div class="ap-preview" [style.border]="'1px solid ' + theme.colors().border" [style.background-color]="theme.colors().bgSecondary">
+            @if (url()) {
+              <img [src]="url()" alt="Selected avatar" class="ap-preview-img">
+            } @else {
+              <span class="ap-preview-empty" [class.ap-preview-empty--initial]="initialLetter()" aria-hidden="true">{{ initialLetter() || '?' }}</span>
+            }
+          </div>
           @if (url()) {
-            <img [src]="url()" alt="Selected avatar" class="ap-preview-img">
-          } @else {
-            <span class="ap-preview-empty" [class.ap-preview-empty--initial]="initialLetter()" aria-hidden="true">{{ initialLetter() || '?' }}</span>
+            <button type="button" class="ap-edit-badge" [style.background-color]="theme.colors().primary"
+                    (click)="editMenuOpen.set(!editMenuOpen())"
+                    aria-label="Edit or remove the picture" aria-haspopup="menu" [attr.aria-expanded]="editMenuOpen()">
+              <app-icon name="pencil" />
+            </button>
+            @if (editMenuOpen()) {
+              <div class="ap-edit-menu" role="menu" aria-label="Picture options"
+                   [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border"
+                   (keydown.escape)="editMenuOpen.set(false)">
+                @if (cropSourceImage()) {
+                  <button type="button" role="menuitem" class="ap-edit-menu__item" [style.color]="theme.colors().text"
+                          (click)="editMenuOpen.set(false); showCropModal.set(true)">Re-crop</button>
+                }
+                @if (config() && gate.canUseAvatarBuilder()) {
+                  <button type="button" role="menuitem" class="ap-edit-menu__item" [style.color]="theme.colors().text"
+                          (click)="editMenuOpen.set(false); openBuilder()">Edit avatar</button>
+                }
+                <button type="button" role="menuitem" class="ap-edit-menu__item ap-edit-menu__item--danger"
+                        (click)="editMenuOpen.set(false); clear()">Remove</button>
+              </div>
+            }
           }
         </div>
         <div class="ap-current-actions">
           <button type="button" (click)="fileInput.click()"
                   [style.border]="'1px solid ' + theme.colors().primary"
                   [style.color]="theme.colors().onBgPrimary"
-                  class="ap-btn">Upload photo</button>
+                  class="ap-btn ap-btn-outline">Upload photo</button>
           <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" class="ap-file">
-          @if (cropSourceImage()) {
-            <button type="button" (click)="showCropModal.set(true)"
-                    [style.border]="'1px solid ' + theme.colors().border"
-                    [style.color]="theme.colors().text"
-                    class="ap-btn ap-btn-quiet">Re-crop</button>
-          }
           @if (gate.canUseAvatarBuilder()) {
             <button type="button" (click)="openBuilder()"
                     [style.background-color]="theme.colors().primary"
-                    class="ap-btn ap-btn-primary">{{ config() ? 'Edit avatar' : 'Build an avatar' }}</button>
+                    class="ap-btn ap-btn-primary">Build an avatar</button>
           }
-          @if (url()) {
-            <button type="button" (click)="clear()"
-                    [style.color]="theme.colors().textSecondary"
-                    class="ap-btn ap-btn-link">Remove</button>
-          }
+          <button type="button" (click)="presetsOpen.set(!presetsOpen())"
+                  [style.border]="'1px solid ' + theme.colors().primary"
+                  [style.color]="theme.colors().onBgPrimary"
+                  class="ap-btn ap-btn-outline"
+                  [attr.aria-expanded]="presetsOpen()" aria-controls="ap-presets">
+            Choose an avatar <span class="ap-caret" aria-hidden="true">{{ presetsOpen() ? '▲' : '▼' }}</span>
+          </button>
+          <button type="button" (click)="showUrl.set(!showUrl())"
+                  [style.background-color]="theme.colors().primary"
+                  class="ap-btn ap-btn-primary"
+                  [attr.aria-expanded]="showUrl()" aria-controls="ap-url-field">Paste an image URL</button>
         </div>
       </div>
       @if (uploadedName()) {
@@ -75,13 +102,9 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
         </div>
       }
 
-      <!-- Collapsed by default: most people upload or build, and the preset grid is busy (DEX-28). -->
-      <button type="button" class="ap-section ap-section-toggle" [style.color]="theme.colors().textSecondary"
-              (click)="presetsOpen.set(!presetsOpen())" [attr.aria-expanded]="presetsOpen()">
-        Choose an avatar <span aria-hidden="true">{{ presetsOpen() ? '▲' : '▼' }}</span>
-      </button>
+      <!-- Collapsed until "Choose an avatar" is tapped (DEX-28). -->
       @if (presetsOpen()) {
-      <div class="ap-presets" role="listbox" aria-label="Preset avatars">
+      <div id="ap-presets" class="ap-presets" role="listbox" aria-label="Preset avatars">
         @for (preset of presets; track preset.id) {
           <button type="button" role="option" class="ap-preset"
                   [attr.aria-selected]="selectedPresetId() === preset.id"
@@ -98,10 +121,8 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
       </div>
       }
 
-      <button type="button" class="ap-toggle-url" [style.color]="theme.colors().textSecondary" (click)="showUrl.set(!showUrl())">
-        {{ showUrl() ? 'Hide' : 'Paste an image URL instead' }}
-      </button>
       @if (showUrl()) {
+        <div id="ap-url-field">
         <input type="url" aria-label="Image URL"
                [ngModel]="isDataUrl() ? '' : url()"
                (ngModelChange)="setUrl($event)"
@@ -134,6 +155,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
                   [style.border]="'1px solid ' + theme.colors().border"
                   [style.color]="theme.colors().text"
                   (click)="useRandomDiceBearUrl()">Try a random DiceBear link</button>
+        </div>
         </div>
       }
 
@@ -184,6 +206,7 @@ export class AvatarPickerComponent {
   protected subscription = inject(SubscriptionService);
   private modal = inject(ModalService);
   private renderer = inject(AvatarRenderService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The image every screen renders: http(s) URL or data URI. */
   readonly url = model<string>('');
@@ -202,6 +225,8 @@ export class AvatarPickerComponent {
   protected readonly showUrl = signal(false);
   /** The preset grid starts folded away (DEX-28). */
   protected readonly presetsOpen = signal(false);
+  /** The small menu under the pencil on the picture: re-crop / edit avatar / remove (DEX-39). */
+  protected readonly editMenuOpen = signal(false);
   protected readonly uploadedName = signal('');
 
   // Crop tool state (moved here from the dashboard so both forms share it).
@@ -218,6 +243,14 @@ export class AvatarPickerComponent {
         this.thumbs.update((map) => { const next = new Map(map); next.set(preset.id, uri); return next; });
       }).catch(() => undefined);
     }
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  protected onDocumentPointerDown(event: PointerEvent): void {
+    if (!this.editMenuOpen()) return;
+    const target = event.target as Node | null;
+    if (target && this.host.nativeElement.querySelector('.ap-preview-wrap')?.contains(target)) return;
+    this.editMenuOpen.set(false);
   }
 
   protected readonly exampleDiceBearUrl = 'https://api.dicebear.com/9.x/avataaars/svg?seed=Taylor';
