@@ -119,6 +119,11 @@ import { IconComponent } from '../icon/icon.component';
           </button>
         }
       </div>
+      <!-- The credit lives with the avatars it covers, not on the main form (DEX-36); the builder shows its own. -->
+      <p class="ap-credit" [style.color]="theme.colors().textSecondary">
+        Avatars: Avataaars by Pablo Stanley, via
+        <a href="https://www.dicebear.com/styles/avataaars/" target="_blank" rel="noopener noreferrer" [style.color]="theme.colors().textSecondary">DiceBear</a>.
+      </p>
       }
 
       @if (showUrl()) {
@@ -159,10 +164,6 @@ import { IconComponent } from '../icon/icon.component';
         </div>
       }
 
-      <p class="ap-credit" [style.color]="theme.colors().textSecondary">
-        Preset and custom avatars: Avataaars by Pablo Stanley, via
-        <a href="https://www.dicebear.com/styles/avataaars/" target="_blank" rel="noopener noreferrer" [style.color]="theme.colors().textSecondary">DiceBear</a>.
-      </p>
     </div>
 
     @if (builderOpen()) {
