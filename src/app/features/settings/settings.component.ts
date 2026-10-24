@@ -101,6 +101,7 @@ interface FriendChoice {
                  [style.background-color]="theme.colors().bg"
                  class="settings-photo-picker">
               <app-avatar-picker label="Profile photo"
+                                 [initial]="settings.settings().displayName || username()"
                                  [url]="settings.settings().avatarUrl || ''"
                                  (urlChange)="onPhotoChange('avatarUrl', $event)"
                                  [config]="settings.settings().avatarConfig"

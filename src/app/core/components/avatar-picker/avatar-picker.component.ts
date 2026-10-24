@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal } from '@angular/core';
 import { FocusTrapDirective } from '../../a11y/focus-trap.directive';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../services/theme.service';
@@ -38,7 +38,7 @@ import { UpgradePromptComponent } from '../upgrade-prompt/upgrade-prompt.compone
           @if (url()) {
             <img [src]="url()" alt="Selected avatar" class="ap-preview-img">
           } @else {
-            <span class="ap-preview-empty" aria-hidden="true">?</span>
+            <span class="ap-preview-empty" [class.ap-preview-empty--initial]="initialLetter()" aria-hidden="true">{{ initialLetter() || '?' }}</span>
           }
         </div>
         <div class="ap-current-actions">
@@ -189,7 +189,10 @@ export class AvatarPickerComponent {
   readonly url = model<string>('');
   /** Builder options for built/preset avatars; undefined for photos and pasted URLs. */
   readonly config = model<AvatarConfig | undefined>(undefined);
-  readonly label = input('Avatar (optional)');
+  readonly label = input('Picture');
+  /** The crush's (or your) name: its first letter fills the empty thumbnail instead of a "?" (DEX-37). */
+  readonly initial = input('');
+  protected readonly initialLetter = computed(() => (this.initial() || '').trim().charAt(0).toUpperCase());
 
   protected readonly premiumTier = SubscriptionTier.Premium;
   protected readonly presets = AVATAR_PRESETS;

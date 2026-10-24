@@ -71,7 +71,8 @@ interface ListGroup {
         </div>
       </div>
 
-      <app-avatar-picker [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"></app-avatar-picker>
+      <app-avatar-picker [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"
+                         [initial]="form().displayName === 'fullName' ? (form().fullName || form().nickname) : (form().nickname || form().fullName)"></app-avatar-picker>
 
       @if (allowPhotos()) {
         <!-- New Crush: queue as many photos as the cap allows; they upload once the crush is saved. -->

@@ -41,6 +41,14 @@
   opacity: 0.35;
 }
 
+/* The crush's initial while there is no picture yet: a name, not a question mark. */
+.ap-preview-empty--initial {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  opacity: 0.55;
+}
+
 .ap-current-actions {
   display: flex;
   gap: 8px;

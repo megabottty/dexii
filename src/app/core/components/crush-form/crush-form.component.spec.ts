@@ -1,4 +1,4 @@
-import { Component, model } from '@angular/core';
+import { Component, input, model } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CrushFormComponent } from './crush-form.component';
@@ -11,6 +11,7 @@ import { CrushFormValue, emptyCrushFormValue } from '../../utils/crush-form.util
 class AvatarPickerStubComponent {
   readonly url = model<string>('');
   readonly config = model<AvatarConfig | undefined>(undefined);
+  readonly initial = input('');
 }
 
 describe('CrushFormComponent', () => {
