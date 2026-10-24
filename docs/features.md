@@ -114,7 +114,12 @@ env var) to bring Free / Premium / Gold back.
 A crush's profile-picture spot is the photo carousel: the picture is slide one and the other photos follow,
 for the owner and for friends (who only see photos whose audience allows them). Owners manage photos right
 there: add several at once, set any photo as the picture, choose who sees each one, reorder, remove, or
-select several to delete. Archived crushes never appear in share pickers.
+select several to delete. Archived crushes never appear in share pickers. The New Crush form explains none of
+this: the photo cap speaks for itself when it is reached (DEX-35).
+
+**Paid later (DEX-35):** extra photos beyond the profile picture are meant to become a paid feature once
+public testing ends. Gate the "Add photos" controls (crush form, gallery + badge, photo sheet) behind the
+tier check when `TIER_GATING_ENABLED` comes back.
 
 ## Accessibility (WCAG 2.1 AA)
 

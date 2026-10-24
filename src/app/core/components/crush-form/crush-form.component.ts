@@ -78,7 +78,6 @@ interface ListGroup {
         <!-- New Crush: queue as many photos as the cap allows; they upload once the crush is saved. -->
         <div class="cf-field cf-photos">
           <span [style.color]="theme.colors().textSecondary" class="cf-label">Photos</span>
-          <p [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Pick as many as you like, up to {{ maxPhotos }} per crush. Without a profile picture, the first one becomes it. You can add, reorder or remove photos later from their page.</p>
           @if (form().pendingPhotos.length) {
             <div class="cf-photo-grid">
               @for (photo of form().pendingPhotos; track $index; let i = $index) {
