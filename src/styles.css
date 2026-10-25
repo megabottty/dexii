@@ -216,7 +216,9 @@ body {
   position: relative;
   display: inline-flex;
   align-items: center;
-  z-index: 1000;
+  /* Just above its neighbours, never above a modal (the lowest overlay is z-index 100).
+     At 1000 the Stash's ⓘ and its bubble floated over the New Crush modal (DEX-38). */
+  z-index: 5;
 }
 
 .info-icon-tooltip::after {
@@ -240,7 +242,7 @@ body {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 1001;
+  z-index: 1;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
