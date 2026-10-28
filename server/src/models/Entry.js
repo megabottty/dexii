@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 // 'Update' is an Update For Friends: everyone the crush is shared with sees it (DEX-44).
-const ENTRY_TYPES = ['Note', 'Update', 'Date', 'RedFlag', 'SafetyCheck', 'PrivateJournal'];
+// 'StatusChange' is added by the server when a crush's status changes, so it shows in the feed (DEX-45).
+const ENTRY_TYPES = ['Note', 'Update', 'StatusChange', 'Date', 'RedFlag', 'SafetyCheck', 'PrivateJournal'];
 const SAFETY_STATUSES = ['Draft', 'Sent', 'Safe', 'Urgent'];
 
 const EntrySchema = new mongoose.Schema({

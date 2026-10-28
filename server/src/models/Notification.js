@@ -23,7 +23,8 @@ const NotificationSchema = new mongoose.Schema({
       'compatibility_vote',
       'update_reaction',
       'update_comment',
-      'comment_heart'
+      'comment_heart',
+      'update_posted'
     ]
   },
   payload: {

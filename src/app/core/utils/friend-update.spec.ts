@@ -5,6 +5,7 @@ describe('Updates For Friends (DEX-44)', () => {
     expect(isFriendUpdate({ type: 'Update', visibility: [] })).toBe(true);
     expect(isFriendUpdate({ type: 'Note', visibility: ['friend-1'] })).toBe(true);
     expect(isFriendUpdate({ type: 'Note', visibility: ['public'] })).toBe(true);
+    expect(isFriendUpdate({ type: 'StatusChange', visibility: [] })).toBe(true);
   });
 
   it('keeps private notes private', () => {

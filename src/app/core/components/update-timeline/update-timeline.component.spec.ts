@@ -54,8 +54,8 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
     expect(shared).toEqual(['We kissed!']);
   });
 
-  it('shows friends no composer and no edit buttons', () => {
-    fixture.componentRef.setInput('entries', [update('a', 'hi', new Date())]);
+  it('shows friends no composer and no edit buttons on someone else’s update', () => {
+    fixture.componentRef.setInput('entries', [{ ...update('a', 'hi', new Date()), userId: 'owner' }]);
     fixture.detectChanges();
     expect(el().querySelector('.ut-composer')).toBeNull();
     expect(el().querySelector('.ut-icon-btn')).toBeNull();
@@ -91,20 +91,44 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       ]);
     });
 
-    it('shows the last two comments until View all, with your heart filled', () => {
+    it('keeps comments folded until you open them, with your heart filled', () => {
       fixture.componentRef.setInput('entries', [withActivity()]);
       fixture.detectChanges();
-      expect(el().querySelectorAll('.ut-comment').length).toBe(2);
-      const viewAll = el().querySelector<HTMLButtonElement>('.ut-view-all')!;
-      expect(viewAll.textContent).toContain('View all 3 comments');
-      viewAll.click();
+      expect(el().querySelectorAll('.ut-comment').length).toBe(0);
+      expect(el().querySelector('.ut-add-comment')).toBeNull();
+      const toggle = el().querySelector<HTMLButtonElement>('.ut-comments-toggle')!;
+      expect(toggle.textContent).toContain('3 comments');
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      toggle.click();
       fixture.detectChanges();
       expect(el().querySelectorAll('.ut-comment').length).toBe(3);
+      expect(el().querySelector('.ut-add-comment')).not.toBeNull();
       expect(el().querySelector('.ut-heart--on')).not.toBeNull();
     });
 
+    it("shows a friend's post with their name, lets the crush's owner delete it but not edit it", () => {
+      fixture.componentRef.setInput('entries', [{ ...withActivity(), userId: 'ana', owner: { id: 'ana', username: 'ana', displayName: 'Ana' } } as any]);
+      fixture.componentRef.setInput('canPost', true);
+      fixture.componentRef.setInput('isCrushOwner', true);
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-bubble__author')?.textContent).toContain('ana');
+      const labels = Array.from(el().querySelectorAll('.ut-bubble__actions button')).map((b) => b.getAttribute('aria-label'));
+      expect(labels).toEqual(['Delete update']);
+    });
+
+    it('shows a status change as its own entry that nobody can edit', () => {
+      fixture.componentRef.setInput('entries', [{ ...update('s1', 'Dating', new Date()), type: 'StatusChange', userId: 'me' }]);
+      fixture.componentRef.setInput('isCrushOwner', true);
+      fixture.componentRef.setInput('sharedWith', 'Shared with Ana, Ben');
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-status')?.textContent).toContain('Status changed to Dating');
+      expect(el().textContent).toContain('Shared with Ana, Ben');
+      const labels = Array.from(el().querySelectorAll('.ut-bubble__actions button')).map((b) => b.getAttribute('aria-label'));
+      expect(labels).toEqual(['Delete update']);
+    });
+
     it("lets you edit only your own comment, and delete only yours when it isn't your update", () => {
-      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.componentRef.setInput('entries', [{ ...withActivity(), userId: 'ana' }]);
       fixture.componentInstance.expand('u1');
       fixture.detectChanges();
       const rows = Array.from(el().querySelectorAll('.ut-comment'));

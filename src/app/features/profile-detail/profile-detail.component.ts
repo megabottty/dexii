@@ -70,9 +70,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 Exit preview
               </button>
             } @else if (friendCrushOwnerName()) {
-              Shared by {{ friendCrushOwnerName() }} · Read-only
+              Shared by {{ friendCrushOwnerName() }}
             } @else {
-              Shared crush · Read-only
+              Shared crush
             }
 
           </div>
@@ -227,7 +227,10 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                    [style.border]="'1px solid ' + theme.colors().border"
                    style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
             <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
-            <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"></app-update-timeline>
+            <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"
+                                 [canPost]="!previewAsFriend()" [composerNote]="friendComposerNote(c)" [(draft)]="updateDraft"
+                                 [sharedWith]="previewAsFriend() ? ownerSharedWithText(c) : friendSharedWithText(c)"
+                                 (share)="shareUpdate(c.id, $event)" (edit)="saveUpdateEdit($event.entry, $event.content)" (remove)="deleteNote($event)"></app-update-timeline>
           </section>
           <!-- Compatibility: the owner's read, your friends' reads, and your own say -->
           <section [style.background-color]="theme.colors().bgSecondary"
@@ -862,7 +865,8 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ updateEntries().length }} total</span>
                 </div>
 
-                <app-update-timeline [entries]="updateEntries()" [crushName]="getCrushDisplayName(c)" [canPost]="true"
+                <app-update-timeline [entries]="updateEntries()" [crushName]="getCrushDisplayName(c)" [canPost]="true" [isCrushOwner]="true"
+                                     [sharedWith]="ownerSharedWithText(c)"
                                      [audience]="updateAudience(c)" [(draft)]="updateDraft"
                                      (share)="shareUpdate(c.id, $event)" (edit)="saveUpdateEdit($event.entry, $event.content)" (remove)="deleteNote($event)"></app-update-timeline>
 
@@ -1410,6 +1414,24 @@ export class ProfileDetailComponent implements OnDestroy {
     return this.friendsSharedWith(crush).map((friend) => personName(friend));
   }
 
+  /** Under each update on your crush: who can see it right now. */
+  ownerSharedWithText(crush: CrushProfile): string {
+    const names = this.updateAudience(crush);
+    return names.length ? `Shared with ${names.join(', ')}` : 'Only you';
+  }
+
+  /** Under each update on a friend's crush: you, plus however many others it's shared with. */
+  friendSharedWithText(crush: CrushProfile): string {
+    const others = Math.max(0, (crush.visibility || []).length - 1);
+    return others ? `Shared with you and ${others} other${others === 1 ? '' : 's'}` : 'Shared with you';
+  }
+
+  /** Composer line when posting on a friend's crush (DEX-45). */
+  friendComposerNote(crush: CrushProfile): string {
+    const owner = this.friendCrushOwnerName() || 'your friend';
+    return `Goes to ${owner} and everyone they share ${this.getCrushDisplayName(crush)} with`;
+  }
+
   saveUpdateEdit(entry: Entry, content: string): void {
     this.noteDraft = content;
     void this.saveEditNote(entry);
@@ -1433,6 +1455,9 @@ export class ProfileDetailComponent implements OnDestroy {
           isBurnAfterReading: false,
           visibility: [],
           isSensitive: false
+        }).then(() => {
+          // Posted on a friend's crush: it shows in the shared list once the server has it.
+          if (this.isReadOnlyFriendView()) void this.dataService.refreshSharedEntries();
         });
         this.updateDraft.set('');
       },

@@ -1,4 +1,4 @@
-export type EntryType = 'Note' | 'Update' | 'Date' | 'RedFlag' | 'SafetyCheck' | 'PrivateJournal';
+export type EntryType = 'Note' | 'Update' | 'StatusChange' | 'Date' | 'RedFlag' | 'SafetyCheck' | 'PrivateJournal';
 
 export interface EntryEditHistoryItem {
   previousContent: string;

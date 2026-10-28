@@ -15,6 +15,7 @@ const shapePerson = (user) => user ? {
 const withPeople = async (shapedEntries) => {
   const ids = new Set();
   for (const entry of shapedEntries) {
+    if (!entry.owner && entry.userId) ids.add(String(entry.userId));
     for (const r of entry.reactions || []) ids.add(String(r.userId));
     for (const c of entry.comments || []) ids.add(String(c.userId));
   }
@@ -25,6 +26,8 @@ const withPeople = async (shapedEntries) => {
 
   return shapedEntries.map((entry) => ({
     ...entry,
+    // Who posted it, so a friend's update on your crush shows their name (DEX-45).
+    owner: entry.owner || byId.get(String(entry.userId)) || undefined,
     reactions: (entry.reactions || []).map((r) => ({
       userId: String(r.userId),
       emoji: r.emoji,

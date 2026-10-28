@@ -62,6 +62,7 @@ export const ENTRY_TYPE_VERBS: Record<string, string> = {
   // A shared note is an Update For Friends now (DEX-44).
   Note: 'posted an update about',
   Update: 'posted an update about',
+  StatusChange: 'changed the status of',
   Date: 'logged a date with',
   RedFlag: 'flagged a red flag about',
   SafetyCheck: 'sent a safety check about',
@@ -84,7 +85,8 @@ const kindOf = (type: string): TeaKind => {
     case 'compatibility_vote': return 'compatibility_vote';
     case 'update_reaction':
     case 'update_comment':
-    case 'comment_heart': return 'update_activity';
+    case 'comment_heart':
+    case 'update_posted': return 'update_activity';
     default: return 'other';
   }
 };
@@ -150,6 +152,7 @@ export function mergeTeaItems(
         const quote = (n.payload?.['commentPreview'] as string | undefined) || '';
         if (n.type === 'update_reaction') item.text = `${actor.name} reacted ${n.payload?.['emoji'] || '💗'} to your update about ${nickname}`;
         else if (n.type === 'update_comment') item.text = `${actor.name} commented on your update about ${nickname}${quote ? `: “${quote}”` : ''}`;
+        else if (n.type === 'update_posted') item.text = `${actor.name} posted an update about ${nickname}`;
         else item.text = `${actor.name} hearted your comment${quote ? `: “${quote}”` : ''} 💗`;
         if (crushId) {
           item.route = ['/profile', crushId];

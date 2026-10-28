@@ -4,6 +4,7 @@ const CrushProfile = require('../models/CrushProfile');
 const Entry = require('../models/Entry');
 const User = require('../models/User');
 const { createNotification, retractCrushShares, emitToUser } = require('./notificationController');
+const { emitEntriesChanged } = require('../services/updateAudience');
 const { isPausedBy } = require('../services/pauseState');
 const { recordActivity } = require('../services/activityLog');
 
@@ -341,6 +342,7 @@ exports.updateCrush = async (req, res) => {
     if (Array.isArray(req.body.visibility)) updatePayload.visibility = req.body.visibility;
     // "Crushing" was renamed to "Plotting"; accept the old name from stale clients.
     if (updatePayload.status === 'Crushing') updatePayload.status = 'Plotting';
+    const previousStatus = crush.status;
     if (Object.keys(updatePayload).length > 0) {
       crush = await CrushProfile.findByIdAndUpdate(
         req.params.id,
@@ -355,6 +357,12 @@ exports.updateCrush = async (req, res) => {
     res.json(shapeCrushForWire(crush));
 
     emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(crush._id) });
+    // A status change shows in the crush's update feed (DEX-45). Archiving and restoring don't.
+    if (updatePayload.status && updatePayload.status !== previousStatus && ![updatePayload.status, previousStatus].includes('Archived')) {
+      void Entry.create({ userId: req.user.id, crushId: String(crush._id), type: 'StatusChange', content: String(updatePayload.status), visibility: [], timestamp: new Date() })
+        .then(() => emitEntriesChanged(io, crush))
+        .catch((err) => console.error('Status change entry failed:', err.message));
+    }
     // Unshared with someone: take back their "shared a crush" notification.
     if (removedRecipients.length > 0) {
       for (const recipient of removedRecipients) {

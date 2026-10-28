@@ -106,6 +106,8 @@ export class DataService {
 
     // Another tab or device saved one of our crushes: pick it up right away.
     this.realtime.onCrushesChanged(() => { void this.refreshCrushes({ force: true }); });
+    // A friend posted, reacted or commented on a crush's updates: refetch the feed (DEX-45).
+    this.realtime.onEntriesChanged(() => this.scheduleEntryRefresh());
     // A friend opened a crush we shared: show "Seen" without a refetch.
     this.realtime.onCrushViewed(({ crushId, viewerId, at }) => {
       this._allCrushes.update((crushes) => crushes.map((crush) => {
@@ -820,16 +822,28 @@ export class DataService {
   public async refreshEntryActivity(): Promise<void> {
     if (!this.entriesApi.isAuthenticated()) return;
     try {
+      // The server list wins (it has friends' updates on your crushes and status changes);
+      // entries still waiting to sync, which have a temporary id, are kept.
       const fresh = await this.entriesApi.list();
-      const byId = new Map(fresh.map((entry) => [entry.id, entry]));
-      this._entries.update((entries) => entries.map((entry) => {
-        const server = byId.get(entry.id);
-        return server ? { ...entry, reactions: server.reactions, comments: server.comments } : entry;
-      }));
+      const serverIds = new Set(fresh.map((entry) => entry.id));
+      const unsynced = this._entries().filter((entry) => !serverIds.has(entry.id) && !/^[a-f0-9]{24}$/.test(entry.id));
+      this._entries.set([...unsynced, ...fresh]);
+      this.persistEntries();
     } catch (error) {
       console.warn('Dexii entry activity refresh failed.', error);
     }
     await this.refreshSharedEntries();
+  }
+
+  private entryRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Several events in a row (a burst of reactions) cause one refetch. */
+  private scheduleEntryRefresh(): void {
+    if (this.entryRefreshTimer) clearTimeout(this.entryRefreshTimer);
+    this.entryRefreshTimer = setTimeout(() => {
+      this.entryRefreshTimer = null;
+      void this.refreshEntryActivity();
+    }, 400);
   }
 
   private async applyUpdateActivity(call: () => Promise<Entry>): Promise<void> {
@@ -1262,9 +1276,10 @@ export class DataService {
 
   /** Removes an entry here and on the server. Friends it was shared with lose it too. */
   public async deleteEntry(entryId: string): Promise<void> {
-    const entry = this._entries().find((e) => e.id === entryId);
+    const entry = this._entries().find((e) => e.id === entryId) || this._sharedEntries().find((e) => e.id === entryId);
     if (!entry) return;
     this._entries.update((entries) => entries.filter((e) => e.id !== entryId));
+    this._sharedEntries.update((entries) => entries.filter((e) => e.id !== entryId));
     this.persistEntries();
     if (!this.entriesApi.isAuthenticated()) return;
     try {

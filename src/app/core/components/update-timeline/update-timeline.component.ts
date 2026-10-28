@@ -19,8 +19,6 @@ const STICKERS = ['💌', '💗', '✨', '🌸', '🦋', '💫', '🍓', '🌷']
 /** The reactions on offer; the server accepts exactly these (DEX-45). */
 export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
 
-/** Comments shown under an update before "View all". */
-const COMMENT_PREVIEW = 2;
 
 /**
  * Updates For Friends as a love-life timeline (DEX-44): updates grouped by day on a heart rail.
@@ -50,8 +48,12 @@ const COMMENT_PREVIEW = 2;
                   placeholder="A text, a date, a moment…"></textarea>
         <div class="ut-composer__footer">
           <span class="ut-audience">
-            <span aria-hidden="true">{{ audience().length ? '👯' : '🔒' }}</span>
-            {{ audience().length ? 'Goes to ' + audienceList() : "Not shared with anyone yet, so only you will see it" }}
+            @if (composerNote()) {
+              <span aria-hidden="true">👯</span> {{ composerNote() }}
+            } @else {
+              <span aria-hidden="true">{{ audience().length ? '👯' : '🔒' }}</span>
+              {{ audience().length ? 'Goes to ' + audienceList() : "Not shared with anyone yet, so only you will see it" }}
+            }
           </span>
           <button type="button" class="ut-share" [disabled]="!draft().trim()" (click)="share.emit(draft().trim())">
             Share Update <span aria-hidden="true">💌</span>
@@ -75,9 +77,9 @@ const COMMENT_PREVIEW = 2;
               @for (entry of group.entries; track entry.id) {
                 <li class="ut-item" [attr.id]="'update-' + entry.id">
                   <span class="ut-item__sticker" aria-hidden="true">{{ sticker(entry) }}</span>
-                  <article class="ut-bubble">
+                  <article class="ut-bubble" [class.ut-bubble--status]="entry.type === 'StatusChange'">
                     <header class="ut-bubble__meta">
-                      @if (!canPost() && entry.owner) {
+                      @if (!isMine(entry) && entry.owner) {
                         <span class="ut-bubble__author">
                           @if (entry.owner.avatarUrl) { <img [src]="entry.owner.avatarUrl" alt="" class="ut-bubble__avatar"> }
                           {{ authorName(entry) }}
@@ -85,10 +87,14 @@ const COMMENT_PREVIEW = 2;
                       }
                       <time [attr.datetime]="iso(entry.timestamp)">{{ entry.timestamp | date:'h:mm a' }}</time>
                       @if (entry.editedAt) { <span>· edited</span> }
-                      @if (canPost()) {
+                      @if (canEdit(entry) || canDelete(entry)) {
                         <span class="ut-bubble__actions">
-                          <button type="button" class="ut-icon-btn" (click)="startEdit(entry)" aria-label="Edit update" title="Edit"><app-icon name="pencil" /></button>
-                          <button type="button" class="ut-icon-btn ut-icon-btn--danger" (click)="remove.emit(entry)" aria-label="Delete update" title="Delete"><app-icon name="trash" /></button>
+                          @if (canEdit(entry)) {
+                            <button type="button" class="ut-icon-btn" (click)="startEdit(entry)" aria-label="Edit update" title="Edit"><app-icon name="pencil" /></button>
+                          }
+                          @if (canDelete(entry)) {
+                            <button type="button" class="ut-icon-btn ut-icon-btn--danger" (click)="remove.emit(entry)" aria-label="Delete update" title="Delete"><app-icon name="trash" /></button>
+                          }
                         </span>
                       }
                     </header>
@@ -98,8 +104,13 @@ const COMMENT_PREVIEW = 2;
                         <button type="button" class="ut-ghost" (click)="editingId.set(null)">Cancel</button>
                         <button type="button" class="ut-share" [disabled]="!editDraft().trim()" (click)="saveEdit(entry)">Save</button>
                       </div>
+                    } @else if (entry.type === 'StatusChange') {
+                      <p class="ut-bubble__text ut-status"><span aria-hidden="true">💞</span> Status changed to <strong>{{ entry.content }}</strong></p>
                     } @else {
                       <p class="ut-bubble__text">{{ entry.content }}</p>
+                    }
+                    @if (sharedWith()) {
+                      <p class="ut-shared-with"><span aria-hidden="true">👯</span> {{ sharedWith() }}</p>
                     }
                     <!-- Reactions and comments, like an Instagram post (DEX-45) -->
                     <div class="ut-reactions">
@@ -133,9 +144,15 @@ const COMMENT_PREVIEW = 2;
                       </ul>
                     }
 
-                    @if ((entry.comments?.length || 0) > commentPreview && !expanded().has(entry.id)) {
-                      <button type="button" class="ut-link ut-view-all" (click)="expand(entry.id)">View all {{ entry.comments!.length }} comments</button>
-                    }
+                    <!-- Comments start folded so the feed stays short -->
+                    <button type="button" class="ut-link ut-comments-toggle" [attr.aria-expanded]="expanded().has(entry.id)"
+                            (click)="toggleComments(entry.id)">
+                      <span aria-hidden="true">💬</span>
+                      @if (expanded().has(entry.id)) { Hide comments }
+                      @else if (entry.comments?.length) { {{ entry.comments!.length }} {{ entry.comments!.length === 1 ? 'comment' : 'comments' }} }
+                      @else { Comment }
+                    </button>
+                    @if (expanded().has(entry.id)) {
                     @if (entry.comments?.length) {
                       <ul class="ut-comments">
                         @for (comment of visibleComments(entry); track comment.id) {
@@ -177,6 +194,7 @@ const COMMENT_PREVIEW = 2;
                              [ngModelOptions]="{ standalone: true }" maxlength="1000" placeholder="Add a comment…" [attr.aria-label]="'Comment on this update'">
                       <button type="submit" class="ut-link ut-post" [disabled]="!commentDraft(entry.id).trim() || busy()">Post</button>
                     </form>
+                    }
                   </article>
                 </li>
               }
@@ -194,7 +212,6 @@ export class UpdateTimelineComponent {
   private readonly security = inject(SecurityService);
   readonly me = this.security.currentUserId;
   readonly emojis = REACTION_EMOJIS;
-  readonly commentPreview = COMMENT_PREVIEW;
 
   /** Updates, any order; shown newest first. */
   readonly entries = input.required<TimelineEntry[]>();
@@ -203,6 +220,12 @@ export class UpdateTimelineComponent {
   readonly canPost = input(false);
   /** Names of the friends this crush is shared with (who an update reaches). */
   readonly audience = input<string[]>([]);
+  /** Replaces the audience line in the composer (a friend posting on someone else's crush). */
+  readonly composerNote = input('');
+  /** You own this crush: you can delete anyone's update on it. */
+  readonly isCrushOwner = input(false);
+  /** "Shared with Ana, Ben" under each update: who can see it. */
+  readonly sharedWith = input('');
   readonly draft = model('');
 
   readonly share = output<string>();
@@ -260,18 +283,39 @@ export class UpdateTimelineComponent {
 
   /** The update's author: the owner of the profile when they're posting, otherwise the friend who shared it. */
   isUpdateOwner(entry: TimelineEntry): boolean {
-    const me = this.me();
-    if (!me) return false;
-    return (entry.userId || (this.canPost() ? me : entry.owner?.id)) === me;
+    return this.isCrushOwner() || this.isMine(entry);
   }
 
   visibleComments(entry: Entry): UpdateComment[] {
     const comments = entry.comments || [];
-    return this.expanded().has(entry.id) ? comments : comments.slice(-COMMENT_PREVIEW);
+    return comments;
   }
 
   expand(entryId: string): void {
     this.expanded.update((set) => new Set(set).add(entryId));
+  }
+
+  toggleComments(entryId: string): void {
+    this.expanded.update((set) => {
+      const next = new Set(set);
+      if (next.has(entryId)) next.delete(entryId); else next.add(entryId);
+      return next;
+    });
+  }
+
+  /** Posted by the signed-in user (entries without an author are your own, not yet synced). */
+  isMine(entry: TimelineEntry): boolean {
+    return !entry.userId || entry.userId === this.me();
+  }
+
+  /** Only the person who wrote an update can edit it; status changes can't be edited. */
+  canEdit(entry: TimelineEntry): boolean {
+    return entry.type !== 'StatusChange' && this.isMine(entry);
+  }
+
+  /** The person who wrote it, or the crush's owner, can delete an update (DEX-45). */
+  canDelete(entry: TimelineEntry): boolean {
+    return this.isCrushOwner() || (entry.type !== 'StatusChange' && this.isMine(entry));
   }
 
   hearted(comment: UpdateComment): boolean {

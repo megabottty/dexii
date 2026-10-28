@@ -6,12 +6,13 @@ const Notification = require('../models/Notification');
 const { shapeEntry } = require('./entryController');
 const { withPeople } = require('../services/updatePeople');
 const { createNotification, emitNotificationsChanged } = require('./notificationController');
+const { findCrush, canSeeCrushUpdates, emitEntriesChanged } = require('../services/updateAudience');
 
 /** Emojis a friend can react to an update with (DEX-45). */
 const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
 const COMMENT_MAX = 1000;
 
-const isUpdate = (entry) => entry.type === 'Update'
+const isUpdate = (entry) => entry.type === 'Update' || entry.type === 'StatusChange'
   || (entry.type === 'Note' && Array.isArray(entry.visibility) && entry.visibility.length > 0);
 
 /**
@@ -33,28 +34,20 @@ const loadUpdateFor = async (req, res) => {
     return null;
   }
   const me = String(req.user.id);
-  const ownerId = String(entry.userId);
-  if (ownerId === me) return { entry, isOwner: true, crush: await findCrush(entry) };
-
-  const [viewer, crush] = await Promise.all([
-    User.findById(me).select('friends username').lean(),
-    findCrush(entry)
-  ]);
-  const isFriend = (viewer?.friends || []).map(String).includes(ownerId);
-  const visibility = Array.isArray(crush?.visibility) ? crush.visibility.map(String) : [];
-  const sharedWithMe = visibility.includes(me) || (viewer?.username && visibility.includes(viewer.username));
-  if (!isFriend || !crush || !sharedWithMe) {
+  const crush = await findCrush(entry.crushId);
+  const isAuthor = String(entry.userId) === me;
+  if (!isAuthor && !(await canSeeCrushUpdates(me, crush))) {
     res.status(403).json({ message: 'You can only react to updates on crushes shared with you.' });
     return null;
   }
-  return { entry, isOwner: false, crush };
+  // The update's author and the crush's owner can both remove comments on it.
+  return { entry, crush, isOwner: isAuthor || (!!crush && String(crush.userId) === me) };
 };
 
-const findCrush = (entry) => mongoose.isValidObjectId(entry.crushId)
-  ? CrushProfile.findOne({ _id: entry.crushId, userId: entry.userId }).select('nickname visibility').lean()
-  : null;
-
-const respond = async (res, entry) => res.json((await withPeople([shapeEntry(entry)]))[0]);
+const respond = async (req, res, entry, crush) => {
+  res.json((await withPeople([shapeEntry(entry)]))[0]);
+  emitEntriesChanged(req.app.get('io'), crush, [String(entry.userId)]);
+};
 
 /** Fire-and-forget notification to someone else about activity on an update. */
 const notify = (req, { recipient, type, entry, crush, extra = {} }) => {
@@ -97,7 +90,7 @@ exports.react = async (req, res) => {
       added = true;
     }
     await entry.save();
-    await respond(res, entry);
+    await respond(req, res, entry, crush);
     if (added) notify(req, { recipient: entry.userId, type: 'update_reaction', entry, crush, extra: { emoji } });
   } catch (err) {
     console.error(err.message);
@@ -118,7 +111,7 @@ exports.addComment = async (req, res) => {
     entry.comments.push({ userId: req.user.id, content, createdAt: new Date(), hearts: [] });
     await entry.save();
     const comment = entry.comments[entry.comments.length - 1];
-    await respond(res, entry);
+    await respond(req, res, entry, crush);
     notify(req, { recipient: entry.userId, type: 'update_comment', entry, crush, extra: { commentId: String(comment._id), commentPreview: content.slice(0, 80) } });
   } catch (err) {
     console.error(err.message);
@@ -147,7 +140,7 @@ exports.editComment = async (req, res) => {
       comment.editedAt = new Date();
       await found.entry.save();
     }
-    await respond(res, found.entry);
+    await respond(req, res, found.entry, found.crush);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: 'Server error' });
@@ -167,7 +160,7 @@ exports.deleteComment = async (req, res) => {
     const commentId = String(comment._id);
     found.entry.comments.pull(comment._id);
     await found.entry.save();
-    await respond(res, found.entry);
+    await respond(req, res, found.entry, found.crush);
     // Its notifications point at nothing now.
     void Notification.deleteMany({ 'payload.commentId': commentId })
       .then(() => emitNotificationsChanged(req.app.get('io'), [String(found.entry.userId), String(comment.userId)]))
@@ -189,7 +182,7 @@ exports.heartComment = async (req, res) => {
     const hearted = comment.hearts.map(String).includes(me);
     comment.hearts = hearted ? comment.hearts.filter((id) => String(id) !== me) : [...comment.hearts, me];
     await found.entry.save();
-    await respond(res, found.entry);
+    await respond(req, res, found.entry, found.crush);
     if (!hearted) notify(req, { recipient: comment.userId, type: 'comment_heart', entry: found.entry, crush: found.crush, extra: { commentId: String(comment._id), commentPreview: comment.content.slice(0, 80) } });
   } catch (err) {
     console.error(err.message);

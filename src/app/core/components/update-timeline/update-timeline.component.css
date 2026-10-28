@@ -368,7 +368,6 @@
 .ut-link:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Comments */
-.ut-view-all { display: block; margin-top: 8px; }
 
 .ut-comments {
   list-style: none;
@@ -484,4 +483,30 @@
 .ut-item--highlight .ut-bubble {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ut-primary) 45%, transparent);
   transition: box-shadow 0.4s ease;
+}
+
+/* A status change in the feed: a softer, centred bubble (DEX-45) */
+.ut-bubble--status {
+  background: linear-gradient(135deg, var(--ut-softer), var(--ut-soft));
+  border-style: dashed;
+}
+
+.ut-status strong {
+  background: var(--ut-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ut-shared-with {
+  margin: 6px 0 0;
+  font-size: var(--fs-label);
+  color: var(--ut-muted);
+}
+
+.ut-comments-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
 }

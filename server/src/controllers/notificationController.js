@@ -68,6 +68,8 @@ const pushCopy = (type, actor, payload = {}) => {
       return { title: 'New reaction', body: `${name} reacted ${payload.emoji || '💗'} to your update about ${payload.crushNickname || 'your crush'}`, route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
     case 'update_comment':
       return { title: 'New comment', body: `${name} commented on your update about ${payload.crushNickname || 'your crush'}: ${payload.commentPreview || ''}`.trim(), route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
+    case 'update_posted':
+      return { title: 'New update', body: `${name} posted an update about ${payload.crushNickname || 'your crush'}: ${payload.preview || ''}`.trim(), route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
     case 'comment_heart':
       return { title: 'Your comment got a heart', body: `${name} hearted your comment: ${payload.commentPreview || ''}`.trim(), route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
     case 'journal_prompt':
@@ -85,7 +87,7 @@ const notifyDevices = async (notification) => {
       const recipient = await User.findById(notification.recipient).select('profileSettings').lean();
       if (recipient?.profileSettings?.notifyFriendRequests === false) return;
     }
-    if (['update_reaction', 'update_comment', 'comment_heart'].includes(notification.type)) {
+    if (['update_reaction', 'update_comment', 'comment_heart', 'update_posted'].includes(notification.type)) {
       const recipient = await User.findById(notification.recipient).select('profileSettings').lean();
       if (recipient?.profileSettings?.notifyUpdateActivity === false) return;
     }

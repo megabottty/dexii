@@ -5,6 +5,8 @@ const User = require('../models/User');
 const CrushProfile = require('../models/CrushProfile');
 const Notification = require('../models/Notification');
 const { withPeople } = require('../services/updatePeople');
+const { findCrush, canSeeCrushUpdates, emitEntriesChanged } = require('../services/updateAudience');
+const { createNotification, emitNotificationsChanged } = require('./notificationController');
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -61,7 +63,8 @@ const writableFields = [
  * An Update's audience is the crush's share list, never its own (DEX-44). Older notes that were
  * shared with someone, or marked Public, count as updates too.
  */
-const UPDATE_ENTRY_FILTER = { $or: [{ type: 'Update' }, { type: 'Note', 'visibility.0': { $exists: true } }] };
+const UPDATE_ENTRY_FILTER = { $or: [{ type: { $in: ['Update', 'StatusChange'] } }, { type: 'Note', 'visibility.0': { $exists: true } }] };
+const FEED_TYPES = ['Update', 'StatusChange'];
 
 const pickWritableFields = (body) => writableFields.reduce((updates, field) => {
   if (Object.prototype.hasOwnProperty.call(body, field)) {
@@ -86,7 +89,14 @@ exports.getEntries = async (req, res) => {
     const filter = { userId: req.user.id };
     if (req.query.crushId) filter.crushId = req.query.crushId;
 
-    const entries = await Entry.find(filter).sort({ timestamp: -1 }).lean();
+    // Plus updates friends posted on my crushes (DEX-45).
+    const myCrushIds = (await CrushProfile.find({ userId: req.user.id }).select('_id').lean()).map((c) => String(c._id));
+    const fromFriends = { userId: { $ne: req.user.id }, type: { $in: FEED_TYPES }, crushId: req.query.crushId ? (myCrushIds.includes(String(req.query.crushId)) ? String(req.query.crushId) : '__none__') : { $in: myCrushIds } };
+
+    const entries = await Entry.find({ $or: [filter, fromFriends] })
+      .sort({ timestamp: -1 })
+      .populate('userId', 'username displayName avatarUrl')
+      .lean();
     res.json(await withPeople(entries.map(shapeEntry)));
   } catch (err) {
     handleError(res, err);
@@ -120,7 +130,8 @@ exports.getSharedEntries = async (req, res) => {
         .populate('userId', 'username displayName avatarUrl')
         .lean(),
       sharedCrushIds.length
-        ? Entry.find({ userId: { $in: friendIds }, crushId: { $in: sharedCrushIds }, ...UPDATE_ENTRY_FILTER })
+        // Anyone who can see the crush may have posted: its owner, me, or another friend.
+        ? Entry.find({ crushId: { $in: sharedCrushIds }, ...UPDATE_ENTRY_FILTER })
           .populate('userId', 'username displayName avatarUrl')
           .lean()
         : []
@@ -147,8 +158,19 @@ exports.createEntry = async (req, res) => {
       return res.status(400).json({ message: 'Invalid entry type.' });
     }
 
+    if (type === 'StatusChange') {
+      return res.status(400).json({ message: 'Status changes are added automatically.' });
+    }
     const fields = pickWritableFields(req.body);
-    if (type === 'Update') fields.visibility = [];
+    // An update on a friend's crush is allowed when that crush is shared with you (DEX-45).
+    let crush = null;
+    if (type === 'Update') {
+      fields.visibility = [];
+      crush = await findCrush(crushId);
+      if (crush && !(await canSeeCrushUpdates(req.user.id, crush))) {
+        return res.status(403).json({ message: 'You can only post updates on crushes shared with you.' });
+      }
+    }
 
     const entry = await Entry.create({
       ...fields,
@@ -159,6 +181,15 @@ exports.createEntry = async (req, res) => {
     res.status(201).json(shapeEntry(entry));
 
     const io = req.app.get('io');
+    if (crush) {
+      emitEntriesChanged(io, crush);
+      if (String(crush.userId) !== String(req.user.id)) {
+        void createNotification({
+          recipient: String(crush.userId), actor: req.user.id, type: 'update_posted',
+          payload: { crushId: String(crush._id), crushNickname: crush.nickname || '', entryId: String(entry._id), preview: String(entry.content || '').slice(0, 80) }
+        }).then((saved) => { if (saved) emitNotificationsChanged(io, [String(crush.userId)]); }).catch(() => undefined);
+      }
+    }
     for (const id of (Array.isArray(entry.visibility) ? entry.visibility.map(String) : []).filter((v) => mongoose.isValidObjectId(v))) {
       void recordActivity({ io, actor: req.user.id, counterpart: id, type: 'entry_shared', crushId: entry.crushId, entryId: entry._id, meta: { preview: String(entry.content || '').slice(0, 80), entryType: entry.type } });
     }
@@ -178,8 +209,12 @@ exports.updateEntry = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ message: 'Entry not found.' });
     }
+    if (existing.type === 'StatusChange') {
+      return res.status(400).json({ message: 'A status change can’t be edited.' });
+    }
 
     const updates = pickWritableFields(req.body);
+    delete updates.type;
     if ((updates.type || existing.type) === 'Update') updates.visibility = [];
 
     // Whenever the content actually changes, automatically archive the prior
@@ -196,6 +231,7 @@ exports.updateEntry = async (req, res) => {
     await existing.save();
 
     res.json((await withPeople([shapeEntry(existing)]))[0]);
+    if (FEED_TYPES.includes(existing.type)) emitEntriesChanged(req.app.get('io'), await findCrush(existing.crushId));
 
     if (Array.isArray(updates.visibility)) {
       const after = updates.visibility.map(String);
@@ -220,14 +256,22 @@ exports.deleteEntry = async (req, res) => {
       return res.status(400).json({ message: 'Invalid entry id.' });
     }
 
-    const entry = await Entry.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    // The author can delete an entry; the crush's owner can also delete updates on it (DEX-45).
+    const target = await Entry.findById(req.params.id).select('userId type crushId').lean();
+    if (!target) return res.status(404).json({ message: 'Entry not found.' });
+    const crush = FEED_TYPES.includes(target.type) ? await findCrush(target.crushId) : null;
+    const mayDelete = String(target.userId) === String(req.user.id) || (crush && String(crush.userId) === String(req.user.id));
+    if (!mayDelete) return res.status(404).json({ message: 'Entry not found.' });
+
+    const entry = await Entry.findByIdAndDelete(req.params.id);
     if (!entry) {
       return res.status(404).json({ message: 'Entry not found.' });
     }
+    if (crush) emitEntriesChanged(req.app.get('io'), crush, [String(entry.userId)]);
 
     res.json(shapeEntry(entry));
     // Reactions and comments on it were notifications that now point at nothing (DEX-45).
-    void Notification.deleteMany({ type: { $in: ['update_reaction', 'update_comment', 'comment_heart'] }, 'payload.entryId': String(entry._id) })
+    void Notification.deleteMany({ type: { $in: ['update_reaction', 'update_comment', 'comment_heart', 'update_posted'] }, 'payload.entryId': String(entry._id) })
       .catch(() => undefined);
   } catch (err) {
     handleError(res, err);

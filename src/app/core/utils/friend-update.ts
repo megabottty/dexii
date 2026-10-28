@@ -5,7 +5,8 @@ import { Entry } from '../models/entry.model';
  * were shared with someone, or marked Public, count as updates too; private notes never do.
  */
 export function isFriendUpdate(entry: Pick<Entry, 'type' | 'visibility'>): boolean {
-  if (entry.type === 'Update') return true;
+  // Status changes are added by the server and show in the same feed (DEX-45).
+  if (entry.type === 'Update' || entry.type === 'StatusChange') return true;
   return entry.type === 'Note' && Array.isArray(entry.visibility) && entry.visibility.length > 0;
 }
 

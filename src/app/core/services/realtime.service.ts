@@ -56,6 +56,7 @@ export class RealtimeService {
   private notificationHandlers = new Set<() => void>();
   private messagesReadHandlers = new Set<(data: { readerId: string; readAt: string }) => void>();
   private crushesChangedHandlers = new Set<(data: { crushId?: string }) => void>();
+  private entriesChangedHandlers = new Set<(data: { crushId?: string }) => void>();
   private crushViewedHandlers = new Set<(data: CrushViewedEvent) => void>();
   private activityHandlers = new Set<() => void>();
 
@@ -147,6 +148,10 @@ export class RealtimeService {
       this.crushesChangedHandlers.forEach((handler) => handler(data || {}));
     });
 
+    this.socket.on('entriesChanged', (data: { crushId?: string }) => {
+      this.entriesChangedHandlers.forEach((handler) => handler(data || {}));
+    });
+
     this.socket.on('crushViewed', (data: CrushViewedEvent) => {
       this.crushViewedHandlers.forEach((handler) => handler(data));
     });
@@ -200,6 +205,12 @@ export class RealtimeService {
   onCrushesChanged(handler: (data: { crushId?: string }) => void): () => void {
     this.crushesChangedHandlers.add(handler);
     return () => this.crushesChangedHandlers.delete(handler);
+  }
+
+  /** Fired when an update, reaction or comment changed on a crush you can see (DEX-45). */
+  onEntriesChanged(handler: (data: { crushId?: string }) => void): () => void {
+    this.entriesChangedHandlers.add(handler);
+    return () => this.entriesChangedHandlers.delete(handler);
   }
 
   /** Fired when a line is added to the history between you and a friend. */
