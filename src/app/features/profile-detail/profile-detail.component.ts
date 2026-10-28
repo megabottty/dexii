@@ -222,6 +222,13 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             </div>
           </div>
 
+          <!-- Updates For Friends (DEX-44), above Compatibility -->
+          <section [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
+            <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
+            <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"></app-update-timeline>
+          </section>
           <!-- Compatibility: the owner's read, your friends' reads, and your own say -->
           <section [style.background-color]="theme.colors().bgSecondary"
                    [style.border]="'1px solid ' + theme.colors().border"
@@ -292,13 +299,6 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             }
           </section>
 
-          <!-- Updates For Friends (DEX-44) -->
-          <section [style.background-color]="theme.colors().bgSecondary"
-                   [style.border]="'1px solid ' + theme.colors().border"
-                   style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
-            <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
-            <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"></app-update-timeline>
-          </section>
         </div>
       } @else if (crush(); as c) {
         <div class="profile-main-content">
