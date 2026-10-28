@@ -15,6 +15,22 @@ const crush = (over: Partial<SharedCrush>): SharedCrush => ({
 } as SharedCrush);
 
 describe('mergeTeaItems', () => {
+  it('turns reactions, comments and hearts on your updates into Updates items that open that update (DEX-45)', () => {
+    const payload = { crushId: 'c1', crushNickname: 'Mystery', entryId: 'e1' };
+    const items = mergeTeaItems([
+      notif({ id: 'n1', type: 'update_reaction', payload: { ...payload, emoji: '😍' } }),
+      notif({ id: 'n2', type: 'update_comment', payload: { ...payload, commentPreview: 'omg' }, createdAt: '2026-09-30T11:00:00Z' }),
+      notif({ id: 'n3', type: 'comment_heart', payload: { ...payload, commentPreview: 'yay' }, createdAt: '2026-09-30T12:00:00Z' })
+    ], [], []);
+    const texts = items.map((i) => i.text);
+    expect(texts).toContain('Sam Lee reacted 😍 to your update about Mystery');
+    expect(texts).toContain('Sam Lee commented on your update about Mystery: “omg”');
+    expect(texts).toContain('Sam Lee hearted your comment: “yay” 💗');
+    expect(items.every((i) => i.kind === 'update_activity' && matchesTeaFilter(i, 'notes'))).toBe(true);
+    expect(items[0].route).toEqual(['/profile', 'c1']);
+    expect(items[0].queryParams).toEqual({ update: 'e1' });
+  });
+
   it('shows a shared crush once when it has both a notification and a feed entry', () => {
     const items = mergeTeaItems(
       [notif({ id: 'n1', type: 'crush_shared', payload: { crushId: 'c1', crushNickname: 'Mystery' }, read: false })],

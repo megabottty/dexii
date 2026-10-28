@@ -26,6 +26,7 @@ export type TeaKind =
   | 'friend_request_accepted'
   | 'journal_prompt'
   | 'compatibility_vote'
+  | 'update_activity'
   | 'other';
 
 export type TeaFilter = 'all' | 'requests' | 'shares' | 'notes';
@@ -81,6 +82,9 @@ const kindOf = (type: string): TeaKind => {
     case 'friend_request_accepted': return 'friend_request_accepted';
     case 'journal_prompt': return 'journal_prompt';
     case 'compatibility_vote': return 'compatibility_vote';
+    case 'update_reaction':
+    case 'update_comment':
+    case 'comment_heart': return 'update_activity';
     default: return 'other';
   }
 };
@@ -137,6 +141,21 @@ export function mergeTeaItems(
         item.text = `${actor.name} weighed in on ${nickname}: ${n.payload?.['score'] ?? '?'}% compatible`;
         if (crushId) item.route = ['/profile', crushId];
         item.actionLabel = 'See their read';
+        break;
+      }
+      case 'update_activity': {
+        // Reactions, comments and comment hearts on Updates For Friends (DEX-45).
+        const crush = crushId ? crushById.get(crushId) : undefined;
+        const nickname = crush?.nickname || (n.payload?.crushNickname as string | undefined) || 'your crush';
+        const quote = (n.payload?.['commentPreview'] as string | undefined) || '';
+        if (n.type === 'update_reaction') item.text = `${actor.name} reacted ${n.payload?.['emoji'] || '💗'} to your update about ${nickname}`;
+        else if (n.type === 'update_comment') item.text = `${actor.name} commented on your update about ${nickname}${quote ? `: “${quote}”` : ''}`;
+        else item.text = `${actor.name} hearted your comment${quote ? `: “${quote}”` : ''} 💗`;
+        if (crushId) {
+          item.route = ['/profile', crushId];
+          const entryId = n.payload?.['entryId'];
+          if (typeof entryId === 'string') item.queryParams = { update: entryId };
+        }
         break;
       }
       case 'journal_prompt':
@@ -202,7 +221,7 @@ export const matchesTeaFilter = (item: TeaItem, filter: TeaFilter): boolean => {
   switch (filter) {
     case 'requests': return item.kind === 'friend_request' || item.kind === 'nudge';
     case 'shares': return item.kind === 'crush_shared';
-    case 'notes': return item.kind === 'entry_shared';
+    case 'notes': return item.kind === 'entry_shared' || item.kind === 'update_activity';
     default: return true;
   }
 };
@@ -246,7 +265,7 @@ export class TeaFeedService {
   readonly counts = computed(() => ({
     requests: this.items().filter((i) => i.kind === 'friend_request' || i.kind === 'nudge').length,
     shares: this.items().filter((i) => i.kind === 'crush_shared').length,
-    notes: this.items().filter((i) => i.kind === 'entry_shared').length
+    notes: this.items().filter((i) => i.kind === 'entry_shared' || i.kind === 'update_activity').length
   }));
 
   async load(): Promise<void> {

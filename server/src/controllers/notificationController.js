@@ -64,6 +64,12 @@ const pushCopy = (type, actor, payload = {}) => {
       return { title: 'Friend request', body: `${name} sent you a friend request`, route: '/friends?tab=incoming' };
     case 'friend_request_accepted':
       return { title: 'Friend request accepted', body: `${name} accepted your friend request`, route: '/friends' };
+    case 'update_reaction':
+      return { title: 'New reaction', body: `${name} reacted ${payload.emoji || '💗'} to your update about ${payload.crushNickname || 'your crush'}`, route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
+    case 'update_comment':
+      return { title: 'New comment', body: `${name} commented on your update about ${payload.crushNickname || 'your crush'}: ${payload.commentPreview || ''}`.trim(), route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
+    case 'comment_heart':
+      return { title: 'Your comment got a heart', body: `${name} hearted your comment: ${payload.commentPreview || ''}`.trim(), route: payload.crushId ? `/profile/${payload.crushId}?update=${payload.entryId}` : '/feed' };
     case 'journal_prompt':
       return { title: 'Journal prompt', body: 'Your journal prompt is ready in the Vault', route: '/vault' };
     default:
@@ -78,6 +84,10 @@ const notifyDevices = async (notification) => {
     if (String(notification.type).startsWith('friend_request')) {
       const recipient = await User.findById(notification.recipient).select('profileSettings').lean();
       if (recipient?.profileSettings?.notifyFriendRequests === false) return;
+    }
+    if (['update_reaction', 'update_comment', 'comment_heart'].includes(notification.type)) {
+      const recipient = await User.findById(notification.recipient).select('profileSettings').lean();
+      if (recipient?.profileSettings?.notifyUpdateActivity === false) return;
     }
     const actor = notification.actor
       ? await User.findById(notification.actor).select(ACTOR_FIELDS).lean()

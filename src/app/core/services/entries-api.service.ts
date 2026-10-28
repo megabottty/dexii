@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
-import { Entry } from '../models/entry.model';
+import { Entry, UpdateComment, UpdateReaction } from '../models/entry.model';
 import { SecurityService } from './security.service';
 
 export interface SharedEntryOwner {
@@ -14,7 +14,12 @@ export type SharedEntry = Entry & {
   owner: SharedEntryOwner;
 };
 
-type BackendEntry = Omit<Entry, 'timestamp' | 'editHistory' | 'editedAt'> & {
+type BackendComment = Omit<UpdateComment, 'createdAt' | 'editedAt'> & { createdAt: string; editedAt?: string };
+type BackendReaction = Omit<UpdateReaction, 'at'> & { at?: string };
+
+type BackendEntry = Omit<Entry, 'timestamp' | 'editHistory' | 'editedAt' | 'comments' | 'reactions'> & {
+  comments?: BackendComment[];
+  reactions?: BackendReaction[];
   timestamp: string;
   owner?: SharedEntryOwner;
   editHistory?: { previousContent: string; editedAt: string }[];
@@ -67,7 +72,18 @@ export class EntriesApiService {
             editedAt: new Date(item.editedAt)
           }))
         : [],
-      editedAt: entry.editedAt ? new Date(entry.editedAt) : undefined
+      editedAt: entry.editedAt ? new Date(entry.editedAt) : undefined,
+      reactions: Array.isArray(entry.reactions)
+        ? entry.reactions.map((reaction) => ({ ...reaction, at: reaction.at ? new Date(reaction.at) : undefined }))
+        : [],
+      comments: Array.isArray(entry.comments)
+        ? entry.comments.map((comment) => ({
+            ...comment,
+            hearts: Array.isArray(comment.hearts) ? comment.hearts.map(String) : [],
+            createdAt: new Date(comment.createdAt),
+            editedAt: comment.editedAt ? new Date(comment.editedAt) : undefined
+          }))
+        : []
     };
   }
 
@@ -117,6 +133,34 @@ export class EntriesApiService {
 
   delete(id: string): Promise<unknown> {
     return this.request(`/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
+
+  // ---- Reactions, comments and comment hearts on Updates For Friends (DEX-45) ----
+
+  /** Sets your reaction; sending the same emoji again removes it. Resolves with the updated entry. */
+  react(id: string, emoji: string): Promise<Entry> {
+    return this.activity(`/${encodeURIComponent(id)}/reactions`, 'POST', { emoji });
+  }
+
+  addComment(id: string, content: string): Promise<Entry> {
+    return this.activity(`/${encodeURIComponent(id)}/comments`, 'POST', { content });
+  }
+
+  editComment(id: string, commentId: string, content: string): Promise<Entry> {
+    return this.activity(`/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, 'PUT', { content });
+  }
+
+  deleteComment(id: string, commentId: string): Promise<Entry> {
+    return this.activity(`/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, 'DELETE');
+  }
+
+  heartComment(id: string, commentId: string): Promise<Entry> {
+    return this.activity(`/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/heart`, 'POST');
+  }
+
+  private async activity(path: string, method: string, body?: unknown): Promise<Entry> {
+    const entry = await this.request<BackendEntry>(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
+    return this.mapEntry(entry);
   }
 
   markViewed(id: string): Promise<Entry> {

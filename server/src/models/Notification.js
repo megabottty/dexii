@@ -20,7 +20,10 @@ const NotificationSchema = new mongoose.Schema({
       'friend_request_received',
       'friend_request_accepted',
       'journal_prompt',
-      'compatibility_vote'
+      'compatibility_vote',
+      'update_reaction',
+      'update_comment',
+      'comment_heart'
     ]
   },
   payload: {

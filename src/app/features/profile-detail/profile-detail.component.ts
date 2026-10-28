@@ -1526,7 +1526,26 @@ export class ProfileDetailComponent implements OnDestroy {
       this.friendCrushNotFound.set(false);
       this.friendCrushError.set(false);
       void this.loadFriendCrushIfNeeded();
+      // Pick up reactions and comments friends left since this was loaded (DEX-45).
+      void this.dataService.refreshEntryActivity();
     });
+    // From a reaction or comment notification: scroll to that update once it's on screen.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const updateId = params.get('update');
+      if (updateId) this.scrollToUpdate(updateId);
+    });
+  }
+
+  private scrollToUpdate(updateId: string, attempt = 0): void {
+    if (typeof document === 'undefined' || attempt > 20) return;
+    const el = document.getElementById(`update-${updateId}`);
+    if (!el) {
+      setTimeout(() => this.scrollToUpdate(updateId, attempt + 1), 150);
+      return;
+    }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ut-item--highlight');
+    setTimeout(() => el.classList.remove('ut-item--highlight'), 2400);
   }
 
   /**

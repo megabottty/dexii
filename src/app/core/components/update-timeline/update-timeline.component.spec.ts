@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Entry } from '../../models/entry.model';
-import { UpdateTimelineComponent, dayLabel } from './update-timeline.component';
+import { SecurityService } from '../../services/security.service';
+import { DataService } from '../../services/data.service';
+import { UpdateTimelineComponent, dayLabel, timeAgo } from './update-timeline.component';
 
 const update = (id: string, content: string, timestamp: Date): Entry => ({
   id, crushId: 'c1', type: 'Update', content, timestamp, visibility: [], isSensitive: false
@@ -11,7 +13,14 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
   const el = () => fixture.nativeElement as HTMLElement;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [UpdateTimelineComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [UpdateTimelineComponent],
+      providers: [
+        { provide: SecurityService, useValue: { currentUserId: () => 'me', moderateContent: () => true } },
+        // The timeline only calls these on DataService; stubbed so no real service (or network) starts.
+        { provide: DataService, useValue: { reactToUpdate: async () => {}, commentOnUpdate: async () => {}, editUpdateComment: async () => {}, deleteUpdateComment: async () => {}, heartUpdateComment: async () => {} } }
+      ]
+    }).compileComponents();
     fixture = TestBed.createComponent(UpdateTimelineComponent);
     fixture.componentRef.setInput('crushName', 'Sunny');
   });
@@ -57,5 +66,77 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
     expect(dayLabel(new Date(2026, 9, 27, 9), today)).toBe('Today');
     expect(dayLabel(new Date(2026, 9, 26, 23), today)).toBe('Yesterday');
     expect(dayLabel(new Date(2025, 0, 2), today)).toContain('2025');
+  });
+
+  describe('reactions and comments (DEX-45)', () => {
+    const withActivity = (): Entry => ({
+      ...update('u1', 'We kissed!', new Date()),
+      userId: 'owner',
+      reactions: [
+        { userId: 'ana', emoji: '😍' }, { userId: 'me', emoji: '😍' }, { userId: 'ben', emoji: '🔥' }
+      ],
+      comments: [
+        { id: 'c1', userId: 'ana', content: 'omg', createdAt: new Date(), hearts: ['me'], user: { id: 'ana', username: 'ana' } },
+        { id: 'c2', userId: 'me', content: 'yay', createdAt: new Date(), hearts: [] },
+        { id: 'c3', userId: 'ben', content: 'finally', createdAt: new Date(), hearts: [] }
+      ]
+    });
+
+    it('counts each emoji and marks yours', () => {
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.reactionCounts(withActivity())).toEqual([
+        { emoji: '😍', count: 2, mine: true },
+        { emoji: '🔥', count: 1, mine: false }
+      ]);
+    });
+
+    it('shows the last two comments until View all, with your heart filled', () => {
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.detectChanges();
+      expect(el().querySelectorAll('.ut-comment').length).toBe(2);
+      const viewAll = el().querySelector<HTMLButtonElement>('.ut-view-all')!;
+      expect(viewAll.textContent).toContain('View all 3 comments');
+      viewAll.click();
+      fixture.detectChanges();
+      expect(el().querySelectorAll('.ut-comment').length).toBe(3);
+      expect(el().querySelector('.ut-heart--on')).not.toBeNull();
+    });
+
+    it("lets you edit only your own comment, and delete only yours when it isn't your update", () => {
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.componentInstance.expand('u1');
+      fixture.detectChanges();
+      const rows = Array.from(el().querySelectorAll('.ut-comment'));
+      const buttons = (i: number) => Array.from(rows[i].querySelectorAll('.ut-comment__meta button')).map((b) => b.textContent?.trim());
+      expect(buttons(0)).toEqual([]);
+      expect(buttons(1)).toEqual(['Edit', 'Delete']);
+    });
+
+    it('lets the person whose update it is delete anyone’s comment', () => {
+      fixture.componentRef.setInput('entries', [{ ...withActivity(), userId: 'me' }]);
+      fixture.componentInstance.expand('u1');
+      fixture.detectChanges();
+      const first = el().querySelectorAll('.ut-comment')[0];
+      expect(Array.from(first.querySelectorAll('.ut-comment__meta button')).map((b) => b.textContent?.trim())).toEqual(['Delete']);
+    });
+
+    it('sends a reaction through the data service', () => {
+      const data = TestBed.inject(DataService);
+      const calls: string[] = [];
+      data.reactToUpdate = async (_id: string, emoji: string) => { calls.push(emoji); };
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.detectChanges();
+      fixture.componentInstance.react(withActivity(), '💗');
+      expect(calls).toEqual(['💗']);
+    });
+
+    it('words comment times like Instagram', () => {
+      const now = new Date(2026, 9, 27, 12, 0, 0);
+      expect(timeAgo(new Date(2026, 9, 27, 11, 59, 30), now)).toBe('now');
+      expect(timeAgo(new Date(2026, 9, 27, 11, 55), now)).toBe('5m');
+      expect(timeAgo(new Date(2026, 9, 27, 9, 0), now)).toBe('3h');
+      expect(timeAgo(new Date(2026, 9, 25, 12, 0), now)).toBe('2d');
+    });
   });
 });

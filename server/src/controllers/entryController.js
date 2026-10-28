@@ -3,6 +3,8 @@ const Entry = require('../models/Entry');
 const { recordActivity } = require('../services/activityLog');
 const User = require('../models/User');
 const CrushProfile = require('../models/CrushProfile');
+const Notification = require('../models/Notification');
+const { withPeople } = require('../services/updatePeople');
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -85,7 +87,7 @@ exports.getEntries = async (req, res) => {
     if (req.query.crushId) filter.crushId = req.query.crushId;
 
     const entries = await Entry.find(filter).sort({ timestamp: -1 }).lean();
-    res.json(entries.map(shapeEntry));
+    res.json(await withPeople(entries.map(shapeEntry)));
   } catch (err) {
     handleError(res, err);
   }
@@ -127,7 +129,7 @@ exports.getSharedEntries = async (req, res) => {
     const entries = [...direct, ...updates]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    res.json(entries.map(shapeEntry));
+    res.json(await withPeople(entries.map(shapeEntry)));
   } catch (err) {
     handleError(res, err);
   }
@@ -193,7 +195,7 @@ exports.updateEntry = async (req, res) => {
     Object.assign(existing, updates);
     await existing.save();
 
-    res.json(shapeEntry(existing));
+    res.json((await withPeople([shapeEntry(existing)]))[0]);
 
     if (Array.isArray(updates.visibility)) {
       const after = updates.visibility.map(String);
@@ -224,6 +226,9 @@ exports.deleteEntry = async (req, res) => {
     }
 
     res.json(shapeEntry(entry));
+    // Reactions and comments on it were notifications that now point at nothing (DEX-45).
+    void Notification.deleteMany({ type: { $in: ['update_reaction', 'update_comment', 'comment_heart'] }, 'payload.entryId': String(entry._id) })
+      .catch(() => undefined);
   } catch (err) {
     handleError(res, err);
   }
@@ -255,3 +260,5 @@ exports.markViewed = async (req, res) => {
     handleError(res, err);
   }
 };
+
+exports.shapeEntry = shapeEntry;

@@ -273,3 +273,215 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
 }
+
+/* Reactions (DEX-45) */
+.ut-reactions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.ut-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ut-border);
+  background: var(--ut-bg);
+  color: var(--ut-text);
+  font: inherit;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.ut-reaction:hover { transform: scale(1.05); }
+
+.ut-reaction--mine {
+  border-color: var(--ut-primary);
+  background: color-mix(in srgb, var(--ut-primary) 18%, var(--ut-bg));
+}
+
+.ut-reaction--add { color: var(--ut-muted); }
+
+.ut-picker {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: var(--ut-bg);
+  border: 1px solid var(--ut-border);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ut-primary) 25%, transparent);
+  animation: ut-pop 0.2s ease-out both;
+}
+
+.ut-picker__emoji {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.ut-picker__emoji:hover,
+.ut-picker__emoji[aria-pressed="true"] {
+  transform: scale(1.25);
+  background: var(--ut-soft);
+}
+
+.ut-who {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: var(--fs-label);
+  color: var(--ut-muted);
+}
+
+.ut-link {
+  min-height: 32px;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--ut-muted);
+  font: inherit;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ut-link:hover { color: var(--ut-text); }
+.ut-link--danger { color: var(--danger); }
+.ut-link:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Comments */
+.ut-view-all { display: block; margin-top: 8px; }
+
+.ut-comments {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ut-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ut-comment__avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-avatar);
+  object-fit: cover;
+}
+
+.ut-comment__avatar--blank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ut-gradient);
+  color: #fff;
+  font-size: var(--fs-label);
+  font-weight: 800;
+}
+
+.ut-comment__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ut-comment__text {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ut-comment__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: var(--fs-label);
+  color: var(--ut-muted);
+}
+
+.ut-heart {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ut-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.ut-heart--on {
+  color: #e11d48;
+  animation: ut-heart-pop 0.3s ease-out;
+}
+
+.ut-add-comment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--ut-primary) 18%, transparent);
+}
+
+.ut-comment-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--tap-min);
+  box-sizing: border-box;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ut-border);
+  background: var(--ut-bg);
+  color: var(--ut-text);
+  font: inherit;
+  font-size: var(--fs-small);
+}
+
+.ut-post {
+  min-height: var(--tap-min);
+  padding: 4px 10px;
+  color: var(--ut-primary);
+  font-weight: 800;
+}
+
+@keyframes ut-heart-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+/* Arrived from a notification: a soft glow on that update */
+.ut-item--highlight .ut-bubble {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ut-primary) 45%, transparent);
+  transition: box-shadow 0.4s ease;
+}

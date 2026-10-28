@@ -18,7 +18,7 @@ export type { UserSettings } from './user-settings.storage';
 export const SERVER_BACKED_KEYS: readonly (keyof UserSettings)[] = [
   'displayName', 'bio', 'avatarUrl', 'avatarConfig', 'relationshipStatus', 'lookingFor',
   'interestedIn', 'loveLanguage', 'idealDate', 'profileVisibility', 'selectedFriendIds',
-  'journalPromptFrequency', 'notifyChatMessages', 'notifyFriendRequests'
+  'journalPromptFrequency', 'notifyChatMessages', 'notifyFriendRequests', 'notifyUpdateActivity'
 ];
 
 /** What /auth/me returns that matters here. */

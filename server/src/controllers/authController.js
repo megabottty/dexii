@@ -865,7 +865,7 @@ exports.updateProfileSettings = async (req, res) => {
     const allowedKeys = [
       'displayName', 'bio', 'avatarUrl', 'avatarConfig', 'relationshipStatus', 'lookingFor',
       'interestedIn', 'loveLanguage', 'idealDate', 'profileVisibility', 'selectedFriendIds',
-      'journalPromptFrequency', 'notifyChatMessages', 'notifyFriendRequests'
+      'journalPromptFrequency', 'notifyChatMessages', 'notifyFriendRequests', 'notifyUpdateActivity'
     ];
     const profileSettings = {};
     for (const key of allowedKeys) {

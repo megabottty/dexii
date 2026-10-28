@@ -792,6 +792,53 @@ export class DataService {
     }
   }
 
+  // ---- Reactions and comments on Updates For Friends (DEX-45) ----
+  // Each call returns the updated entry from the server, which replaces the copy
+  // in whichever list holds it (your own entries, or ones friends share with you).
+
+  public reactToUpdate(entryId: string, emoji: string): Promise<void> {
+    return this.applyUpdateActivity(() => this.entriesApi.react(entryId, emoji));
+  }
+
+  public commentOnUpdate(entryId: string, content: string): Promise<void> {
+    return this.applyUpdateActivity(() => this.entriesApi.addComment(entryId, content));
+  }
+
+  public editUpdateComment(entryId: string, commentId: string, content: string): Promise<void> {
+    return this.applyUpdateActivity(() => this.entriesApi.editComment(entryId, commentId, content));
+  }
+
+  public deleteUpdateComment(entryId: string, commentId: string): Promise<void> {
+    return this.applyUpdateActivity(() => this.entriesApi.deleteComment(entryId, commentId));
+  }
+
+  public heartUpdateComment(entryId: string, commentId: string): Promise<void> {
+    return this.applyUpdateActivity(() => this.entriesApi.heartComment(entryId, commentId));
+  }
+
+  /** Re-fetches your entries and friends' shared ones, so new reactions and comments show. */
+  public async refreshEntryActivity(): Promise<void> {
+    if (!this.entriesApi.isAuthenticated()) return;
+    try {
+      const fresh = await this.entriesApi.list();
+      const byId = new Map(fresh.map((entry) => [entry.id, entry]));
+      this._entries.update((entries) => entries.map((entry) => {
+        const server = byId.get(entry.id);
+        return server ? { ...entry, reactions: server.reactions, comments: server.comments } : entry;
+      }));
+    } catch (error) {
+      console.warn('Dexii entry activity refresh failed.', error);
+    }
+    await this.refreshSharedEntries();
+  }
+
+  private async applyUpdateActivity(call: () => Promise<Entry>): Promise<void> {
+    const updated = await call();
+    const patch = { reactions: updated.reactions, comments: updated.comments };
+    this._entries.update((entries) => entries.map((entry) => entry.id === updated.id ? { ...entry, ...patch } : entry));
+    this._sharedEntries.update((entries) => entries.map((entry) => entry.id === updated.id ? { ...entry, ...patch } : entry));
+  }
+
   /** Adds an entry and resolves with it as saved (server id once synced, so callers can act on it, e.g. share it). */
   public async addEntry(entry: Omit<Entry, 'id' | 'timestamp'>): Promise<Entry> {
     const newEntry: Entry = {

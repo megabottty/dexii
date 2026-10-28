@@ -19,6 +19,8 @@ export interface UserSettings {
   allowInvites: boolean;
   notifyFriendRequests: boolean;
   notifyChatMessages: boolean;
+  /** Reactions, comments and hearts on your Updates For Friends (DEX-45). */
+  notifyUpdateActivity: boolean;
   selectedFriendIds: string[];
   relationshipStatus: 'Single' | 'In a Relationship' | 'Married' | "It's Complicated" | 'Open Relationship' | 'Other' | '';
   lookingFor: 'Long-term' | 'Short-term' | 'Friendship' | 'Not Sure' | 'Other' | '';
@@ -46,6 +48,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   allowInvites: true,
   notifyFriendRequests: true,
   notifyChatMessages: true,
+  notifyUpdateActivity: true,
   selectedFriendIds: [],
   relationshipStatus: '',
   lookingFor: '',

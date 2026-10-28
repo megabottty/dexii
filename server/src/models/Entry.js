@@ -56,7 +56,27 @@ const EntrySchema = new mongoose.Schema({
     }],
     default: []
   },
-  editedAt: Date
+  editedAt: Date,
+  // Updates For Friends (DEX-45): one emoji reaction per person, and comments friends can heart.
+  reactions: {
+    type: [{
+      _id: false,
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      emoji: { type: String, required: true },
+      at: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
+  comments: {
+    type: [{
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      content: { type: String, required: true, maxlength: 1000 },
+      createdAt: { type: Date, default: Date.now },
+      editedAt: Date,
+      hearts: { type: [mongoose.Schema.Types.ObjectId], default: [] }
+    }],
+    default: []
+  }
 }, { timestamps: true });
 
 EntrySchema.index({ userId: 1, crushId: 1 });

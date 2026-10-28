@@ -96,6 +96,12 @@ import { isNativeApp } from '../../config/api-config';
                  (change)="setPref('notifyChatMessages', $any($event.target).checked)">
           New chat messages
         </label>
+        <label class="ns-toggle" [style.border]="'1px solid ' + theme.colors().border">
+          <input type="checkbox"
+                 [checked]="settings.settings().notifyUpdateActivity"
+                 (change)="setPref('notifyUpdateActivity', $any($event.target).checked)">
+          Reactions and comments on your updates
+        </label>
       </div>
 
       @if (mode() === 'settings' && !native && webPush.diagnostics()) {
@@ -157,7 +163,7 @@ export class NotificationSetupComponent {
     if (ok) this.enabled.emit();
   }
 
-  setPref(key: 'notifyFriendRequests' | 'notifyChatMessages', value: boolean): void {
+  setPref(key: 'notifyFriendRequests' | 'notifyChatMessages' | 'notifyUpdateActivity', value: boolean): void {
     this.settings.updateSettings({ [key]: value });
     void this.settings.saveToBackend([key]).catch(() => undefined);
   }
