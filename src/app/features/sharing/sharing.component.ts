@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { SHARE_UPDATE_CONFIRM_TEXT, SHARE_UPDATE_CONFIRM_TITLE, isFriendUpdate } from '../../core/utils/friend-update';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -158,54 +159,38 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     </div>
 
                     @if (isCrushShared(crush)) {
+                      <!-- Updates For Friends (DEX-44): everyone this crush is shared with sees them -->
                       <div class="sharing-component__entries">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                          <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-label">Specific Entries</p>
-                          <span class="info-icon-tooltip">
-                            <button                             (click)="showShareDestinationInfo()"
-                            [style.color]="theme.colors().textSecondary"
-                            data-tooltip="This goes to the chat window between you two."
-                                    aria-label="Where do shared notes go?"
-                                    type="button"
-                                    class="sharing-component__info-button">
-                              ⓘ
-                            </button>
-                          </span>
-                        </div>
+                        <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-label">Updates For Friends</p>
                         <div
-                          [style.max-height]="getEntries(crush.id).length > 3 ? '260px' : 'none'"
-                          [style.overflow-y]="getEntries(crush.id).length > 3 ? 'auto' : 'visible'"
+                          [style.max-height]="getUpdates(crush.id).length > 3 ? '260px' : 'none'"
+                          [style.overflow-y]="getUpdates(crush.id).length > 3 ? 'auto' : 'visible'"
                           [style.border]="'1px solid ' + theme.colors().border"
                           [style.background-color]="theme.colors().bg"
                           class="sharing-component__entries-list">
-                          @for (entry of getEntries(crush.id); track entry.id) {
+                          @for (entry of getUpdates(crush.id); track entry.id) {
                             <div class="sharing-component__entry-row">
-                              <span class="sharing-component__entry-text">"{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
-                              <button (click)="toggleEntrySharing(entry)"
-                                      [style.color]="isEntryShared(entry) ? theme.colors().accent : theme.colors().textSecondary"
-                                      class="sharing-component__entry-toggle">
-                                {{ isEntryShared(entry) ? '👁️' : '🔒' }}
-                              </button>
+                              <span class="sharing-component__entry-text">💌 "{{ entry.content | slice:0:40 }}{{ entry.content.length > 40 ? '...' : '' }}"</span>
                             </div>
                           } @empty {
-                            <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-empty">No specific entries to share.</p>
+                            <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-empty">No updates yet.</p>
                           }
                         </div>
                         <div style="display:flex; gap:6px; margin-top:8px;">
                           <input [ngModel]="quickEntryDraft(crush.id)"
                                  (ngModelChange)="setQuickEntryDraft(crush.id, $event)"
-                                 (keydown.enter)="addAndShareQuickEntry(crush.id)"
+                                 (keydown.enter)="shareQuickUpdate(crush.id)"
                                  [style.background-color]="theme.colors().bgSecondary"
                                  [style.border]="'1px solid ' + theme.colors().border"
                                  [style.color]="theme.colors().text"
-                                 placeholder="Type a quick note to share..."
-                                 [attr.aria-label]="'Quick note to share about ' + crush.nickname"
+                                 placeholder="What's new?"
+                                 [attr.aria-label]="'Update for friends about ' + crush.nickname"
                                  style="flex:1; border-radius:6px; padding:6px 8px; font-size: var(--fs-small);">
-                          <button (click)="addAndShareQuickEntry(crush.id)"
+                          <button (click)="shareQuickUpdate(crush.id)"
                                   [disabled]="!quickEntryDraft(crush.id).trim()"
                                   [style.background-color]="theme.colors().primary"
                                   style="color:white; border:none; border-radius: var(--radius-pill); padding:6px 12px; font-size:var(--fs-btn); cursor:pointer;">
-                            Share
+                            Share Update
                           </button>
                         </div>
                       </div>
@@ -344,10 +329,6 @@ export class SharingComponent implements OnInit {
     return this.dataService.isCrushSharedWith(crush, friend.id);
   }
 
-  isEntryShared(entry: any): boolean {
-    const friend = this.selectedFriend();
-    return friend ? entry.visibility.includes(friend.id) || entry.visibility.includes('public') : false;
-  }
 
   toggleCrushSharing(crushId: string): void {
     const friend = this.selectedFriend();
@@ -360,30 +341,13 @@ export class SharingComponent implements OnInit {
   }
 
 
-  toggleEntrySharing(entry: any): void {
-    const friend = this.selectedFriend();
-    if (!friend) return;
 
-    const wasShared = this.isEntryShared(entry);
-    this.dataService.toggleEntryVisibility(entry.id, friend.id);
-
-    if (!wasShared) {
-      const crush = this.allCrushes().find((current: any) => current.id === entry.crushId);
-      const preview = (entry.content || '').trim();
-      this.messaging.sendMessage({
-        senderId: this.currentUserId || this.currentUsername,
-        receiverId: friend.id,
-        content: `Shared a specific entry${crush ? ` from ${crush.nickname}` : ''}: ${preview}`,
-        relatedCrushId: entry.crushId,
-        relatedEntryId: entry.id,
-        kind: 'entry_share'
-      });
-      this.modal.show(`Shared entry sent to ${personName(friend)}.`);
-    }
-  }
-
-  getEntries(crushId: string) {
-    return this.dataService.getEntriesForCrush(crushId)();
+  /** Updates For Friends on this crush, newest first. */
+  getUpdates(crushId: string) {
+    return this.dataService.getEntriesForCrush(crushId)()
+      .filter(isFriendUpdate)
+      .slice()
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }
 
   /** Draft text for the quick-add note input, keyed by crush id. */
@@ -397,31 +361,19 @@ export class SharingComponent implements OnInit {
     this.quickEntryDrafts[crushId] = value;
   }
 
-  /** Adds a private quick note; the lock can be toggled to share it with the selected friend. */
-  addAndShareQuickEntry(crushId: string): void {
-    const friend = this.selectedFriend();
-    if (!friend) return;
-
+  /** Share Update from this page: the same "Send update?" Yes / No as the crush profile. */
+  shareQuickUpdate(crushId: string): void {
     const content = (this.quickEntryDrafts[crushId] || '').trim();
     if (!content) return;
-
-    const crush = this.allCrushes().find((current: any) => current.id === crushId);
-
-    this.dataService.addEntry({
-      crushId,
-      type: 'Note',
-      content,
-      visibility: [],
-      isSensitive: false
-    });
-
-    const newEntry = this.getEntries(crushId).find((entry) => entry.content === content);
-
-    this.quickEntryDrafts[crushId] = '';
-    this.modal.show(`Private note added. Tap the lock to share it with ${personName(friend)}.`);
+    this.modal.confirm(
+      SHARE_UPDATE_CONFIRM_TEXT,
+      () => {
+        void this.dataService.addEntry({ crushId, type: 'Update', content, visibility: [], isSensitive: false });
+        this.quickEntryDrafts[crushId] = '';
+      },
+      undefined,
+      { title: SHARE_UPDATE_CONFIRM_TITLE, confirmLabel: 'Yes', cancelLabel: 'No' }
+    );
   }
 
-  showShareDestinationInfo(): void {
-    this.modal.show('This goes to the chat window between you two.');
-  }
 }

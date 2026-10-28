@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Entry = require('../models/Entry');
 const { recordActivity } = require('../services/activityLog');
 const User = require('../models/User');
+const CrushProfile = require('../models/CrushProfile');
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -54,6 +55,12 @@ const writableFields = [
   'redFlagCount'
 ];
 
+/**
+ * An Update's audience is the crush's share list, never its own (DEX-44). Older notes that were
+ * shared with someone, or marked Public, count as updates too.
+ */
+const UPDATE_ENTRY_FILTER = { $or: [{ type: 'Update' }, { type: 'Note', 'visibility.0': { $exists: true } }] };
+
 const pickWritableFields = (body) => writableFields.reduce((updates, field) => {
   if (Object.prototype.hasOwnProperty.call(body, field)) {
     updates[field] = body[field];
@@ -88,21 +95,37 @@ exports.getSharedEntries = async (req, res) => {
   try {
     if (!requireDb(res)) return;
 
-    const user = await User.findById(req.user.id).select('friends').lean();
+    const user = await User.findById(req.user.id).select('friends username').lean();
     const friendIds = (user?.friends || []).map(String);
 
     if (friendIds.length === 0) {
       return res.json([]);
     }
 
-    const entries = await Entry.find({
-      userId: { $in: friendIds },
-      visibility: String(req.user.id),
-      $nor: [{ isBurnAfterReading: true, hasViewed: true }]
-    })
-      .sort({ timestamp: -1 })
-      .populate('userId', 'username displayName avatarUrl')
-      .lean();
+    // Updates For Friends: every update on a friend's crush that is shared with me,
+    // by id or by the older username form of the share list.
+    const audience = [String(req.user.id), ...(user.username ? [user.username] : [])];
+    const sharedCrushes = await CrushProfile.find({ userId: { $in: friendIds }, visibility: { $in: audience } }).select('_id').lean();
+    const sharedCrushIds = sharedCrushes.map((c) => String(c._id));
+
+    const [direct, updates] = await Promise.all([
+      Entry.find({
+        userId: { $in: friendIds },
+        visibility: String(req.user.id),
+        type: { $nin: ['Note', 'Update'] },
+        $nor: [{ isBurnAfterReading: true, hasViewed: true }]
+      })
+        .populate('userId', 'username displayName avatarUrl')
+        .lean(),
+      sharedCrushIds.length
+        ? Entry.find({ userId: { $in: friendIds }, crushId: { $in: sharedCrushIds }, ...UPDATE_ENTRY_FILTER })
+          .populate('userId', 'username displayName avatarUrl')
+          .lean()
+        : []
+    ]);
+
+    const entries = [...direct, ...updates]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     res.json(entries.map(shapeEntry));
   } catch (err) {
@@ -122,8 +145,11 @@ exports.createEntry = async (req, res) => {
       return res.status(400).json({ message: 'Invalid entry type.' });
     }
 
+    const fields = pickWritableFields(req.body);
+    if (type === 'Update') fields.visibility = [];
+
     const entry = await Entry.create({
-      ...pickWritableFields(req.body),
+      ...fields,
       userId: req.user.id,
       timestamp: req.body.timestamp || Date.now()
     });
@@ -152,6 +178,7 @@ exports.updateEntry = async (req, res) => {
     }
 
     const updates = pickWritableFields(req.body);
+    if ((updates.type || existing.type) === 'Update') updates.visibility = [];
 
     // Whenever the content actually changes, automatically archive the prior
     // version into editHistory and stamp editedAt - computed server-side so

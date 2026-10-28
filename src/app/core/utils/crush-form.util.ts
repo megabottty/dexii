@@ -20,7 +20,6 @@ export interface CrushFormValue {
   status: CrushStatus;
   /** Form-only: saved as a separate Note entry, not on the crush. */
   note: string;
-  noteVisibility: 'private' | 'public';
   hair: string[];
   eyes: string[];
   build: string[];
@@ -110,7 +109,6 @@ export function emptyCrushFormValue(): CrushFormValue {
     avatarConfig: undefined,
     status: CrushStatus.Crush,
     note: '',
-    noteVisibility: 'private',
     hair: [],
     eyes: [],
     build: [],

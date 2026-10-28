@@ -674,7 +674,7 @@ export class DashboardComponent implements OnInit {
         type: 'Note',
         content: note,
         isBurnAfterReading: false,
-        visibility: this.newCrush.noteVisibility === 'public' ? ['public'] : [],
+        visibility: [],
         isSensitive: false
       });
     }

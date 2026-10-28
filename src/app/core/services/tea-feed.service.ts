@@ -58,7 +58,9 @@ export interface TeaItem {
 export type SharedCrush = CrushProfile & { ownerId: string; ownerUsername: string; ownerName?: string; ownerAvatarUrl?: string };
 
 export const ENTRY_TYPE_VERBS: Record<string, string> = {
-  Note: 'shared a note about',
+  // A shared note is an Update For Friends now (DEX-44).
+  Note: 'posted an update about',
+  Update: 'posted an update about',
   Date: 'logged a date with',
   RedFlag: 'flagged a red flag about',
   SafetyCheck: 'sent a safety check about',

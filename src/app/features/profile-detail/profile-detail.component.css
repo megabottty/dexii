@@ -1209,3 +1209,5 @@ button.friend-item:disabled {
 .profile-name-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .profile-quick-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .profile-quick-action { width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+
+.private-notes-title { margin: 20px 0 10px; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px; }

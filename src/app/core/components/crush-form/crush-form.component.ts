@@ -15,7 +15,6 @@ import {
   EYE_OPTIONS,
   HAIR_OPTIONS,
   HEARTBROKEN_LABEL,
-  NOTE_VISIBILITY_OPTIONS,
   OTHER_LABEL,
   PRONOUN_OPTIONS,
   SCHOOL_OR_WORK_OPTIONS,
@@ -533,20 +532,7 @@ interface ListGroup {
                     [style.color]="theme.colors().text"
                     rows="4"
                     placeholder="Add a note about this crush..." class="cf-textarea"></textarea>
-          <div class="cf-note-visibility">
-            <p [style.color]="theme.colors().textSecondary" class="cf-label cf-label--tight">Note Visibility</p>
-            <div class="cf-chip-row">
-              @for (option of noteVisibilityOptions; track option.value) {
-                <button type="button"
-                        (click)="form().noteVisibility = option.value"
-                        [attr.aria-pressed]="form().noteVisibility === option.value"
-                        [style.background-color]="form().noteVisibility === option.value ? theme.colors().primary : 'transparent'"
-                        [style.color]="form().noteVisibility === option.value ? 'white' : theme.colors().text"
-                        [style.border]="'1px solid ' + (form().noteVisibility === option.value ? theme.colors().primary : theme.colors().border)"
-                        class="cf-chip">{{ option.label }}</button>
-              }
-            </div>
-          </div>
+          <span [style.color]="theme.colors().textSecondary" class="cf-hint">Only you can see this note. To tell friends, post an Update For Friends on the crush’s profile.</span>
         </div>
 
         <div class="cf-field">
@@ -604,7 +590,6 @@ export class CrushFormComponent {
   readonly pronounOptions = PRONOUN_OPTIONS;
   readonly statusOptions = CRUSH_STATUS_OPTIONS;
   readonly displayNameOptions = DISPLAY_NAME_OPTIONS;
-  readonly noteVisibilityOptions = NOTE_VISIBILITY_OPTIONS;
   readonly schoolOrWorkOptions = SCHOOL_OR_WORK_OPTIONS;
   readonly otherLabel = OTHER_LABEL;
   readonly heartbrokenLabel = HEARTBROKEN_LABEL;

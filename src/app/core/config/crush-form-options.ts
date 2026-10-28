@@ -34,11 +34,6 @@ export const SCHOOL_OR_WORK_OPTIONS: ReadonlyArray<{ label: string; value: Schoo
   { label: 'Neither', value: 'neither' }
 ];
 
-export const NOTE_VISIBILITY_OPTIONS: ReadonlyArray<{ label: string; value: 'private' | 'public' }> = [
-  { label: 'Private', value: 'private' },
-  { label: 'Public', value: 'public' }
-];
-
 export const DISPLAY_NAME_OPTIONS: ReadonlyArray<{ label: string; value: 'nickname' | 'fullName' }> = [
   { label: 'Nickname', value: 'nickname' },
   { label: 'Real name', value: 'fullName' }

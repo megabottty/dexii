@@ -53,11 +53,11 @@ describe('mergeTeaItems', () => {
     expect(items.map((i) => i.kind).sort()).toEqual(['friend_request', 'nudge']);
   });
 
-  it('turns shared entries into note items with the crush nickname', () => {
+  it('turns shared entries into update items with the crush nickname', () => {
     const entry = { id: 'e1', crushId: 'c1', type: 'Note', content: 'He texted first!', timestamp: new Date('2026-09-30T11:00:00Z'), isSensitive: false, owner: { id: 'u2', username: 'sam' } } as unknown as SharedEntry;
     const items = mergeTeaItems([], [crush({ id: 'c1' })], [entry]);
     const note = items.find((i) => i.kind === 'entry_shared')!;
-    expect(note.text).toBe('sam shared a note about Mystery');
+    expect(note.text).toBe('sam posted an update about Mystery');
     expect(matchesTeaFilter(note, 'notes')).toBe(true);
     expect(matchesTeaFilter(note, 'shares')).toBe(false);
     expect(matchesTeaFilter(items.find((i) => i.kind === 'crush_shared')!, 'shares')).toBe(true);

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-const ENTRY_TYPES = ['Note', 'Date', 'RedFlag', 'SafetyCheck', 'PrivateJournal'];
+// 'Update' is an Update For Friends: everyone the crush is shared with sees it (DEX-44).
+const ENTRY_TYPES = ['Note', 'Update', 'Date', 'RedFlag', 'SafetyCheck', 'PrivateJournal'];
 const SAFETY_STATUSES = ['Draft', 'Sent', 'Safe', 'Urgent'];
 
 const EntrySchema = new mongoose.Schema({

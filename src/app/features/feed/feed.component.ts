@@ -110,7 +110,7 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
               @switch (tea.filter()) {
                 @case ('requests') { No friend requests waiting. }
                 @case ('shares') { No crushes shared with you yet. When a friend shares one, it lands here. }
-                @case ('notes') { No shared notes yet. }
+                @case ('notes') { No updates yet. When a friend posts one about a crush they share with you, it lands here. 💌 }
                 @default { No tea yet. When a friend shares a crush or sends a request, it lands here. }
               }
             </p>
@@ -160,6 +160,9 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
 
     <ng-template #card let-item="item">
       <article class="tea-card"
+               [class.tea-card--update]="item.kind === 'entry_shared'"
+               [style.--tea-primary]="theme.colors().primary"
+               [style.--tea-accent]="theme.colors().accent"
                [class.tea-card--unread]="item.read === false"
                [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + (item.read === false ? theme.colors().accent : theme.colors().border)">
@@ -202,7 +205,17 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
               @if (item.entry.isSensitive) {
                 <p [style.color]="theme.colors().textSecondary" class="feed-item-content">🔒 Sensitive entry - open the crush to view details.</p>
               } @else if (item.entry.content) {
-                <p [style.color]="theme.colors().textSecondary" class="feed-item-content">{{ item.entry.content }}</p>
+                <!-- An update reads like a little love note (DEX-44) -->
+                <blockquote class="tea-love-note" [style.color]="theme.colors().text">
+                  <span class="tea-love-note__sticker" aria-hidden="true">💌</span>
+                  {{ item.entry.content }}
+                </blockquote>
+              }
+              @if (item.crush) {
+                <span class="tea-love-chip" [style.color]="theme.colors().onBgPrimary">
+                  @if (item.crush.avatarUrl) { <img [src]="item.crush.avatarUrl" alt="" class="tea-love-chip__avatar"> } @else { <span aria-hidden="true">💘</span> }
+                  {{ item.crush.nickname || 'A crush' }} · see their updates →
+                </span>
               }
             }
 
@@ -259,7 +272,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     { value: 'all', label: 'All', count: () => 0 },
     { value: 'requests', label: 'Requests', count: () => this.tea.counts().requests },
     { value: 'shares', label: 'Shared crushes', count: () => this.tea.counts().shares },
-    { value: 'notes', label: 'Notes', count: () => this.tea.counts().notes }
+    { value: 'notes', label: 'Updates', count: () => this.tea.counts().notes }
   ];
 
   private seenTimer: ReturnType<typeof setTimeout> | null = null;

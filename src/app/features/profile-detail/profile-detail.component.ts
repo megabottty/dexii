@@ -1,5 +1,7 @@
 import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Entry } from '../../core/models/entry.model';
+import { UpdateTimelineComponent } from '../../core/components/update-timeline/update-timeline.component';
+import { SHARE_UPDATE_CONFIRM_TEXT, SHARE_UPDATE_CONFIRM_TITLE, isFriendUpdate, isPrivateNote } from '../../core/utils/friend-update';
 import { LoadingService } from '../../core/services/loading.service';
 import { OTHER_LABEL, pronounLabel } from '../../core/config/crush-form-options';
 import { PARKED_FEATURES_ENABLED } from '../../core/config/premium-features';
@@ -36,7 +38,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
   selector: 'app-profile-detail',
   standalone: true,
   styleUrl: './profile-detail.component.css',
-  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent, AppSelectComponent, PersonNamePipe],
+  imports: [CommonModule, RouterModule, FormsModule, NavbarComponent, CrushFormComponent, UpgradePromptComponent, CrushPhotoGalleryComponent, FocusTrapDirective, IconComponent, AppSelectComponent, PersonNamePipe, UpdateTimelineComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [style.color]="theme.colors().text"
@@ -290,26 +292,13 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             }
           </section>
 
-          @if ((previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()).length > 0) {
-            <div [style.background-color]="theme.colors().bgSecondary"
-                 [style.border]="'1px solid ' + theme.colors().border"
-                 style="border-radius: 16px; padding: 20px; margin-top: 16px;">
-              <h3 [style.color]="theme.colors().textSecondary" style="margin: 0 0 12px 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px;">
-                {{ previewAsFriend() ? 'Shared' : 'Shared with you' }}
-              </h3>
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                @for (entry of (previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()); track entry.id) {
-                  <div [style.border]="'1px solid ' + theme.colors().border"
-                       style="border-radius: 10px; padding: 10px 12px;">
-                    <p style="margin: 0; line-height: 1.5;">{{ entry.content }}</p>
-                    <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
-                      {{ entry.timestamp | date:'MMM d, h:mm a' }}
-                    </span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
+          <!-- Updates For Friends (DEX-44) -->
+          <section [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
+            <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
+            <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"></app-update-timeline>
+          </section>
         </div>
       } @else if (crush(); as c) {
         <div class="profile-main-content">
@@ -515,7 +504,6 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
             @if (!isEditMode()) {
               <div class="action-buttons-grid">
-                <button (click)="addNote(c.id)" class="action-btn-styled primary">📝 Add Note</button>
                 <button (click)="previewAsFriend.set(true)" class="action-btn-styled secondary">👁 View as Friend</button>
                 @if (parkedFeaturesEnabled) {
                   @if (gate.canUseSafetyCheck()) {
@@ -670,7 +658,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             <div class="selector-overlay" (click)="closeShareSelector()">
               <div class="selector-card" role="dialog" aria-modal="true" aria-labelledby="share-selector-title" appFocusTrap (escaped)="closeShareSelector()" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" (click)="$event.stopPropagation()">
                 <div class="selector-header">
-                  <h3 id="share-selector-title">{{ pendingShareEntryId() ? 'Share note with a friend' : 'Share with a Friend' }}</h3>
+                  <h3 id="share-selector-title">Share with a Friend</h3>
                   <div style="display: flex; gap: 8px; align-items: center;">
                     <button class="action-btn-styled secondary" style="padding: 6px 10px;" (click)="toggleSelectAllShareFriends()">
                       {{ areAllShareFriendsSelected() ? 'Deselect All' : 'Select All' }}
@@ -699,7 +687,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid;" [style.border-color]="theme.colors().border">
                   <button class="action-btn-styled secondary" (click)="closeShareSelector()">Cancel</button>
                   <button class="action-btn-styled primary" (click)="confirmShareSelected(c.id)">
-                    {{ pendingShareEntryId() ? 'Share Note with Selected' : 'Share with Selected' }}
+                    Share with Selected
                   </button>
                 </div>
               </div>
@@ -867,58 +855,55 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 </div>
               }
 
-              <div class="extended-info-section">
+              <!-- Updates For Friends (DEX-44): everyone this crush is shared with sees these. -->
+              <section class="extended-info-section" aria-labelledby="updates-title">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Added Notes</h3>
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ noteEntries().length }} total</span>
+                  <h3 id="updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ updateEntries().length }} total</span>
                 </div>
 
-                @if (noteEntries().length > 0) {
-                  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
-                    @for (entry of noteEntries(); track entry.id) {
-                      <div [style.border]="'1px solid ' + theme.colors().border"
-                           [style.background-color]="theme.colors().bg"
-                           style="padding: 12px; border-radius: 8px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span [style.color]="noteVisibility(entry).color"
-                                  [style.border]="'1px solid ' + noteVisibility(entry).color"
-                                  style="padding: 3px 8px; border-radius: 999px; font-size: var(--fs-label); font-weight: 700;">
-                              {{ noteVisibility(entry).label }}
-                            </span>
-                            <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
-                              {{ entry.timestamp | date:'MMM d, h:mm a' }}@if (entry.editedAt) { · edited }
-                            </span>
-                          </div>
-                          <div class="note-actions">
-                            <button type="button" (click)="startSharingNote(entry.id)" [style.color]="theme.colors().primary" [style.border]="'1px solid ' + theme.colors().primary" class="note-btn">Share</button>
-                            <button type="button" (click)="startEditNote(entry)" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="note-icon-btn" aria-label="Edit note" title="Edit note"><app-icon name="pencil" /></button>
-                            <button type="button" (click)="deleteNote(entry)" [style.color]="theme.colors().danger" [style.border]="'1px solid ' + theme.colors().danger" class="note-icon-btn" aria-label="Delete note" title="Delete note"><app-icon name="trash" /></button>
-                          </div>
-                        </div>
-                        @if (editingNoteId() === entry.id) {
-                          <textarea [(ngModel)]="noteDraft" rows="4" aria-label="Edit note"
-                                    [style.background-color]="theme.colors().bgSecondary"
-                                    [style.border]="'1px solid ' + theme.colors().border"
-                                    [style.color]="theme.colors().text"
-                                    class="note-edit-textarea"></textarea>
-                          <div class="note-edit-actions">
-                            <button type="button" (click)="cancelEditNote()" class="action-btn-styled secondary">Cancel</button>
-                            <button type="button" (click)="saveEditNote(entry)" class="action-btn-styled primary">Save</button>
-                          </div>
-                        } @else {
-                          <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
-                        }
-                        <p [style.color]="theme.colors().textSecondary" style="margin: 8px 0 0; font-size: var(--fs-label);">
-                          {{ noteVisibility(entry).detail }}
-                        </p>
-                      </div>
+                <app-update-timeline [entries]="updateEntries()" [crushName]="getCrushDisplayName(c)" [canPost]="true"
+                                     [audience]="updateAudience(c)" [(draft)]="updateDraft"
+                                     (share)="shareUpdate(c.id, $event)" (edit)="saveUpdateEdit($event.entry, $event.content)" (remove)="deleteNote($event)"></app-update-timeline>
+
+                @if (privateNoteEntries().length > 0) {
+                  <h4 [style.color]="theme.colors().textSecondary" class="private-notes-title">Private notes · only you</h4>
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    @for (entry of privateNoteEntries(); track entry.id) {
+                      <ng-container *ngTemplateOutlet="noteItem; context: { $implicit: entry, label: 'note' }"></ng-container>
                     }
                   </div>
-                } @else {
-                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text">No notes yet. Tap “Add Note” to save one.</p>
                 }
-              </div>
+
+                <ng-template #noteItem let-entry let-label="label">
+                  <div [style.border]="'1px solid ' + theme.colors().border"
+                       [style.background-color]="theme.colors().bg"
+                       style="padding: 12px; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                      <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
+                        {{ entry.timestamp | date:'MMM d, h:mm a' }}@if (entry.editedAt) { · edited }
+                      </span>
+                      <div class="note-actions">
+                        <button type="button" (click)="startEditNote(entry)" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="note-icon-btn" [attr.aria-label]="'Edit ' + label" [attr.title]="'Edit ' + label"><app-icon name="pencil" /></button>
+                        <button type="button" (click)="deleteNote(entry)" [style.color]="theme.colors().danger" [style.border]="'1px solid ' + theme.colors().danger" class="note-icon-btn" [attr.aria-label]="'Delete ' + label" [attr.title]="'Delete ' + label"><app-icon name="trash" /></button>
+                      </div>
+                    </div>
+                    @if (editingNoteId() === entry.id) {
+                      <textarea [(ngModel)]="noteDraft" rows="4" [attr.aria-label]="'Edit ' + label"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                class="note-edit-textarea"></textarea>
+                      <div class="note-edit-actions">
+                        <button type="button" (click)="cancelEditNote()" class="action-btn-styled secondary">Cancel</button>
+                        <button type="button" (click)="saveEditNote(entry)" class="action-btn-styled primary">Save</button>
+                      </div>
+                    } @else {
+                      <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                    }
+                  </div>
+                </ng-template>
+              </section>
 
               <!-- Vibe Tracker -->
               <div [style.background-color]="theme.colors().bgSecondary"
@@ -1297,7 +1282,6 @@ export class ProfileDetailComponent implements OnDestroy {
   vibePromptFrequencyHours = signal(24);
   friends = signal<User[]>([]);
   pendingVibe = signal(0);
-  pendingShareEntryId = signal<string | null>(null);
   shareFriendIds = signal<string[]>([]);
   pendingVisibilityFriendIds = signal<string[]>([]);
   /** Owner-only: see this crush the way a friend you've shared it with sees it. */
@@ -1373,7 +1357,7 @@ export class ProfileDetailComponent implements OnDestroy {
    */
   previewSharedEntries = computed(() =>
     this.entries()
-      .filter((entry) => (entry.visibility || []).length > 0)
+      .filter((entry) => isFriendUpdate(entry) || (!isPrivateNote(entry) && (entry.visibility || []).length > 0))
       .slice()
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
   );
@@ -1403,12 +1387,59 @@ export class ProfileDetailComponent implements OnDestroy {
     );
   });
 
-  noteEntries = computed(() =>
+  /** Updates For Friends on this crush, newest first (DEX-44). */
+  updateEntries = computed(() =>
     this.entries()
-      .filter((entry) => entry.type === 'Note')
+      .filter(isFriendUpdate)
       .slice()
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
   );
+
+  /** Notes only you can see; they move to the Vault in DEX-43. */
+  privateNoteEntries = computed(() =>
+    this.entries()
+      .filter(isPrivateNote)
+      .slice()
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  );
+
+  updateDraft = signal('');
+
+  /** Who an update reaches: whoever the crush is shared with right now. */
+  updateAudience(crush: CrushProfile): string[] {
+    return this.friendsSharedWith(crush).map((friend) => personName(friend));
+  }
+
+  saveUpdateEdit(entry: Entry, content: string): void {
+    this.noteDraft = content;
+    void this.saveEditNote(entry);
+  }
+
+  /** Share Update: "Send update?" Yes posts it to everyone this crush is shared with; No keeps the draft. */
+  shareUpdate(crushId: string, text: string = this.updateDraft()): void {
+    const content = text.trim();
+    if (!content) return;
+    if (!this.security.moderateContent(content)) {
+      this.modal.show('Update flagged by AI moderation for safety.');
+      return;
+    }
+    this.modal.confirm(
+      SHARE_UPDATE_CONFIRM_TEXT,
+      () => {
+        void this.dataService.addEntry({
+          crushId,
+          type: 'Update',
+          content,
+          isBurnAfterReading: false,
+          visibility: [],
+          isSensitive: false
+        });
+        this.updateDraft.set('');
+      },
+      undefined,
+      { title: SHARE_UPDATE_CONFIRM_TITLE, confirmLabel: 'Yes', cancelLabel: 'No' }
+    );
+  }
 
   getCrushDisplayName(crush: CrushProfile): string {
     return crush.displayName === 'fullName' && crush.fullName?.trim()
@@ -1468,36 +1499,6 @@ export class ProfileDetailComponent implements OnDestroy {
       .slice(0, (this.crush()?.redFlags || 0) > 0 ? 1 : 0)
   );
 
-  noteVisibility(entry: { visibility?: string[] }): { label: string; detail: string; color: string } {
-    const visibility = entry.visibility || [];
-    if (visibility.includes('public')) {
-      const friendNames = this.friends().map((friend) => personName(friend));
-      return {
-        label: 'Public',
-        detail: friendNames.length > 0
-          ? `Visible to all friends: ${friendNames.join(', ')}`
-          : 'Visible to all friends',
-        color: '#15803d'
-      };
-    }
-
-    if (visibility.length === 0) {
-      return {
-        label: 'Private',
-        detail: 'Only you can see this note',
-        color: '#64748b'
-      };
-    }
-
-    const friendNames = visibility.map((friendId) =>
-      personName(this.friends().find((friend) => friend.id === friendId), 'Friend')
-    );
-    return {
-      label: 'Shared',
-      detail: `Visible to: ${friendNames.join(', ')}`,
-      color: '#2563eb'
-    };
-  }
 
   selectedSafetyContactNames = computed(() => {
     const selected = this.safetyContactIds();
@@ -1835,26 +1836,6 @@ export class ProfileDetailComponent implements OnDestroy {
     );
   }
 
-  /** Add Note: save it, then straight to "who should see it?" (Cancel keeps it private). */
-  addNote(id: string) {
-    this.modal.prompt("What's the tea?", "", (tea) => {
-      if (!tea) return;
-      if (!this.security.moderateContent(tea)) {
-        this.modal.show('Note flagged by AI moderation for safety.');
-        return;
-      }
-      void this.dataService.addEntry({
-        crushId: id,
-        type: 'Note',
-        content: tea,
-        isBurnAfterReading: false,
-        visibility: [],
-        isSensitive: false
-      }).then((saved) => {
-        if (this.friends().length > 0) this.startSharingNote(saved.id);
-      });
-    });
-  }
 
   setSafetyDuration(value: unknown): void {
     const minutes = Number(value);
@@ -2075,14 +2056,12 @@ export class ProfileDetailComponent implements OnDestroy {
       this.modal.show('Add at least one friend first to share.');
       return;
     }
-    this.pendingShareEntryId.set(null);
     this.shareFriendIds.set(this.friends().filter((friend) => this.crush() ? this.isShared(this.crush()!, friend.id) : false).map((friend) => friend.id));
     this.showShareSelector.set(true);
   }
 
   closeShareSelector(): void {
     this.showShareSelector.set(false);
-    this.pendingShareEntryId.set(null);
     this.shareFriendIds.set([]);
   }
 
@@ -2108,8 +2087,7 @@ export class ProfileDetailComponent implements OnDestroy {
 
   confirmShareSelected(crushId: string): void {
     const selectedIds = this.shareFriendIds();
-    const entryId = this.pendingShareEntryId();
-    if (selectedIds.length === 0 && !entryId) {
+    if (selectedIds.length === 0) {
       this.modal.show('Select at least one friend to share with.');
       return;
     }
@@ -2123,31 +2101,6 @@ export class ProfileDetailComponent implements OnDestroy {
     const selectedFriends = this.friends().filter((friend) => selectedIds.includes(friend.id));
     const selectedSet = new Set(selectedIds);
 
-    if (entryId) {
-      // The picker opened with the current audience selected, so the selection is the new audience.
-      // Everyone selected is stored as 'public' so friends added later see it too.
-      const before = new Set(this.currentNoteAudience(entryId));
-      const everyone = selectedIds.length > 0 && selectedIds.length === this.friends().length;
-      this.dataService.setEntryVisibility(entryId, everyone ? ['public'] : selectedIds);
-
-      const newlyShared = selectedFriends.filter((friend) => !before.has(friend.id));
-      newlyShared.forEach((friend) => {
-        this.messaging.sendMessage({
-          senderId: 'me',
-          receiverId: friend.id,
-          content: `Shared note about ${this.crush()?.nickname || 'this crush'}: ${this.entries().find((entry) => entry.id === entryId)?.content || 'Shared note'}`,
-          relatedCrushId: crushId,
-          relatedEntryId: entryId,
-          kind: 'entry_share'
-        });
-      });
-
-      this.closeShareSelector();
-      if (selectedFriends.length === 0) this.modal.show('Note is now private.');
-      else if (everyone) this.modal.show('Note shared with all your friends.');
-      else this.modal.show(`Note shared with ${selectedFriends.length} friend${selectedFriends.length === 1 ? '' : 's'}.`);
-      return;
-    }
 
     const friendLabel = this.describeFriendsForShare(selectedFriends);
     this.modal.confirm(
@@ -2178,24 +2131,6 @@ export class ProfileDetailComponent implements OnDestroy {
     );
   }
 
-  startSharingNote(entryId: string): void {
-    if (this.friends().length === 0) {
-      this.modal.show('Add at least one friend first to share notes.');
-      return;
-    }
-    this.pendingShareEntryId.set(entryId);
-    this.shareFriendIds.set(this.currentNoteAudience(entryId));
-    this.showShareSelector.set(true);
-  }
-
-  /** Friend ids a note is shared with today; 'public' means every friend. */
-  private currentNoteAudience(entryId: string): string[] {
-    const entry = this.entries().find((e) => e.id === entryId);
-    if (!entry) return [];
-    const friendIds = this.friends().map((friend) => friend.id);
-    if (entry.visibility.includes('public')) return friendIds;
-    return entry.visibility.filter((id) => friendIds.includes(id));
-  }
 
   // ---- Edit / delete a note ----
   editingNoteId = signal<string | null>(null);
@@ -2224,26 +2159,19 @@ export class ProfileDetailComponent implements OnDestroy {
     }
     await this.dataService.updateEntryContent(entry.id, draft);
     this.cancelEditNote();
-    this.modal.show('Note updated.');
+    this.modal.show(isFriendUpdate(entry) ? 'Update edited.' : 'Note updated.');
   }
 
   deleteNote(entry: Entry): void {
-    const shared = entry.visibility.length > 0;
+    const update = isFriendUpdate(entry);
     this.modal.confirm(
-      shared ? 'Delete this note? Friends you shared it with will lose it too. This cannot be undone.' : 'Delete this note? This cannot be undone.',
+      update ? 'Delete this update? Friends will no longer see it. This cannot be undone.' : 'Delete this note? This cannot be undone.',
       () => { void this.dataService.deleteEntry(entry.id); },
       undefined,
-      { title: 'Delete note', confirmLabel: 'Delete', danger: true }
+      { title: update ? 'Delete update' : 'Delete note', confirmLabel: 'Delete', danger: true }
     );
   }
 
-  isEntrySharedWithFriend(friendId: string): boolean {
-    const entryId = this.pendingShareEntryId();
-    if (!entryId) return false;
-    const entry = this.entries().find((currentEntry) => currentEntry.id === entryId);
-    if (!entry) return false;
-    return entry.visibility.includes(friendId) || entry.visibility.includes('public');
-  }
 
   /** Friends this crush is currently shared with (candidates for per-photo audiences). */
   friendsSharedWith(crush: CrushProfile) {
@@ -2349,7 +2277,7 @@ export class ProfileDetailComponent implements OnDestroy {
         type: 'Note',
         content: note,
         isBurnAfterReading: false,
-        visibility: this.editForm.noteVisibility === 'public' ? ['public'] : [],
+        visibility: [],
         isSensitive: false
       });
     }
