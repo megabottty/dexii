@@ -155,6 +155,24 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       expect(calls).toEqual(['💗']);
     });
 
+    it('expands and collapses every update at once, showing who reacted and who hearted', () => {
+      const second = { ...withActivity(), id: 'u2', comments: [] };
+      const first = { ...withActivity(), comments: withActivity().comments!.map((c) => c.id === 'c1' ? { ...c, heartedBy: [{ id: 'me' }, { id: 'ben', username: 'ben' }] } : c) };
+      fixture.componentRef.setInput('entries', [first, second]);
+      fixture.detectChanges();
+      const toggle = () => el().querySelector<HTMLButtonElement>('.ut-expand-all')!;
+      expect(toggle().textContent).toContain('Expand all comments');
+      toggle().click();
+      fixture.detectChanges();
+      expect(el().querySelectorAll('.ut-add-comment').length).toBe(2);
+      expect(el().querySelector('.ut-who')?.textContent).toContain('You');
+      expect(el().querySelector('.ut-hearted-by')?.textContent).toContain('You, ben');
+      expect(toggle().textContent).toContain('Collapse all comments');
+      toggle().click();
+      fixture.detectChanges();
+      expect(el().querySelectorAll('.ut-add-comment').length).toBe(0);
+    });
+
     it('words comment times like Instagram', () => {
       const now = new Date(2026, 9, 27, 12, 0, 0);
       expect(timeAgo(new Date(2026, 9, 27, 11, 59, 30), now)).toBe('now');

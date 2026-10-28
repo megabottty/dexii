@@ -17,7 +17,10 @@ const withPeople = async (shapedEntries) => {
   for (const entry of shapedEntries) {
     if (!entry.owner && entry.userId) ids.add(String(entry.userId));
     for (const r of entry.reactions || []) ids.add(String(r.userId));
-    for (const c of entry.comments || []) ids.add(String(c.userId));
+    for (const c of entry.comments || []) {
+      ids.add(String(c.userId));
+      for (const h of c.hearts || []) ids.add(String(h));
+    }
   }
   const users = ids.size
     ? await User.find({ _id: { $in: [...ids] } }).select('username displayName avatarUrl').lean()
@@ -41,6 +44,7 @@ const withPeople = async (shapedEntries) => {
       createdAt: c.createdAt,
       editedAt: c.editedAt,
       hearts: (c.hearts || []).map(String),
+      heartedBy: (c.hearts || []).map((h) => byId.get(String(h))).filter(Boolean),
       user: byId.get(String(c.userId)) || null
     }))
   }));

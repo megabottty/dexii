@@ -510,3 +510,26 @@
   gap: 6px;
   margin-top: 6px;
 }
+
+/* Expand or collapse every update's comments at once */
+.ut-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.ut-expand-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ut-border);
+  min-height: 36px;
+}
+
+.ut-hearted-by {
+  margin: 2px 0 0;
+  font-size: var(--fs-label);
+  color: #e11d48;
+}

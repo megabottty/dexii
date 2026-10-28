@@ -69,6 +69,14 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
         <p class="ut-empty__copy">{{ canPost() ? 'Post your first update and friends you share ' + crushName() + ' with will see it.' : 'When there’s news about ' + crushName() + ', it shows up here.' }}</p>
       </div>
     } @else {
+      @if (commentedCount() > 0) {
+        <div class="ut-toolbar">
+          <button type="button" class="ut-link ut-expand-all" [attr.aria-pressed]="allExpanded()" (click)="toggleAll()">
+            <span aria-hidden="true">{{ allExpanded() ? '🙈' : '👀' }}</span>
+            {{ allExpanded() ? 'Collapse all comments' : 'Expand all comments' }}
+          </button>
+        </div>
+      }
       <ol class="ut-timeline" [attr.aria-label]="'Updates about ' + crushName()">
         @for (group of groups(); track group.key) {
           <li class="ut-day">
@@ -123,7 +131,7 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                               aria-label="Add a reaction" (click)="pickerFor.set(pickerFor() === entry.id ? null : entry.id)">
                         <span aria-hidden="true">{{ myReaction(entry) || '🙂' }}</span><span aria-hidden="true">＋</span>
                       </button>
-                      @if (entry.reactions?.length) {
+                      @if (entry.reactions?.length && !expanded().has(entry.id)) {
                         <button type="button" class="ut-link" [attr.aria-expanded]="whoFor() === entry.id"
                                 (click)="whoFor.set(whoFor() === entry.id ? null : entry.id)">{{ whoFor() === entry.id ? 'Hide' : 'Who reacted' }}</button>
                       }
@@ -136,8 +144,8 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                         }
                       </div>
                     }
-                    @if (whoFor() === entry.id) {
-                      <ul class="ut-who">
+                    @if (whoFor() === entry.id || (expanded().has(entry.id) && entry.reactions?.length)) {
+                      <ul class="ut-who" [attr.aria-label]="'Who reacted'">
                         @for (r of entry.reactions || []; track r.userId) {
                           <li><span aria-hidden="true">{{ r.emoji }}</span> {{ nameOf(r.user, r.userId) }}</li>
                         }
@@ -169,6 +177,9 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                                 </div>
                               } @else {
                                 <p class="ut-comment__text"><strong>{{ nameOf(comment.user, comment.userId) }}</strong> {{ comment.content }}</p>
+                                @if (comment.heartedBy?.length) {
+                                  <p class="ut-hearted-by"><span aria-hidden="true">♥</span> {{ heartNames(comment) }}</p>
+                                }
                                 <div class="ut-comment__meta">
                                   <time [attr.datetime]="iso(comment.createdAt)">{{ ago(comment.createdAt) }}</time>
                                   @if (comment.editedAt) { <span>· edited</span> }
@@ -293,6 +304,24 @@ export class UpdateTimelineComponent {
 
   expand(entryId: string): void {
     this.expanded.update((set) => new Set(set).add(entryId));
+  }
+
+  /** Updates that have comments or reactions to show. */
+  readonly commentedCount = computed(() => this.entries().filter((e) => (e.comments?.length || 0) + (e.reactions?.length || 0) > 0).length);
+
+  /** Every update's comments are open. */
+  readonly allExpanded = computed(() => {
+    const ids = this.entries().map((e) => e.id);
+    return ids.length > 0 && ids.every((id) => this.expanded().has(id));
+  });
+
+  /** One tap opens every update's comments (and who reacted / hearted), or folds them all again. */
+  toggleAll(): void {
+    this.expanded.set(this.allExpanded() ? new Set() : new Set(this.entries().map((e) => e.id)));
+  }
+
+  heartNames(comment: UpdateComment): string {
+    return (comment.heartedBy || []).map((p) => this.nameOf(p, p.id)).join(', ');
   }
 
   toggleComments(entryId: string): void {

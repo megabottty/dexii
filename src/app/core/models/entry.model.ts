@@ -29,6 +29,8 @@ export interface UpdateComment {
   editedAt?: Date;
   /** Ids of everyone who hearted it. */
   hearts: string[];
+  /** Who hearted it, for "♥ Ana, Ben" under an open comment. */
+  heartedBy?: EntryPerson[];
   user?: EntryPerson | null;
 }
 
