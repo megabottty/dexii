@@ -6,7 +6,7 @@
  * `core/components/crush-stack/`, this file, and the blocks marked `// stack view`
  * in `features/dashboard/dashboard.component.ts`.
  */
-export const STACK_VIEW_ENABLED = true;
+export const STACK_VIEW_ENABLED = false;
 
 export type CrushViewMode = 'stack' | 'grid';
 export const CRUSH_VIEW_STORAGE_KEY = 'dexii_crush_view';

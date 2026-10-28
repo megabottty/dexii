@@ -19,10 +19,9 @@ Dexii is designed for high-security, high-glamour tracking of your dating life. 
 - **Card layout**: name in bold white caps on the photo, status as plain caps text under it, then stars, the Headline and
   the date. Compatibility and photo count are on the crush page only.
 
-- **Stack view (default)**: crushes sit in a deck; swipe the front card left or right (or use Prev / Next, the
-  arrow keys) to send it to the back and bring up the next one; tap a card to open it. **Grid** is one tap away
-  via the Stack / Grid switch, remembered per device. `STACK_VIEW_ENABLED` in
-  `src/app/core/config/dashboard-view.ts` turns the deck off (grid only) if it doesn't stick.
+- **Grid view**: crushes show as a grid of cards. The swipeable Stack (deck) view is switched off
+  (`STACK_VIEW_ENABLED = false` in `src/app/core/config/dashboard-view.ts`); set it to `true` to bring back
+  the deck and the Stack / Grid switch.
 - **Crush Cards**: View your active prospects. Includes "Nickname", "Attraction Rating" (1-5 Stars), and "Last Interaction" date.
 - **New Entry**: Create new profiles with an avatar (upload a photo, pick from the diverse preset gallery, or build a custom cartoon avatar), status (Crush → Plotting → Dating → Exclusive, or Broken Up / Heartbroken / Archived / Friend), and bios.
 - **Archive**: Move past crushes to the archive to keep your dashboard clean. Toggle between Active and Archived views on the main dashboard.
