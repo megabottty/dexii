@@ -1,5 +1,7 @@
+import { MessageMenuComponent } from '../../core/components/message-menu/message-menu.component';
+import { TypingService } from '../../core/services/typing.service';
 import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
-import { Message } from '../../core/models/message.model';
+import { Message, canEditMessage } from '../../core/models/message.model';
 import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit, HostListener } from '@angular/core';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule, Location } from '@angular/common';
@@ -19,7 +21,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
   selector: 'app-messaging',
   standalone: true,
   styleUrl: './messaging.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, AppSelectComponent, PersonNamePipe],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, AppSelectComponent, PersonNamePipe, MessageMenuComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="messaging-component__s1">
@@ -154,9 +156,23 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                    (click)="openRelatedCrush(msg)"
                    (keydown.enter)="openRelatedCrush(msg)"
                    (dblclick)="toggleReactionPicker(msg.id, $event)"
+                   [class.messaging-bubble--deleted]="!!msg.deletedAt"
                    class="messaging-component__s9">
-                {{ msg.content }}
-                @if (msg.relatedCrushId) {
+                @if (msg.deletedAt) {
+                  <span class="messaging-deleted"><span aria-hidden="true">🚫</span> {{ isMine(msg) ? 'You deleted this message' : 'This message was deleted' }}</span>
+                } @else if (editingMessageId() === msg.id) {
+                  <span class="messaging-edit" (click)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
+                    <input class="messaging-edit__input" [ngModel]="editDraft()" (ngModelChange)="editDraft.set($event)" maxlength="4000"
+                           aria-label="Edit message" (keydown.enter)="saveEdit(msg)" (keydown.escape)="editingMessageId.set(null)">
+                    <span class="messaging-edit__actions">
+                      <button type="button" class="messaging-edit__btn" (click)="editingMessageId.set(null)">Cancel</button>
+                      <button type="button" class="messaging-edit__btn messaging-edit__btn--save" [disabled]="!editDraft().trim()" (click)="saveEdit(msg)">Save</button>
+                    </span>
+                  </span>
+                } @else {
+                  {{ msg.content }}
+                }
+                @if (msg.relatedCrushId && !msg.deletedAt) {
                   <span class="messaging-related-crush-hint">Tap to view crush ↗</span>
                 }
                 @if (msg.isSelfDestruct) {
@@ -185,14 +201,19 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 </div>
               }
 
-              <button type="button"
-                      (click)="toggleReactionPicker(msg.id, $event)"
-                      [style.color]="theme.colors().textSecondary"
-                      class="messaging-react-trigger"
-                      [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'"
-                      aria-label="Add emoji reactions to this message">
-                😀+
-              </button>
+              <div class="messaging-msg-actions" [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'">
+                @if (!msg.deletedAt) {
+                  <button type="button"
+                          (click)="toggleReactionPicker(msg.id, $event)"
+                          [style.color]="theme.colors().textSecondary"
+                          class="messaging-react-trigger"
+                          aria-label="Add emoji reactions to this message">
+                    😀+
+                  </button>
+                }
+                <app-message-menu [mine]="isMine(msg)" [canEdit]="canEdit(msg)" [deleted]="!!msg.deletedAt"
+                                  (edit)="startEdit(msg)" (deleteForEveryone)="deleteMsg(msg, 'everyone')" (deleteForMe)="deleteMsg(msg, 'me')"></app-message-menu>
+              </div>
 
               @if (activeReactionPickerFor() === msg.id) {
                 <div [style.background-color]="theme.colors().bgSecondary"
@@ -214,6 +235,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
 
               <span [style.color]="theme.colors().textSecondary" [style.text-align]="isMine(msg) ? 'right' : 'left'" class="messaging-time">
                 {{ msg.timestamp | date:'h:mm a' }}
+                @if (msg.editedAt && !msg.deletedAt) { <span> · Edited</span> }
                 @if (isMine(msg) && isLatestOwnMessage(msg)) {
                   <span class="messaging-receipt" [style.color]="msg.readAt ? theme.colors().primary : theme.colors().textSecondary">
                     @if (msg.readAt) { · Read {{ msg.readAt | date:'h:mm a' }} } @else { · Sent }
@@ -225,6 +247,12 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             <div [style.border]="'1px dashed ' + theme.colors().border"
                  class="messaging-empty-state">
               <p [style.color]="theme.colors().textSecondary">No messages yet. Start the conversation below.</p>
+            </div>
+          }
+          @if (partnerTyping()) {
+            <div class="chat-typing" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" role="status">
+              <span class="chat-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span [style.color]="theme.colors().textSecondary" class="chat-typing__label">{{ currentChatPartner().name }} is typing…</span>
             </div>
           }
         } @else {
@@ -466,7 +494,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
              class="messaging-component__s11">
           <div class="messaging-composer">
             <div class="messaging-composer__row">
-              <input [(ngModel)]="newMessage" (keyup.enter)="send()"
+              <input [ngModel]="newMessage" (ngModelChange)="onType($event)" (keyup.enter)="send()" (blur)="stopTyping()"
                      [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
                      placeholder="Message…"
                      aria-label="Message input"
@@ -571,6 +599,65 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     return this.messaging.isCurrentFriend(this.currentChatPartner());
   });
   newMessage = '';
+  private typing = inject(TypingService);
+
+  /** The friend in this chat is typing to you right now. */
+  partnerTyping = computed(() => {
+    const partnerId = this.currentChatPartner().id;
+    return !!partnerId && this.hasActiveChat() && this.typing.typingIn({ recipientId: partnerId }).includes(partnerId);
+  });
+
+  onType(value: string): void {
+    this.newMessage = value;
+    const partnerId = this.currentChatPartner().id;
+    if (partnerId && this.hasActiveChat() && this.isChatPartnerFriend()) this.typing.typed({ recipientId: partnerId }, value);
+  }
+
+  // ---- Edit and delete, like other chat apps ----
+  editingMessageId = signal<string | null>(null);
+  editDraft = signal('');
+
+  canEdit(msg: Message): boolean {
+    return canEditMessage(msg, this.selfId());
+  }
+
+  startEdit(msg: Message): void {
+    this.editingMessageId.set(msg.id);
+    this.editDraft.set(msg.content);
+  }
+
+  async saveEdit(msg: Message): Promise<void> {
+    const text = this.editDraft().trim();
+    if (!text) return;
+    if (text === msg.content) { this.editingMessageId.set(null); return; }
+    if (!this.security.moderateContent(text)) {
+      this.modal.show('Message flagged by AI moderation for safety.');
+      return;
+    }
+    const error = await this.messaging.editMessage(msg.id, text);
+    if (error) { this.modal.show(error); return; }
+    this.editingMessageId.set(null);
+  }
+
+  deleteMsg(msg: Message, scope: 'everyone' | 'me'): void {
+    const run = async () => {
+      const error = await this.messaging.deleteMessage(msg.id, scope);
+      if (error) this.modal.show(error);
+    };
+    this.modal.confirm(
+      scope === 'everyone'
+        ? `Delete this message for everyone? ${this.currentChatPartner().name} will see “This message was deleted”.`
+        : 'Delete this message for you? It stays in the chat for the other person.',
+      () => { void run(); },
+      undefined,
+      { title: scope === 'everyone' ? 'Delete for everyone' : 'Delete for me', confirmLabel: 'Delete', danger: true }
+    );
+  }
+
+  stopTyping(): void {
+    const partnerId = this.currentChatPartner().id;
+    if (partnerId) this.typing.stopped({ recipientId: partnerId });
+  }
 
   // Falls back to the legacy local-only 'me' marker when signed out, so existing
   // locally stored conversations still render.
@@ -691,6 +778,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
       selfDestructDurationMs: isSelfDestruct ? this.selfDestructDurationMs() : undefined
     });
     this.newMessage = '';
+    this.stopTyping();
   }
 
   openChat(friendId: string, friendName: string): void {

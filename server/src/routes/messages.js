@@ -16,6 +16,12 @@ router.post('/', [auth, moderate], messageController.sendMessage);
 // @route   PUT /api/messages/read/:friendId
 router.put('/read/:friendId', auth, messageController.markAsRead);
 
+// @route   PUT /api/messages/:messageId   (edit your own, within 15 minutes)
+router.put('/:messageId', [auth, moderate], messageController.editMessage);
+
+// @route   DELETE /api/messages/:messageId?for=everyone|me
+router.delete('/:messageId', auth, messageController.deleteMessage);
+
 // @route   POST /api/messages/:messageId/react
 router.post('/:messageId/react', auth, messageController.reactToMessage);
 

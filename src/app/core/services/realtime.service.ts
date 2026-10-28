@@ -42,6 +42,13 @@ export interface CrushViewedEvent {
   at: string;
 }
 
+/** Someone started or stopped typing to you (1:1) or in a group. */
+export interface TypingEvent {
+  senderId: string;
+  groupId?: string;
+  isTyping: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -57,6 +64,8 @@ export class RealtimeService {
   private messagesReadHandlers = new Set<(data: { readerId: string; readAt: string }) => void>();
   private crushesChangedHandlers = new Set<(data: { crushId?: string }) => void>();
   private entriesChangedHandlers = new Set<(data: { crushId?: string }) => void>();
+  private typingHandlers = new Set<(data: TypingEvent) => void>();
+  private messageChangedHandlers = new Set<(row: any) => void>();
   private crushViewedHandlers = new Set<(data: CrushViewedEvent) => void>();
   private activityHandlers = new Set<() => void>();
 
@@ -148,6 +157,14 @@ export class RealtimeService {
       this.crushesChangedHandlers.forEach((handler) => handler(data || {}));
     });
 
+    this.socket.on('messageChanged', (row: any) => {
+      if (row?._id) this.messageChangedHandlers.forEach((handler) => handler(row));
+    });
+
+    this.socket.on('typing', (data: TypingEvent) => {
+      if (data?.senderId) this.typingHandlers.forEach((handler) => handler(data));
+    });
+
     this.socket.on('entriesChanged', (data: { crushId?: string }) => {
       this.entriesChangedHandlers.forEach((handler) => handler(data || {}));
     });
@@ -163,6 +180,22 @@ export class RealtimeService {
 
   emitMessage(payload: IncomingSocketMessage): void {
     this.socket?.emit('sendMessage', payload);
+  }
+
+  /** "I'm typing" (or stopped) to a friend, or to a group's members. */
+  emitTyping(payload: { recipientId?: string; groupId?: string; isTyping: boolean }): void {
+    this.socket?.emit('typing', payload);
+  }
+
+  /** A message in one of your chats was edited or deleted for everyone (the saved row). */
+  onMessageChanged(handler: (row: any) => void): () => void {
+    this.messageChangedHandlers.add(handler);
+    return () => this.messageChangedHandlers.delete(handler);
+  }
+
+  onTyping(handler: (data: TypingEvent) => void): () => void {
+    this.typingHandlers.add(handler);
+    return () => this.typingHandlers.delete(handler);
   }
 
   emitSafetyAlert(payload: SafetyUpdate): void {

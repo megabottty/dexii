@@ -147,6 +147,7 @@ export class MessagingService {
 
     this.realtime.onMessage((incoming) => this.ingestRealtimeMessage(incoming));
     this.realtime.onReactionUpdate((update) => this.ingestReactionUpdate(update));
+    this.realtime.onMessageChanged((row) => { if (!row.group) this.applyServerChange(row); });
     this.realtime.onMessagesRead(({ readerId, readAt }) => this.applyReadReceipt(readerId, readAt));
   }
 
@@ -422,7 +423,7 @@ export class MessagingService {
       if (!Array.isArray(rows)) return;
 
       const mapped: Message[] = rows
-        .filter((row) => row && row.content)
+        .filter((row) => row && (row.content || row.deletedAt))
         .map((row) => ({
           id: String(row._id),
           senderId: String(row.sender),
@@ -436,11 +437,18 @@ export class MessagingService {
           selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined,
           reactions: Array.isArray(row.reactions)
             ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
-            : undefined
+            : undefined,
+          editedAt: row.editedAt ? new Date(row.editedAt) : undefined,
+          deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined
         }));
 
       const serverIds = new Set(mapped.map((m) => m.id));
-      this._messages.update((msgs) => [...msgs.filter((m) => !serverIds.has(m.id)), ...mapped]);
+      // Saved messages in this chat that the server no longer returns were deleted for me.
+      const inThisChat = (m: Message) => (m.senderId === selfId && m.receiverId === friendId) || (m.senderId === friendId && m.receiverId === selfId);
+      this._messages.update((msgs) => [
+        ...msgs.filter((m) => !serverIds.has(m.id) && !(inThisChat(m) && /^[a-f0-9]{24}$/.test(m.id))),
+        ...mapped
+      ]);
       this.persistMessages();
       void this.loadConversationSummaries();
     } catch (err) {
@@ -504,8 +512,60 @@ export class MessagingService {
       selfDestructDurationMs: Number.isFinite(row.selfDestructDurationMs) ? row.selfDestructDurationMs : undefined,
       reactions: Array.isArray(row.reactions)
         ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
-        : undefined
+        : undefined,
+      editedAt: row.editedAt ? new Date(row.editedAt) : undefined,
+      deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined
     };
+  }
+
+  // ---- Edit and delete (like other chat apps) ----
+
+  /** Edit your own message (within 15 minutes). Resolves with an error to show, or null when saved. */
+  async editMessage(messageId: string, content: string): Promise<string | null> {
+    const text = content.trim();
+    if (!text) return 'A message can’t be empty.';
+    const response = await fetch(`${this.apiBase}/messages/${encodeURIComponent(messageId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...this.security.authHeaders() },
+      body: JSON.stringify({ content: text })
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) return body?.message || body?.msg || 'Couldn’t edit that message.';
+    this.applyServerChange(body);
+    return null;
+  }
+
+  /** "everyone" (your own message: leaves "Message deleted") or "me" (hides it just for you). */
+  async deleteMessage(messageId: string, scope: 'everyone' | 'me'): Promise<string | null> {
+    // A message that never reached the server only lives on this device.
+    if (!/^[a-f0-9]{24}$/.test(messageId)) {
+      this._messages.update((msgs) => msgs.filter((m) => m.id !== messageId));
+      this.persistMessages();
+      return null;
+    }
+    const response = await fetch(`${this.apiBase}/messages/${encodeURIComponent(messageId)}?for=${scope}`, {
+      method: 'DELETE',
+      headers: this.security.authHeaders()
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) return body?.message || 'Couldn’t delete that message.';
+    if (scope === 'me') {
+      this._messages.update((msgs) => msgs.filter((m) => m.id !== messageId));
+      this.persistMessages();
+    } else {
+      this.applyServerChange(body);
+    }
+    void this.loadConversationSummaries();
+    return null;
+  }
+
+  /** An edited or deleted-for-everyone message from the server replaces our copy. */
+  private applyServerChange(row: any): void {
+    const id = String(row?._id || '');
+    if (!id) return;
+    const changed = this.mapServerMessage(row);
+    this._messages.update((msgs) => msgs.map((m) => (m.id === id ? { ...m, content: changed.content, editedAt: changed.editedAt, deletedAt: changed.deletedAt, reactions: changed.reactions } : m)));
+    this.persistMessages();
   }
 
   private localConversationSummaries(): ChatSummary[] {

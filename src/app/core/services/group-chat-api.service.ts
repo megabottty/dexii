@@ -75,8 +75,33 @@ export class GroupChatApiService {
       senderAvatarUrl: typeof row.sender === 'object' ? row.sender.avatarUrl : undefined,
       reactions: Array.isArray(row.reactions)
         ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
-        : undefined
+        : undefined,
+      editedAt: row.editedAt ? new Date(row.editedAt) : undefined,
+      deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined
     };
+  }
+
+  /** Edit your own group message (within 15 minutes). Resolves with the saved message, or an error to show. */
+  async editMessage(messageId: string, content: string): Promise<{ message?: GroupMessage; error?: string }> {
+    const response = await fetch(`${this.apiBase}/messages/${encodeURIComponent(messageId)}`, {
+      method: 'PUT',
+      headers: this.headers(),
+      body: JSON.stringify({ content: content.trim() })
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) return { error: body?.message || body?.msg || 'Couldn’t edit that message.' };
+    return { message: this.mapMessage(body) };
+  }
+
+  /** Delete a group message for everyone (yours) or just for you. */
+  async deleteMessage(messageId: string, scope: 'everyone' | 'me'): Promise<{ message?: GroupMessage; error?: string }> {
+    const response = await fetch(`${this.apiBase}/messages/${encodeURIComponent(messageId)}?for=${scope}`, {
+      method: 'DELETE',
+      headers: this.headers()
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) return { error: body?.message || 'Couldn’t delete that message.' };
+    return scope === 'everyone' ? { message: this.mapMessage(body) } : {};
   }
 
   async createGroup(name: string, memberIds: string[]): Promise<GroupChat> {

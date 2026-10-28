@@ -1,3 +1,7 @@
+import { MessageMenuComponent } from '../../core/components/message-menu/message-menu.component';
+import { ModalService } from '../../core/services/modal.service';
+import { canEditMessage } from '../../core/models/message.model';
+import { TypingService } from '../../core/services/typing.service';
 import { Component, OnInit, OnDestroy, computed, inject, signal, HostListener } from '@angular/core';
 import { LoadingService } from '../../core/services/loading.service';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
@@ -13,7 +17,7 @@ import { personName } from '../../core/utils/person-name';
 @Component({
   selector: 'app-group-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, MessageMenuComponent],
   styleUrl: './group-chat.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="group-chat-page">
@@ -47,9 +51,23 @@ import { personName } from '../../core/utils/person-name';
               <div [style.background-color]="isMine(msg) ? theme.colors().primary : theme.colors().bgSecondary"
                    [style.color]="isMine(msg) ? 'white' : theme.colors().text"
                    [style.border]="isMine(msg) ? 'none' : '1px solid ' + theme.colors().border"
-                   (dblclick)="toggleReactionPicker(msg.id, $event)"
+                   (dblclick)="!msg.deletedAt && toggleReactionPicker(msg.id, $event)"
+                   [class.group-chat-message__bubble--deleted]="!!msg.deletedAt"
                    class="group-chat-message__bubble">
-                {{ msg.content }}
+                @if (msg.deletedAt) {
+                  <span class="group-chat-deleted"><span aria-hidden="true">🚫</span> {{ isMine(msg) ? 'You deleted this message' : 'This message was deleted' }}</span>
+                } @else if (editingMessageId() === msg.id) {
+                  <span class="group-chat-edit">
+                    <input class="group-chat-edit__input" [ngModel]="editDraft()" (ngModelChange)="editDraft.set($event)" maxlength="4000"
+                           aria-label="Edit message" (keydown.enter)="saveEdit(msg)" (keydown.escape)="editingMessageId.set(null)">
+                    <span class="group-chat-edit__actions">
+                      <button type="button" class="group-chat-edit__btn" (click)="editingMessageId.set(null)">Cancel</button>
+                      <button type="button" class="group-chat-edit__btn group-chat-edit__btn--save" [disabled]="!editDraft().trim()" (click)="saveEdit(msg)">Save</button>
+                    </span>
+                  </span>
+                } @else {
+                  {{ msg.content }}
+                }
               </div>
 
               @if (groupedReactions(msg).length > 0) {
@@ -68,7 +86,13 @@ import { personName } from '../../core/utils/person-name';
                 </div>
               }
 
-              <button type="button" (click)="toggleReactionPicker(msg.id, $event)" [style.color]="theme.colors().textSecondary" class="group-chat-react-trigger" aria-label="Add a reaction">😀+</button>
+              <div class="group-chat-msg-actions" [style.align-self]="isMine(msg) ? 'flex-end' : 'flex-start'">
+                @if (!msg.deletedAt) {
+                  <button type="button" (click)="toggleReactionPicker(msg.id, $event)" [style.color]="theme.colors().textSecondary" class="group-chat-react-trigger" aria-label="Add a reaction">😀+</button>
+                }
+                <app-message-menu [mine]="isMine(msg)" [canEdit]="canEdit(msg)" [deleted]="!!msg.deletedAt"
+                                  (edit)="startEdit(msg)" (deleteForEveryone)="deleteMsg(msg, 'everyone')" (deleteForMe)="deleteMsg(msg, 'me')"></app-message-menu>
+              </div>
 
               @if (activeReactionPickerFor() === msg.id) {
                 <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="group-chat-reaction-picker" role="group" aria-label="Pick a reaction" (click)="$event.stopPropagation()">
@@ -78,16 +102,22 @@ import { personName } from '../../core/utils/person-name';
                 </div>
               }
 
-              <span [style.color]="theme.colors().textSecondary" class="group-chat-message__time">{{ msg.timestamp | date:'MMM d, h:mm a' }}</span>
+              <span [style.color]="theme.colors().textSecondary" class="group-chat-message__time">{{ msg.timestamp | date:'MMM d, h:mm a' }}@if (msg.editedAt && !msg.deletedAt) { · Edited }</span>
             </div>
           } @empty {
             <p [style.color]="theme.colors().textSecondary">No messages yet. Say hi to the group!</p>
+          }
+          @if (typingText(); as text) {
+            <div class="chat-typing" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" role="status">
+              <span class="chat-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span [style.color]="theme.colors().textSecondary" class="chat-typing__label">{{ text }}</span>
+            </div>
           }
         }
       </div>
 
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="group-chat-composer">
-        <input [(ngModel)]="newMessage" aria-label="Message"
+        <input [ngModel]="newMessage" (ngModelChange)="onType($event)" (blur)="typing.stopped({ groupId: groupId })" aria-label="Message"
                (keydown.enter)="send()"
                [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
@@ -118,9 +148,79 @@ export class GroupChatComponent implements OnInit, OnDestroy {
   protected newMessage = '';
   protected activeReactionPickerFor = signal<string | null>(null);
   protected reactionOptions = REACTION_EMOJIS;
-  private groupId = '';
+  protected groupId = '';
+  protected typing = inject(TypingService);
+
+  /** "Ana is typing…", "Ana and Ben are typing…", or "3 people are typing…". */
+  protected typingText = computed(() => {
+    const g = this.group();
+    const ids = this.typing.typingIn({ groupId: this.groupId }).filter((id) => id !== this.selfId());
+    if (!g || ids.length === 0) return '';
+    const names = ids.map((id) => personName(g.members.find((m) => m.id === id), 'Someone'));
+    if (names.length === 1) return `${names[0]} is typing…`;
+    if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
+    return `${names.length} people are typing…`;
+  });
+
+  protected onType(value: string): void {
+    this.newMessage = value;
+    if (this.groupId) this.typing.typed({ groupId: this.groupId }, value);
+  }
   private unsubscribeGroupMessage: (() => void) | null = null;
   private unsubscribeReaction: (() => void) | null = null;
+  private unsubscribeChanged: (() => void) | null = null;
+  private modal = inject(ModalService);
+
+  // ---- Edit and delete, like other chat apps ----
+  protected editingMessageId = signal<string | null>(null);
+  protected editDraft = signal('');
+
+  protected canEdit(msg: GroupMessage): boolean {
+    return canEditMessage(msg, this.selfId());
+  }
+
+  protected startEdit(msg: GroupMessage): void {
+    this.editingMessageId.set(msg.id);
+    this.editDraft.set(msg.content);
+  }
+
+  protected async saveEdit(msg: GroupMessage): Promise<void> {
+    const text = this.editDraft().trim();
+    if (!text) return;
+    if (text === msg.content) { this.editingMessageId.set(null); return; }
+    if (!this.security.moderateContent(text)) {
+      this.modal.show('Message flagged by AI moderation for safety.');
+      return;
+    }
+    const { message, error } = await this.groupsApi.editMessage(msg.id, text);
+    if (error) { this.modal.show(error); return; }
+    if (message) this.applyChange(message);
+    this.editingMessageId.set(null);
+  }
+
+  protected deleteMsg(msg: GroupMessage, scope: 'everyone' | 'me'): void {
+    this.modal.confirm(
+      scope === 'everyone'
+        ? 'Delete this message for everyone? The group will see “This message was deleted”.'
+        : 'Delete this message for you? It stays in the chat for everyone else.',
+      () => {
+        void this.groupsApi.deleteMessage(msg.id, scope).then(({ message, error }) => {
+          if (error) { this.modal.show(error); return; }
+          if (scope === 'me') this.messages.update((msgs) => msgs.filter((m) => m.id !== msg.id));
+          else if (message) this.applyChange(message);
+        });
+      },
+      undefined,
+      { title: scope === 'everyone' ? 'Delete for everyone' : 'Delete for me', confirmLabel: 'Delete', danger: true }
+    );
+  }
+
+  /** Keeps the sender's name and picture; takes the new text, edited and deleted state. */
+  private applyChange(changed: GroupMessage): void {
+    this.messages.update((msgs) => msgs.map((m) => m.id === changed.id
+      ? { ...m, content: changed.content, editedAt: changed.editedAt, deletedAt: changed.deletedAt, reactions: changed.deletedAt ? [] : (changed.reactions ?? m.reactions) }
+      : m));
+  }
 
   selfId = computed(() => this.security.currentUserId() || '');
 
@@ -138,6 +238,12 @@ export class GroupChatComponent implements OnInit, OnDestroy {
       this.messages.update((msgs) => [...msgs, message]);
     });
 
+    // Someone edited or deleted a message for everyone.
+    this.unsubscribeChanged = this.realtime.onMessageChanged((row) => {
+      if (String(row.group || '') !== this.groupId) return;
+      this.applyChange(this.groupsApi.mapIncomingMessage(row));
+    });
+
     this.unsubscribeReaction = this.realtime.onReactionUpdate((update) => {
       const id = String((update as any)._id || (update as any).id || '');
       if (!id) return;
@@ -151,8 +257,10 @@ export class GroupChatComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.groupId) this.typing.stopped({ groupId: this.groupId });
     this.unsubscribeGroupMessage?.();
     this.unsubscribeReaction?.();
+    this.unsubscribeChanged?.();
   }
 
   private async loadGroupAndMessages(): Promise<void> {
@@ -185,6 +293,7 @@ export class GroupChatComponent implements OnInit, OnDestroy {
     const content = this.newMessage.trim();
     if (!content) return;
     this.newMessage = '';
+    this.typing.stopped({ groupId: this.groupId });
     try {
       const message = await this.groupsApi.sendGroupMessage(this.groupId, content);
       this.messages.update((msgs) => [...msgs, message]);

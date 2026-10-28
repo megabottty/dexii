@@ -43,6 +43,10 @@ exports.areFriends = areFriends;
 
 /** Disappearing messages are never previewed outside the conversation itself. */
 const previewSafe = (message) => {
+  if (message?.deletedAt) {
+    const plain = typeof message.toObject === 'function' ? message.toObject() : { ...message };
+    return { ...plain, content: 'Message deleted' };
+  }
   if (!message?.isSelfDestruct) return message;
   const plain = typeof message.toObject === 'function' ? message.toObject() : { ...message };
   return { ...plain, content: 'Private message' };
@@ -271,7 +275,8 @@ exports.getMessages = async (req, res) => {
       $or: [
         { sender: userId, recipient: friendId },
         { sender: friendId, recipient: userId }
-      ]
+      ],
+      hiddenFor: { $ne: userId }
     }).sort({ createdAt: 1 });
 
     // If the friend has paused me, my messages never show as read to me.
@@ -459,6 +464,122 @@ exports.reactToMessage = async (req, res) => {
     res.json(message);
   } catch (err) {
     console.error('React to message error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// ---- Edit and delete messages (1:1 and group), like other chat apps ----
+
+/** The sender can edit a message for this long after sending it. */
+const EDIT_WINDOW_MS = 15 * 60 * 1000;
+const MESSAGE_MAX = 4000;
+
+/** Loads a message the caller is part of (sender/recipient, or group member), with everyone to tell about changes. */
+const loadOwnMessageThread = async (req, res) => {
+  if (mongoose.connection.readyState !== 1 || req.user.isDemo) {
+    res.status(503).json({ message: 'Editing and deleting need a live connection.' });
+    return null;
+  }
+  if (!mongoose.isValidObjectId(req.params.messageId)) {
+    res.status(400).json({ message: 'Invalid message id.' });
+    return null;
+  }
+  const message = await Message.findById(req.params.messageId);
+  if (!message) {
+    res.status(404).json({ message: 'Message not found' });
+    return null;
+  }
+  const me = String(req.user.id);
+  let others = [];
+  if (message.group) {
+    const GroupChat = require('../models/GroupChat');
+    const group = await GroupChat.findById(message.group).select('members').lean();
+    const members = (group?.members || []).map(String);
+    if (!members.includes(me)) {
+      res.status(403).json({ message: 'You are not a member of this group.' });
+      return null;
+    }
+    others = members.filter((id) => id !== me);
+  } else {
+    const parties = [String(message.sender), String(message.recipient)];
+    if (!parties.includes(me)) {
+      res.status(403).json({ message: 'This message isn’t in one of your chats.' });
+      return null;
+    }
+    others = parties.filter((id) => id !== me);
+  }
+  return { message, me, others, isSender: String(message.sender) === me };
+};
+
+/** Tells the other open chats to show the edit or deletion. */
+const emitMessageChanged = (req, recipients, message) => {
+  const io = req.app.get('io');
+  if (!io) return;
+  const payload = typeof message.toObject === 'function' ? message.toObject() : message;
+  for (const id of recipients) {
+    try { io.to(String(id)).emit('messageChanged', payload); } catch { /* ignore */ }
+  }
+};
+
+// @route   PUT /api/messages/:messageId   body: { content }
+// @desc    Edit your own message within 15 minutes of sending it
+exports.editMessage = async (req, res) => {
+  try {
+    const content = String(req.body?.content || '').trim().slice(0, MESSAGE_MAX);
+    if (!content) return res.status(400).json({ message: 'A message can’t be empty.' });
+    const found = await loadOwnMessageThread(req, res);
+    if (!found) return;
+    const { message, isSender, others } = found;
+    if (!isSender) return res.status(403).json({ message: 'You can only edit your own messages.' });
+    if (message.deletedAt) return res.status(400).json({ message: 'This message was deleted.' });
+    if ((message.kind && message.kind !== 'chat') || message.isSafetyAlert || message.isSelfDestruct) {
+      return res.status(400).json({ message: 'This kind of message can’t be edited.' });
+    }
+    if (Date.now() - new Date(message.createdAt).getTime() > EDIT_WINDOW_MS) {
+      return res.status(400).json({ message: 'Messages can only be edited for 15 minutes after sending.' });
+    }
+    if (message.content !== content) {
+      message.content = content;
+      message.editedAt = new Date();
+      await message.save();
+    }
+    res.json(message);
+    emitMessageChanged(req, others, message);
+  } catch (err) {
+    console.error('Edit message error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @route   DELETE /api/messages/:messageId?for=everyone|me
+// @desc    Delete for everyone (sender only: leaves "Message deleted"), or just hide it for yourself
+exports.deleteMessage = async (req, res) => {
+  try {
+    const scope = req.query.for === 'everyone' ? 'everyone' : 'me';
+    const found = await loadOwnMessageThread(req, res);
+    if (!found) return;
+    const { message, me, isSender, others } = found;
+
+    if (scope === 'everyone') {
+      if (!isSender) return res.status(403).json({ message: 'Only the sender can delete a message for everyone.' });
+      if (!message.deletedAt) {
+        message.deletedAt = new Date();
+        message.content = '';
+        message.reactions = [];
+        await message.save();
+      }
+      res.json(message);
+      emitMessageChanged(req, others, message);
+      return;
+    }
+
+    if (!message.hiddenFor.map(String).includes(me)) {
+      message.hiddenFor.push(me);
+      await message.save();
+    }
+    res.json({ ok: true, id: String(message._id), hiddenForMe: true });
+  } catch (err) {
+    console.error('Delete message error:', err.message);
     res.status(500).send('Server Error');
   }
 };

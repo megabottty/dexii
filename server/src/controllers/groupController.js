@@ -88,7 +88,10 @@ exports.listGroups = async (req, res) => {
             avatarUrl: m.avatarUrl
           }))
         },
-        latestMessage: latestByGroup.get(String(group._id)) || null,
+        latestMessage: (() => {
+          const latest = latestByGroup.get(String(group._id));
+          return latest?.deletedAt ? { ...latest, content: 'Message deleted' } : (latest || null);
+        })(),
         unreadCount
       };
     });
@@ -115,7 +118,7 @@ exports.getGroupMessages = async (req, res) => {
     const group = await assertMembership(groupId, req.user.id);
     if (!group) return res.status(403).json({ message: 'You are not a member of this group.' });
 
-    const messages = await Message.find({ group: groupId })
+    const messages = await Message.find({ group: groupId, hiddenFor: { $ne: req.user.id } })
       .sort({ createdAt: 1 })
       .populate('sender', 'username displayName avatarUrl')
       .lean();

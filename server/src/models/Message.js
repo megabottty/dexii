@@ -16,9 +16,18 @@ const MessageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'GroupChat'
   },
+  // Empty once a message is deleted for everyone (deletedAt is set then).
   content: {
     type: String,
-    required: true
+    required: function () { return !this.deletedAt; }
+  },
+  // Edit and delete, like other chat apps: the sender can edit for a while and
+  // delete for everyone; anyone in the chat can delete a message for themselves.
+  editedAt: Date,
+  deletedAt: Date,
+  hiddenFor: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
   },
   isRead: {
     type: Boolean,

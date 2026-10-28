@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
+const GroupChat = require('./models/GroupChat');
 const { handleWebhook } = require('./controllers/billingController');
 
 dotenv.config();
@@ -309,6 +310,31 @@ io.on('connection', (socket) => {
       }
     } catch (err) {
       console.warn('Socket group message relay dropped:', err.message);
+    }
+  });
+
+  // "Ana is typing…": relayed only, never stored. Clients send it at most every few
+  // seconds while someone types, and once with isTyping: false when they stop or send.
+  socket.on('typing', async (data) => {
+    try {
+      const isTyping = data?.isTyping !== false;
+      const me = String(socket.data.userId);
+      if (data?.recipientId) {
+        if (!(await areFriends(socket.data.userId, data.recipientId))) return;
+        io.to(String(data.recipientId)).emit('typing', { senderId: me, isTyping });
+        return;
+      }
+      if (data?.groupId && mongoose.isValidObjectId(data.groupId) && mongoose.connection.readyState === 1) {
+        const group = await GroupChat.findById(data.groupId).select('members').lean();
+        const memberIds = (group?.members || []).map(String);
+        if (!memberIds.includes(me)) return;
+        for (const memberId of memberIds) {
+          if (memberId === me) continue;
+          io.to(memberId).emit('typing', { senderId: me, groupId: String(data.groupId), isTyping });
+        }
+      }
+    } catch (err) {
+      console.warn('Typing relay dropped:', err.message);
     }
   });
 
