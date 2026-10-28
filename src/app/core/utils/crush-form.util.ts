@@ -54,6 +54,8 @@ export interface CrushFormValue {
   /** One line, max 65 characters. */
   headline: string;
   location: string;
+  /** Whole years, or null when not given. A crush can have this, a birthday, or both. */
+  age: number | null;
   /** YYYY-MM-DD or ''. */
   dateOfBirth: string;
   howWeMet: string;
@@ -86,7 +88,7 @@ export interface ParsedCustomNotes {
 export type CrushFormPatch = Pick<CrushProfile,
   'nickname' | 'fullName' | 'displayName' | 'pronouns' | 'avatarUrl' | 'avatarConfig' | 'bio' | 'headline' | 'status'
   | 'rating' | 'initialRating' | 'hair' | 'eyes' | 'build' | 'social' | 'relationshipStatus' | 'relationshipLabels'
-  | 'heartbreakSong' | 'heartbreakRecovery' | 'customNotes' | 'location' | 'dateOfBirth' | 'howWeMet' | 'whenWeMet'
+  | 'heartbreakSong' | 'heartbreakRecovery' | 'customNotes' | 'location' | 'age' | 'dateOfBirth' | 'howWeMet' | 'whenWeMet'
   | 'schoolOrWork' | 'grade' | 'occupation' | 'family' | 'friends' | 'memorableMoments' | 'compatibility'>;
 
 const NOTE_KINDS: ReadonlyArray<{ key: keyof Omit<ParsedCustomNotes, 'privateNotes'>; label: string }> = [
@@ -128,6 +130,7 @@ export function emptyCrushFormValue(): CrushFormValue {
     bio: '',
     headline: '',
     location: '',
+    age: null,
     dateOfBirth: '',
     howWeMet: '',
     whenWeMet: '',
@@ -229,6 +232,7 @@ export function crushToFormValue(crush: CrushProfile): CrushFormValue {
     bio: crush.bio || '',
     headline: crush.headline || '',
     location: crush.location || '',
+    age: crush.age ?? ageFromBirthday(crush.dateOfBirth),
     dateOfBirth: crush.dateOfBirth ? String(crush.dateOfBirth).slice(0, 10) : '',
     howWeMet: crush.howWeMet || '',
     whenWeMet: crush.whenWeMet || '',
@@ -283,6 +287,7 @@ export function formValueToCrushPatch(value: CrushFormValue): CrushFormPatch {
       privateNotes: value.privateNotes
     }),
     location: value.location,
+    age: cleanAge(value.age),
     dateOfBirth: value.dateOfBirth || undefined,
     howWeMet: value.howWeMet,
     whenWeMet: value.whenWeMet,
@@ -301,6 +306,35 @@ export function formValueToCrushPatch(value: CrushFormValue): CrushFormPatch {
       pause: value.compatibilityPause.trim()
     }
   };
+}
+
+/**
+ * Whole years since a YYYY-MM-DD birthday, or null for no birthday, a bad date or one in the future.
+ * The age shown for a crush comes from this whenever they have a birthday, so it stays current.
+ */
+export function ageFromBirthday(dateOfBirth: string | undefined | null, today: Date = new Date()): number | null {
+  if (!dateOfBirth) return null;
+  const birthDate = new Date(`${String(dateOfBirth).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(birthDate.getTime()) || birthDate > today) return null;
+  let age = today.getFullYear() - birthDate.getFullYear();
+  if (today.getMonth() < birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+  return age >= 0 ? age : null;
+}
+
+/** The age to show for a crush: from the birthday when there is one, otherwise the typed age. */
+export function crushAge(crush: Pick<CrushProfile, 'age' | 'dateOfBirth'>, today: Date = new Date()): number | null {
+  return ageFromBirthday(crush.dateOfBirth, today) ?? cleanAge(crush.age);
+}
+
+/** A typed age as whole years from 0 to 120, or null. */
+function cleanAge(age: unknown): number | null {
+  const n = typeof age === 'string' ? Number(age) : age;
+  if (typeof n !== 'number' || !Number.isFinite(n)) return null;
+  const whole = Math.trunc(n);
+  return whole >= 0 && whole <= 120 ? whole : null;
 }
 
 /** The free-text fields that go through content moderation before saving. */

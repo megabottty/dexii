@@ -1,11 +1,11 @@
 import { AppSelectComponent } from '../app-select/app-select.component';
-import { Component, booleanAttribute, inject, input, signal } from '@angular/core';
+import { Component, booleanAttribute, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { COMPATIBILITY_PROMPTS, CompatibilityZone, compatibilityZone } from '../../utils/compatibility';
 import { ThemeService } from '../../services/theme.service';
 import { AvatarPickerComponent } from '../avatar-picker/avatar-picker.component';
 import { IconComponent } from '../icon/icon.component';
-import { CrushFormValue } from '../../utils/crush-form.util';
+import { CrushFormValue, ageFromBirthday } from '../../utils/crush-form.util';
 import { UnreadableImageError, resizeImageFile } from '../../utils/image-resize';
 import { MAX_PHOTOS } from '../../config/photos';
 import {
@@ -46,29 +46,20 @@ interface ListGroup {
   template: `
     <div class="cf">
 
-      <!-- Basics -->
+      <!-- The essentials first, in the order the crush profile shows them (DEX-41). -->
       <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label">Pronouns</label>
-        <div class="cf-tile-grid">
-          @for (p of pronounOptions; track p.value) {
-            <div (click)="form().pronouns = p.value"
-                 role="button"
-                 tabindex="0"
-                 (keydown.enter)="form().pronouns = p.value"
-                 (keydown.space)="form().pronouns = p.value; $event.preventDefault()"
-                 [attr.aria-pressed]="form().pronouns === p.value"
-                 [style.border]="tileBorder(form().pronouns === p.value)"
-                 [style.background-color]="tileBackground(form().pronouns === p.value)"
-                 class="cf-tile">
-              <div [style.border]="'2px solid ' + (form().pronouns === p.value ? theme.colors().primary : theme.colors().textSecondary)"
-                   [style.background-color]="form().pronouns === p.value ? theme.colors().primary : 'transparent'"
-                   class="cf-check cf-check--round">
-                @if (form().pronouns === p.value) { <span class="cf-check__mark" aria-hidden="true">✓</span> }
-              </div>
-              <span class="cf-tile__text">{{ p.label }}</span>
-            </div>
-          }
-        </div>
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-full-name">First Name</label>
+        <input id="cf-full-name" [(ngModel)]="form().fullName" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+      </div>
+
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-nickname">Nickname (Optional)</label>
+        <input id="cf-nickname" [(ngModel)]="form().nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+      </div>
+
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-display-name">Name shown on cards</label>
+        <app-select id="cf-display-name" [options]="displayNameOptions" [(ngModel)]="form().displayName"></app-select>
       </div>
 
       <app-avatar-picker [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"
@@ -99,16 +90,6 @@ interface ListGroup {
         </div>
       }
 
-      <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-nickname">Nickname (Optional)</label>
-        <input id="cf-nickname" [(ngModel)]="form().nickname" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
-      </div>
-
-      <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-full-name">First Name</label>
-        <input id="cf-full-name" [(ngModel)]="form().fullName" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
-      </div>
-
       <!-- The Headline: one line under the name on the Stash and the crush page (DEX-33). -->
       <div class="cf-field">
         <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-headline">Headline</label>
@@ -118,8 +99,48 @@ interface ListGroup {
       </div>
 
       <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-display-name">Name shown on cards</label>
-        <app-select id="cf-display-name" [options]="displayNameOptions" [(ngModel)]="form().displayName"></app-select>
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-age">Age</label>
+        <input id="cf-age" type="number" min="0" max="120" step="1" inputmode="numeric" [(ngModel)]="form().age"
+               [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input cf-input--short">
+      </div>
+
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-dob">Birthday (Optional)</label>
+        <input id="cf-dob" type="date" [ngModel]="form().dateOfBirth" (ngModelChange)="setBirthday($event)" [max]="todayDate" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+        <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">With a birthday, their age keeps itself up to date.</span>
+      </div>
+
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-location">Location</label>
+        <input id="cf-location" [(ngModel)]="form().location" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+      </div>
+
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label">Initial Vibe (1-5 Stars)</label>
+        <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Your first impression.</span>
+        <div class="cf-stars" role="group" aria-label="Initial vibe">
+          @for (star of stars; track star) {
+            <button type="button" (click)="form().initialRating = star" [attr.aria-label]="'Set initial vibe to ' + star + ' stars'"
+                    [attr.aria-pressed]="form().initialRating === star"
+                    [style.color]="form().initialRating >= star ? theme.colors().accent : theme.colors().border" class="cf-star">★</button>
+          }
+        </div>
+      </div>
+      <div class="cf-field">
+        <label [style.color]="theme.colors().textSecondary" class="cf-label">Current Vibe (Optional)</label>
+        <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">How you feel now. Skip means the same as your initial vibe.</span>
+        <div class="cf-stars" role="group" aria-label="Current vibe">
+          @for (star of stars; track star) {
+            <button type="button" (click)="form().currentRating = star" [attr.aria-label]="'Set current vibe to ' + star + ' stars'"
+                    [attr.aria-pressed]="form().currentRating === star"
+                    [style.color]="(form().currentRating ?? 0) >= star ? theme.colors().accent : theme.colors().border" class="cf-star">★</button>
+          }
+          <button type="button" (click)="form().currentRating = null"
+                  [attr.aria-pressed]="form().currentRating === null"
+                  [style.color]="form().currentRating === null ? theme.colors().primary : theme.colors().textSecondary"
+                  class="cf-star cf-star--skip"
+                  aria-label="Skip current vibe">Skip</button>
+        </div>
       </div>
 
       <div class="cf-field">
@@ -128,93 +149,9 @@ interface ListGroup {
         <span [style.color]="theme.colors().textSecondary" class="cf-hint">Where things stand right now.</span>
       </div>
 
-      <!-- Crush note -->
-      <div class="cf-field">
-        <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-note">Crush Note (Optional)</label>
-        <textarea id="cf-note" [(ngModel)]="form().note"
-                  [style.background-color]="theme.colors().bgSecondary"
-                  [style.border]="inputBorder()"
-                  [style.color]="theme.colors().text"
-                  rows="4"
-                  placeholder="Add a note about this crush..." class="cf-textarea"></textarea>
-        <div class="cf-note-visibility">
-          <p [style.color]="theme.colors().textSecondary" class="cf-label cf-label--tight">Note Visibility</p>
-          <div class="cf-chip-row">
-            @for (option of noteVisibilityOptions; track option.value) {
-              <button type="button"
-                      (click)="form().noteVisibility = option.value"
-                      [attr.aria-pressed]="form().noteVisibility === option.value"
-                      [style.background-color]="form().noteVisibility === option.value ? theme.colors().primary : 'transparent'"
-                      [style.color]="form().noteVisibility === option.value ? 'white' : theme.colors().text"
-                      [style.border]="'1px solid ' + (form().noteVisibility === option.value ? theme.colors().primary : theme.colors().border)"
-                      class="cf-chip">{{ option.label }}</button>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- About them -->
+      <!-- The Feels: how things are going, beyond the one-word Status -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">About Them</h4>
-
-        @for (group of listGroups; track group.key) {
-          <div class="cf-field">
-            <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center">{{ group.label }}</label>
-            <div class="cf-tile-grid" role="group" [attr.aria-label]="group.label">
-              @for (item of group.options; track item) {
-                <div (click)="toggleList(group.key, item)"
-                     role="checkbox"
-                     tabindex="0"
-                     (keydown.enter)="toggleList(group.key, item)"
-                     (keydown.space)="toggleList(group.key, item); $event.preventDefault()"
-                     [attr.aria-checked]="form()[group.key].includes(item)"
-                     [style.border]="tileBorder(form()[group.key].includes(item))"
-                     [style.background-color]="tileBackground(form()[group.key].includes(item))"
-                     class="cf-tile">
-                  <div [style.border]="'2px solid ' + (form()[group.key].includes(item) ? theme.colors().primary : theme.colors().textSecondary)"
-                       [style.background-color]="form()[group.key].includes(item) ? theme.colors().primary : 'transparent'"
-                       class="cf-check">
-                    @if (form()[group.key].includes(item)) { <span class="cf-check__mark" aria-hidden="true">✓</span> }
-                  </div>
-                  <span class="cf-tile__text">{{ item }}</span>
-                </div>
-              }
-            </div>
-            @if (form()[group.key].includes(otherLabel)) {
-              <div class="cf-subfield">
-                <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" [attr.for]="'cf-' + group.notesKey">{{ group.notesLabel }}</label>
-                <textarea [id]="'cf-' + group.notesKey" [(ngModel)]="form()[group.notesKey]"
-                          [style.background-color]="theme.colors().bgSecondary"
-                          [style.border]="inputBorder()"
-                          [style.color]="theme.colors().text"
-                          rows="2"
-                          [placeholder]="group.placeholder"
-                          class="cf-textarea"></textarea>
-              </div>
-            }
-          </div>
-        }
-      </div>
-
-      <!-- Social handles -->
-      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">Where I can find them</h4>
-        <div class="cf-social-list">
-          @for (s of socialFields; track s.key) {
-            <div class="cf-social-row">
-              <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--tight" [attr.for]="'cf-social-' + s.key">{{ s.label }}</label>
-              <div class="cf-social-input-wrap">
-                <span class="cf-social-icon" aria-hidden="true">{{ s.icon }}</span>
-                <input [id]="'cf-social-' + s.key" [placeholder]="s.placeholder" [(ngModel)]="form().social[s.key]" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-social-input">
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-
-      <!-- Relationship status -->
-      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">Relationship Status</h4>
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">The Feels</h4>
         <p [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Pick everything that fits. The first one becomes the headline.</p>
         <div class="cf-tile-list" role="group" aria-label="Relationship status">
           @for (s of relationshipOptions(); track s) {
@@ -341,140 +278,9 @@ interface ListGroup {
         }
       </div>
 
-      <!-- Vibes -->
+      <!-- The Details: what they do and how you met, then everything else -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label">Initial Vibe (1-5 Stars)</label>
-          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Your first impression.</span>
-          <div class="cf-stars" role="group" aria-label="Initial vibe">
-            @for (star of stars; track star) {
-              <button type="button" (click)="form().initialRating = star" [attr.aria-label]="'Set initial vibe to ' + star + ' stars'"
-                      [attr.aria-pressed]="form().initialRating === star"
-                      [style.color]="form().initialRating >= star ? theme.colors().accent : theme.colors().border" class="cf-star">★</button>
-            }
-          </div>
-        </div>
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label">Current Vibe (Optional)</label>
-          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">How you feel now. Skip means the same as your initial vibe.</span>
-          <div class="cf-stars" role="group" aria-label="Current vibe">
-            @for (star of stars; track star) {
-              <button type="button" (click)="form().currentRating = star" [attr.aria-label]="'Set current vibe to ' + star + ' stars'"
-                      [attr.aria-pressed]="form().currentRating === star"
-                      [style.color]="(form().currentRating ?? 0) >= star ? theme.colors().accent : theme.colors().border" class="cf-star">★</button>
-            }
-            <button type="button" (click)="form().currentRating = null"
-                    [attr.aria-pressed]="form().currentRating === null"
-                    [style.color]="form().currentRating === null ? theme.colors().primary : theme.colors().textSecondary"
-                    class="cf-star cf-star--skip"
-                    aria-label="Skip current vibe">Skip</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Compatibility check -->
-      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section cf-compat">
-        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">💞 Compatibility Check</h4>
-        <div class="cf-field">
-          <div class="cf-compat-readout" aria-live="polite">
-            <span class="cf-compat-emoji" aria-hidden="true">{{ compatZone()?.emoji || '💭' }}</span>
-            <span class="cf-compat-label">{{ compatZone()?.label || 'Not rated yet' }}</span>
-            @if (compatZone(); as zone) {
-              <span [style.color]="theme.colors().textSecondary" class="cf-compat-hint">{{ zone.hint }}</span>
-            } @else {
-              <span [style.color]="theme.colors().textSecondary" class="cf-compat-hint">Slide to say how compatible you feel.</span>
-            }
-          </div>
-          <div class="cf-compat-meter">
-            <span class="cf-compat-end" aria-hidden="true">🧊</span>
-            <input type="range" min="0" max="100" step="1"
-                   [value]="form().compatibilityScore ?? 50"
-                   (input)="setCompatibility($event)"
-                   [attr.aria-valuetext]="compatZone() ? compatZone()!.label + ', ' + form().compatibilityScore + ' out of 100' : 'Not rated yet'"
-                   aria-label="How compatible do you feel?"
-                   [class.cf-compat-range--unset]="form().compatibilityScore === null"
-                   [style.--compat-fill]="(form().compatibilityScore ?? 50) + '%'"
-                   [style.--compat-color]="theme.colors().primary"
-                   class="cf-compat-range">
-            <span class="cf-compat-end" aria-hidden="true">🔥</span>
-          </div>
-          <div class="cf-compat-scale" aria-hidden="true">
-            <span>Not very</span>
-            @if (form().compatibilityScore !== null) {
-              <button type="button" (click)="form().compatibilityScore = null" [style.color]="theme.colors().textSecondary" class="cf-compat-clear">{{ form().compatibilityScore }}% · clear</button>
-            }
-            <span>Highly compatible</span>
-          </div>
-        </div>
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label">What's making you feel compatible?</label>
-          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Tap everything that fits.</span>
-          <div class="cf-chip-row" role="group" aria-label="Compatibility factors">
-            @for (factor of compatibilityFactors; track factor) {
-              <button type="button" (click)="toggleCompatFactor(factor)" [attr.aria-pressed]="form().compatibilityFactors.includes(factor)"
-                      [style.background-color]="form().compatibilityFactors.includes(factor) ? theme.colors().primary : 'transparent'"
-                      [style.color]="form().compatibilityFactors.includes(factor) ? '#fff' : theme.colors().text"
-                      [style.border]="'1px solid ' + (form().compatibilityFactors.includes(factor) ? theme.colors().primary : theme.colors().border)"
-                      class="cf-chip cf-chip--compat">{{ factor }}</button>
-            }
-            <button type="button" (click)="compatOtherOpen.set(!compatOtherOpen())" [attr.aria-pressed]="compatOtherOpen() || !!form().compatibilityOther"
-                    [style.background-color]="(compatOtherOpen() || form().compatibilityOther) ? theme.colors().primary : 'transparent'"
-                    [style.color]="(compatOtherOpen() || form().compatibilityOther) ? '#fff' : theme.colors().text"
-                    [style.border]="'1px solid ' + ((compatOtherOpen() || form().compatibilityOther) ? theme.colors().primary : theme.colors().border)"
-                    class="cf-chip cf-chip--compat">{{ compatibilityOtherLabel }}</button>
-          </div>
-          @if (compatOtherOpen() || form().compatibilityOther) {
-            <input [(ngModel)]="form().compatibilityOther" name="compatibilityOther" maxlength="60" placeholder="Something else that clicks…"
-                   aria-label="Something else that makes you feel compatible"
-                   [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-                   class="cf-input cf-subfield">
-          }
-        </div>
-        <div class="cf-field">
-          <label for="cf-compat-note" [style.color]="theme.colors().textSecondary" class="cf-label">In your own words</label>
-          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">{{ compatPrompt }}</span>
-          <textarea id="cf-compat-note" [(ngModel)]="form().compatibilityNote" name="compatibilityNote" rows="3" maxlength="600"
-                    [placeholder]="compatPrompt"
-                    [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-                    class="cf-textarea"></textarea>
-        </div>
-        <div class="cf-field">
-          <label for="cf-compat-pause" [style.color]="theme.colors().textSecondary" class="cf-label">Anything giving you pause? <span class="cf-optional">(optional)</span></label>
-          <input id="cf-compat-pause" [(ngModel)]="form().compatibilityPause" name="compatibilityPause" maxlength="300" placeholder="A small thing you keep noticing…"
-                 [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-                 class="cf-input">
-        </div>
-      </div>
-
-      <!-- More about them -->
-      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">More About Them</h4>
-
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-bio">Bio</label>
-          <textarea id="cf-bio" [(ngModel)]="form().bio" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" rows="3" placeholder="A little about them..." class="cf-textarea"></textarea>
-        </div>
-
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-location">Location</label>
-          <input id="cf-location" [(ngModel)]="form().location" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
-        </div>
-
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-dob">Age</label>
-          <input id="cf-dob" type="date" [(ngModel)]="form().dateOfBirth" [max]="todayDate" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
-          <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Enter their birthday so the displayed age stays current.</span>
-        </div>
-
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-how-we-met">How We Met</label>
-          <input id="cf-how-we-met" [(ngModel)]="form().howWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
-        </div>
-
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-when-we-met">When We Met</label>
-          <input id="cf-when-we-met" [(ngModel)]="form().whenWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
-        </div>
+        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">The Details</h4>
 
         <div class="cf-field">
           <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center">Are they in school or working?</label>
@@ -515,6 +321,78 @@ interface ListGroup {
         }
 
         <div class="cf-field">
+          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-how-we-met">How We Met</label>
+          <input id="cf-how-we-met" [(ngModel)]="form().howWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+        </div>
+
+        <div class="cf-field">
+          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-when-we-met">When We Met</label>
+          <input id="cf-when-we-met" [(ngModel)]="form().whenWeMet" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
+        </div>
+
+        <div class="cf-field">
+          <label [style.color]="theme.colors().textSecondary" class="cf-label">Pronouns</label>
+          <div class="cf-tile-grid">
+            @for (p of pronounOptions; track p.value) {
+              <div (click)="form().pronouns = p.value"
+                   role="button"
+                   tabindex="0"
+                   (keydown.enter)="form().pronouns = p.value"
+                   (keydown.space)="form().pronouns = p.value; $event.preventDefault()"
+                   [attr.aria-pressed]="form().pronouns === p.value"
+                   [style.border]="tileBorder(form().pronouns === p.value)"
+                   [style.background-color]="tileBackground(form().pronouns === p.value)"
+                   class="cf-tile">
+                <div [style.border]="'2px solid ' + (form().pronouns === p.value ? theme.colors().primary : theme.colors().textSecondary)"
+                     [style.background-color]="form().pronouns === p.value ? theme.colors().primary : 'transparent'"
+                     class="cf-check cf-check--round">
+                  @if (form().pronouns === p.value) { <span class="cf-check__mark" aria-hidden="true">✓</span> }
+                </div>
+                <span class="cf-tile__text">{{ p.label }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        @for (group of listGroups; track group.key) {
+          <div class="cf-field">
+            <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center">{{ group.label }}</label>
+            <div class="cf-tile-grid" role="group" [attr.aria-label]="group.label">
+              @for (item of group.options; track item) {
+                <div (click)="toggleList(group.key, item)"
+                     role="checkbox"
+                     tabindex="0"
+                     (keydown.enter)="toggleList(group.key, item)"
+                     (keydown.space)="toggleList(group.key, item); $event.preventDefault()"
+                     [attr.aria-checked]="form()[group.key].includes(item)"
+                     [style.border]="tileBorder(form()[group.key].includes(item))"
+                     [style.background-color]="tileBackground(form()[group.key].includes(item))"
+                     class="cf-tile">
+                  <div [style.border]="'2px solid ' + (form()[group.key].includes(item) ? theme.colors().primary : theme.colors().textSecondary)"
+                       [style.background-color]="form()[group.key].includes(item) ? theme.colors().primary : 'transparent'"
+                       class="cf-check">
+                    @if (form()[group.key].includes(item)) { <span class="cf-check__mark" aria-hidden="true">✓</span> }
+                  </div>
+                  <span class="cf-tile__text">{{ item }}</span>
+                </div>
+              }
+            </div>
+            @if (form()[group.key].includes(otherLabel)) {
+              <div class="cf-subfield">
+                <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" [attr.for]="'cf-' + group.notesKey">{{ group.notesLabel }}</label>
+                <textarea [id]="'cf-' + group.notesKey" [(ngModel)]="form()[group.notesKey]"
+                          [style.background-color]="theme.colors().bgSecondary"
+                          [style.border]="inputBorder()"
+                          [style.color]="theme.colors().text"
+                          rows="2"
+                          [placeholder]="group.placeholder"
+                          class="cf-textarea"></textarea>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="cf-field">
           <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-family">Family</label>
           <input id="cf-family" [(ngModel)]="form().family" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-input">
         </div>
@@ -527,6 +405,148 @@ interface ListGroup {
         <div class="cf-field">
           <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-moments">Memorable Moments</label>
           <textarea id="cf-moments" [(ngModel)]="form().memorableMoments" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" rows="3" placeholder="Any moments worth remembering..." class="cf-textarea"></textarea>
+        </div>
+      </div>
+
+      <!-- Bio -->
+      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
+        <div class="cf-field">
+          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-bio">Bio</label>
+          <textarea id="cf-bio" [(ngModel)]="form().bio" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" rows="3" placeholder="A little about them..." class="cf-textarea"></textarea>
+        </div>
+      </div>
+
+      <!-- Social handles: collapsed until you choose to add them -->
+      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
+        <button type="button" (click)="socialsOpen.set(!socialsOpenShown())" [attr.aria-expanded]="socialsOpenShown()" aria-controls="cf-socials-body"
+                [style.color]="theme.colors().onBgPrimary" class="cf-disclosure">
+          <span class="cf-section-title cf-disclosure__title">Where I can find them</span>
+          <span class="cf-disclosure__caret" aria-hidden="true">{{ socialsOpenShown() ? '▲' : '▼' }}</span>
+        </button>
+        @if (socialsOpenShown()) {
+          <div id="cf-socials-body">
+            <div class="cf-social-list">
+              @for (s of socialFields; track s.key) {
+                <div class="cf-social-row">
+                  <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--tight" [attr.for]="'cf-social-' + s.key">{{ s.label }}</label>
+                  <div class="cf-social-input-wrap">
+                    <span class="cf-social-icon" aria-hidden="true">{{ s.icon }}</span>
+                    <input [id]="'cf-social-' + s.key" [placeholder]="s.placeholder" [(ngModel)]="form().social[s.key]" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" class="cf-social-input">
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Compatibility check: collapsed until you choose to fill it in -->
+      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section cf-compat">
+        <button type="button" (click)="compatOpen.set(!compatOpenShown())" [attr.aria-expanded]="compatOpenShown()" aria-controls="cf-compat-body"
+                [style.color]="theme.colors().onBgPrimary" class="cf-disclosure">
+          <span class="cf-section-title cf-disclosure__title">💞 Compatibility Check</span>
+          <span class="cf-disclosure__caret" aria-hidden="true">{{ compatOpenShown() ? '▲' : '▼' }}</span>
+        </button>
+        @if (compatOpenShown()) {
+          <div id="cf-compat-body">
+            <div class="cf-field">
+              <div class="cf-compat-readout" aria-live="polite">
+                <span class="cf-compat-emoji" aria-hidden="true">{{ compatZone()?.emoji || '💭' }}</span>
+                <span class="cf-compat-label">{{ compatZone()?.label || 'Not rated yet' }}</span>
+                @if (compatZone(); as zone) {
+                  <span [style.color]="theme.colors().textSecondary" class="cf-compat-hint">{{ zone.hint }}</span>
+                } @else {
+                  <span [style.color]="theme.colors().textSecondary" class="cf-compat-hint">Slide to say how compatible you feel.</span>
+                }
+              </div>
+              <div class="cf-compat-meter">
+                <span class="cf-compat-end" aria-hidden="true">🧊</span>
+                <input type="range" min="0" max="100" step="1"
+                       [value]="form().compatibilityScore ?? 50"
+                       (input)="setCompatibility($event)"
+                       [attr.aria-valuetext]="compatZone() ? compatZone()!.label + ', ' + form().compatibilityScore + ' out of 100' : 'Not rated yet'"
+                       aria-label="How compatible do you feel?"
+                       [class.cf-compat-range--unset]="form().compatibilityScore === null"
+                       [style.--compat-fill]="(form().compatibilityScore ?? 50) + '%'"
+                       [style.--compat-color]="theme.colors().primary"
+                       class="cf-compat-range">
+                <span class="cf-compat-end" aria-hidden="true">🔥</span>
+              </div>
+              <div class="cf-compat-scale" aria-hidden="true">
+                <span>Not very</span>
+                @if (form().compatibilityScore !== null) {
+                  <button type="button" (click)="form().compatibilityScore = null" [style.color]="theme.colors().textSecondary" class="cf-compat-clear">{{ form().compatibilityScore }}% · clear</button>
+                }
+                <span>Highly compatible</span>
+              </div>
+            </div>
+            <div class="cf-field">
+              <label [style.color]="theme.colors().textSecondary" class="cf-label">What's making you feel compatible?</label>
+              <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Tap everything that fits.</span>
+              <div class="cf-chip-row" role="group" aria-label="Compatibility factors">
+                @for (factor of compatibilityFactors; track factor) {
+                  <button type="button" (click)="toggleCompatFactor(factor)" [attr.aria-pressed]="form().compatibilityFactors.includes(factor)"
+                          [style.background-color]="form().compatibilityFactors.includes(factor) ? theme.colors().primary : 'transparent'"
+                          [style.color]="form().compatibilityFactors.includes(factor) ? '#fff' : theme.colors().text"
+                          [style.border]="'1px solid ' + (form().compatibilityFactors.includes(factor) ? theme.colors().primary : theme.colors().border)"
+                          class="cf-chip cf-chip--compat">{{ factor }}</button>
+                }
+                <button type="button" (click)="compatOtherOpen.set(!compatOtherOpen())" [attr.aria-pressed]="compatOtherOpen() || !!form().compatibilityOther"
+                        [style.background-color]="(compatOtherOpen() || form().compatibilityOther) ? theme.colors().primary : 'transparent'"
+                        [style.color]="(compatOtherOpen() || form().compatibilityOther) ? '#fff' : theme.colors().text"
+                        [style.border]="'1px solid ' + ((compatOtherOpen() || form().compatibilityOther) ? theme.colors().primary : theme.colors().border)"
+                        class="cf-chip cf-chip--compat">{{ compatibilityOtherLabel }}</button>
+              </div>
+              @if (compatOtherOpen() || form().compatibilityOther) {
+                <input [(ngModel)]="form().compatibilityOther" name="compatibilityOther" maxlength="60" placeholder="Something else that clicks…"
+                       aria-label="Something else that makes you feel compatible"
+                       [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                       class="cf-input cf-subfield">
+              }
+            </div>
+            <div class="cf-field">
+              <label for="cf-compat-note" [style.color]="theme.colors().textSecondary" class="cf-label">In your own words</label>
+              <span [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">{{ compatPrompt }}</span>
+              <textarea id="cf-compat-note" [(ngModel)]="form().compatibilityNote" name="compatibilityNote" rows="3" maxlength="600"
+                        [placeholder]="compatPrompt"
+                        [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                        class="cf-textarea"></textarea>
+            </div>
+            <div class="cf-field">
+              <label for="cf-compat-pause" [style.color]="theme.colors().textSecondary" class="cf-label">Anything giving you pause? <span class="cf-optional">(optional)</span></label>
+              <input id="cf-compat-pause" [(ngModel)]="form().compatibilityPause" name="compatibilityPause" maxlength="300" placeholder="A small thing you keep noticing…"
+                     [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                     class="cf-input">
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Notes (DEX-42 and DEX-43 replace these) -->
+      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
+        <!-- Crush note -->
+        <div class="cf-field">
+          <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-note">Crush Note (Optional)</label>
+          <textarea id="cf-note" [(ngModel)]="form().note"
+                    [style.background-color]="theme.colors().bgSecondary"
+                    [style.border]="inputBorder()"
+                    [style.color]="theme.colors().text"
+                    rows="4"
+                    placeholder="Add a note about this crush..." class="cf-textarea"></textarea>
+          <div class="cf-note-visibility">
+            <p [style.color]="theme.colors().textSecondary" class="cf-label cf-label--tight">Note Visibility</p>
+            <div class="cf-chip-row">
+              @for (option of noteVisibilityOptions; track option.value) {
+                <button type="button"
+                        (click)="form().noteVisibility = option.value"
+                        [attr.aria-pressed]="form().noteVisibility === option.value"
+                        [style.background-color]="form().noteVisibility === option.value ? theme.colors().primary : 'transparent'"
+                        [style.color]="form().noteVisibility === option.value ? 'white' : theme.colors().text"
+                        [style.border]="'1px solid ' + (form().noteVisibility === option.value ? theme.colors().primary : theme.colors().border)"
+                        class="cf-chip">{{ option.label }}</button>
+              }
+            </div>
+          </div>
         </div>
 
         <div class="cf-field">
@@ -593,6 +613,25 @@ export class CrushFormComponent {
   readonly compatibilityFactors = COMPATIBILITY_FACTORS;
   readonly compatibilityOtherLabel = COMPATIBILITY_OTHER_LABEL;
   readonly compatOtherOpen = signal(false);
+
+  /** Socials and Compatibility start collapsed unless they already hold something; null = not toggled yet. */
+  readonly socialsOpen = signal<boolean | null>(null);
+  readonly compatOpen = signal<boolean | null>(null);
+  readonly socialsOpenShown = computed(() => this.socialsOpen() ?? Object.values(this.form().social).some((v) => !!v?.trim()));
+  readonly compatOpenShown = computed(() => {
+    if (this.compatOpen() !== null) return this.compatOpen()!;
+    const f = this.form();
+    return f.compatibilityScore !== null || f.compatibilityFactors.length > 0
+      || !!(f.compatibilityOther || f.compatibilityNote || f.compatibilityPause).trim();
+  });
+
+  /** Picking a birthday fills in Age; clearing it leaves the typed age alone. */
+  setBirthday(value: string): void {
+    const form = this.form();
+    form.dateOfBirth = value || '';
+    const age = ageFromBirthday(form.dateOfBirth);
+    if (age !== null) form.age = age;
+  }
   /** A different nudge each time the form opens. */
   readonly compatPrompt = COMPATIBILITY_PROMPTS[Math.floor(Math.random() * COMPATIBILITY_PROMPTS.length)];
   compatZone(): CompatibilityZone | null { return compatibilityZone(this.form().compatibilityScore); }

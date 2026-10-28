@@ -24,7 +24,7 @@ import { compatibilityLabel, compatibilityTrend, compatibilityZone, friendsRead,
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
 import { CrushPhotoGalleryComponent } from '../../core/components/crush-photos/crush-photo-gallery.component';
-import { CrushFormValue, crushFormTextFields, crushToFormValue, emptyCrushFormValue, formValueToCrushPatch, parseCustomNotes } from '../../core/utils/crush-form.util';
+import { CrushFormValue, crushAge, crushFormTextFields, crushToFormValue, emptyCrushFormValue, formValueToCrushPatch, parseCustomNotes } from '../../core/utils/crush-form.util';
 import { CRUSH_FORM_FIELDS } from '../../core/services/crush-payload';
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -99,9 +99,16 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               <app-crush-photo-gallery layout="hero" size="small" [crushId]="c.id" [mode]="previewAsFriend() ? 'preview' : 'viewer'" [nickname]="getCrushDisplayName(c)" [avatarUrl]="c.avatarUrl"></app-crush-photo-gallery>
             </div>
             <div style="flex: 1; min-width: 200px;">
+              <!-- Same order as the owner's top card and the crush form (DEX-41) -->
               <h2 style="margin: 0 0 4px 0; font-size: 22px;">{{ getCrushDisplayName(c) }}</h2>
-              @if (c.fullName) {
-                <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ c.fullName }}</p>
+              @if (crushOtherName(c); as other) {
+                <p [style.color]="theme.colors().textSecondary" style="margin: 0 0 8px 0;">{{ other }}</p>
+              }
+              @if (c.headline) {
+                <p class="profile-headline">{{ c.headline }}</p>
+              }
+              @if (crushSubtitle(c); as subtitle) {
+                <p [style.color]="theme.colors().onBgPrimary" style="margin: 8px 0; font-size: var(--fs-label);">{{ subtitle }}</p>
               }
               <div class="profile-rating-row" aria-label="Rating">
                 <span class="profile-rating-stars" [style.color]="theme.colors().onBgAccent">
@@ -132,11 +139,12 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   }
                 </div>
               }
-              @if (c.headline) {
-                <p class="profile-headline">{{ c.headline }}</p>
-              }
-              @if (crushSubtitle(c); as subtitle) {
-                <p [style.color]="theme.colors().onBgPrimary" style="margin: 12px 0 8px 0; font-size: var(--fs-label);">{{ subtitle }}</p>
+              @if (crushKeyDetails(c).length) {
+                <dl class="profile-key-details">
+                  @for (d of crushKeyDetails(c); track d.label) {
+                    <div class="profile-key-detail"><dt [style.color]="theme.colors().textSecondary">{{ d.label }}</dt><dd>{{ d.value }}</dd></div>
+                  }
+                </dl>
               }
               @if (c.bio) {
                 <p style="margin-top: 12px; line-height: 1.6;">{{ c.bio }}</p>
@@ -158,26 +166,20 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     @if (c.customNotes) {
                       <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
                     }
+                    @if (birthdayLabel(c); as birthday) {
+                      <p style="margin: 0;"><strong>Birthday:</strong> {{ birthday }}</p>
+                    }
                     @if (c.pronouns) {
                       <p style="margin: 0;"><strong>Pronouns:</strong> {{ pronounLabel(c.pronouns) }}</p>
                     }
                     @if (c.category) {
                       <p style="margin: 0;"><strong>Category:</strong> {{ c.category }}</p>
                     }
-                    @if (c.occupation) {
-                      <p style="margin: 0;"><strong>Occupation:</strong> {{ c.occupation }}</p>
-                    }
-                    @if (c.grade) {
-                      <p style="margin: 0;"><strong>Grade/Year:</strong> {{ c.grade }}</p>
-                    }
                     @if (c.family) {
                       <p style="margin: 0;"><strong>Family:</strong> {{ c.family }}</p>
                     }
-                    @if (c.howWeMet) {
-                      <p style="margin: 0;"><strong>How they met:</strong> {{ c.howWeMet }}</p>
-                    }
-                    @if (c.whenWeMet) {
-                      <p style="margin: 0;"><strong>When they met:</strong> {{ c.whenWeMet }}</p>
+                    @if (c.friends?.length) {
+                      <p style="margin: 0;"><strong>Their friends:</strong> {{ c.friends!.join(', ') }}</p>
                     }
                     @if (c.memorableMoments) {
                       <p style="margin: 0;"><strong>Memorable moments:</strong> {{ c.memorableMoments }}</p>
@@ -354,6 +356,15 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   }
                 </div>
 
+                @if (crushOtherName(c); as other) {
+                  <p [style.color]="theme.colors().textSecondary" class="profile-other-name">{{ other }}</p>
+                }
+                @if (c.headline) {
+                  <p class="profile-headline">{{ c.headline }}</p>
+                }
+                @if (crushSubtitle(c); as subtitle) {
+                  <p [style.color]="theme.colors().onBgPrimary" class="profile-subtitle">{{ subtitle }}</p>
+                }
                 <div class="profile-rating-row" aria-label="Vibe rating">
                   <span class="profile-rating-stars" [style.color]="theme.colors().onBgAccent">
                     @for (star of [1,2,3,4,5]; track star) {
@@ -416,14 +427,88 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     }
                   </div>
                 }
-                @if (c.headline) {
-                  <p class="profile-headline">{{ c.headline }}</p>
-                }
-                @if (crushSubtitle(c); as subtitle) {
-                  <p [style.color]="theme.colors().onBgPrimary" class="profile-subtitle">{{ subtitle }}</p>
+                @if (crushKeyDetails(c).length) {
+                  <dl class="profile-key-details">
+                    @for (d of crushKeyDetails(c); track d.label) {
+                      <div class="profile-key-detail"><dt [style.color]="theme.colors().textSecondary">{{ d.label }}</dt><dd>{{ d.value }}</dd></div>
+                    }
+                  </dl>
                 }
                 @if (c.bio) {
                   <p [style.color]="theme.colors().textSecondary" class="profile-bio">{{ c.bio }}</p>
+                }
+
+                <!-- The rest of the details fold away on the finished profile (DEX-41) -->
+                @if (hasOwnerMoreDetails()) {
+                  <button type="button" (click)="toggleFullCrushDetails()" [attr.aria-expanded]="showFullCrushDetails()" aria-controls="profile-more-details"
+                          [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary"
+                          class="profile-more-toggle">
+                    {{ showFullCrushDetails() ? 'Fewer details ▲' : 'More details ▼' }}
+                  </button>
+                  @if (showFullCrushDetails()) {
+                    <div id="profile-more-details" class="info-grid profile-more-details">
+                      @if (birthdayLabel(c); as birthday) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Birthday</span>
+                          <span class="info-value">{{ birthday }}</span>
+                        </div>
+                      }
+                      @if (c.pronouns) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Pronouns</span>
+                          <span class="info-value">{{ pronounLabel(c.pronouns) }}</span>
+                        </div>
+                      }
+                      @if (c.hair?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Hair</span>
+                          <span class="info-value">{{ listWithOther(c.hair, parsedNotes().hairNotes) }}</span>
+                        </div>
+                      }
+                      @if (c.eyes?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Eyes</span>
+                          <span class="info-value">{{ listWithOther(c.eyes, parsedNotes().eyeNotes) }}</span>
+                        </div>
+                      }
+                      @if (c.build?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Build</span>
+                          <span class="info-value">{{ listWithOther(c.build, parsedNotes().buildNotes) }}</span>
+                        </div>
+                      }
+                      @if (c.family) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Family</span>
+                          <span class="info-value">{{ c.family }}</span>
+                        </div>
+                      }
+                      @if (c.friends?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Friends</span>
+                          <span class="info-value">{{ c.friends!.join(', ') }}</span>
+                        </div>
+                      }
+                      @if (parsedNotes().relationshipNotes) {
+                        <div class="info-row-styled full-width note-detail">
+                          <span class="info-label">Relationship Notes</span>
+                          <span class="info-value note-text">{{ parsedNotes().relationshipNotes }}</span>
+                        </div>
+                      }
+                      @if (c.heartbreakSong) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Heartbreak Song</span>
+                          <span class="info-value">{{ c.heartbreakSong }}</span>
+                        </div>
+                      }
+                      @if (c.heartbreakRecovery) {
+                        <div class="info-row-styled full-width note-detail">
+                          <span class="info-label">Healing Plan</span>
+                          <span class="info-value note-text">{{ c.heartbreakRecovery }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
                 }
               </div>
             </div>
@@ -741,99 +826,6 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="info-section-card">
               <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Info</h2>
-              <div class="info-grid">
-                @if (c.hair?.length) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Hair</span>
-                    <span class="info-value">{{ listWithOther(c.hair, parsedNotes().hairNotes) }}</span>
-                  </div>
-                }
-                @if (c.eyes?.length) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Eyes</span>
-                    <span class="info-value">{{ listWithOther(c.eyes, parsedNotes().eyeNotes) }}</span>
-                  </div>
-                }
-                @if (c.build?.length) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Build</span>
-                    <span class="info-value">{{ listWithOther(c.build, parsedNotes().buildNotes) }}</span>
-                  </div>
-                }
-                @if (c.pronouns) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Pronouns</span>
-                    <span class="info-value">{{ pronounLabel(c.pronouns) }}</span>
-                  </div>
-                }
-                <div class="info-row-styled">
-                  <span class="info-label">Crush Status</span>
-                  <span class="info-value">{{ c.status }}</span>
-                </div>
-                @if (parsedNotes().relationshipNotes) {
-                   <div class="info-row-styled full-width note-detail">
-                     <span class="info-label">Relationship Notes</span>
-                     <span class="info-value note-text">{{ parsedNotes().relationshipNotes }}</span>
-                   </div>
-                }
-                <div class="info-row-styled">
-                  <span class="info-label">Rating</span>
-                  <span [style.color]="theme.colors().onBgAccent" class="info-value">
-                    @for (star of [1,2,3,4,5]; track star) {
-                      {{ (c.rating || 0) >= star ? '★' : '☆' }}
-                    }
-                  </span>
-                </div>
-                @if (c.heartbreakSong) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Heartbreak Song</span>
-                    <span class="info-value">{{ c.heartbreakSong }}</span>
-                  </div>
-                }
-                @if (c.heartbreakRecovery) {
-                  <div class="info-row-styled full-width note-detail">
-                    <span class="info-label">Healing Plan</span>
-                    <span class="info-value note-text">{{ c.heartbreakRecovery }}</span>
-                  </div>
-                }
-                @if (c.howWeMet) {
-                  <div class="info-row-styled">
-                    <span class="info-label">How we met</span>
-                    <span class="info-value">{{ c.howWeMet }}</span>
-                  </div>
-                }
-                @if (c.whenWeMet) {
-                  <div class="info-row-styled">
-                    <span class="info-label">When we met</span>
-                    <span class="info-value">{{ c.whenWeMet }}</span>
-                  </div>
-                }
-                @if (c.grade) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Grade</span>
-                    <span class="info-value">{{ c.grade }}</span>
-                  </div>
-                }
-                @if (c.occupation) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Occupation</span>
-                    <span class="info-value">{{ c.occupation }}</span>
-                  </div>
-                }
-                @if (c.family) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Family</span>
-                    <span class="info-value">{{ c.family }}</span>
-                  </div>
-                }
-                @if (c.friends?.length) {
-                  <div class="info-row-styled">
-                    <span class="info-label">Friends</span>
-                    <span class="info-value">{{ c.friends!.join(', ') }}</span>
-                  </div>
-                }
-              </div>
-
               @if (c.memorableMoments) {
                 <div class="extended-info-section">
                   <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Memorable Moments</h3>
@@ -1391,11 +1383,23 @@ export class ProfileDetailComponent implements OnDestroy {
     const c = this.crush();
     if (!c) return false;
     return !!(
-      c.customNotes || c.pronouns || c.category || c.howWeMet || c.whenWeMet ||
-      c.occupation || c.grade || c.family || c.memorableMoments ||
+      c.customNotes || c.pronouns || c.category || c.dateOfBirth || c.family || c.memorableMoments ||
+      (c.friends && c.friends.length) ||
       c.heartbreakSong || c.heartbreakRecovery || c.redFlagReason ||
       (c.hair && c.hair.length) || (c.eyes && c.eyes.length) || (c.build && c.build.length) ||
       (c.social && Object.values(c.social).some((v) => !!v))
+    );
+  });
+
+  /** Owner view: anything for the top card's More details list. */
+  hasOwnerMoreDetails = computed(() => {
+    const c = this.crush();
+    if (!c) return false;
+    const notes = this.parsedNotes();
+    return !!(
+      c.dateOfBirth || c.pronouns || c.family || (c.friends && c.friends.length) ||
+      (c.hair && c.hair.length) || (c.eyes && c.eyes.length) || (c.build && c.build.length) ||
+      notes.relationshipNotes || c.heartbreakSong || c.heartbreakRecovery
     );
   });
 
@@ -1417,23 +1421,38 @@ export class ProfileDetailComponent implements OnDestroy {
   /** "Denver • 29 years": only the parts that are filled in; empty when neither is (DEX-13). */
   crushSubtitle(crush: CrushProfile): string {
     const age = this.getCrushAge(crush);
-    return [crush.location?.trim(), age !== null ? `${age} years` : '']
+    return [age !== null ? `${age} years` : '', crush.location?.trim()]
       .filter(Boolean)
       .join(' • ');
   }
 
+  /** From the birthday when there is one (so it stays current), otherwise the typed age. */
   getCrushAge(crush: CrushProfile): number | null {
-    if (!crush.dateOfBirth) return null;
-    const birthDate = new Date(`${crush.dateOfBirth.slice(0, 10)}T00:00:00`);
-    if (Number.isNaN(birthDate.getTime()) || birthDate > new Date()) return null;
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    if (today.getMonth() < birthDate.getMonth() ||
-        (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
-      age -= 1;
-    }
+    return crushAge(crush);
+  }
 
-    return age >= 0 ? age : null;
+  /** The name that isn't the headline name: the first name under a nickname, or the other way round. */
+  crushOtherName(crush: CrushProfile): string {
+    const shown = this.getCrushDisplayName(crush).trim();
+    const other = crush.displayName === 'fullName' ? crush.nickname?.trim() : crush.fullName?.trim();
+    return other && other !== shown ? other : '';
+  }
+
+  /** The first details on the top card (DEX-41): what they do, then where and when you met. */
+  crushKeyDetails(crush: CrushProfile): { label: string; value: string }[] {
+    const rows: { label: string; value: string }[] = [];
+    if (crush.occupation?.trim()) rows.push({ label: 'Occupation', value: crush.occupation.trim() });
+    if (crush.grade?.trim()) rows.push({ label: 'Grade', value: crush.grade.trim() });
+    if (crush.howWeMet?.trim()) rows.push({ label: 'Where we met', value: crush.howWeMet.trim() });
+    if (crush.whenWeMet?.trim()) rows.push({ label: 'When we met', value: crush.whenWeMet.trim() });
+    return rows;
+  }
+
+  /** "12 March 2001" for the More details list. */
+  birthdayLabel(crush: CrushProfile): string {
+    if (!crush.dateOfBirth) return '';
+    const date = new Date(`${String(crush.dateOfBirth).slice(0, 10)}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   getRelationshipLabels(crush: CrushProfile): string[] {

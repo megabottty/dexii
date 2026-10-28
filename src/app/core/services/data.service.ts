@@ -50,7 +50,7 @@ interface BackendCrush {
   customNotes?: string;
   location?: string;
   dateOfBirth?: string;
-  age?: number;
+  age?: number | null;
   howWeMet?: string;
   whenWeMet?: string;
   schoolOrWork?: string;

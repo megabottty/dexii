@@ -41,10 +41,37 @@ describe('CrushFormComponent', () => {
   it('renders every question', () => {
     const text = fixture.nativeElement.textContent as string;
     for (const label of ['Pronouns', 'Nickname', 'Name shown on cards', 'Status', 'Crush Note', 'Hair', 'Eyes', 'Build',
-      'Where I can find them', 'Relationship Status', 'Initial Vibe', 'Current Vibe', 'Bio', 'Age', 'How We Met',
+      'Where I can find them', 'The Feels', 'The Details', 'Initial Vibe', 'Current Vibe', 'Bio', 'Age', 'Birthday', 'How We Met',
       'Are they in school or working?', 'Grade', 'Occupation', 'Their Friends', 'Memorable Moments', 'Private Notes']) {
       expect(text).toContain(label);
     }
+  });
+
+  it('asks the essentials first, in the order the profile shows them (DEX-41)', () => {
+    const text = fixture.nativeElement.textContent as string;
+    const order = ['First Name', 'Nickname', 'Headline', 'Age', 'Birthday', 'Location', 'Initial Vibe', 'Status',
+      'The Feels', 'The Details', 'Bio', 'Where I can find them', 'Compatibility Check', 'Crush Note'];
+    const positions = order.map((label) => text.indexOf(label));
+    expect(positions.every((p) => p >= 0)).toBe(true);
+    expect([...positions].sort((x, y) => x - y)).toEqual(positions);
+  });
+
+  it('keeps Socials and Compatibility collapsed until opened', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('#cf-social-instagram')).toBeNull();
+    expect(el.querySelector('.cf-compat-range')).toBeNull();
+    const toggles = Array.from(el.querySelectorAll<HTMLButtonElement>('.cf-disclosure'));
+    expect(toggles.map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'false']);
+    toggles.forEach((b) => b.click());
+    fixture.detectChanges();
+    expect(el.querySelector('#cf-social-instagram')).not.toBeNull();
+    expect(el.querySelector('.cf-compat-range')).not.toBeNull();
+  });
+
+  it('fills in Age when a birthday is picked', () => {
+    fixture.componentInstance.setBirthday('2000-01-01');
+    expect(form.dateOfBirth).toBe('2000-01-01');
+    expect(form.age).toBe(new Date().getFullYear() - 2000);
   });
 
   it('makes the first relationship pick the headline', () => {

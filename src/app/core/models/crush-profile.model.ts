@@ -54,7 +54,7 @@ export interface CrushProfile {
   customNotes?: string;
   location?: string;
   dateOfBirth?: string;
-  age?: number;
+  age?: number | null;
   howWeMet?: string;
   whenWeMet?: string;
   /** Whether they are in school, working, both or neither (decides if Grade / Occupation apply). */

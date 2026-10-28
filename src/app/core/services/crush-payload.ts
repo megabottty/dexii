@@ -9,7 +9,7 @@ export type CrushField = keyof CrushProfile;
 export const CRUSH_FORM_FIELDS: readonly CrushField[] = [
   'nickname', 'fullName', 'displayName', 'pronouns', 'avatarUrl', 'avatarConfig', 'bio', 'headline', 'status',
   'rating', 'initialRating', 'hair', 'eyes', 'build', 'social', 'relationshipStatus', 'relationshipLabels',
-  'heartbreakSong', 'heartbreakRecovery', 'customNotes', 'location', 'dateOfBirth', 'howWeMet', 'whenWeMet',
+  'heartbreakSong', 'heartbreakRecovery', 'customNotes', 'location', 'age', 'dateOfBirth', 'howWeMet', 'whenWeMet',
   'schoolOrWork', 'grade', 'occupation', 'family', 'friends', 'memorableMoments', 'compatibility'
 ];
 

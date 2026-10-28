@@ -111,30 +111,52 @@
   line-height: 1.4;
 }
 
+/* The other name (first name under a nickname, or the reverse), then the top card's key details (DEX-41). */
+.profile-other-name {
+  margin: 4px 0 0 0;
+  font-size: var(--fs-body);
+}
+
+.profile-key-details {
+  margin: 14px 0 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.profile-key-detail dt {
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.profile-key-detail dd {
+  margin: 2px 0 0 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.profile-more-toggle {
+  margin-top: 14px;
+  min-height: var(--tap-min);
+  padding: 6px 16px;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-more-details {
+  margin-top: 12px;
+}
+
 .profile-bio {
   margin: 16px 0 0 0;
   max-width: 600px;
   font-size: var(--fs-body);
   line-height: 1.6;
   opacity: 0.9;
-}
-
-.profile-relationship-status {
-  display: inline-flex;
-  margin: 0;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: var(--fs-label);
-  font-weight: 600;
-  letter-spacing: 0.4px;
-}
-
-.profile-relationship-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
 }
 
 .profile-relationship-labels {
@@ -227,10 +249,6 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-}
-
-.action-btn-no-wrap {
-  white-space: nowrap;
 }
 
 .action-btn-styled.primary {
@@ -437,19 +455,6 @@
   border-top: 1px solid var(--border);
 }
 
-.edit-options-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.edit-social-section {
-  margin-top: 40px;
-  padding-top: 30px;
-  border-top: 1px solid var(--border);
-}
-
 /* Share Selector Styles */
 .selector-overlay {
   position: fixed;
@@ -614,16 +619,6 @@
   align-items: center;
 }
 
-.profile-relationship-label-list {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: var(--fs-body);
-  font-weight: 700;
-}
-
 .status-visibility-option__copy {
   font-size: var(--fs-label);
   line-height: 1.4;
@@ -709,12 +704,6 @@
 /* The friend's view keeps the small picture, so its column shrinks to fit. */
 .profile-avatar-wrap:has(.pg-hero--small) {
   width: auto;
-}
-
-.profile-avatar-stars {
-  font-size: 20px;
-  letter-spacing: 3px;
-  text-align: center;
 }
 
 /* Vibe Check Banner */
@@ -861,10 +850,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding-top: 22px;
-  }
-
-  .action-btn-no-wrap {
-    white-space: normal;
   }
 
   .info-grid {

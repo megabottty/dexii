@@ -1,6 +1,8 @@
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
 import {
+  ageFromBirthday,
   composeCustomNotes,
+  crushAge,
   crushToFormValue,
   emptyCrushFormValue,
   formValueToCrushPatch,
@@ -159,6 +161,8 @@ describe('crushToFormValue', () => {
         currentRating: 2,
         bio: 'bio',
         location: 'Austin',
+        // Picking a birthday in the form fills Age the same way.
+        age: ageFromBirthday('2000-05-06'),
         dateOfBirth: '2000-05-06',
         howWeMet: 'gym',
         whenWeMet: 'May',
@@ -176,6 +180,44 @@ describe('crushToFormValue', () => {
       const { relationshipOtherOpen: openAgain, ...actual } = reloaded;
       expect(actual).toEqual(expected);
       expect(openAgain).toBe(true);
+    });
+  });
+
+  describe('age and birthday (DEX-41)', () => {
+    const today = new Date(2026, 9, 27);
+
+    it('works out whole years from a birthday, counting the day itself', () => {
+      expect(ageFromBirthday('2000-10-27', today)).toBe(26);
+      expect(ageFromBirthday('2000-10-28', today)).toBe(25);
+      expect(ageFromBirthday('', today)).toBeNull();
+      expect(ageFromBirthday('2030-01-01', today)).toBeNull();
+    });
+
+    it('saves a typed age with no birthday, and an empty age as null', () => {
+      const value = { ...emptyCrushFormValue(), nickname: 'Sunny', age: 24 };
+      expect(formValueToCrushPatch(value).age).toBe(24);
+      expect(formValueToCrushPatch(value).dateOfBirth).toBeUndefined();
+      expect(formValueToCrushPatch({ ...value, age: null }).age).toBeNull();
+    });
+
+    it('saves both an age and a birthday', () => {
+      const patch = formValueToCrushPatch({ ...emptyCrushFormValue(), nickname: 'Sunny', age: 30, dateOfBirth: '1996-05-01' });
+      expect(patch.age).toBe(30);
+      expect(patch.dateOfBirth).toBe('1996-05-01');
+    });
+
+    it('fills Age in the edit form from an older crush that only has a birthday', () => {
+      const birthday = new Date();
+      birthday.setFullYear(birthday.getFullYear() - 22);
+      const iso = `${birthday.getFullYear()}-01-01`;
+      expect(crushToFormValue(crushWith({ dateOfBirth: iso })).age).toBe(ageFromBirthday(iso));
+      expect(crushToFormValue(crushWith({ age: 31 })).age).toBe(31);
+    });
+
+    it('shows the birthday age over a typed age, and the typed age when there is no birthday', () => {
+      expect(crushAge({ age: 40, dateOfBirth: '2000-10-27' }, today)).toBe(26);
+      expect(crushAge({ age: 40 }, today)).toBe(40);
+      expect(crushAge({}, today)).toBeNull();
     });
   });
 });
