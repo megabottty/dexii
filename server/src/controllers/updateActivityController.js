@@ -6,7 +6,7 @@ const Notification = require('../models/Notification');
 const { shapeEntry } = require('./entryController');
 const { withPeople } = require('../services/updatePeople');
 const { createNotification, emitNotificationsChanged } = require('./notificationController');
-const { findCrush, canSeeCrushUpdates, emitEntriesChanged } = require('../services/updateAudience');
+const { findCrush, canSeeCrushUpdates, emitEntriesChanged, shareTimesFor, postedSinceShared } = require('../services/updateAudience');
 
 /** Emojis a friend can react to an update with (DEX-45). */
 const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
@@ -38,6 +38,12 @@ const loadUpdateFor = async (req, res) => {
   const isAuthor = String(entry.userId) === me;
   if (!isAuthor && !(await canSeeCrushUpdates(me, crush))) {
     res.status(403).json({ message: 'You can only react to updates on crushes shared with you.' });
+    return null;
+  }
+  // A friend doesn't see updates from before the crush was shared with them (DEX-44).
+  const isCrushOwner = !!crush && String(crush.userId) === me;
+  if (!isAuthor && !isCrushOwner && !postedSinceShared(entry, await shareTimesFor(me, [String(entry.crushId)]))) {
+    res.status(404).json({ message: 'Update not found.' });
     return null;
   }
   // The update's author and the crush's owner can both remove comments on it.

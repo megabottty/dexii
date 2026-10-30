@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const CrushProfile = require('../models/CrushProfile');
 const User = require('../models/User');
+const FriendActivity = require('../models/FriendActivity');
 
 /**
  * Who can see a crush's Updates For Friends (DEX-44/45): its owner, and friends of the
@@ -21,6 +22,30 @@ const canSeeCrushUpdates = async (userId, crush) => {
   return isFriend && (visibility.includes(me) || (!!viewer?.username && visibility.includes(viewer.username)));
 };
 
+/**
+ * When each crush was (last) shared with this viewer, from the friend activity log:
+ * a friend only sees updates posted from that moment on (DEX-44). Crushes shared
+ * before the log existed have no entry, and show everything as before.
+ */
+const shareTimesFor = async (viewerId, crushIds) => {
+  const times = new Map();
+  if (!crushIds.length || !mongoose.isValidObjectId(viewerId)) return times;
+  const rows = await FriendActivity.find({ type: 'crush_shared', counterpart: viewerId, crushId: { $in: crushIds.map(String) } })
+    .select('crushId createdAt')
+    .sort({ createdAt: -1 })
+    .lean();
+  for (const row of rows) {
+    if (!times.has(String(row.crushId))) times.set(String(row.crushId), new Date(row.createdAt));
+  }
+  return times;
+};
+
+/** False when the update was posted before this crush was shared with the viewer. */
+const postedSinceShared = (entry, shareTimes) => {
+  const sharedAt = shareTimes.get(String(entry.crushId));
+  return !sharedAt || new Date(entry.timestamp).getTime() >= sharedAt.getTime();
+};
+
 /** The owner plus everyone (by id) the crush is shared with. */
 const audienceIds = (crush) => {
   if (!crush) return [];
@@ -36,4 +61,4 @@ const emitEntriesChanged = (io, crush, extra = []) => {
   }
 };
 
-module.exports = { findCrush, canSeeCrushUpdates, audienceIds, emitEntriesChanged };
+module.exports = { findCrush, canSeeCrushUpdates, audienceIds, emitEntriesChanged, shareTimesFor, postedSinceShared };

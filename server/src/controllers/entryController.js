@@ -5,7 +5,7 @@ const User = require('../models/User');
 const CrushProfile = require('../models/CrushProfile');
 const Notification = require('../models/Notification');
 const { withPeople } = require('../services/updatePeople');
-const { findCrush, canSeeCrushUpdates, emitEntriesChanged } = require('../services/updateAudience');
+const { findCrush, canSeeCrushUpdates, emitEntriesChanged, shareTimesFor, postedSinceShared } = require('../services/updateAudience');
 const { createNotification, emitNotificationsChanged } = require('./notificationController');
 
 const requireDb = (res) => {
@@ -137,7 +137,9 @@ exports.getSharedEntries = async (req, res) => {
         : []
     ]);
 
-    const entries = [...direct, ...updates]
+    // Only updates from the moment each crush was shared with me, not its whole history (DEX-44).
+    const shareTimes = await shareTimesFor(req.user.id, sharedCrushIds);
+    const entries = [...direct, ...updates.filter((entry) => postedSinceShared(entry, shareTimes))]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     res.json(await withPeople(entries.map(shapeEntry)));
