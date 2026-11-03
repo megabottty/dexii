@@ -228,9 +228,8 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                    style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
             <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
             <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"
-                                 [canPost]="!previewAsFriend()" [composerNote]="friendComposerNote(c)" [(draft)]="updateDraft"
-                                 [sharedWith]="previewAsFriend() ? ownerSharedWithText(c) : friendSharedWithText(c)"
-                                 (share)="shareUpdate(c.id, $event)" (edit)="saveUpdateEdit($event.entry, $event.content)" (remove)="deleteNote($event)"></app-update-timeline>
+                                 [interactive]="false"
+                                 [sharedWith]="previewAsFriend() ? ownerSharedWithText(c) : friendSharedWithText(c)"></app-update-timeline>
           </section>
           <!-- Compatibility: the owner's read, your friends' reads, and your own say -->
           <section [style.background-color]="theme.colors().bgSecondary"
@@ -1424,12 +1423,6 @@ export class ProfileDetailComponent implements OnDestroy {
   friendSharedWithText(crush: CrushProfile): string {
     const others = Math.max(0, (crush.visibility || []).length - 1);
     return others ? `Shared with you and ${others} other${others === 1 ? '' : 's'}` : 'Shared with you';
-  }
-
-  /** Composer line when posting on a friend's crush (DEX-45). */
-  friendComposerNote(crush: CrushProfile): string {
-    const owner = this.friendCrushOwnerName() || 'your friend';
-    return `Goes to ${owner} and everyone they share ${this.getCrushDisplayName(crush)} with`;
   }
 
   saveUpdateEdit(entry: Entry, content: string): void {

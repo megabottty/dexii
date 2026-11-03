@@ -82,6 +82,16 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       ]
     });
 
+    it('shows friends the update only: no reactions, comments or expand-all', () => {
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.componentRef.setInput('interactive', false);
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-bubble__text')?.textContent).toContain('We kissed!');
+      expect(el().querySelector('.ut-reactions')).toBeNull();
+      expect(el().querySelector('.ut-comments-toggle')).toBeNull();
+      expect(el().querySelector('.ut-expand-all')).toBeNull();
+    });
+
     it('counts each emoji and marks yours', () => {
       fixture.componentRef.setInput('entries', [withActivity()]);
       fixture.detectChanges();

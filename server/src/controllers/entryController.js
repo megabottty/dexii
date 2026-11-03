@@ -5,8 +5,7 @@ const User = require('../models/User');
 const CrushProfile = require('../models/CrushProfile');
 const Notification = require('../models/Notification');
 const { withPeople } = require('../services/updatePeople');
-const { findCrush, canSeeCrushUpdates, emitEntriesChanged, shareTimesFor, postedSinceShared } = require('../services/updateAudience');
-const { createNotification, emitNotificationsChanged } = require('./notificationController');
+const { findCrush, emitEntriesChanged, shareTimesFor, postedSinceShared } = require('../services/updateAudience');
 
 const requireDb = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -89,11 +88,7 @@ exports.getEntries = async (req, res) => {
     const filter = { userId: req.user.id };
     if (req.query.crushId) filter.crushId = req.query.crushId;
 
-    // Plus updates friends posted on my crushes (DEX-45).
-    const myCrushIds = (await CrushProfile.find({ userId: req.user.id }).select('_id').lean()).map((c) => String(c._id));
-    const fromFriends = { userId: { $ne: req.user.id }, type: { $in: FEED_TYPES }, crushId: req.query.crushId ? (myCrushIds.includes(String(req.query.crushId)) ? String(req.query.crushId) : '__none__') : { $in: myCrushIds } };
-
-    const entries = await Entry.find({ $or: [filter, fromFriends] })
+    const entries = await Entry.find(filter)
       .sort({ timestamp: -1 })
       .populate('userId', 'username displayName avatarUrl')
       .lean();
@@ -117,8 +112,9 @@ exports.getSharedEntries = async (req, res) => {
     // Updates For Friends: every update on a friend's crush that is shared with me,
     // by id or by the older username form of the share list.
     const audience = [String(req.user.id), ...(user.username ? [user.username] : [])];
-    const sharedCrushes = await CrushProfile.find({ userId: { $in: friendIds }, visibility: { $in: audience } }).select('_id').lean();
+    const sharedCrushes = await CrushProfile.find({ userId: { $in: friendIds }, visibility: { $in: audience } }).select('_id userId').lean();
     const sharedCrushIds = sharedCrushes.map((c) => String(c._id));
+    const ownerOf = new Map(sharedCrushes.map((c) => [String(c._id), String(c.userId)]));
 
     const [direct, updates] = await Promise.all([
       Entry.find({
@@ -130,7 +126,7 @@ exports.getSharedEntries = async (req, res) => {
         .populate('userId', 'username displayName avatarUrl')
         .lean(),
       sharedCrushIds.length
-        // Anyone who can see the crush may have posted: its owner, me, or another friend.
+        // Only the crush's owner posts updates; friends just read them.
         ? Entry.find({ crushId: { $in: sharedCrushIds }, ...UPDATE_ENTRY_FILTER })
           .populate('userId', 'username displayName avatarUrl')
           .lean()
@@ -139,7 +135,9 @@ exports.getSharedEntries = async (req, res) => {
 
     // Only updates from the moment each crush was shared with me, not its whole history (DEX-44).
     const shareTimes = await shareTimesFor(req.user.id, sharedCrushIds);
-    const entries = [...direct, ...updates.filter((entry) => postedSinceShared(entry, shareTimes))]
+    const authorId = (entry) => String(entry.userId?._id || entry.userId);
+    const fromOwner = updates.filter((entry) => authorId(entry) === ownerOf.get(String(entry.crushId)));
+    const entries = [...direct, ...fromOwner.filter((entry) => postedSinceShared(entry, shareTimes))]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     res.json(await withPeople(entries.map(shapeEntry)));
@@ -164,13 +162,13 @@ exports.createEntry = async (req, res) => {
       return res.status(400).json({ message: 'Status changes are added automatically.' });
     }
     const fields = pickWritableFields(req.body);
-    // An update on a friend's crush is allowed when that crush is shared with you (DEX-45).
+    // Only the crush's owner posts updates; friends just read them.
     let crush = null;
     if (type === 'Update') {
       fields.visibility = [];
       crush = await findCrush(crushId);
-      if (crush && !(await canSeeCrushUpdates(req.user.id, crush))) {
-        return res.status(403).json({ message: 'You can only post updates on crushes shared with you.' });
+      if (crush && String(crush.userId) !== String(req.user.id)) {
+        return res.status(403).json({ message: 'Only the owner of this crush can post updates.' });
       }
     }
 
@@ -185,12 +183,6 @@ exports.createEntry = async (req, res) => {
     const io = req.app.get('io');
     if (crush) {
       emitEntriesChanged(io, crush);
-      if (String(crush.userId) !== String(req.user.id)) {
-        void createNotification({
-          recipient: String(crush.userId), actor: req.user.id, type: 'update_posted',
-          payload: { crushId: String(crush._id), crushNickname: crush.nickname || '', entryId: String(entry._id), preview: String(entry.content || '').slice(0, 80) }
-        }).then((saved) => { if (saved) emitNotificationsChanged(io, [String(crush.userId)]); }).catch(() => undefined);
-      }
     }
     for (const id of (Array.isArray(entry.visibility) ? entry.visibility.map(String) : []).filter((v) => mongoose.isValidObjectId(v))) {
       void recordActivity({ io, actor: req.user.id, counterpart: id, type: 'entry_shared', crushId: entry.crushId, entryId: entry._id, meta: { preview: String(entry.content || '').slice(0, 80), entryType: entry.type } });

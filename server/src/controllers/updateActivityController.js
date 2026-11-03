@@ -6,7 +6,7 @@ const Notification = require('../models/Notification');
 const { shapeEntry } = require('./entryController');
 const { withPeople } = require('../services/updatePeople');
 const { createNotification, emitNotificationsChanged } = require('./notificationController');
-const { findCrush, canSeeCrushUpdates, emitEntriesChanged, shareTimesFor, postedSinceShared } = require('../services/updateAudience');
+const { findCrush, emitEntriesChanged } = require('../services/updateAudience');
 
 /** Emojis a friend can react to an update with (DEX-45). */
 const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
@@ -16,8 +16,8 @@ const isUpdate = (entry) => entry.type === 'Update' || entry.type === 'StatusCha
   || (entry.type === 'Note' && Array.isArray(entry.visibility) && entry.visibility.length > 0);
 
 /**
- * Loads an update the signed-in user may react to and comment on: their own, or a friend's
- * update on a crush that friend shares with them. Sends the error response and returns null otherwise.
+ * Loads an update the signed-in user may react to and comment on: one on a crush they own.
+ * Friends only read updates. Sends the error response and returns null otherwise.
  */
 const loadUpdateFor = async (req, res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -35,19 +35,12 @@ const loadUpdateFor = async (req, res) => {
   }
   const me = String(req.user.id);
   const crush = await findCrush(entry.crushId);
-  const isAuthor = String(entry.userId) === me;
-  if (!isAuthor && !(await canSeeCrushUpdates(me, crush))) {
-    res.status(403).json({ message: 'You can only react to updates on crushes shared with you.' });
-    return null;
-  }
-  // A friend doesn't see updates from before the crush was shared with them (DEX-44).
-  const isCrushOwner = !!crush && String(crush.userId) === me;
-  if (!isAuthor && !isCrushOwner && !postedSinceShared(entry, await shareTimesFor(me, [String(entry.crushId)]))) {
+  // Only the crush's owner reacts and comments; friends just read its updates.
+  if (!crush || String(crush.userId) !== me) {
     res.status(404).json({ message: 'Update not found.' });
     return null;
   }
-  // The update's author and the crush's owner can both remove comments on it.
-  return { entry, crush, isOwner: isAuthor || (!!crush && String(crush.userId) === me) };
+  return { entry, crush, isOwner: true };
 };
 
 const respond = async (req, res, entry, crush) => {

@@ -22,7 +22,7 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
 
 /**
  * Updates For Friends as a love-life timeline (DEX-44): updates grouped by day on a heart rail.
- * The owner gets the "What's new?" composer and can edit or delete; friends just read.
+ * The owner gets the "What's new?" composer, edits, deletes, reactions and comments; friends just read.
  * The parent owns the "Send update?" confirm and saving.
  */
 @Component({
@@ -48,12 +48,8 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                   placeholder="A text, a date, a moment…"></textarea>
         <div class="ut-composer__footer">
           <span class="ut-audience">
-            @if (composerNote()) {
-              <span aria-hidden="true">👯</span> {{ composerNote() }}
-            } @else {
-              <span aria-hidden="true">{{ audience().length ? '👯' : '🔒' }}</span>
-              {{ audience().length ? 'Goes to ' + audienceList() : "Not shared with anyone yet, so only you will see it" }}
-            }
+            <span aria-hidden="true">{{ audience().length ? '👯' : '🔒' }}</span>
+            {{ audience().length ? 'Goes to ' + audienceList() : "Not shared with anyone yet, so only you will see it" }}
           </span>
           <button type="button" class="ut-share" [disabled]="!draft().trim()" (click)="share.emit(draft().trim())">
             Share Update <span aria-hidden="true">💌</span>
@@ -69,7 +65,7 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
         <p class="ut-empty__copy">{{ canPost() ? 'Post your first update and friends you share ' + crushName() + ' with will see it.' : 'When there’s news about ' + crushName() + ', it shows up here.' }}</p>
       </div>
     } @else {
-      @if (commentedCount() > 0) {
+      @if (interactive() && commentedCount() > 0) {
         <div class="ut-toolbar">
           <button type="button" class="ut-link ut-expand-all" [attr.aria-pressed]="allExpanded()" (click)="toggleAll()">
             <span aria-hidden="true">{{ allExpanded() ? '🙈' : '👀' }}</span>
@@ -120,7 +116,8 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                     @if (sharedWith()) {
                       <p class="ut-shared-with"><span aria-hidden="true">👯</span> {{ sharedWith() }}</p>
                     }
-                    <!-- Reactions and comments, like an Instagram post (DEX-45) -->
+                    <!-- Reactions and comments, like an Instagram post (DEX-45); the owner's view only -->
+                    @if (interactive()) {
                     <div class="ut-reactions">
                       @for (r of reactionCounts(entry); track r.emoji) {
                         <button type="button" class="ut-reaction" [class.ut-reaction--mine]="r.mine" [attr.aria-pressed]="r.mine"
@@ -206,6 +203,7 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                       <button type="submit" class="ut-link ut-post" [disabled]="!commentDraft(entry.id).trim() || busy()">Post</button>
                     </form>
                     }
+                    }
                   </article>
                 </li>
               }
@@ -231,8 +229,8 @@ export class UpdateTimelineComponent {
   readonly canPost = input(false);
   /** Names of the friends this crush is shared with (who an update reaches). */
   readonly audience = input<string[]>([]);
-  /** Replaces the audience line in the composer (a friend posting on someone else's crush). */
-  readonly composerNote = input('');
+  /** Reactions and comments; off for friends, who only read the owner's updates. */
+  readonly interactive = input(true);
   /** You own this crush: you can delete anyone's update on it. */
   readonly isCrushOwner = input(false);
   /** "Shared with Ana, Ben" under each update: who can see it. */
