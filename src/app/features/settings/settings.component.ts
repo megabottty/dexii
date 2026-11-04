@@ -214,21 +214,6 @@ interface FriendChoice {
                      [style.color]="theme.colors().text">
             </label>
 
-            <label class="settings-field">
-              Reminder Time
-              <input type="time"
-                     [value]="settings.settings().reminderTime"
-                     (input)="update('reminderTime', inputValue($event))"
-                     [style.background-color]="theme.colors().bg"
-                     [style.border]="'1px solid ' + theme.colors().border"
-                     [style.color]="theme.colors().text">
-            </label>
-
-            <label class="settings-field">
-              Journal Prompt Frequency
-              <app-select ariaLabel="Journal prompt frequency" [options]="journalPromptFrequencyOptions" [value]="settings.settings().journalPromptFrequency" (valueChange)="update('journalPromptFrequency', $any($event))"></app-select>
-            </label>
-
             <label class="settings-field settings-field--full">
               Journal Prompt
               <textarea [value]="settings.settings().journalPrompt"
@@ -410,19 +395,38 @@ interface FriendChoice {
 
           <div class="settings-divider"></div>
 
-          @if (!webPush.offInDevBuild) {
-            <section class="settings-plan-section">
-              <div class="settings-plan-header">
-                <div>
-                  <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
-                  <h2 class="settings-section-title">Notifications</h2>
-                </div>
+          <!-- Every notification setting in one place (DEX-40) -->
+          <section id="settings-notifications" class="settings-plan-section" aria-labelledby="settings-notifications-title">
+            <div class="settings-plan-header">
+              <div>
+                <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Notifications</p>
+                <h2 id="settings-notifications-title" class="settings-section-title">Notifications</h2>
               </div>
+            </div>
+            @if (!webPush.offInDevBuild) {
               <app-notification-setup mode="settings"></app-notification-setup>
-            </section>
+            }
 
-            <div class="settings-divider"></div>
-          }
+            <h3 [style.color]="theme.colors().text" class="settings-subsection-title">Journal reminders</h3>
+            <div class="settings-grid">
+              <label class="settings-field">
+                Journal Prompt Frequency
+                <app-select ariaLabel="Journal prompt frequency" [options]="journalPromptFrequencyOptions" [value]="settings.settings().journalPromptFrequency" (valueChange)="update('journalPromptFrequency', $any($event))"></app-select>
+              </label>
+
+              <label class="settings-field">
+                Reminder Time
+                <input type="time"
+                       [value]="settings.settings().reminderTime"
+                       (input)="update('reminderTime', inputValue($event))"
+                       [style.background-color]="theme.colors().bg"
+                       [style.border]="'1px solid ' + theme.colors().border"
+                       [style.color]="theme.colors().text">
+              </label>
+            </div>
+          </section>
+
+          <div class="settings-divider"></div>
 
           @if (gate.canManageSuperAdmins()) {
             <section class="settings-plan-section">

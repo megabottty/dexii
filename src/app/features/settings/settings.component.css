@@ -907,3 +907,6 @@
 /* Read-only account facts (email). */
 .settings-input--readonly { cursor: default; opacity: 0.85; }
 .settings-field-hint { font-size: var(--fs-label); line-height: 1.4; }
+
+/* "Journal reminders" under Notifications (DEX-40) */
+.settings-subsection-title { margin: 20px 0 10px; font-size: var(--fs-btn); font-weight: 700; }

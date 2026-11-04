@@ -97,7 +97,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
                    <span [style.color]="theme.colors().onBgPrimary" class="journal-prompt-label">Today's prompt</span>
                    <p [style.color]="theme.colors().text" class="journal-prompt-text">{{ journalPrompt() }}</p>
                    <small [style.color]="theme.colors().textSecondary">
-                     {{ settings.settings().journalPromptFrequency }} · Reminder starts at {{ settings.settings().reminderTime }}
+                     <a routerLink="/settings" fragment="settings-notifications" [style.color]="theme.colors().onBgPrimary">Reminder settings</a>
                    </small>
                  </div>
                  <div class="journal-prompt-actions">
