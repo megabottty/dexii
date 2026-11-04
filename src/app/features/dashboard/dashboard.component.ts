@@ -81,8 +81,8 @@ import { PersonNamePipe } from '../../core/utils/person-name';
               }
             </div>
 
-            <button (click)="saveCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
-              Save Crush
+            <button (click)="saveCrush()" [disabled]="savingCrush()" [attr.aria-busy]="savingCrush()" [style.background-color]="theme.colors().primary" class="dashboard-component__s43">
+              {{ savingCrush() ? 'Saving…' : 'Save Crush' }}
             </button>
           </div>
         </div>
@@ -669,16 +669,26 @@ export class DashboardComponent implements OnInit {
       this.newCrush.avatarUrl = await this.avatarRenderer.render(this.newCrush.avatarConfig, 256);
     }
 
+    if (this.savingCrush()) return;
     const pendingPhotos = [...this.newCrush.pendingPhotos];
-    const createdCrush = this.dataService.addCrush({
-      ...formValueToCrushPatch(this.newCrush),
-      visibility: []
-    }, { shareWith: this.shareWith() });
+    this.savingCrush.set(true);
+    let saved: CrushProfile | null = null;
+    try {
+      const createdCrush = this.dataService.addCrush({
+        ...formValueToCrushPatch(this.newCrush),
+        visibility: []
+      }, { shareWith: this.shareWith() });
+      saved = await this.dataService.savedCrush(createdCrush.id);
+    } finally {
+      this.savingCrush.set(false);
+    }
+    // Didn't save: the form stays open with everything they typed, so they can try again (DEX-58).
+    if (!saved) return;
 
     this.closeModal();
 
     // Photos picked in the form need the crush's server id, so they go up once it is saved.
-    if (pendingPhotos.length) void this.uploadPendingPhotos(createdCrush.id, pendingPhotos);
+    if (pendingPhotos.length) void this.uploadPendingPhotos(saved.id, pendingPhotos);
 
     // First crush ever: guide them through sharing it with a friend.
     if (this.dataService.getAllCrushes()().length === 1) {
@@ -688,12 +698,12 @@ export class DashboardComponent implements OnInit {
 
   /** Uploads the New Crush photos one by one; the global overlay shows while they go up. */
   readonly photoUploadBusy = signal(false);
-  private async uploadPendingPhotos(localId: string, photos: PendingPhoto[]): Promise<void> {
+  /** New Crush is being saved; the form waits for the server before closing. */
+  readonly savingCrush = signal(false);
+  private async uploadPendingPhotos(crushId: string, photos: PendingPhoto[]): Promise<void> {
     this.photoUploadBusy.set(true);
     try {
-      const saved = await this.dataService.savedCrush(localId);
-      if (!saved) return;
-      for (const photo of photos) await this.dataService.addCrushPhoto(saved.id, photo);
+      for (const photo of photos) await this.dataService.addCrushPhoto(crushId, photo);
     } finally {
       this.photoUploadBusy.set(false);
     }
@@ -705,5 +715,5 @@ export class DashboardComponent implements OnInit {
   }
 
   /** Page-level loading feeds the global overlay (app-loading-overlay). */
-  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => !this.dataService.hasLoaded() || this.photoUploadBusy()));
+  private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => !this.dataService.hasLoaded() || this.photoUploadBusy() || this.savingCrush()));
 }

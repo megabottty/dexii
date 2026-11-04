@@ -480,10 +480,6 @@ export class DataService {
     };
   }
 
-  private getDemoOwner(): string {
-    return this._activeOwner() || localStorage.getItem(this.usernameStorageKey) || 'dexii_demo_user';
-  }
-
   private async ensureAuthToken(): Promise<string | null> {
     const existingToken = localStorage.getItem(this.tokenStorageKey);
     if (existingToken) {
@@ -570,27 +566,10 @@ export class DataService {
     }
   }
 
-  private async demoFetch(path: string, init: RequestInit = {}): Promise<Response | null> {
-    try {
-      return await fetch(`${this.apiBaseUrl}/demo${path}`, init);
-    } catch (error) {
-      console.warn('Dexii demo backend request failed, using local state only.', error);
-      return null;
-    }
-  }
 
   private async hydrateCrushesFromBackend(): Promise<void> {
-    let response = await this.authenticatedFetch('/crushes');
-    // Only fall back to the separate demo data store when there was no
-    // authenticated request at all (no token / network failure - see
-    // authenticatedFetch). Falling back here whenever the authenticated call
-    // merely returned a non-ok status (401/404/500) would silently swap a
-    // logged-in user onto stale demo data, which is exactly what caused
-    // deleted/old crushes to reappear after a transient backend hiccup.
-    if (!response) {
-      const owner = encodeURIComponent(this.getDemoOwner());
-      response = await this.demoFetch(`/crushes?owner=${owner}`);
-    }
+    // Crushes only ever come from your account, never the demo store (DEX-58).
+    const response = await this.authenticatedFetch('/crushes');
 
     if (!response || !response.ok) {
       this._allCrushes.set([]);
@@ -651,32 +630,23 @@ export class DataService {
         compatibility: crush.compatibility ?? null
       };
 
-      let response = await this.authenticatedFetch('/crushes', {
+      // A crush only ever saves to your account: never to the demo store or only this browser (DEX-58).
+      const name = crush.nickname || crush.fullName || 'this crush';
+      if (!localStorage.getItem(this.tokenStorageKey)) {
+        return this.dropUnsavedCrush(localId, `You're signed out, so ${name} wasn't saved. Sign in again and add them again.`);
+      }
+      const response = await this.authenticatedFetch('/crushes', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
 
-      // Only retry against the demo store when there was no authenticated
-      // request at all (no token / network failure) - not on a real but
-      // failed authenticated response, which should surface as an error
-      // instead of silently writing to a different data store.
       if (!response) {
-        response = await this.demoFetch('/crushes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...payload,
-            owner: this.getDemoOwner()
-          })
-        });
+        return this.dropUnsavedCrush(localId, `Couldn't save ${name}. Check your connection and try again.`);
       }
-
-      if (!response || !response.ok) {
-        const errorMsg = response?.status === 413
-          ? 'Image too large. Please use a smaller profile picture.'
-          : 'Failed to save crush to database.';
-        this.modal.show(errorMsg);
-        return null;
+      if (!response.ok) {
+        return this.dropUnsavedCrush(localId, response.status === 413
+          ? `Couldn't save ${name}: the picture is too large. Try a smaller one.`
+          : `Couldn't save ${name}. Please try again.`);
       }
 
       const savedCrush = await response.json() as BackendCrush;
@@ -693,9 +663,15 @@ export class DataService {
       return mapped;
     } catch (err) {
       console.error('Error persisting new crush:', err);
-      this.modal.show('Connection error. Could not save profile.');
-      return null;
+      return this.dropUnsavedCrush(localId, `Couldn't save ${crush.nickname || crush.fullName || 'this crush'}. Please try again.`);
     }
+  }
+
+  /** Takes a crush that never reached the server back off the screen, and says so. */
+  private dropUnsavedCrush(localId: string, message: string): null {
+    this._allCrushes.update((crushes) => crushes.filter((c) => c.id !== localId));
+    this.modal.show(message);
+    return null;
   }
 
   /**
@@ -713,23 +689,10 @@ export class DataService {
   private async persistCrushUpdate(crushId: string, payload: Record<string, unknown>, silent = true): Promise<void> {
     this.pendingCrushSaves++;
     try {
-      let response = await this.authenticatedFetch(`/crushes/${crushId}`, {
+      const response = await this.authenticatedFetch(`/crushes/${crushId}`, {
         method: 'PUT',
         body: JSON.stringify(payload)
       });
-
-      // Only retry against the demo store when there was no authenticated
-      // request at all (no token / network failure) - see hydrateCrushesFromBackend.
-      if (!response) {
-        response = await this.demoFetch(`/crushes/${crushId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...payload,
-            owner: this.getDemoOwner()
-          })
-        });
-      }
 
       if (!response || !response.ok) {
         const errorData = await response?.json().catch(() => ({}));
@@ -1056,22 +1019,9 @@ export class DataService {
     };
 
     try {
-      let response = await this.authenticatedFetch(`/crushes/${crushId}`, {
+      const response = await this.authenticatedFetch(`/crushes/${crushId}`, {
         method: 'DELETE'
       });
-
-      // Only retry against the demo store when there was no authenticated
-      // request at all (no token / network failure). Retrying here whenever
-      // the real delete merely returned a non-ok status (401/404/500) used
-      // to silently delete from the wrong (demo) data store while leaving
-      // the crush intact in the real database - which is exactly why a
-      // "deleted" crush could reappear after the next refresh/login.
-      if (!response) {
-        const owner = encodeURIComponent(this.getDemoOwner());
-        response = await this.demoFetch(`/crushes/${crushId}?owner=${owner}`, {
-          method: 'DELETE'
-        });
-      }
 
       if (!response || !response.ok) {
         console.error('Failed to delete crush:', response?.status);
@@ -1218,23 +1168,13 @@ export class DataService {
   }
 
   /**
-   * Runs a share/unshare request. With no backend session (demo mode) it falls back
-   * to saving the full sharing list, which is fine on a single device. Errors are
-   * shown; success is silent so the sharing UI isn't covered by a modal.
+   * Runs a share/unshare request. Errors are shown; success is silent so the sharing
+   * UI isn't covered by a modal.
    */
   private async persistSharingChange(crushId: string, send: () => Promise<Response | null>): Promise<boolean> {
     this.pendingCrushSaves++;
     try {
-      let response = await send();
-      if (!response) {
-        const crush = this._allCrushes().find((c) => c.id === crushId);
-        if (!crush) return false;
-        response = await this.demoFetch(`/crushes/${crushId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...pickCrushPayload(crush, ['visibility']), owner: this.getDemoOwner() })
-        });
-      }
+      const response = await send();
       if (!response || !response.ok) {
         console.error('Failed to update sharing:', response?.status);
         this.modal.show('Could not update sharing right now. Please try again.');
