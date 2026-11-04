@@ -168,6 +168,12 @@ const UserSchema = new mongoose.Schema({
   },
   verificationCode: String,
   verificationCodeExpires: Date,
+  // Wrong guesses of the PIN and emailed codes (services/attemptGuard.js).
+  securityAttempts: {
+    pin: { count: Number, lockedUntil: Date },
+    reset: { count: Number, lockedUntil: Date },
+    verify: { count: Number, lockedUntil: Date }
+  },
   passwordResetCode: String,
   passwordResetCodeExpires: Date,
   pendingInviteToken: String,

@@ -5,10 +5,12 @@ const User = require('../models/User');
 const { effectiveTier, isSuperAdminUser } = require('../config/premiumFeatures');
 const sendEmail = require('../utils/sendEmail');
 const { ensureUser, readStore } = require('../utils/demoFriendStore');
+const crypto = require('crypto');
+const { LOCKED_MESSAGE, isLocked, recordFailure, clearFailures } = require('../services/attemptGuard');
 const loginAttempts = new Map();
 
 // Generate 6-digit code
-const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateCode = () => crypto.randomInt(100000, 1000000).toString();
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 const normalizePhoneE164 = (value) => {
   if (typeof value !== 'string') return '';
@@ -329,15 +331,20 @@ exports.verifyEmail = async (req, res) => {
       lookupQueries.push({ email: normalizedEmail });
     }
 
-    const user = await User.findOne({
-      $or: lookupQueries,
-      verificationCode: safeCode,
-      verificationCodeExpires: { $gt: Date.now() }
-    });
-
+    const user = await User.findOne({ $or: lookupQueries });
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired verification code' });
     }
+    if (isLocked(user.securityAttempts?.verify)) {
+      return res.status(429).json({ message: LOCKED_MESSAGE });
+    }
+    const codeIsValid = !!safeCode && safeCode === user.verificationCode
+      && Number(new Date(user.verificationCodeExpires)) > Date.now();
+    if (!codeIsValid) {
+      await recordFailure(User, user, 'verify');
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+    await clearFailures(User, user, 'verify');
 
     user.isEmailVerified = true;
     user.verificationCode = undefined;
@@ -643,8 +650,12 @@ exports.verifyPin = async (req, res) => {
       user = await User.findOne({ $or: lookupQueries });
     }
 
+    // Same answer for an unknown account as for a wrong PIN, so it can't be used to find accounts.
     if (!user) {
-      return res.status(400).json({ message: 'User not found' });
+      return res.status(400).json({ message: 'Incorrect PIN' });
+    }
+    if (isLocked(user.securityAttempts?.pin)) {
+      return res.status(429).json({ message: LOCKED_MESSAGE });
     }
 
     if (!user.pin) {
@@ -653,9 +664,11 @@ exports.verifyPin = async (req, res) => {
 
     const isMatch = await bcrypt.compare(safePin, user.pin);
     if (!isMatch) {
+      await recordFailure(User, user, 'pin');
       return res.status(400).json({ message: 'Incorrect PIN' });
     }
 
+    await clearFailures(User, user, 'pin');
     res.json({ success: true, message: 'PIN verified successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -705,11 +718,17 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Password reset is unavailable in demo mode.' });
     }
     const user = await User.findOne({
-      $or: [{ username: usernameOrEmail }, { email: normalizeEmail(usernameOrEmail) }],
-      passwordResetCode: code,
-      passwordResetCodeExpires: { $gt: Date.now() }
+      $or: [{ username: usernameOrEmail }, { email: normalizeEmail(usernameOrEmail) }]
     });
     if (!user) return res.status(400).json({ message: 'Invalid or expired reset code.' });
+    if (isLocked(user.securityAttempts?.reset)) return res.status(429).json({ message: LOCKED_MESSAGE });
+    const codeIsValid = !!user.passwordResetCode && String(code) === user.passwordResetCode
+      && Number(new Date(user.passwordResetCodeExpires)) > Date.now();
+    if (!codeIsValid) {
+      await recordFailure(User, user, 'reset');
+      return res.status(400).json({ message: 'Invalid or expired reset code.' });
+    }
+    await clearFailures(User, user, 'reset');
     user.passwordHash = await bcrypt.hash(password, 12);
     user.passwordResetCode = undefined;
     user.passwordResetCodeExpires = undefined;
