@@ -165,9 +165,6 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   <div [style.border]="'1px solid ' + theme.colors().border"
                        class="read-only-details-panel"
                        style="border-radius: 10px; padding: 14px; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: var(--fs-small);">
-                    @if (c.customNotes) {
-                      <p [style.color]="theme.colors().textSecondary" style="margin: 0; font-style: italic; line-height: 1.6;">{{ c.customNotes }}</p>
-                    }
                     @if (birthdayLabel(c); as birthday) {
                       <p style="margin: 0;"><strong>Birthday:</strong> {{ birthday }}</p>
                     }
@@ -822,13 +819,6 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 <div class="extended-info-section">
                   <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Memorable Moments</h3>
                   <p [style.color]="theme.colors().textSecondary" class="extended-info-text">{{ c.memorableMoments }}</p>
-                </div>
-              }
-
-              @if (parsedNotes().privateNotes) {
-                <div class="extended-info-section">
-                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Private Notes</h3>
-                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text" style="white-space: pre-wrap;">{{ parsedNotes().privateNotes }}</p>
                 </div>
               }
 
@@ -2308,18 +2298,6 @@ export class ProfileDetailComponent implements OnDestroy {
       ...formValueToCrushPatch(this.editForm),
       id: crushId
     }, { fields: CRUSH_FORM_FIELDS, silent: false });
-
-    const note = this.editForm.note.trim();
-    if (note) {
-      this.dataService.addEntry({
-        crushId,
-        type: 'Note',
-        content: note,
-        isBurnAfterReading: false,
-        visibility: [],
-        isSensitive: false
-      });
-    }
     this.isEditMode.set(false);
   }
 

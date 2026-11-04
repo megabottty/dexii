@@ -675,18 +675,6 @@ export class DashboardComponent implements OnInit {
       visibility: []
     }, { shareWith: this.shareWith() });
 
-    const note = this.newCrush.note.trim();
-    if (note) {
-      this.dataService.addEntry({
-        crushId: createdCrush.id,
-        type: 'Note',
-        content: note,
-        isBurnAfterReading: false,
-        visibility: [],
-        isSensitive: false
-      });
-    }
-
     this.closeModal();
 
     // Photos picked in the form need the crush's server id, so they go up once it is saved.

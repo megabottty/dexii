@@ -524,25 +524,6 @@ interface ListGroup {
         }
       </div>
 
-      <!-- Notes (DEX-42 and DEX-43 replace these) -->
-      <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <!-- Crush note -->
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label" for="cf-note">Crush Note (Optional)</label>
-          <textarea id="cf-note" [(ngModel)]="form().note"
-                    [style.background-color]="theme.colors().bgSecondary"
-                    [style.border]="inputBorder()"
-                    [style.color]="theme.colors().text"
-                    rows="4"
-                    placeholder="Add a note about this crush..." class="cf-textarea"></textarea>
-          <span [style.color]="theme.colors().textSecondary" class="cf-hint">Only you can see this note. To tell friends, post an Update For Friends on the crush’s profile.</span>
-        </div>
-
-        <div class="cf-field">
-          <label [style.color]="theme.colors().textSecondary" class="cf-label cf-label--center" for="cf-private-notes">Private Notes</label>
-          <textarea id="cf-private-notes" [(ngModel)]="form().privateNotes" [style.background-color]="theme.colors().bgSecondary" [style.border]="inputBorder()" [style.color]="theme.colors().text" rows="3" placeholder="Your private thoughts..." class="cf-textarea"></textarea>
-        </div>
-      </div>
     </div>
   `
 })

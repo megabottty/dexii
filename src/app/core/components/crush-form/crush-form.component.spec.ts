@@ -40,17 +40,24 @@ describe('CrushFormComponent', () => {
 
   it('renders every question', () => {
     const text = fixture.nativeElement.textContent as string;
-    for (const label of ['Pronouns', 'Nickname', 'Name shown on cards', 'Status', 'Crush Note', 'Hair', 'Eyes', 'Build',
+    for (const label of ['Pronouns', 'Nickname', 'Name shown on cards', 'Status', 'Hair', 'Eyes', 'Build',
       'Where I can find them', 'The Feels', 'The Details', 'Initial Vibe', 'Current Vibe', 'Bio', 'Age', 'Birthday', 'How We Met',
-      'Are they in school or working?', 'Grade', 'Occupation', 'Their Friends', 'Memorable Moments', 'Private Notes']) {
+      'Are they in school or working?', 'Grade', 'Occupation', 'Their Friends', 'Memorable Moments']) {
       expect(text).toContain(label);
     }
+  });
+
+  it('has no note fields: friends get updates, private thoughts go in the Vault (DEX-42)', () => {
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).not.toContain('Crush Note');
+    expect(text).not.toContain('Private Notes');
+    expect(text.toLowerCase()).not.toContain('add a note');
   });
 
   it('asks the essentials first, in the order the profile shows them (DEX-41)', () => {
     const text = fixture.nativeElement.textContent as string;
     const order = ['First Name', 'Nickname', 'Headline', 'Age', 'Birthday', 'Location', 'Initial Vibe', 'Status',
-      'The Feels', 'The Details', 'Bio', 'Where I can find them', 'Compatibility Check', 'Crush Note'];
+      'The Feels', 'The Details', 'Bio', 'Where I can find them', 'Compatibility Check'];
     const positions = order.map((label) => text.indexOf(label));
     expect(positions.every((p) => p >= 0)).toBe(true);
     expect([...positions].sort((x, y) => x - y)).toEqual(positions);

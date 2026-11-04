@@ -7,6 +7,7 @@ const { createNotification, retractCrushShares, emitToUser } = require('./notifi
 const { emitEntriesChanged } = require('../services/updateAudience');
 const { isPausedBy } = require('../services/pauseState');
 const { recordActivity } = require('../services/activityLog');
+const { friendSafeNotes } = require('../utils/crushNotes');
 
 /**
  * Fields a client may change through PUT /crushes/:id. Ownership, sharing and
@@ -73,7 +74,7 @@ const shapeCrushForWire = (crush, viewerId = null) => {
   plain.photos = visible.map(photoMeta);
   plain.photoCount = visible.length;
   plain.friendCompatibility = (plain.friendCompatibility || []).map(shapeVote);
-  if (viewerId) { delete plain.viewedBy; delete plain.compatibilityHistory; }
+  if (viewerId) { delete plain.viewedBy; delete plain.compatibilityHistory; plain.customNotes = friendSafeNotes(plain.customNotes); }
   return plain;
 };
 

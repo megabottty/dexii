@@ -18,8 +18,6 @@ export interface CrushFormValue {
   avatarUrl: string;
   avatarConfig: AvatarConfig | undefined;
   status: CrushStatus;
-  /** Form-only: saved as a separate Note entry, not on the crush. */
-  note: string;
   hair: string[];
   eyes: string[];
   build: string[];
@@ -66,6 +64,7 @@ export interface CrushFormValue {
   /** Comma separated in the form; split into an array on save. */
   friends: string;
   memorableMoments: string;
+  /** Older private notes, no longer edited here (DEX-42): carried through so saving keeps them. */
   privateNotes: string;
   /** Compatibility Check: null = not rated yet. */
   compatibilityScore: number | null;
@@ -108,7 +107,6 @@ export function emptyCrushFormValue(): CrushFormValue {
     avatarUrl: '',
     avatarConfig: undefined,
     status: CrushStatus.Undefined,
-    note: '',
     hair: [],
     eyes: [],
     build: [],
@@ -340,8 +338,6 @@ export function crushFormTextFields(value: CrushFormValue): string[] {
   return [
     value.nickname,
     value.fullName,
-    value.note,
-    value.privateNotes,
     value.relationshipNotes,
     value.bio,
     value.headline,

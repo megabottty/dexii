@@ -533,7 +533,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private getHintForPath(path: string): string {
     const normalized = this.routeHintKey(path);
     const map: Record<string, string> = {
-      '/dashboard': 'Use New Crush to add a crush. Add a Crush Note and set it Private/Public.',
+      '/dashboard': 'Use New Crush to add a crush. Post updates for friends from the crush’s profile; private thoughts go in the Vault.',
       '/friends': 'Tap a friend to open their page. Share opens what you two can see of each other; the pause and bin icons manage the friendship.',
       '/friends/:id': 'Everything about this friendship in one place: their bio, the crushes you share, your history, and your private friendship profile at the bottom.',
       '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each crush.',
