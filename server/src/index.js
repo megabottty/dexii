@@ -9,6 +9,8 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const GroupChat = require('./models/GroupChat');
+const Message = require('./models/Message');
+const { relayChatMessage, relayReaction, relaySafetyAlert } = require('./services/socketRelays');
 const { handleWebhook } = require('./controllers/billingController');
 
 dotenv.config();
@@ -199,7 +201,7 @@ const areFriends = async (userId, otherId) => {
       const friendnames = state.friendships?.[user?.username] || [];
       return friendnames.includes(otherId);
     } catch {
-      return true;
+      return false;
     }
   }
 
@@ -239,70 +241,21 @@ io.on('connection', (socket) => {
     console.log(`User ${socket.data.userId} joined their private room.`);
   });
 
-  socket.on('sendMessage', async (data) => {
-    // data: { senderId, recipientId, content, isSafetyAlert, crushId }
-    try {
-      if (!(await areFriends(socket.data.userId, data?.recipientId))) {
-        console.warn(`Socket message dropped: ${socket.data.userId} is not friends with ${data?.recipientId}.`);
-        return;
-      }
-
-      io.to(data.recipientId).emit('receiveMessage', {
-        ...data,
-        senderId: socket.data.userId
-      });
-    } catch (err) {
-      console.warn('Socket message dropped:', err.message);
-    }
+  // Live relays only announce messages already saved over REST, and read them back first
+  // so nobody can push made-up messages or reactions to other people (services/socketRelays.js).
+  socket.on('sendMessage', (data) => {
+    relayChatMessage({ io, userId: socket.data.userId, data, Message })
+      .catch((err) => console.warn('Socket message dropped:', err.message));
   });
 
-  socket.on('safetyAlert', async (data) => {
-    // data: { senderId, recipientId, status, location, crushId }
-    try {
-      if (!(await areFriends(socket.data.userId, data?.recipientId))) {
-        console.warn(`Socket safety alert dropped: ${socket.data.userId} is not friends with ${data?.recipientId}.`);
-        return;
-      }
-
-      io.to(data.recipientId).emit('safetyUpdate', {
-        ...data,
-        senderId: socket.data.userId
-      });
-    } catch (err) {
-      console.warn('Socket safety alert dropped:', err.message);
-    }
+  socket.on('safetyAlert', (data) => {
+    relaySafetyAlert({ io, userId: socket.data.userId, data, areFriends })
+      .catch((err) => console.warn('Socket safety alert dropped:', err.message));
   });
 
-  // Reaction updates are persisted via REST (POST /api/messages/:id/react); this just
-  // relays the resulting message so open chat windows update live without polling.
   socket.on('messageReaction', (data) => {
-    // data: { message, recipientId } for 1:1, or { message, memberIds } for groups
-    try {
-      if (data?.recipientId) {
-        io.to(data.recipientId).emit('messageReactionUpdated', data.message);
-      } else if (Array.isArray(data?.memberIds)) {
-        for (const memberId of data.memberIds) {
-          if (String(memberId) === String(socket.data.userId)) continue;
-          io.to(String(memberId)).emit('messageReactionUpdated', data.message);
-        }
-      }
-    } catch (err) {
-      console.warn('Socket reaction relay dropped:', err.message);
-    }
-  });
-
-  socket.on('sendGroupMessage', async (data) => {
-    // data: { groupId, message, memberIds } - membership is already verified by the
-    // REST endpoint that created the message; this just relays it live.
-    try {
-      const memberIds = Array.isArray(data?.memberIds) ? data.memberIds : [];
-      for (const memberId of memberIds) {
-        if (String(memberId) === String(socket.data.userId)) continue;
-        io.to(String(memberId)).emit('receiveGroupMessage', data.message);
-      }
-    } catch (err) {
-      console.warn('Socket group message relay dropped:', err.message);
-    }
+    relayReaction({ io, userId: socket.data.userId, data, Message, GroupChat })
+      .catch((err) => console.warn('Socket reaction relay dropped:', err.message));
   });
 
   // "Ana is typing…": relayed only, never stored. Clients send it at most every few
