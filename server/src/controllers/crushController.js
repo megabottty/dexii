@@ -8,6 +8,7 @@ const { emitEntriesChanged } = require('../services/updateAudience');
 const { isPausedBy } = require('../services/pauseState');
 const { recordActivity } = require('../services/activityLog');
 const { friendSafeNotes } = require('../utils/crushNotes');
+const { normalizeStatus } = require('../utils/crushStatus');
 
 /**
  * Fields a client may change through PUT /crushes/:id. Ownership, sharing and
