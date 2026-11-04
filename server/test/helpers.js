@@ -25,3 +25,21 @@ const fakeReq = ({ userId = '6aa2f82237d736a1196c9e1d', body = {}, params = {}, 
 });
 
 module.exports = { fakeReq, fakeRes };
+
+/** A chainable stand-in for a Mongoose query that resolves to `result`. */
+const fakeQuery = (result) => {
+  const query = {
+    select: () => query, limit: () => query, sort: () => query, populate: () => query, lean: () => query,
+    then: (resolve, reject) => Promise.resolve(result).then(resolve, reject)
+  };
+  return query;
+};
+
+/** Makes handlers believe the database is connected, without connecting. Returns an undo function. */
+const pretendConnected = () => {
+  Object.defineProperty(mongoose.connection, 'readyState', { get: () => 1, configurable: true });
+  return () => { delete mongoose.connection.readyState; };
+};
+
+module.exports.fakeQuery = fakeQuery;
+module.exports.pretendConnected = pretendConnected;

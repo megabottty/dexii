@@ -321,6 +321,8 @@ exports.removeFriend = async (req, res) => {
 // @route   GET /api/friends/search?query=...
 // @desc    Search users by name, username, email, or phone
 // @access  Private
+const SEARCH_FIELDS = 'username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories';
+
 exports.searchUsers = async (req, res) => {
   try {
     const query = (req.query.query || req.query.username || '').trim();
@@ -339,18 +341,23 @@ exports.searchUsers = async (req, res) => {
     const safe = escapeRegex(query);
     const rx = new RegExp(safe, 'i');
 
-    const baseFilter = { _id: { $ne: req.user.id } };
+    // Never yourself, nobody you blocked, and nobody who blocked you.
+    const me = await User.findById(req.user.id).select('friends blockedUsers').lean();
+    const baseFilter = {
+      _id: { $nin: [req.user.id, ...(me?.blockedUsers || [])].map(String) },
+      blockedUsers: { $ne: req.user.id }
+    };
     let users = [];
 
     // Try exact email/phone lookup first
     if (normalizedEmail && normalizedEmail.includes('@')) {
       users = await User.find({ ...baseFilter, email: normalizedEmail })
-        .select('username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
+        .select(SEARCH_FIELDS)
         .limit(50)
         .lean();
     } else if (normalizedPhone) {
       users = await User.find({ ...baseFilter, phoneE164: normalizedPhone })
-        .select('username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
+        .select(SEARCH_FIELDS)
         .limit(50)
         .lean();
     }
@@ -366,7 +373,7 @@ exports.searchUsers = async (req, res) => {
           { searchName: rx }
         ]
       })
-        .select('username displayName firstName lastName email phoneE164 avatarUrl subscriptionTier friendCategories')
+        .select(SEARCH_FIELDS)
         .limit(50)
         .lean();
     }
@@ -385,7 +392,6 @@ exports.searchUsers = async (req, res) => {
 
     // Annotate each result so the UI can render the right action (add / pending / friends)
     // instead of offering to re-send a request that already exists.
-    const me = await User.findById(req.user.id).select('friends').lean();
     const friendIds = new Set((me?.friends || []).map(String));
 
     const ids = users.map((user) => user._id);
@@ -411,7 +417,15 @@ exports.searchUsers = async (req, res) => {
       else if (outgoing.has(id)) relationship = 'request_sent';
       else if (incoming.has(id)) relationship = 'request_received';
 
-      return { ...user, id, relationship };
+      // Contact details stay private: you only get back the exact email or phone you typed.
+      const { email, phoneE164, ...visible } = user;
+      return {
+        ...visible,
+        ...(normalizedEmail?.includes('@') && email === normalizedEmail ? { email } : {}),
+        ...(normalizedPhone && phoneE164 === normalizedPhone ? { phoneE164 } : {}),
+        id,
+        relationship
+      };
     }));
   } catch (err) {
     console.error(err.message);
