@@ -209,7 +209,7 @@ import { PersonNamePipe } from '../../core/utils/person-name';
                 </button>
               }
             </div>
-            <span class="info-icon-tooltip info-icon-tooltip--end" data-tooltip="All is every crush that isn't archived. Dating is anyone whose status is Dating or Exclusive. Not dating is everyone else. The tabs follow each crush's Status, not their relationship labels.">
+            <span class="info-icon-tooltip info-icon-tooltip--end" data-tooltip="All is every crush that isn't archived. Dating is anyone whose status is Dating, Lovers, Exclusive or Engaged. Not dating is everyone else. The tabs follow each crush's Status, not their relationship labels.">
               <button type="button"
                         class="dashboard-filter-info"
                         [style.color]="theme.colors().textSecondary"
@@ -218,8 +218,8 @@ import { PersonNamePipe } from '../../core/utils/person-name';
                         aria-describedby="crush-filter-help">i</button>
             </span>
             <span id="crush-filter-help" class="sr-only">
-              All is every crush that isn't archived. Dating is anyone whose status is Dating or Exclusive.
-              Not dating is everyone else: Crush, Plotting, Broken Up, Heartbroken and Friend. Archived crushes live under View Archive.
+              All is every crush that isn't archived. Dating is anyone whose status is Dating, Lovers, Exclusive or Engaged.
+              Not dating is everyone else, such as Crush, Friends or Broken Up. Archived crushes live under View Archive.
               The tabs follow each crush's Status, not their relationship labels.
             </span>
           </div>
@@ -274,6 +274,12 @@ import { PersonNamePipe } from '../../core/utils/person-name';
           <!-- Content -->
           <div class="dashboard-component__s92">
             <p [style.color]="theme.colors().text" class="dashboard-card-status">{{ statusLabel(crush.status) }}</p>
+            @if (crush.relationshipLabels?.[0]) {
+              <!-- The first of The Feels, outlined so it reads apart from the Status (DEX-46) -->
+              <p [style.color]="theme.colors().textSecondary" [style.border]="'1px dashed ' + theme.colors().border" class="dashboard-card-feel">
+                <span aria-hidden="true">💭</span> {{ crush.relationshipLabels![0] }}
+              </p>
+            }
 
             <div [style.color]="theme.colors().onBgAccent" class="dashboard-component__s94">
               @for (star of [1,2,3,4,5]; track star) {

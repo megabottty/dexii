@@ -150,9 +150,12 @@ interface ListGroup {
 
       <!-- The Feels: how things are going, beyond the one-word Status -->
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="cf-section">
-        <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">The Feels</h4>
-        <p [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">Pick everything that fits. The first one becomes the headline.</p>
-        <div class="cf-tile-list" role="group" aria-label="Relationship status">
+        <div class="cf-feels-head">
+          <h4 [style.color]="theme.colors().onBgPrimary" class="cf-section-title">The Feels</h4>
+          <span [style.color]="theme.colors().onBgPrimary" [style.border]="'1px dashed ' + theme.colors().primary" class="cf-feels-nudge">Update as things progress</span>
+        </div>
+        <p [style.color]="theme.colors().textSecondary" class="cf-hint cf-hint--block">How it feels right now, on top of the Status above. Pick everything that fits; the first one shows on the Stash.</p>
+        <div class="cf-tile-list" role="group" aria-label="The Feels">
           @for (s of relationshipOptions(); track s) {
             <div (click)="toggleRelationshipLabel(s)"
                  role="checkbox"

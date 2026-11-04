@@ -429,3 +429,8 @@
 .cf-input--short {
   max-width: 140px;
 }
+
+/* The Feels heading with its "Update as things progress" nudge (DEX-46) */
+.cf-feels-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.cf-feels-head .cf-section-title { margin: 0; }
+.cf-feels-nudge { padding: 3px 10px; border-radius: 999px; font-size: var(--fs-label); font-weight: 600; }

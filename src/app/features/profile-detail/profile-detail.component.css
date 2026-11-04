@@ -1073,6 +1073,15 @@
 
 .profile-relationship-labels {
   opacity: 1;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.profile-feels-title {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 @media (max-width: 900px) {

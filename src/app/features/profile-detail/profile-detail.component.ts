@@ -387,6 +387,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                             (click)="openQuickStatusEditor(c)"
                             [style.color]="theme.colors().onBgPrimary"
                             [style.border]="'1px solid ' + theme.colors().primary"
+                            [style.background-color]="'color-mix(in srgb, ' + theme.colors().primary + ' 16%, transparent)'"
                             class="profile-pill profile-pill--status status-chip-button">
                       Status: {{ statusLabel(c.status || statuses.Undefined) }}
                     </button>
@@ -407,13 +408,14 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 </div>
 
                 @if ((c.relationshipLabels || []).length > 0) {
-                  <div class="profile-labels-row" aria-label="Relationship labels">
+                  <!-- The Feels: outlined and dashed so they never read as the Status (DEX-46) -->
+                  <div class="profile-labels-row" role="group" aria-label="The Feels">
+                    <span [style.color]="theme.colors().textSecondary" class="profile-feels-title">The Feels</span>
                     @for (label of c.relationshipLabels || []; track label) {
                       <span [style.color]="theme.colors().text"
-                            [style.border]="'1px solid ' + theme.colors().border"
-                            [style.background-color]="theme.colors().bg"
+                            [style.border]="'1px dashed ' + theme.colors().border"
                             class="profile-pill profile-relationship-labels">
-                        {{ label }}
+                        <span aria-hidden="true">💭</span> {{ label }}
                       </span>
                     }
                   </div>

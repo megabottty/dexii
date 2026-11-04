@@ -70,25 +70,28 @@ export const COMPATIBILITY_OTHER_LABEL = 'Something else';
 export const OTHER_LABEL = 'Other';
 export const HEARTBROKEN_LABEL = 'Heartbroken';
 
-/** Relationship status choices, worded for the crush's pronouns. */
+/** The Feels (DEX-46): how things feel, worded for the crush's pronouns. Arianne's list. */
 export function relationshipStatusOptions(pronouns?: string): string[] {
-  const subject = pronouns === 'he' ? 'he' : pronouns === 'she' ? 'she' : 'they';
-  const subjectCap = subject.charAt(0).toUpperCase() + subject.slice(1);
-  const verb = subject === 'they' ? "don't" : "doesn't";
-  const likes = subject === 'they' ? 'like' : 'likes';
+  const he = pronouns === 'he', she = pronouns === 'she';
+  const subject = he ? 'He' : she ? 'She' : 'They';
+  const doesnt = he || she ? "doesn't" : "don't";
+  const likes = he || she ? 'likes' : 'like';
+  const theyre = he ? "He's" : she ? "She's" : "They're";
+  const future = he ? 'husband' : she ? 'wife' : 'partner';
 
   return [
-    `${subjectCap} ${verb} know I exist`,
-    'Just friends',
-    'Just flirting',
+    `${subject} ${doesnt} know I exist`,
+    'Definitely plotting',
+    'Just talking',
+    `I think ${subject.toLowerCase()} ${likes} me`,
+    `${theyre} so fine!`,
+    'Flirting',
+    `Future ${future}!`,
     'Just sexting',
-    "Seeing where it goes (more than friends, haven't DTR)",
+    'Seeing where it goes',
     HEARTBROKEN_LABEL,
-    `I think ${subject} ${likes} me`,
-    'Getting serious',
-    'We are a couple',
-    'Friends With Benefits',
-    'We are engaged',
+    'I’m so in love!',
+    'Like them, but still seeing other people',
     OTHER_LABEL
   ];
 }

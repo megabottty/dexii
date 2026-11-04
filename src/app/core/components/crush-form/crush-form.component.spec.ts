@@ -19,7 +19,7 @@ describe('CrushFormComponent', () => {
   let form: CrushFormValue;
 
   const tiles = () =>
-    Array.from(fixture.nativeElement.querySelectorAll('[role="group"][aria-label="Relationship status"] [role="checkbox"]')) as HTMLElement[];
+    Array.from(fixture.nativeElement.querySelectorAll('[role="group"][aria-label="The Feels"] [role="checkbox"]')) as HTMLElement[];
   const tileByText = (text: string) =>
     tiles().find((tile) => tile.textContent?.includes(text)) as HTMLElement;
 
@@ -75,13 +75,13 @@ describe('CrushFormComponent', () => {
   });
 
   it('makes the first relationship pick the headline', () => {
-    tileByText('Just flirting').click();
-    tileByText('Just friends').click();
+    tileByText('Flirting').click();
+    tileByText('Just talking').click();
     fixture.detectChanges();
 
-    expect(form.relationshipLabels).toEqual(['Just flirting', 'Just friends']);
-    expect(tileByText('Just flirting').textContent).toContain('Headline');
-    expect(tileByText('Just friends').textContent).not.toContain('Headline');
+    expect(form.relationshipLabels).toEqual(['Flirting', 'Just talking']);
+    expect(tileByText('Flirting').textContent).toContain('Headline');
+    expect(tileByText('Just talking').textContent).not.toContain('Headline');
   });
 
   it('clears the heartbreak song when Heartbroken is unticked', () => {

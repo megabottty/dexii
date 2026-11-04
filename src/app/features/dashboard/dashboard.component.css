@@ -450,6 +450,11 @@
 }
 
 /* Status under the photo as plain text, not a bubble. */
+.dashboard-card-feel {
+  display: inline-block; margin: 0 0 8px 0; padding: 2px 10px; border-radius: 999px;
+  font-size: var(--fs-label); font-style: italic; max-width: 100%; overflow-wrap: anywhere;
+}
+
 .dashboard-card-status {
   margin: 0 0 8px 0; font-size: var(--fs-label); font-weight: 800; text-transform: uppercase; letter-spacing: 2.5px;
 }
