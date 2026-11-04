@@ -53,7 +53,7 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
           }
           <!-- Owner: a small + on the picture adds photos; it replaces a whole button row (DEX-27). -->
           @if (mode() === 'owner' && photos().length < max) {
-            <label class="pg-add-badge" [style.background-color]="theme.colors().primary" title="Add photos">
+            <label class="pg-add-badge" [style.background-color]="theme.colors().primary" title="Add more pictures">
               <span aria-hidden="true">+</span>
               <input type="file" accept="image/*" multiple (change)="onFilesPicked($event)" class="pg-file" aria-label="Add photos of this crush">
             </label>
@@ -110,7 +110,7 @@ interface HeroSlide { key: string; url: string; photo: CrushPhoto | null; }
             <div class="pg-actions">
               @if (photos().length < max) {
                 <label class="pg-add" [style.background-color]="theme.colors().primary">
-                  <span aria-hidden="true">＋</span> Add photos
+                  <span aria-hidden="true">＋</span> Add More Pictures
                   <input type="file" accept="image/*" multiple (change)="onFilesPicked($event)" class="pg-file" aria-label="Add photos of this crush">
                 </label>
               }

@@ -61,13 +61,14 @@ interface ListGroup {
         <app-select id="cf-display-name" [options]="displayNameOptions" [(ngModel)]="form().displayName"></app-select>
       </div>
 
-      <app-avatar-picker [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"
+      <!-- "Profile Picture" is the one on cards; more pictures go in the gallery below (DEX-39) -->
+      <app-avatar-picker label="Profile Picture" [(url)]="form().avatarUrl" [(config)]="form().avatarConfig"
                          [initial]="form().displayName === 'fullName' ? (form().fullName || form().nickname) : (form().nickname || form().fullName)"></app-avatar-picker>
 
       @if (allowPhotos()) {
         <!-- New Crush: queue as many photos as the cap allows; they upload once the crush is saved. -->
         <div class="cf-field cf-photos">
-          <span [style.color]="theme.colors().textSecondary" class="cf-label">Photos</span>
+          <span [style.color]="theme.colors().textSecondary" class="cf-label">More Pictures</span>
           @if (form().pendingPhotos.length) {
             <div class="cf-photo-grid">
               @for (photo of form().pendingPhotos; track $index; let i = $index) {
@@ -80,8 +81,8 @@ interface ListGroup {
           }
           @if (form().pendingPhotos.length < maxPhotos) {
             <label class="cf-photo-add" [style.border]="inputBorder()" [style.color]="theme.colors().text" [style.background-color]="theme.colors().bgSecondary">
-              <span aria-hidden="true">＋</span> {{ form().pendingPhotos.length ? 'Add more photos' : 'Add photos' }}
-              <input type="file" accept="image/*" multiple (change)="onPhotosPicked($event)" class="cf-photo-input" aria-label="Add photos of this crush">
+              <span aria-hidden="true">＋</span> Add More Pictures
+              <input type="file" accept="image/*" multiple (change)="onPhotosPicked($event)" class="cf-photo-input" aria-label="Add more pictures of this crush">
             </label>
           }
           @if (photoBusy()) { <p [style.color]="theme.colors().textSecondary" class="cf-hint" role="status">{{ photoBusy() }}</p> }
