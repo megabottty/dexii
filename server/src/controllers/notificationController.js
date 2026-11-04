@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const CrushProfile = require('../models/CrushProfile');
 const push = require('../services/pushService');
 const { hasMuted } = require('../services/pauseState');
 
@@ -360,11 +361,21 @@ const withoutHandledRequests = async (notifications) => {
   }
 };
 
+/**
+ * Reactions, comments and hearts on updates now only happen on the crush owner's own crush (DEX-45).
+ * Older ones sent to friends stay hidden from them (DEX-51).
+ */
+const UPDATE_ACTIVITY_TYPES = ['update_reaction', 'update_comment', 'comment_heart', 'update_posted'];
+const visibleTo = async (userId) => {
+  const mine = (await CrushProfile.find({ userId }).select('_id').lean()).map((c) => String(c._id));
+  return { recipient: userId, $nor: [{ type: { $in: UPDATE_ACTIVITY_TYPES }, 'payload.crushId': { $nin: mine } }] };
+};
+
 exports.listNotifications = async (req, res) => {
   try {
     if (!requireDb(res)) return;
 
-    const notifications = await Notification.find({ recipient: req.user.id })
+    const notifications = await Notification.find(await visibleTo(req.user.id))
       .populate('actor', ACTOR_FIELDS)
       .sort({ createdAt: -1 })
       .limit(50)
@@ -381,7 +392,7 @@ exports.getUnreadCount = async (req, res) => {
   try {
     if (!requireDb(res)) return;
 
-    const count = await Notification.countDocuments({ recipient: req.user.id, read: false });
+    const count = await Notification.countDocuments({ ...(await visibleTo(req.user.id)), read: false });
     res.json({ count });
   } catch (err) {
     console.error(err.message);
