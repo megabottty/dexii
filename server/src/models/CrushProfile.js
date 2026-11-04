@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { CRUSH_STATUSES } = require('../utils/crushStatus');
 
 const CrushProfileSchema = new mongoose.Schema({
   userId: {
@@ -27,8 +28,8 @@ const CrushProfileSchema = new mongoose.Schema({
   headline: { type: String, default: '', maxlength: 65 },
   status: {
     type: String,
-    enum: ['Crush', 'Plotting', 'Dating', 'Exclusive', 'Broken Up', 'Heartbroken', 'Archived', 'Friend'],
-    default: 'Crush'
+    enum: CRUSH_STATUSES,
+    default: 'Undefined'
   },
   visibility: {
     type: [String],

@@ -18,11 +18,12 @@ import {
 } from '../../core/config/walkthrough-tours';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { CrushProfile, CrushStatus } from '../../core/models/crush-profile.model';
+import { crushStatusLabel } from '../../core/config/crush-form-options';
 
 type CrushFilter = 'All' | 'Dating' | 'NotDating';
-/** The dashboard's idea of "dating": the two statuses that mean you're actually seeing them. */
-const isDatingStatus = (status: CrushStatus | string | undefined): boolean =>
-  status === CrushStatus.Dating || status === CrushStatus.Exclusive;
+/** The dashboard's idea of "dating": the statuses that mean you're actually seeing them. */
+const DATING_STATUSES: ReadonlyArray<string> = [CrushStatus.Dating, CrushStatus.Lovers, CrushStatus.Exclusive, CrushStatus.Engaged];
+const isDatingStatus = (status: CrushStatus | string | undefined): boolean => DATING_STATUSES.includes(String(status));
 import { CrushFormComponent } from '../../core/components/crush-form/crush-form.component';
 import { CrushFormValue, crushFormTextFields, emptyCrushFormValue, formValueToCrushPatch, PendingPhoto } from '../../core/utils/crush-form.util';
 import { AvatarRenderService } from '../../core/services/avatar-render.service';
@@ -272,7 +273,7 @@ import { PersonNamePipe } from '../../core/utils/person-name';
 
           <!-- Content -->
           <div class="dashboard-component__s92">
-            <p [style.color]="theme.colors().text" class="dashboard-card-status">{{ crush.status }}</p>
+            <p [style.color]="theme.colors().text" class="dashboard-card-status">{{ statusLabel(crush.status) }}</p>
 
             <div [style.color]="theme.colors().onBgAccent" class="dashboard-component__s94">
               @for (star of [1,2,3,4,5]; track star) {
@@ -370,6 +371,7 @@ import { PersonNamePipe } from '../../core/utils/person-name';
 export class DashboardComponent implements OnInit {
   /** "Soulmate energy 🔥" for the card chip's tooltip. */
   compatibilityLabel = compatibilityLabel;
+  readonly statusLabel = crushStatusLabel;
 
   getCrushDisplayName(crush: CrushProfile): string {
     return crush.displayName === 'fullName' && crush.fullName?.trim()

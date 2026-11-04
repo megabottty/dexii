@@ -268,7 +268,7 @@ exports.createCrush = async (req, res) => {
     for (const field of [...UPDATABLE_CRUSH_FIELDS, 'visibility']) {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) body[field] = req.body[field];
     }
-    if (body.status === 'Crushing') body.status = 'Plotting';
+    if (Object.prototype.hasOwnProperty.call(body, 'status')) body.status = normalizeStatus(body.status);
     if (Object.prototype.hasOwnProperty.call(body, 'headline')) body.headline = cleanHeadline(body.headline);
     if (Object.prototype.hasOwnProperty.call(body, 'compatibility')) {
       const clean = cleanCompatibility(body.compatibility);
@@ -340,8 +340,8 @@ exports.updateCrush = async (req, res) => {
     // Replacing the whole sharing list is still allowed (demo fallback and older
     // clients); new clients use POST/DELETE /crushes/:id/share instead.
     if (Array.isArray(req.body.visibility)) updatePayload.visibility = req.body.visibility;
-    // "Crushing" was renamed to "Plotting"; accept the old name from stale clients.
-    if (updatePayload.status === 'Crushing') updatePayload.status = 'Plotting';
+    // Retired status names from stale clients become their replacement (DEX-50).
+    if (Object.prototype.hasOwnProperty.call(updatePayload, 'status')) updatePayload.status = normalizeStatus(updatePayload.status);
     const previousStatus = crush.status;
     if (Object.keys(updatePayload).length > 0) {
       crush = await CrushProfile.findByIdAndUpdate(

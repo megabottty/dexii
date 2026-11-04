@@ -3,7 +3,7 @@ import { Entry } from '../../core/models/entry.model';
 import { UpdateTimelineComponent } from '../../core/components/update-timeline/update-timeline.component';
 import { SHARE_UPDATE_CONFIRM_TEXT, SHARE_UPDATE_CONFIRM_TITLE, isFriendUpdate, isPrivateNote } from '../../core/utils/friend-update';
 import { LoadingService } from '../../core/services/loading.service';
-import { OTHER_LABEL, pronounLabel } from '../../core/config/crush-form-options';
+import { CRUSH_STATUS_OPTIONS, OTHER_LABEL, crushStatusLabel, pronounLabel } from '../../core/config/crush-form-options';
 import { PARKED_FEATURES_ENABLED } from '../../core/config/premium-features';
 import { IconComponent } from '../../core/components/icon/icon.component';
 import { Component, signal, inject, computed, OnDestroy, DestroyRef, effect, untracked } from '@angular/core';
@@ -126,7 +126,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               </div>
               <div class="profile-status-row">
                 <span [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary" class="profile-pill profile-pill--status">
-                  Status: {{ c.status }}
+                  Status: {{ statusLabel(c.status) }}
                 </span>
               </div>
               @if (getRelationshipLabels(c).length) {
@@ -388,12 +388,12 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                             [style.color]="theme.colors().onBgPrimary"
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="profile-pill profile-pill--status status-chip-button">
-                      Status: {{ c.status || 'Plotting' }}
+                      Status: {{ statusLabel(c.status || statuses.Undefined) }}
                     </button>
                   } @else {
                     <div class="status-quick-edit">
                       <app-select class="status-quick-select" inline compact ariaLabel="Status"
-                                  [options]="statusSelectOptions" [value]="quickStatusDraft() || c.status || statuses.Plotting"
+                                  [options]="statusSelectOptions" [value]="quickStatusDraft() || c.status || statuses.Undefined"
                                   (valueChange)="beginQuickStatusChange(c.id, $any($event))"></app-select>
                       <button type="button"
                               (click)="closeQuickStatusEditor()"
@@ -1614,7 +1614,7 @@ export class ProfileDetailComponent implements OnDestroy {
   }
 
   openQuickStatusEditor(crush: CrushProfile): void {
-    this.quickStatusDraft.set(crush.status || this.statuses.Plotting);
+    this.quickStatusDraft.set(crush.status || this.statuses.Undefined);
     this.statusQuickEditOpen.set(true);
   }
 
@@ -1694,7 +1694,7 @@ export class ProfileDetailComponent implements OnDestroy {
     this.pendingStatusValue.set(null);
     this.statusVisibilityMode.set('private');
     this.pendingVisibilityFriendIds.set([]);
-    this.quickStatusDraft.set(crush?.status || this.statuses.Plotting);
+    this.quickStatusDraft.set(crush?.status || this.statuses.Undefined);
   }
 
   ngOnDestroy(): void {
@@ -2325,11 +2325,8 @@ export class ProfileDetailComponent implements OnDestroy {
   private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => this.friendCrushLoading()));
 
   // Dropdown choices (app-select).
-  readonly statusSelectOptions = [
-    { value: CrushStatus.Crush, label: 'Crush' }, { value: CrushStatus.Plotting, label: 'Plotting' }, { value: CrushStatus.Dating, label: 'Dating' },
-    { value: CrushStatus.Exclusive, label: 'Exclusive' }, { value: CrushStatus.BrokenUp, label: 'Broken Up' }, { value: CrushStatus.Heartbroken, label: 'Heartbroken' },
-    { value: CrushStatus.Archived, label: 'Archived' }, { value: CrushStatus.Friend, label: 'Friend' }
-  ];
+  readonly statusSelectOptions = [...CRUSH_STATUS_OPTIONS, { value: CrushStatus.Archived, label: 'Archived' }];
+  readonly statusLabel = crushStatusLabel;
   readonly safetyDurationSelectOptions = this.safetyDurationOptions.map((minutes) => ({ value: minutes, label: `${minutes} min` }));
   readonly vibePromptSelectOptions = this.vibePromptOptions.map((option) => ({ value: option.hours, label: option.label }));
 }

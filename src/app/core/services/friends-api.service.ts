@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
 import { CrushPhoto, CrushProfile, CrushStatus, mapCrushPhotos, mapCompatibility, mapFriendCompatibility } from '../models/crush-profile.model';
+import { toCrushStatus } from '../config/crush-form-options';
 import { SecurityService } from './security.service';
 import { personName } from '../utils/person-name';
 
@@ -235,21 +236,7 @@ export class FriendsApiService {
   }
 
   private toCrushStatus(status?: string): CrushStatus {
-    switch (status) {
-      case 'Crushing': // legacy name
-        return CrushStatus.Plotting;
-      case CrushStatus.Crush:
-      case CrushStatus.Plotting:
-      case CrushStatus.Dating:
-      case CrushStatus.Exclusive:
-      case CrushStatus.BrokenUp:
-      case CrushStatus.Heartbroken:
-      case CrushStatus.Archived:
-      case CrushStatus.Friend:
-        return status;
-      default:
-        return CrushStatus.Crush;
-    }
+    return toCrushStatus(status);
   }
 
   private mapCrush(crush: BackendCrushProfile): CrushProfile {

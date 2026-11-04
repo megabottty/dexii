@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { MessagingService } from './messaging.service';
 import { CrushProfile, CrushStatus } from '../models/crush-profile.model';
+import { toCrushStatus } from '../config/crush-form-options';
 import { AvatarConfig } from '../models/avatar-config.model';
 import { Entry } from '../models/entry.model';
 import { getApiBaseUrl } from '../config/api-config';
@@ -327,21 +328,7 @@ export class DataService {
   }
 
   private toCrushStatus(status?: string): CrushStatus {
-    // Legacy value: "Crushing" was renamed to "Plotting".
-    if (status === 'Crushing') return CrushStatus.Plotting;
-    if (
-      status === CrushStatus.Crush ||
-      status === CrushStatus.Plotting ||
-      status === CrushStatus.Dating ||
-      status === CrushStatus.Exclusive ||
-      status === CrushStatus.BrokenUp ||
-      status === CrushStatus.Heartbroken ||
-      status === CrushStatus.Archived ||
-      status === CrushStatus.Friend
-    ) {
-      return status;
-    }
-    return CrushStatus.Crush;
+    return toCrushStatus(status);
   }
 
   private mapBackendCrush(crush: BackendCrush): CrushProfile {

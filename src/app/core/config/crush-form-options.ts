@@ -19,9 +19,29 @@ export function pronounLabel(value: string | null | undefined): string {
   return PRONOUN_OPTIONS.find((option) => option.value === value)?.label || value;
 }
 
-/** The enum values double as their display labels. */
+/** How a status reads on screen; the stored value stays plain ("Crush"). */
+export function crushStatusLabel(status: string | null | undefined): string {
+  if (!status) return '';
+  return status === CrushStatus.Crush ? 'Crush 😍' : status;
+}
+
+/** The statuses a person can pick (DEX-50). Archived comes from the Archive button instead. */
 export const CRUSH_STATUS_OPTIONS: ReadonlyArray<{ label: string; value: CrushStatus }> =
-  Object.values(CrushStatus).map((value) => ({ label: value, value }));
+  Object.values(CrushStatus).filter((value) => value !== CrushStatus.Archived).map((value) => ({ label: crushStatusLabel(value), value }));
+
+/** Retired statuses and what they became (DEX-50); mirrors server/src/utils/crushStatus.js. */
+const LEGACY_STATUSES: Readonly<Record<string, CrushStatus>> = {
+  Crushing: CrushStatus.Crush,
+  Plotting: CrushStatus.Crush,
+  Heartbroken: CrushStatus.BrokenUp,
+  Friend: CrushStatus.Friends
+};
+
+/** Any stored status as a current one; unknown values read as Undefined. */
+export function toCrushStatus(status?: string | null): CrushStatus {
+  if (status && (Object.values(CrushStatus) as string[]).includes(status)) return status as CrushStatus;
+  return (status && LEGACY_STATUSES[status]) || CrushStatus.Undefined;
+}
 
 export const HAIR_OPTIONS: ReadonlyArray<string> = ['Blonde', 'Brown', 'Black', 'Red', 'Long', 'Spikey', 'Bald', 'Other'];
 export const EYE_OPTIONS: ReadonlyArray<string> = ['Grey', 'Blue', 'Aqua', 'Green', 'Brown', 'Hazel', 'Black', 'Other'];

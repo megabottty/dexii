@@ -1,14 +1,18 @@
 import { AvatarConfig } from './avatar-config.model';
 
+/** The main relationship status, in the order it's offered (DEX-50). Archived is set by Archive, never picked. */
 export enum CrushStatus {
+  Undefined = 'Undefined',
+  GettingAcquainted = 'Getting Acquainted',
+  Friends = 'Friends',
+  FriendsWithBenefits = 'Friends With Benefits',
   Crush = 'Crush',
-  Plotting = 'Plotting',
   Dating = 'Dating',
+  Lovers = 'Lovers',
   Exclusive = 'Exclusive',
+  Engaged = 'Engaged',
   BrokenUp = 'Broken Up',
-  Heartbroken = 'Heartbroken',
-  Archived = 'Archived',
-  Friend = 'Friend'
+  Archived = 'Archived'
 }
 
 export type SchoolOrWork = 'school' | 'working' | 'both' | 'neither';
