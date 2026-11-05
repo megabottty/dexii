@@ -324,6 +324,151 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             </div>
           }
 
+          <!-- The crush's details and its update feed. Right after creating a crush the details
+               come first; on every later visit the feed sits on top (DEX-48). -->
+          <ng-template #crushDetails>
+                @if (crushKeyDetails(c).length) {
+                  <dl class="profile-key-details">
+                    @for (d of crushKeyDetails(c); track d.label) {
+                      <div class="profile-key-detail"><dt [style.color]="theme.colors().textSecondary">{{ d.label }}</dt><dd>{{ d.value }}</dd></div>
+                    }
+                  </dl>
+                }
+                @if (c.bio) {
+                  <p [style.color]="theme.colors().textSecondary" class="profile-bio">{{ c.bio }}</p>
+                }
+
+                <!-- The rest of the details fold away on the finished profile (DEX-41) -->
+                @if (hasOwnerMoreDetails()) {
+                  <button type="button" (click)="toggleFullCrushDetails()" [attr.aria-expanded]="showFullCrushDetails()" aria-controls="profile-more-details"
+                          [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary"
+                          class="profile-more-toggle">
+                    {{ showFullCrushDetails() ? 'Fewer details ▲' : 'More details ▼' }}
+                  </button>
+                  @if (showFullCrushDetails()) {
+                    <div id="profile-more-details" class="info-grid profile-more-details">
+                      @if (birthdayLabel(c); as birthday) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Birthday</span>
+                          <span class="info-value">{{ birthday }}</span>
+                        </div>
+                      }
+                      @if (c.pronouns) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Pronouns</span>
+                          <span class="info-value">{{ pronounLabel(c.pronouns) }}</span>
+                        </div>
+                      }
+                      @if (c.hair?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Hair</span>
+                          <span class="info-value">{{ listWithOther(c.hair, parsedNotes().hairNotes) }}</span>
+                        </div>
+                      }
+                      @if (c.eyes?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Eyes</span>
+                          <span class="info-value">{{ listWithOther(c.eyes, parsedNotes().eyeNotes) }}</span>
+                        </div>
+                      }
+                      @if (c.build?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Build</span>
+                          <span class="info-value">{{ listWithOther(c.build, parsedNotes().buildNotes) }}</span>
+                        </div>
+                      }
+                      @if (c.family) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Family</span>
+                          <span class="info-value">{{ c.family }}</span>
+                        </div>
+                      }
+                      @if (c.friends?.length) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Friends</span>
+                          <span class="info-value">{{ c.friends!.join(', ') }}</span>
+                        </div>
+                      }
+                      @if (parsedNotes().relationshipNotes) {
+                        <div class="info-row-styled full-width note-detail">
+                          <span class="info-label">Relationship Notes</span>
+                          <span class="info-value note-text">{{ parsedNotes().relationshipNotes }}</span>
+                        </div>
+                      }
+                      @if (c.heartbreakSong) {
+                        <div class="info-row-styled">
+                          <span class="info-label">Heartbreak Song</span>
+                          <span class="info-value">{{ c.heartbreakSong }}</span>
+                        </div>
+                      }
+                      @if (c.heartbreakRecovery) {
+                        <div class="info-row-styled full-width note-detail">
+                          <span class="info-label">Healing Plan</span>
+                          <span class="info-value note-text">{{ c.heartbreakRecovery }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+          </ng-template>
+          <ng-template #updatesFeed>
+              <!-- Updates For Friends (DEX-44): everyone this crush is shared with sees these. -->
+              <section class="extended-info-section" aria-labelledby="updates-title">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                  <h3 id="updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
+                  <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ updateEntries().length }} total</span>
+                </div>
+
+                <app-update-timeline [entries]="updateEntries()" [crushName]="getCrushDisplayName(c)" [canPost]="true" [isCrushOwner]="true"
+                                     [sharedWith]="ownerSharedWithText(c)"
+                                     [audience]="updateAudience(c)" [(draft)]="updateDraft"
+                                     (share)="shareUpdate(c.id, $event)" (edit)="saveUpdateEdit($event.entry, $event.content)" (remove)="deleteNote($event)"></app-update-timeline>
+
+                @if (privateNoteEntries().length > 0) {
+                  <h4 [style.color]="theme.colors().textSecondary" class="private-notes-title">Private notes · only you</h4>
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    @for (entry of privateNoteEntries(); track entry.id) {
+                      <ng-container *ngTemplateOutlet="noteItem; context: { $implicit: entry, label: 'note' }"></ng-container>
+                    }
+                  </div>
+                }
+
+                <p [style.color]="theme.colors().textSecondary" style="margin: 12px 0 0; font-size: var(--fs-label);">
+                  Private thoughts about {{ getCrushDisplayName(c) }}?
+                  <a [routerLink]="['/vault']" [queryParams]="{ crush: c.id }" [style.color]="theme.colors().onBgPrimary">Write in the Vault</a>, where nothing is ever shared.
+                </p>
+
+                <ng-template #noteItem let-entry let-label="label">
+                  <div [style.border]="'1px solid ' + theme.colors().border"
+                       [style.background-color]="theme.colors().bg"
+                       style="padding: 12px; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                      <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
+                        {{ entry.timestamp | date:'MMM d, h:mm a' }}@if (entry.editedAt) { · edited }
+                      </span>
+                      <div class="note-actions">
+                        <button type="button" (click)="startEditNote(entry)" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="note-icon-btn" [attr.aria-label]="'Edit ' + label" [attr.title]="'Edit ' + label"><app-icon name="pencil" /></button>
+                        <button type="button" (click)="deleteNote(entry)" [style.color]="theme.colors().danger" [style.border]="'1px solid ' + theme.colors().danger" class="note-icon-btn" [attr.aria-label]="'Delete ' + label" [attr.title]="'Delete ' + label"><app-icon name="trash" /></button>
+                      </div>
+                    </div>
+                    @if (editingNoteId() === entry.id) {
+                      <textarea [(ngModel)]="noteDraft" rows="4" [attr.aria-label]="'Edit ' + label"
+                                [style.background-color]="theme.colors().bgSecondary"
+                                [style.border]="'1px solid ' + theme.colors().border"
+                                [style.color]="theme.colors().text"
+                                class="note-edit-textarea"></textarea>
+                      <div class="note-edit-actions">
+                        <button type="button" (click)="cancelEditNote()" class="action-btn-styled secondary">Cancel</button>
+                        <button type="button" (click)="saveEditNote(entry)" class="action-btn-styled primary">Save</button>
+                      </div>
+                    } @else {
+                      <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
+                    }
+                  </div>
+                </ng-template>
+              </section>
+          </ng-template>
+
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
                class="profile-header-card">
@@ -417,91 +562,27 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     }
                   </div>
                 }
-                @if (crushKeyDetails(c).length) {
-                  <dl class="profile-key-details">
-                    @for (d of crushKeyDetails(c); track d.label) {
-                      <div class="profile-key-detail"><dt [style.color]="theme.colors().textSecondary">{{ d.label }}</dt><dd>{{ d.value }}</dd></div>
-                    }
-                  </dl>
-                }
-                @if (c.bio) {
-                  <p [style.color]="theme.colors().textSecondary" class="profile-bio">{{ c.bio }}</p>
-                }
-
-                <!-- The rest of the details fold away on the finished profile (DEX-41) -->
-                @if (hasOwnerMoreDetails()) {
-                  <button type="button" (click)="toggleFullCrushDetails()" [attr.aria-expanded]="showFullCrushDetails()" aria-controls="profile-more-details"
-                          [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary"
-                          class="profile-more-toggle">
-                    {{ showFullCrushDetails() ? 'Fewer details ▲' : 'More details ▼' }}
-                  </button>
-                  @if (showFullCrushDetails()) {
-                    <div id="profile-more-details" class="info-grid profile-more-details">
-                      @if (birthdayLabel(c); as birthday) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Birthday</span>
-                          <span class="info-value">{{ birthday }}</span>
-                        </div>
-                      }
-                      @if (c.pronouns) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Pronouns</span>
-                          <span class="info-value">{{ pronounLabel(c.pronouns) }}</span>
-                        </div>
-                      }
-                      @if (c.hair?.length) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Hair</span>
-                          <span class="info-value">{{ listWithOther(c.hair, parsedNotes().hairNotes) }}</span>
-                        </div>
-                      }
-                      @if (c.eyes?.length) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Eyes</span>
-                          <span class="info-value">{{ listWithOther(c.eyes, parsedNotes().eyeNotes) }}</span>
-                        </div>
-                      }
-                      @if (c.build?.length) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Build</span>
-                          <span class="info-value">{{ listWithOther(c.build, parsedNotes().buildNotes) }}</span>
-                        </div>
-                      }
-                      @if (c.family) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Family</span>
-                          <span class="info-value">{{ c.family }}</span>
-                        </div>
-                      }
-                      @if (c.friends?.length) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Friends</span>
-                          <span class="info-value">{{ c.friends!.join(', ') }}</span>
-                        </div>
-                      }
-                      @if (parsedNotes().relationshipNotes) {
-                        <div class="info-row-styled full-width note-detail">
-                          <span class="info-label">Relationship Notes</span>
-                          <span class="info-value note-text">{{ parsedNotes().relationshipNotes }}</span>
-                        </div>
-                      }
-                      @if (c.heartbreakSong) {
-                        <div class="info-row-styled">
-                          <span class="info-label">Heartbreak Song</span>
-                          <span class="info-value">{{ c.heartbreakSong }}</span>
-                        </div>
-                      }
-                      @if (c.heartbreakRecovery) {
-                        <div class="info-row-styled full-width note-detail">
-                          <span class="info-label">Healing Plan</span>
-                          <span class="info-value note-text">{{ c.heartbreakRecovery }}</span>
-                        </div>
-                      }
-                    </div>
-                  }
+                @if (!feedFirst()) {
+                  <ng-container *ngTemplateOutlet="crushDetails"></ng-container>
                 }
               </div>
             </div>
+
+            @if (feedFirst() && !isEditMode()) {
+              <div [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   class="info-section-card feed-first-card">
+                <ng-container *ngTemplateOutlet="updatesFeed"></ng-container>
+              </div>
+              @if (crushKeyDetails(c).length || c.bio || hasOwnerMoreDetails()) {
+              <div [style.background-color]="theme.colors().bgSecondary"
+                   [style.border]="'1px solid ' + theme.colors().border"
+                   class="info-section-card feed-first-card feed-first-details">
+                <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Details</h2>
+                <ng-container *ngTemplateOutlet="crushDetails"></ng-container>
+              </div>
+              }
+            }
 
             @if (!isEditMode()) {
               <div class="action-buttons-grid">
@@ -817,8 +898,13 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Info</h2>
               @if (c.memorableMoments) {
                 <div class="extended-info-section">
-                  <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title">Memorable Moments</h3>
-                  <p [style.color]="theme.colors().textSecondary" class="extended-info-text">{{ c.memorableMoments }}</p>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <h3 [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Memorable Moments</h3>
+                    <button type="button" (click)="momentsExpanded.set(!momentsExpanded())" [attr.aria-expanded]="momentsExpanded()" aria-controls="memorable-moments" class="action-btn-styled secondary compat-toggle">{{ momentsExpanded() ? 'Hide ▲' : 'Show ▼' }}</button>
+                  </div>
+                  @if (momentsExpanded()) {
+                    <p id="memorable-moments" [style.color]="theme.colors().textSecondary" class="extended-info-text">{{ c.memorableMoments }}</p>
+                  }
                 </div>
               }
 
@@ -849,61 +935,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 </div>
               }
 
-              <!-- Updates For Friends (DEX-44): everyone this crush is shared with sees these. -->
-              <section class="extended-info-section" aria-labelledby="updates-title">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                  <h3 id="updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
-                  <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ updateEntries().length }} total</span>
-                </div>
-
-                <app-update-timeline [entries]="updateEntries()" [crushName]="getCrushDisplayName(c)" [canPost]="true" [isCrushOwner]="true"
-                                     [sharedWith]="ownerSharedWithText(c)"
-                                     [audience]="updateAudience(c)" [(draft)]="updateDraft"
-                                     (share)="shareUpdate(c.id, $event)" (edit)="saveUpdateEdit($event.entry, $event.content)" (remove)="deleteNote($event)"></app-update-timeline>
-
-                @if (privateNoteEntries().length > 0) {
-                  <h4 [style.color]="theme.colors().textSecondary" class="private-notes-title">Private notes · only you</h4>
-                  <div style="display: flex; flex-direction: column; gap: 10px;">
-                    @for (entry of privateNoteEntries(); track entry.id) {
-                      <ng-container *ngTemplateOutlet="noteItem; context: { $implicit: entry, label: 'note' }"></ng-container>
-                    }
-                  </div>
-                }
-
-                <p [style.color]="theme.colors().textSecondary" class="vault-link-line">
-                  Private thoughts about {{ getCrushDisplayName(c) }}?
-                  <a [routerLink]="['/vault']" [queryParams]="{ crush: c.id }" [style.color]="theme.colors().onBgPrimary">Write in the Vault</a>, where nothing is ever shared.
-                </p>
-
-                <ng-template #noteItem let-entry let-label="label">
-                  <div [style.border]="'1px solid ' + theme.colors().border"
-                       [style.background-color]="theme.colors().bg"
-                       style="padding: 12px; border-radius: 8px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                      <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">
-                        {{ entry.timestamp | date:'MMM d, h:mm a' }}@if (entry.editedAt) { · edited }
-                      </span>
-                      <div class="note-actions">
-                        <button type="button" (click)="startEditNote(entry)" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border" class="note-icon-btn" [attr.aria-label]="'Edit ' + label" [attr.title]="'Edit ' + label"><app-icon name="pencil" /></button>
-                        <button type="button" (click)="deleteNote(entry)" [style.color]="theme.colors().danger" [style.border]="'1px solid ' + theme.colors().danger" class="note-icon-btn" [attr.aria-label]="'Delete ' + label" [attr.title]="'Delete ' + label"><app-icon name="trash" /></button>
-                      </div>
-                    </div>
-                    @if (editingNoteId() === entry.id) {
-                      <textarea [(ngModel)]="noteDraft" rows="4" [attr.aria-label]="'Edit ' + label"
-                                [style.background-color]="theme.colors().bgSecondary"
-                                [style.border]="'1px solid ' + theme.colors().border"
-                                [style.color]="theme.colors().text"
-                                class="note-edit-textarea"></textarea>
-                      <div class="note-edit-actions">
-                        <button type="button" (click)="cancelEditNote()" class="action-btn-styled secondary">Cancel</button>
-                        <button type="button" (click)="saveEditNote(entry)" class="action-btn-styled primary">Save</button>
-                      </div>
-                    } @else {
-                      <p [style.color]="theme.colors().textSecondary" style="margin: 0; white-space: pre-wrap;">{{ entry.content }}</p>
-                    }
-                  </div>
-                </ng-template>
-              </section>
+              @if (!feedFirst()) {
+                <ng-container *ngTemplateOutlet="updatesFeed"></ng-container>
+              }
 
               <!-- Vibe Tracker -->
               <div [style.background-color]="theme.colors().bgSecondary"
@@ -1249,6 +1283,13 @@ export class ProfileDetailComponent implements OnDestroy {
   private location = inject(Location);
   /** Whether the "Show more details" section is expanded on the read-only friend view. */
   showFullCrushDetails = signal(false);
+  /**
+   * The update feed sits above the details, except on the visit right after the crush
+   * was created, when you check what you just entered (DEX-48). That only happens once.
+   */
+  feedFirst = signal(true);
+  /** Memorable Moments can run long, so it starts folded (DEX-48). */
+  momentsExpanded = signal(false);
 
 
   toggleFullCrushDetails(): void {
@@ -1269,7 +1310,8 @@ export class ProfileDetailComponent implements OnDestroy {
   }
   safetyState = signal<'Draft' | 'Sent' | 'Safe' | 'Urgent'>('Draft');
   onDateMode = signal(false);
-  statuses = CrushStatus;
+  // A getter, not a field: in the bundled test run the enum can still be loading when the class is built.
+  get statuses(): typeof CrushStatus { return CrushStatus; }
   isEditMode = signal(false);
   showShareSelector = signal(false);
   showStatusVisibilityModal = signal(false);
@@ -1532,6 +1574,7 @@ export class ProfileDetailComponent implements OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.crushId.set(params.get('id'));
       const crushId = params.get('id') || '';
+      this.feedFirst.set(!this.isFirstVisitAfterCreating(crushId));
       this.compatSnoozedAt.set(Number(localStorage.getItem(`compat_checked_${crushId}`) || 0) || 0);
       this.checkInScore.set(null);
       this.loadSeenVotes(crushId);
@@ -1549,6 +1592,18 @@ export class ProfileDetailComponent implements OnDestroy {
       const updateId = params.get('update');
       if (updateId) this.scrollToUpdate(updateId);
     });
+  }
+
+  /** True once, on the visit New Crush opens right after saving this crush. */
+  private isFirstVisitAfterCreating(crushId: string): boolean {
+    const state = (typeof history !== 'undefined' ? history.state : null) as { justCreated?: string } | null;
+    if (!crushId || state?.justCreated !== crushId) return false;
+    const key = `dexii_crush_opened_${crushId}`;
+    try {
+      if (sessionStorage.getItem(key)) return false;
+      sessionStorage.setItem(key, '1');
+    } catch { /* storage blocked: still show details first this once */ }
+    return true;
   }
 
   private scrollToUpdate(updateId: string, attempt = 0): void {

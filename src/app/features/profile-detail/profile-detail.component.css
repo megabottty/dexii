@@ -1220,6 +1220,3 @@ button.friend-item:disabled {
 .profile-quick-action { width: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 
 .private-notes-title { margin: 20px 0 10px; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: 1px; }
-
-/* DEX-43: private thoughts about a crush belong in the Vault. */
-.vault-link-line { margin: 12px 0 0; font-size: var(--fs-label); }

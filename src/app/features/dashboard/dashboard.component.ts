@@ -693,7 +693,10 @@ export class DashboardComponent implements OnInit {
     // First crush ever: guide them through sharing it with a friend.
     if (this.dataService.getAllCrushes()().length === 1) {
       this.walkthrough.start(FIRST_CRUSH_SHARE_TOUR_KEY, FIRST_CRUSH_SHARE_TOUR);
+      return;
     }
+    // Otherwise open their profile, details first, so they can check what they entered (DEX-48).
+    void this.router.navigate(['/profile', saved.id], { state: { justCreated: saved.id } });
   }
 
   /** Uploads the New Crush photos one by one; the global overlay shows while they go up. */
