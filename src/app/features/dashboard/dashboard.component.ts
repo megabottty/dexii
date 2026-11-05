@@ -703,7 +703,7 @@ export class DashboardComponent implements OnInit {
   private async uploadPendingPhotos(crushId: string, photos: PendingPhoto[]): Promise<void> {
     this.photoUploadBusy.set(true);
     try {
-      for (const photo of photos) await this.dataService.addCrushPhoto(crushId, photo);
+      await this.dataService.addCrushPhotos(crushId, photos);
     } finally {
       this.photoUploadBusy.set(false);
     }

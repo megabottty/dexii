@@ -66,9 +66,12 @@ interface ListGroup {
                          [initial]="form().displayName === 'fullName' ? (form().fullName || form().nickname) : (form().nickname || form().fullName)"></app-avatar-picker>
 
       @if (allowPhotos()) {
-        <!-- New Crush: queue as many photos as the cap allows; they upload once the crush is saved. -->
+        <!-- New Crush and Edit: queue pictures up to the cap; they upload once the crush is saved (DEX-39, DEX-59). -->
         <div class="cf-field cf-photos">
           <span [style.color]="theme.colors().textSecondary" class="cf-label">More Pictures</span>
+          @if (existingPhotoCount() > 0) {
+            <span [style.color]="theme.colors().textSecondary" class="cf-hint">{{ existingPhotoCount() }} already on their profile · {{ maxPhotos }} max</span>
+          }
           @if (form().pendingPhotos.length) {
             <div class="cf-photo-grid">
               @for (photo of form().pendingPhotos; track $index; let i = $index) {
@@ -79,7 +82,7 @@ interface ListGroup {
               }
             </div>
           }
-          @if (form().pendingPhotos.length < maxPhotos) {
+          @if (photoRoom() > 0) {
             <label class="cf-photo-add" [style.border]="inputBorder()" [style.color]="theme.colors().text" [style.background-color]="theme.colors().bgSecondary">
               <span aria-hidden="true">＋</span> Add More Pictures
               <input type="file" accept="image/*" multiple (change)="onPhotosPicked($event)" class="cf-photo-input" aria-label="Add more pictures of this crush">
@@ -533,7 +536,13 @@ export class CrushFormComponent {
   readonly form = input.required<CrushFormValue>();
   /** New Crush only: show the multi-photo picker (photos upload after the crush is created). */
   readonly allowPhotos = input(false, { transform: booleanAttribute });
-  readonly maxPhotos = MAX_PHOTOS;
+  get maxPhotos(): number { return MAX_PHOTOS; }
+  /** Edit: pictures the crush already has, which count toward the cap. */
+  readonly existingPhotoCount = input(0);
+  /** How many more pictures fit, counting saved ones and ones picked in this form. */
+  photoRoom(): number {
+    return Math.max(0, this.maxPhotos - this.existingPhotoCount() - this.form().pendingPhotos.length);
+  }
   readonly photoBusy = signal('');
   readonly photoError = signal('');
 
@@ -543,7 +552,7 @@ export class CrushFormComponent {
     inputEl.value = '';
     this.photoError.set('');
     const form = this.form();
-    const room = this.maxPhotos - form.pendingPhotos.length;
+    const room = this.photoRoom();
     if (files.length > room) this.photoError.set(`You can add ${room} more photo${room === 1 ? '' : 's'} (${this.maxPhotos} per crush).`);
     for (const file of files.slice(0, Math.max(0, room))) {
       this.photoBusy.set(`Adding ${file.name}…`);

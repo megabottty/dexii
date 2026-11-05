@@ -802,7 +802,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                  class="info-section-card edit-form">
               <h2 [style.color]="theme.colors().onBgPrimary" class="info-title">Edit Details</h2>
 
-              <app-crush-form [form]="editForm"></app-crush-form>
+              <app-crush-form [form]="editForm" allowPhotos [existingPhotoCount]="c.photoCount || 0"></app-crush-form>
 
               <div class="edit-actions-footer">
                 <button (click)="saveEdit(c.id)" class="action-btn-styled primary">Save Changes</button>
@@ -2293,12 +2293,15 @@ export class ProfileDetailComponent implements OnDestroy {
       this.editForm.avatarUrl = await this.avatarRenderer.render(this.editForm.avatarConfig, 256);
     }
 
+    const pendingPhotos = [...this.editForm.pendingPhotos];
     this.dataService.updateCrush({
       ...current,
       ...formValueToCrushPatch(this.editForm),
       id: crushId
     }, { fields: CRUSH_FORM_FIELDS, silent: false });
     this.isEditMode.set(false);
+    // "＋ Add More Pictures" in Edit: they go into the crush's gallery (DEX-59).
+    if (pendingPhotos.length) void this.dataService.addCrushPhotos(crushId, pendingPhotos);
   }
 
   /** Page-level loading feeds the global overlay (app-loading-overlay). */

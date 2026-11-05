@@ -119,4 +119,25 @@ describe('CrushFormComponent', () => {
     expect(fixture.nativeElement.querySelector('#cf-occupation')).toBeNull();
     expect(fixture.nativeElement.querySelector('#cf-grade')).not.toBeNull();
   });
+
+  describe('More Pictures on Edit (DEX-59)', () => {
+    it('shows "More Pictures" with room left after the pictures they already have', () => {
+      fixture.componentRef.setInput('allowPhotos', true);
+      fixture.componentRef.setInput('existingPhotoCount', 18);
+      fixture.detectChanges();
+      const text = (fixture.nativeElement as HTMLElement).textContent as string;
+      expect(text).toContain('More Pictures');
+      expect(text).toContain('18 already on their profile');
+      expect(text).toContain('Add More Pictures');
+      expect(fixture.componentInstance.photoRoom()).toBe(2);
+    });
+
+    it('hides the add button once the crush has the most pictures allowed', () => {
+      fixture.componentRef.setInput('allowPhotos', true);
+      fixture.componentRef.setInput('existingPhotoCount', fixture.componentInstance.maxPhotos);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.photoRoom()).toBe(0);
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Add More Pictures');
+    });
+  });
 });

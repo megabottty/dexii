@@ -82,4 +82,17 @@ describe('Saving a new crush (DEX-58)', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(calls.filter((c) => c.includes('/demo/'))).toEqual([]);
   });
+
+  it('uploads each picture added in Edit to that crush, in order (DEX-59)', async () => {
+    localStorage.setItem('dexii_api_token', 'token');
+    const id = '6b0000000000000000000003';
+    vi.mocked(fetch).mockImplementation(((url: string, init?: RequestInit) => {
+      calls.push(`${init?.method || 'GET'} ${url}`);
+      if (String(url).endsWith(`/crushes/${id}/photos`)) return json({ _id: 'p' + calls.length, url: 'x' }, 201);
+      return json([]);
+    }) as any);
+    const added = await data.addCrushPhotos(id, [{ url: 'a' }, { url: 'b' }]);
+    expect(added).toBe(2);
+    expect(calls.filter((c) => c === `POST http://localhost:5001/api/crushes/${id}/photos`).length).toBe(2);
+  });
 });

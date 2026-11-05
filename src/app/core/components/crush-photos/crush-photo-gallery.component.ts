@@ -313,10 +313,17 @@ export class CrushPhotoGalleryComponent {
   visibleIndex(photo: CrushPhoto): number { return this.visiblePhotos().findIndex((p) => p.id === photo.id); }
   readonly hasHiddenPhotos = computed(() => this.photos().some((p) => p.audience === 'friends'));
 
+  /** The owner's saved picture count; a number, so other changes to the crush don't reload the gallery. */
+  private readonly ownerPhotoCount = computed(() =>
+    this.mode() === 'owner' ? this.dataService.getAllCrushes()().find((c) => c.id === this.crushId())?.photoCount ?? 0 : 0
+  );
+
   constructor() {
     effect(() => {
       const id = this.crushId();
       const mode = this.mode();
+      // Owner: reload when the saved picture count changes, e.g. pictures added in Edit (DEX-59).
+      this.ownerPhotoCount();
       void this.load(id, mode);
     }, { allowSignalWrites: true });
     // Move focus into the lightbox when it opens, and back when it closes.

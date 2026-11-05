@@ -394,6 +394,15 @@ export class DataService {
     return photos;
   }
 
+  /** Uploads pictures to a saved crush one by one, in order; returns how many made it. */
+  public async addCrushPhotos(crushId: string, photos: ReadonlyArray<{ url: string; width?: number; height?: number }>): Promise<number> {
+    let added = 0;
+    for (const photo of photos) {
+      if (await this.addCrushPhoto(crushId, photo)) added += 1;
+    }
+    return added;
+  }
+
   public async addCrushPhoto(crushId: string, photo: { url: string; width?: number; height?: number }, audience: 'shared' | 'friends' = 'shared', friendIds: string[] = []): Promise<CrushPhoto | null> {
     const response = await this.authenticatedFetch(`/crushes/${crushId}/photos`, {
       method: 'POST',
