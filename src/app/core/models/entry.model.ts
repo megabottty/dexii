@@ -51,6 +51,8 @@ export interface Entry {
   redFlagCount?: number; // Optional increment if RedFlag type
   editHistory?: EntryEditHistoryItem[]; // Prior versions of `content`, oldest first
   editedAt?: Date; // Timestamp of the most recent content edit, if any
+  /** A Vault journal entry can be about one of your crushes (DEX-43). */
+  taggedCrushId?: string;
   reactions?: UpdateReaction[];
   comments?: UpdateComment[];
 }

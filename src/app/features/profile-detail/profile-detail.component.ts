@@ -870,6 +870,11 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   </div>
                 }
 
+                <p [style.color]="theme.colors().textSecondary" class="vault-link-line">
+                  Private thoughts about {{ getCrushDisplayName(c) }}?
+                  <a [routerLink]="['/vault']" [queryParams]="{ crush: c.id }" [style.color]="theme.colors().onBgPrimary">Write in the Vault</a>, where nothing is ever shared.
+                </p>
+
                 <ng-template #noteItem let-entry let-label="label">
                   <div [style.border]="'1px solid ' + theme.colors().border"
                        [style.background-color]="theme.colors().bg"

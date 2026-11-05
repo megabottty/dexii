@@ -1,7 +1,7 @@
 import { Component, signal, inject, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { VaultService } from '../../core/services/vault.service';
 import { DataService } from '../../core/services/data.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -90,6 +90,9 @@ import { NotificationsService } from '../../core/services/notifications.service'
         <!-- Private Journal Tab -->
         @if (activeTab() === 'journal') {
           <div class="vault-center-component__s14">
+            <p role="note" [style.border]="'1px solid ' + theme.colors().primary" [style.color]="theme.colors().text" class="vault-never-shared">
+              🔒 <strong>Nothing in the Vault is ever shared</strong>, not even with friends you share crushes with.
+            </p>
             <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="vault-journal-box">
                <h3 class="vault-center-component__s15">New Journal Entry</h3>
                <div [style.border]="'1px solid ' + theme.colors().border" class="journal-prompt-card">
@@ -117,6 +120,19 @@ import { NotificationsService } from '../../core/services/notifications.service'
                <textarea [(ngModel)]="newJournalEntry" aria-label="New journal entry" placeholder="Write your private thoughts here... (Never shared)"
                          [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
                          class="vault-center-component__s16"></textarea>
+               @if (dataService.activeCrushes().length > 0) {
+                 <label [style.color]="theme.colors().textSecondary" class="vault-crush-tag-label">
+                   About a crush (optional)
+                   <select aria-label="About a crush" [ngModel]="journalCrushId()" (ngModelChange)="journalCrushId.set($event)"
+                           [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
+                           class="vault-crush-tag-select">
+                     <option value="">No crush</option>
+                     @for (crush of dataService.activeCrushes(); track crush.id) {
+                       <option [value]="crush.id">{{ crush.nickname }}</option>
+                     }
+                   </select>
+                 </label>
+               }
                <button (click)="saveJournal()" [style.background-color]="theme.colors().primary"
                        class="vault-center-component__s17">Secure Entry</button>
             </div>
@@ -147,6 +163,9 @@ import { NotificationsService } from '../../core/services/notifications.service'
                           </time>
                           @if (entry.editedAt) {
                             <span [style.color]="theme.colors().textSecondary" class="journal-page-edited-tag">(edited)</span>
+                          }
+                          @if (crushNameFor(entry); as crushName) {
+                            <span [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().onBgPrimary" class="journal-page-crush-chip">About {{ crushName }}</span>
                           }
                           <div class="journal-page-actions">
                             @if (editingEntryId() !== entry.id) {
@@ -335,6 +354,8 @@ export class VaultCenterComponent implements OnDestroy {
 
   activeTab = signal<'journal' | 'photos'>('journal');
   newJournalEntry = '';
+  /** The crush the next entry is about, if any (DEX-43). */
+  journalCrushId = signal(inject(ActivatedRoute).snapshot.queryParamMap.get('crush') || '');
   journalPrompt = signal('');
   private readonly journalPrompts = [
     'What felt most like you today, and why?',
@@ -388,10 +409,18 @@ export class VaultCenterComponent implements OnDestroy {
       type: 'PrivateJournal',
       content: this.newJournalEntry,
       visibility: [],
-      isSensitive: true
+      isSensitive: true,
+      ...(this.journalCrushId() ? { taggedCrushId: this.journalCrushId() } : {})
     });
     this.newJournalEntry = '';
+    this.journalCrushId.set('');
     this.modal.show('Journal entry secured. Permanently separate from all sharing.');
+  }
+
+  /** The nickname of the crush a journal entry is about, if it's still one of yours. */
+  crushNameFor(entry: Entry): string {
+    if (!entry.taggedCrushId) return '';
+    return this.dataService.activeCrushes().find((crush) => crush.id === entry.taggedCrushId)?.nickname || '';
   }
 
   editingEntryId = signal<string | null>(null);

@@ -50,6 +50,8 @@ const EntrySchema = new mongoose.Schema({
     enum: SAFETY_STATUSES
   },
   redFlagCount: Number,
+  // A Vault journal entry can be about a crush (DEX-43); it is still never shared.
+  taggedCrushId: String,
   editHistory: {
     type: [{
       previousContent: { type: String, required: true },

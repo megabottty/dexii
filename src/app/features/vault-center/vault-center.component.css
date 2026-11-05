@@ -755,3 +755,33 @@
   font: inherit;
   border-radius: 0 0 12px 12px;
 }
+
+/* DEX-43: the Vault says plainly that nothing in it is shared, and entries can be about a crush. */
+.vault-never-shared {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.vault-crush-tag-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: var(--fs-label);
+}
+
+.vault-crush-tag-select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.journal-page-crush-chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-small);
+}

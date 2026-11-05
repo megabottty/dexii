@@ -55,7 +55,8 @@ const writableFields = [
   'isSensitive',
   'safetyContactId',
   'safetyStatus',
-  'redFlagCount'
+  'redFlagCount',
+  'taggedCrushId'
 ];
 
 /**
@@ -120,7 +121,7 @@ exports.getSharedEntries = async (req, res) => {
       Entry.find({
         userId: { $in: friendIds },
         visibility: String(req.user.id),
-        type: { $nin: ['Note', 'Update'] },
+        type: { $nin: ['Note', 'Update', 'PrivateJournal'] },
         $nor: [{ isBurnAfterReading: true, hasViewed: true }]
       })
         .populate('userId', 'username displayName avatarUrl')
@@ -162,6 +163,8 @@ exports.createEntry = async (req, res) => {
       return res.status(400).json({ message: 'Status changes are added automatically.' });
     }
     const fields = pickWritableFields(req.body);
+    // The Vault is never shared with anyone (DEX-43).
+    if (type === 'PrivateJournal') fields.visibility = [];
     // Only the crush's owner posts updates; friends just read them.
     let crush = null;
     if (type === 'Update') {
@@ -209,7 +212,7 @@ exports.updateEntry = async (req, res) => {
 
     const updates = pickWritableFields(req.body);
     delete updates.type;
-    if ((updates.type || existing.type) === 'Update') updates.visibility = [];
+    if (['Update', 'PrivateJournal'].includes(existing.type)) updates.visibility = [];
 
     // Whenever the content actually changes, automatically archive the prior
     // version into editHistory and stamp editedAt - computed server-side so
