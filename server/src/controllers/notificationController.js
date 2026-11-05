@@ -4,6 +4,7 @@ const User = require('../models/User');
 const CrushProfile = require('../models/CrushProfile');
 const push = require('../services/pushService');
 const { hasMuted } = require('../services/pauseState');
+const { personName } = require('../utils/personName');
 
 const ACTOR_FIELDS = 'username displayName firstName lastName avatarUrl';
 
@@ -41,11 +42,7 @@ const shapeNotification = (notification) => ({
   createdAt: notification.createdAt
 });
 
-const actorDisplayName = (actor) => {
-  if (!actor) return 'A friend';
-  const fullName = [actor.firstName, actor.lastName].filter(Boolean).join(' ').trim();
-  return fullName || actor.username || 'A friend';
-};
+const actorDisplayName = (actor) => personName(actor);
 
 /** Mirrors the copy the feed shows for each notification type. */
 const pushCopy = (type, actor, payload = {}) => {
@@ -123,6 +120,7 @@ const emitToUser = (io, userId, event, payload) => {
   try { io.to(String(userId)).emit(event, payload); } catch { /* ignore */ }
 };
 exports.emitToUser = emitToUser;
+exports.pushCopy = pushCopy;
 
 /**
  * Removes "shared a crush" notifications that no longer point at something the

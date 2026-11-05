@@ -16,6 +16,7 @@ import { InstallPromptService } from '../../core/services/install-prompt.service
 import { WebPushService } from '../../core/services/web-push.service';
 import { NotificationSetupComponent } from '../../core/components/notification-setup/notification-setup.component';
 import { AvatarPickerComponent } from '../../core/components/avatar-picker/avatar-picker.component';
+import { PersonNamePipe, selfName } from '../../core/utils/person-name';
 import { AppUpdateService } from '../../core/services/app-update.service';
 import { FeatureGateService } from '../../core/services/feature-gate.service';
 import { PARKED_FEATURES_ENABLED, PREMIUM_FEATURES, PremiumFeatureKey } from '../../core/config/premium-features';
@@ -32,7 +33,7 @@ interface FriendChoice {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent, FocusTrapDirective, AppSelectComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent, PageHintComponent, AvatarPickerComponent, UpgradePromptComponent, NotificationSetupComponent, FocusTrapDirective, AppSelectComponent, PersonNamePipe],
   styleUrl: './settings.component.css',
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text" class="settings-page">
@@ -51,14 +52,14 @@ interface FriendChoice {
           <div class="settings-header">
             <div>
               <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Account</p>
-              <h1 class="settings-title">{{ settings.settings().displayName || '@' + username() }}</h1>
+              <h1 class="settings-title">{{ selfName(settings.settings().displayName, username()) }}</h1>
               <p [style.color]="theme.colors().textSecondary" class="settings-subtitle">
                 Username: @{{ username() }}
               </p>
             </div>
             <div class="settings-header-profile">
               <img [src]="settings.settings().avatarUrl || defaultAvatar()"
-                   [alt]="settings.settings().displayName || username()"
+                   [alt]="selfName(settings.settings().displayName, username())"
                    class="settings-avatar">
             </div>
           </div>
@@ -101,7 +102,7 @@ interface FriendChoice {
                  [style.background-color]="theme.colors().bg"
                  class="settings-photo-picker">
               <app-avatar-picker label="Profile photo"
-                                 [initial]="settings.settings().displayName || username()"
+                                 [initial]="selfName(settings.settings().displayName, username()).replace('@', '')"
                                  [url]="settings.settings().avatarUrl || ''"
                                  (urlChange)="onPhotoChange('avatarUrl', $event)"
                                  [config]="settings.settings().avatarConfig"
@@ -548,10 +549,10 @@ interface FriendChoice {
                        class="settings-modal-friend">
                   <div class="settings-modal-friend-main">
                     <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id"
-                         [alt]="friend.username"
+                         [alt]="friend | personName"
                          class="settings-modal-avatar">
                     <div>
-                      <p class="settings-modal-friend-name">{{ friend.username }}</p>
+                      <p class="settings-modal-friend-name">{{ friend | personName }}</p>
                       <p [style.color]="theme.colors().textSecondary" class="settings-modal-friend-meta">
                         {{ friend.friendCategories?.[0] || 'Friend' }}
                       </p>
@@ -583,6 +584,7 @@ interface FriendChoice {
   `
 })
 export class SettingsComponent {
+  readonly selfName = selfName;
   theme = inject(ThemeService);
   install = inject(InstallPromptService);
   webPush = inject(WebPushService);

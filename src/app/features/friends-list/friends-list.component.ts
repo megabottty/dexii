@@ -330,7 +330,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 @for (req of outgoingRequests(); track req.id) {
                   <div [style.border]="'1px solid ' + theme.colors().border" class="friends-list-component__s42">
                     <div>
-                      <div style="font-weight: 600;">{{ req.kind === 'invite' ? 'Invited: ' : 'To: ' }}{{ req.to }}</div>
+                      <div style="font-weight: 600;">{{ req.kind === 'invite' ? 'Invite sent to ' : 'To: ' }}{{ req.to }}</div>
                       <div [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-small);">
                         @if (req.kind === 'invite') {
                           Invite {{ req.invite?.method === 'sms' ? 'texted' : 'emailed' }} {{ req.createdAt | date:'MMM d, h:mm a' }} · they haven't joined Dexii yet
@@ -428,6 +428,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   </a>
                   <div>
                     <h4 class="friends-list-component__s57">{{ friend | personName }}</h4>
+                    @if (friend.username && (friend | personName) !== friend.username) {
+                      <span [style.color]="theme.colors().textSecondary" class="friends-list-handle">&#64;{{ friend.username }}</span>
+                    }
                     <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
                   </div>
                 </div>
@@ -490,6 +493,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     </a>
                     <div>
                       <h4 class="friends-list-component__s57">{{ friend | personName }}</h4>
+                    @if (friend.username && (friend | personName) !== friend.username) {
+                      <span [style.color]="theme.colors().textSecondary" class="friends-list-handle">&#64;{{ friend.username }}</span>
+                    }
                       <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.mutedNotifications ? 'Paused · notifications muted' : 'Paused' }}</span>
                     </div>
                   </div>

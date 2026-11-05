@@ -135,7 +135,7 @@ export function mergeTeaItems(
         break;
       case 'friend_request_accepted':
         item.text = `${actor.name} accepted your friend request`;
-        item.route = ['/chat']; item.queryParams = { friendId: actor.id, friendName: actor.username || actor.name }; item.actionLabel = 'Say hi';
+        item.route = ['/chat']; item.queryParams = { friendId: actor.id, friendName: actor.name }; item.actionLabel = 'Say hi';
         break;
       case 'compatibility_vote': {
         const crush = crushId ? crushById.get(crushId) : undefined;

@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SecurityService } from './core/services/security.service';
 import { ThemeService } from './core/services/theme.service';
+import { NamePromptComponent } from './core/components/name-prompt/name-prompt.component';
 import { AlertModalComponent } from './core/components/alert-modal.component';
 import { LoadingOverlayComponent } from './core/components/loading-overlay.component';
 import { LoadingService } from './core/services/loading.service';
@@ -27,7 +28,7 @@ interface WalkthroughStep {
 @Component({
   selector: 'app-root',
   styleUrl: './app.component.css',
-  imports: [RouterOutlet, AlertModalComponent, LoadingOverlayComponent, WalkthroughComponent, FocusTrapDirective],
+  imports: [RouterOutlet, AlertModalComponent, LoadingOverlayComponent, WalkthroughComponent, FocusTrapDirective, NamePromptComponent],
   template: `
     <div [style.background-color]="theme.colors().bg"
          [class.is-chat-route]="currentPath().startsWith('/chat')"
@@ -266,6 +267,7 @@ interface WalkthroughStep {
         </div>
       }
 
+      <app-name-prompt></app-name-prompt>
       <app-alert-modal></app-alert-modal>
       <app-walkthrough></app-walkthrough>
       <app-loading-overlay></app-loading-overlay>

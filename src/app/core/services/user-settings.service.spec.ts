@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeServerSettings } from './user-settings.service';
+import { mergeServerSettings, needsRealName } from './user-settings.service';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from './user-settings.storage';
 
 const local: UserSettings = {
@@ -38,5 +38,22 @@ describe('mergeServerSettings', () => {
   it('leaves everything alone when the server returns nothing useful', () => {
     expect(mergeServerSettings(local, null)).toEqual(local);
     expect(mergeServerSettings(local, { profileSettings: null })).toEqual(local);
+  });
+});
+
+describe('needsRealName (DEX-53)', () => {
+  it('asks people whose only name is their username or an email', () => {
+    expect(needsRealName({ username: 'mgrange' })).toBe(true);
+    expect(needsRealName({ username: 'mgrange', profileSettings: { displayName: 'mgrange' } })).toBe(true);
+    expect(needsRealName({ username: 'mgrange', profileSettings: { displayName: 'michelle@example.com' } })).toBe(true);
+  });
+
+  it('leaves alone anyone with a first name or a chosen display name', () => {
+    expect(needsRealName({ username: 'mgrange', firstName: 'Michelle' })).toBe(false);
+    expect(needsRealName({ username: 'mgrange', profileSettings: { displayName: 'Shelly' } })).toBe(false);
+  });
+
+  it('does not ask while the profile is unknown', () => {
+    expect(needsRealName(null)).toBe(false);
   });
 });

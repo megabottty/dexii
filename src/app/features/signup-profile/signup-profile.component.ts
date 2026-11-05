@@ -19,7 +19,7 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         <app-page-hint
           hintKey="signup_profile"
           title="Create Your Profile"
-          message="Choose a unique username and optional bio to get started.">
+          message="Tell friends your name, then choose a unique username to get started.">
         </app-page-hint>
 
         <div class="signup-header">
@@ -57,6 +57,22 @@ import { PageHintComponent } from '../../core/components/page-hint.component';
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
              class="signup-form">
+          <label for="signup-0-first-name" [style.color]="theme.colors().textSecondary" class="form-label">First Name</label>
+          <input id="signup-0-first-name" [ngModel]="firstName()" (ngModelChange)="firstName.set($event)"
+                 [style.background-color]="theme.colors().bg"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().text"
+                 autocomplete="given-name"
+                 class="form-input" placeholder="What friends call you">
+
+          <label for="signup-0-last-name" [style.color]="theme.colors().textSecondary" class="form-label">Last Name (Optional)</label>
+          <input id="signup-0-last-name" [ngModel]="lastName()" (ngModelChange)="lastName.set($event)"
+                 [style.background-color]="theme.colors().bg"
+                 [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().text"
+                 autocomplete="family-name"
+                 class="form-input">
+
           <label for="signup-1-username" [style.color]="theme.colors().textSecondary" class="form-label">Username</label>
           <input id="signup-1-username" [ngModel]="username()" (ngModelChange)="username.set($event)"
                  [style.background-color]="theme.colors().bg"
@@ -333,6 +349,8 @@ export class SignupProfileComponent implements OnInit {
   private security = inject(SecurityService);
 
   inviterName = signal<string>('');
+  firstName = signal<string>(localStorage.getItem('dexii_pending_firstName') || '');
+  lastName = signal<string>(localStorage.getItem('dexii_pending_lastName') || '');
   username = signal<string>(this.settings.getSignupDraft().username || '');
   email = signal<string>(this.settings.getSignupDraft().email || '');
   password = signal<string>('');
@@ -377,6 +395,13 @@ export class SignupProfileComponent implements OnInit {
   }
 
   continue() {
+    const firstNameValue = this.firstName().trim().slice(0, 80);
+    const lastNameValue = this.lastName().trim().slice(0, 80);
+    if (!firstNameValue) {
+      this.errorMessage.set('Please add your first name, so friends know who you are.');
+      return;
+    }
+
     const usernameValue = this.username().trim();
     if (!usernameValue) {
       this.errorMessage.set('Username is required.');
@@ -416,9 +441,11 @@ export class SignupProfileComponent implements OnInit {
       interestedIn: this.interestedIn() as any,
       loveLanguage: this.loveLanguage() as any,
       idealDate: this.idealDate().trim(),
-      displayName: usernameValue
+      displayName: [firstNameValue, lastNameValue].filter(Boolean).join(' ')
     });
 
+    localStorage.setItem('dexii_pending_firstName', firstNameValue);
+    localStorage.setItem('dexii_pending_lastName', lastNameValue);
     localStorage.setItem('dexii_pending_username', usernameValue);
     localStorage.setItem('dexii_pending_email', emailValue);
     sessionStorage.setItem('dexii_pending_password', this.password());

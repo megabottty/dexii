@@ -255,6 +255,8 @@ export class SecurityService {
     const username = localStorage.getItem('dexii_pending_username');
     const email = localStorage.getItem('dexii_pending_email');
     const bio = localStorage.getItem('dexii_pending_bio');
+    const firstName = localStorage.getItem('dexii_pending_firstName') || '';
+    const lastName = localStorage.getItem('dexii_pending_lastName') || '';
     const inviteToken = localStorage.getItem('dexii_invite_token') || '';
 
     if (!username) throw new Error('Username missing');
@@ -263,7 +265,7 @@ export class SecurityService {
     const response = await fetch(`${this.apiBase}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, pin, email, bio, inviteToken })
+      body: JSON.stringify({ username, password, pin, email, bio, firstName, lastName, inviteToken })
     });
 
     const payload = await response.json();

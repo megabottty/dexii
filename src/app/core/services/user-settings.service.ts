@@ -23,6 +23,9 @@ export const SERVER_BACKED_KEYS: readonly (keyof UserSettings)[] = [
 
 /** What /auth/me returns that matters here. */
 export interface ServerProfile {
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   /** The account email (read-only in Settings). */
   email?: string | null;
   avatarUrl?: string | null;
@@ -52,6 +55,19 @@ export function mergeServerSettings(local: UserSettings, me: ServerProfile | nul
   return merged;
 }
 
+/**
+ * True when the account has no real name yet: no first name, and the display
+ * name is empty, just the username, or an email. Those people are asked once
+ * (DEX-53) so friends never see an email or a made-up username as their name.
+ */
+export function needsRealName(me: ServerProfile | null | undefined): boolean {
+  if (!me) return false;
+  if (String(me.firstName || '').trim()) return false;
+  const chosen = String(me.profileSettings?.displayName || '').trim();
+  const username = String(me.username || '').trim();
+  return !chosen || chosen.includes('@') || chosen.toLowerCase() === username.toLowerCase();
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -66,11 +82,14 @@ export class UserSettingsService {
   private hydratedOwner = '';
 
   public settings = this._settings.asReadonly();
+  /** Whether to ask this account for its real name (the one-time name prompt). */
+  public needsName = signal(false);
 
   constructor() {
     effect(() => {
       const username = this.security.currentUser() || localStorage.getItem('dexii_api_username') || '';
       if (!username) {
+        this.needsName.set(false);
         this.activeUser.set('');
         this._settings.set(DEFAULT_USER_SETTINGS);
         this.themeService.setTheme(DEFAULT_USER_SETTINGS.themeMode || 'pearl', { sync: false });
@@ -127,6 +146,7 @@ export class UserSettingsService {
       const merged = mergeServerSettings(this._settings(), me);
       this._settings.set(merged);
       this.persist(merged);
+      this.needsName.set(needsRealName(me) && !this.namePromptSkipped(username));
     } catch {
       // Offline: the device copy is all we have, and that's fine.
     }
@@ -186,6 +206,29 @@ export class UserSettingsService {
     });
   }
 
+  /** Saves the name from the one-time prompt; it becomes the display name too. */
+  async saveRealName(firstName: string, lastName: string): Promise<void> {
+    const displayName = [firstName, lastName].filter(Boolean).join(' ');
+    const response = await fetch(`${this.apiBase}/auth/profile-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...this.security.authHeaders() },
+      body: JSON.stringify({ firstName, lastName, displayName })
+    });
+    if (!response.ok) throw new Error(`Name save failed (${response.status})`);
+    this.updateSettings({ displayName });
+    this.needsName.set(false);
+  }
+
+  /** "Not now" on the name prompt: don't ask again on this device. */
+  skipNamePrompt(): void {
+    try { localStorage.setItem(`dexii_name_prompt_skipped_${this.activeUser()}`, '1'); } catch { /* ignore */ }
+    this.needsName.set(false);
+  }
+
+  private namePromptSkipped(username: string): boolean {
+    try { return localStorage.getItem(`dexii_name_prompt_skipped_${username}`) === '1'; } catch { return false; }
+  }
+
   currentUsername(): string {
     return this.activeUser() || this.security.currentUser() || localStorage.getItem('dexii_api_username') || '';
   }
@@ -228,6 +271,8 @@ export class UserSettingsService {
     localStorage.removeItem('dexii_pending_username');
     localStorage.removeItem('dexii_pending_email');
     localStorage.removeItem('dexii_pending_bio');
+    localStorage.removeItem('dexii_pending_firstName');
+    localStorage.removeItem('dexii_pending_lastName');
     localStorage.removeItem('dexii_pending_relationshipStatus');
     localStorage.removeItem('dexii_pending_lookingFor');
     localStorage.removeItem('dexii_pending_interestedIn');

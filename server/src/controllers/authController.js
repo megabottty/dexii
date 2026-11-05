@@ -893,7 +893,18 @@ exports.updateProfileSettings = async (req, res) => {
       }
     }
 
-    if (Object.keys(profileSettings).length === 0) {
+    // A person's real name lives on the user itself (DEX-53), not in profileSettings.
+    const names = {};
+    for (const key of ['firstName', 'lastName']) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        names[key] = typeof req.body[key] === 'string' ? req.body[key].trim().slice(0, 80) : '';
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(names, 'firstName') && !names.firstName) {
+      return res.status(400).json({ message: 'Please add a first name.' });
+    }
+
+    if (Object.keys(profileSettings).length === 0 && Object.keys(names).length === 0) {
       return res.status(400).json({ message: 'Nothing to save.' });
     }
     if (Object.prototype.hasOwnProperty.call(profileSettings, 'profileVisibility')
@@ -910,7 +921,7 @@ exports.updateProfileSettings = async (req, res) => {
     }
 
     // Merge key by key so a partial save (e.g. just the photo) never wipes the rest.
-    const update = {};
+    const update = { ...names };
     for (const [key, value] of Object.entries(profileSettings)) {
       update[`profileSettings.${key}`] = value;
     }
@@ -928,9 +939,9 @@ exports.updateProfileSettings = async (req, res) => {
       req.user.id,
       { $set: update },
       { new: true, runValidators: false }
-    ).select('profileSettings');
+    ).select('profileSettings firstName lastName');
     if (!user) return res.status(404).json({ message: 'User not found.' });
-    res.json(user.profileSettings || {});
+    res.json({ ...(user.profileSettings?.toObject?.() || user.profileSettings || {}), firstName: user.firstName || '', lastName: user.lastName || '' });
   } catch (err) {
     console.error('Profile settings update failed:', err.message);
     res.status(500).json({ message: 'Unable to save profile settings.' });

@@ -8,6 +8,7 @@ import { MessagingService } from '../../services/messaging.service';
 import { FriendsApiService } from '../../services/friends-api.service';
 import { NotificationsService } from '../../services/notifications.service';
 import { SupportMenuService } from '../../services/support-menu.service';
+import { selfName } from '../../utils/person-name';
 
 @Component({
   selector: 'app-navbar',
@@ -25,7 +26,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
           <span class="navbar-title">Dexii</span>
           @if (settings.settings().showUsername) {
             <span [style.color]="theme.colors().textSecondary" class="navbar-username">
-              {{ settings.settings().displayName || '@' + (security.currentUser() || 'guest') }}
+              {{ selfName(settings.settings().displayName, security.currentUser()) }}
             </span>
           }
         </div>
@@ -249,6 +250,7 @@ import { SupportMenuService } from '../../services/support-menu.service';
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent implements OnInit, OnDestroy {
+  readonly selfName = selfName;
   theme = inject(ThemeService);
   security = inject(SecurityService);
   settings = inject(UserSettingsService);

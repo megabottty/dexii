@@ -652,3 +652,6 @@
 .friends-list-avatar-link:focus-visible {
   outline-offset: 3px;
 }
+
+/* "@username" under a friend's real name (DEX-53). */
+.friends-list-handle { display: block; font-size: var(--fs-small); }

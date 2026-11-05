@@ -62,12 +62,14 @@ describe('SignupProfileComponent', () => {
   });
 
   it('should validate username requirements', () => {
+    component.firstName.set('Val');
     component.username.set('');
     component.continue();
     expect(component.errorMessage()).toContain('Username is required');
   });
 
   it('should validate username format (3-24 chars, alphanumeric)', () => {
+    component.firstName.set('Val');
     component.username.set('ab');
     component.continue();
     expect(component.errorMessage()).toContain('3-24 chars');
@@ -81,6 +83,7 @@ describe('SignupProfileComponent', () => {
   });
 
   it('should validate password requirements and match', () => {
+    component.firstName.set('Val');
     component.username.set('validuser');
     component.email.set('valid@example.com');
     component.password.set('short');
@@ -99,6 +102,7 @@ describe('SignupProfileComponent', () => {
   });
 
   it('should require an email and validate email format', () => {
+    component.firstName.set('Val');
     component.username.set('validuser');
     component.password.set('password123');
     component.confirmPassword.set('password123');
@@ -116,6 +120,7 @@ describe('SignupProfileComponent', () => {
   });
 
   it('should navigate to PIN setup on valid form submission', () => {
+    component.firstName.set('Test');
     component.username.set('testuser');
     component.email.set('test@example.com');
     component.password.set('password123');
@@ -148,5 +153,29 @@ describe('SignupProfileComponent', () => {
 
     expect(usernameInput?.getAttribute('autocomplete')).toBe('off');
     expect(emailInput?.getAttribute('autocomplete')).toBe('off');
+  });
+
+  it('asks for a first name, and keeps it with an optional last name for registration (DEX-53)', () => {
+    component.username.set('mgrange');
+    component.email.set('michelle@example.com');
+    component.password.set('password123');
+    component.confirmPassword.set('password123');
+    component.continue();
+    expect(component.errorMessage()).toContain('first name');
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    component.firstName.set('  Michelle ');
+    component.lastName.set(' Grange ');
+    component.continue();
+    expect(component.errorMessage()).toBe('');
+    expect(localStorage.getItem('dexii_pending_firstName')).toBe('Michelle');
+    expect(localStorage.getItem('dexii_pending_lastName')).toBe('Grange');
+    expect(router.navigate).toHaveBeenCalledWith(['/signup-pin']);
+  });
+
+  it('shows First name and Last name fields', () => {
+    const labels = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('label')).map((l) => l.textContent?.trim());
+    expect(labels).toContain('First Name');
+    expect(labels).toContain('Last Name (Optional)');
   });
 });
