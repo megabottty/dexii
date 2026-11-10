@@ -1,5 +1,5 @@
 import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FocusTrapDirective } from '../../core/a11y/focus-trap.directive';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -281,14 +281,35 @@ interface FriendChoice {
             <div class="settings-plan-header">
               <div>
                 <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Appearance</p>
-                <h2 class="settings-section-title">Theme Mode</h2>
+                <h2 class="settings-section-title">Theme</h2>
                 <p [style.color]="theme.colors().textSecondary" class="settings-plan-copy">
-                  Pick the aesthetic that feels like you - there's one for every vibe.
+                  Your current look. Tap to see every theme.
                 </p>
               </div>
             </div>
 
-            <div class="settings-theme-options">
+            <!-- Collapsed to the current theme (DEX-66). The lock marks themes as a paid extra later;
+                 for user testing it opens for everyone. -->
+            <button type="button"
+                    (click)="themesOpen.set(!themesOpen())"
+                    [attr.aria-expanded]="themesOpen()"
+                    aria-controls="theme-options"
+                    [style.border]="'1px solid ' + theme.colors().border"
+                    [style.color]="theme.colors().text"
+                    class="settings-theme-current">
+              <span class="settings-theme-preview">
+                <span class="settings-theme-swatch" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border"></span>
+                <span class="settings-theme-swatch" [style.background-color]="theme.colors().primary"></span>
+                <span class="settings-theme-swatch" [style.background-color]="theme.colors().accent"></span>
+              </span>
+              <span class="settings-theme-current__name">{{ currentThemeName() }}</span>
+              <span class="settings-theme-current__lock" aria-hidden="true" title="More themes are a Gold extra">🔒</span>
+              <span class="settings-theme-current__caret" aria-hidden="true">{{ themesOpen() ? '▲' : '▼' }}</span>
+              <span class="sr-only">{{ themesOpen() ? 'Hide themes' : 'Show all themes' }}</span>
+            </button>
+
+            @if (themesOpen()) {
+            <div id="theme-options" class="settings-theme-options">
               @for (t of theme.themes; track t.id) {
                 <button (click)="selectTheme(t.id)"
                         [attr.aria-pressed]="theme.mode() === t.id"
@@ -369,6 +390,7 @@ interface FriendChoice {
                 </button>
               </div>
             </div>
+            }
           </section>
 
           @if (install.canInstall() && !install.isInstalled()) {
@@ -652,6 +674,10 @@ export class SettingsComponent {
   selectRelationshipStatus(value: UserSettings['relationshipStatus']) {
     this.update('relationshipStatus', value);
   }
+
+  /** Themes start collapsed to the current one (DEX-66). */
+  themesOpen = signal(false);
+  currentThemeName = computed(() => this.theme.themes.find((t) => t.id === this.theme.mode())?.name ?? 'Custom');
 
   selectTheme(mode: ThemeMode) {
     this.theme.setTheme(mode);

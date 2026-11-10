@@ -910,3 +910,35 @@
 
 /* "Journal reminders" under Notifications (DEX-40) */
 .settings-subsection-title { margin: 20px 0 10px; font-size: var(--fs-btn); font-weight: 700; }
+
+/* Themes collapsed to the current one, with a lock and a caret (DEX-66). */
+.settings-theme-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-theme-current__name {
+  flex: 1 1 auto;
+  font-weight: 700;
+}
+
+.settings-theme-current__lock {
+  font-size: 18px;
+}
+
+.settings-theme-current__caret {
+  font-size: 12px;
+}
+
+#theme-options {
+  margin-top: 12px;
+}

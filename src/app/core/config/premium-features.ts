@@ -66,6 +66,14 @@ export const PREMIUM_FEATURES = {
     title: 'Custom avatar builder',
     body: 'Build a cartoon lookalike for every crush on Premium and Gold.'
   },
+  premiumThemes: {
+    minTier: SubscriptionTier.Gold,
+    // Off for user testing: the lock shows but every theme can be picked (DEX-66).
+    // Prices for the pop-up aren't decided yet; see DEX-66.
+    enabled: false,
+    title: 'More themes',
+    body: 'Pick any Dexii theme with Gold.'
+  },
   manageSuperAdmins: {
     minTier: 'SuperAdmin',
     enabled: true,
