@@ -78,6 +78,8 @@ interface FriendCardView {
   friendCategories: string[];
   subscriptionTier: SubscriptionTier;
   friendshipProfile?: FriendshipProfile | null;
+  /** Crushes they share with me, for the card (DEX-52). */
+  sharedCrushCount?: number;
 }
 
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
@@ -97,12 +99,14 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
         <app-page-hint
           hintKey="friends_inline"
           title="Friends Hint"
-          message="Add friends here. Profile opens their page: what you share with each other, your history, and your private friendship profile. Share picks a crush for them to see. Pause and bin manage each friendship.">
+          message="Add friends here. Tap a friend to open their profile, where you can share a crush, chat, pause or remove them.">
         </app-page-hint>
 
-        <h1 [style.border-bottom]="'1px solid ' + theme.colors().border" class="friends-list-title">
-          The Inner Circle
-        </h1>
+        <!-- The same top as the Stash: centred title with a line under it (DEX-52, DEX-65). -->
+        <div class="friends-list-hero">
+          <h1 class="friends-list-title">The Inner Circle</h1>
+          <p [style.color]="theme.colors().textSecondary" class="friends-list-subtitle">Your closest friends, the ones to share all The Tea with.</p>
+        </div>
 
         @if (!isAuthenticated()) {
           <div class="friends-list-auth-state" role="status">
@@ -406,7 +410,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             </label>
           }
 
-          <div class="friends-list-component__s53">
+          <div class="friends-list-component__s53 friends-list-cards">
             @if (isLoadingFriends()) {
               <p [style.color]="theme.colors().textSecondary" class="friends-list-component__s51">Loading your live friends…</p>
             } @else if (friendsError()) {
@@ -419,46 +423,21 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               </div>
             } @else {
             @for (friend of visibleFriends(); track friend.id) {
-              <div [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
-                   class="friends-list-component__s54">
-
-                <div class="friends-list-component__s55">
-                  <a [routerLink]="['/friends', friend.username]" [attr.aria-label]="'Open your friendship page with ' + (friend | personName)" class="friends-list-avatar-link">
-                    <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" [alt]="(friend | personName) + ' avatar'" class="friends-list-component__s56">
-                  </a>
-                  <div>
-                    <h4 class="friends-list-component__s57">{{ friend | personName }}</h4>
-                    @if (friend.username && (friend | personName) !== friend.username) {
-                      <span [style.color]="theme.colors().textSecondary" class="friends-list-handle">&#64;{{ friend.username }}</span>
-                    }
-                    <span [style.color]="theme.colors().textSecondary" class="friends-list-component__s58">{{ friend.friendCategories[0] || 'Uncategorized' }}</span>
-                  </div>
-                </div>
-
-                <div class="friends-list-component__s59 friends-list-card-actions">
-                  <a [routerLink]="['/friends', friend.username]"
-                     [attr.aria-label]="'Open your friendship page with ' + (friend | personName)"
-                     title="Profile"
-                     [style.color]="theme.colors().textSecondary"
-                     class="icon-btn"><app-icon name="profile" /></a>
-                  <button type="button" (click)="openSharePicker(friend)"
-                          [attr.aria-label]="'Share a crush with ' + (friend | personName)"
-                          [style.color]="theme.colors().onBgPrimary"
-                          [style.border]="'1px solid ' + theme.colors().primary"
-                          class="friends-list-action-link">Share</button>
-                  <a routerLink="/chat"
-                     [queryParams]="{ friendId: friend.id, friendName: (friend | personName) }"
-                     [style.color]="theme.colors().text" [style.border]="'1px solid ' + theme.colors().border"
-                     class="friends-list-action-link">Chat</a>
-                  <button type="button" (click)="pauseFriend(friend)"
-                          [attr.aria-label]="'Pause friendship with ' + (friend | personName)" title="Pause friendship"
-                          [style.color]="theme.colors().textSecondary"
-                          class="icon-btn"><app-icon name="pause" /></button>
-                  <button type="button" (click)="removeFriend(friend)"
-                          [attr.aria-label]="'Remove ' + (friend | personName) + ' as a friend'" title="Remove friend"
-                          class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
-                </div>
-              </div>
+              <!-- Small and simple (DEX-52): every friend action lives on their profile (DEX-72). -->
+              <a [routerLink]="['/friends', friend.username]"
+                 [attr.aria-label]="'Open ' + (friend | personName) + '’s profile'"
+                 [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
+                 [style.color]="theme.colors().text"
+                 class="friends-list-card">
+                <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" alt="" class="friends-list-card__photo">
+                <span class="friends-list-card__text">
+                  <span class="friends-list-card__name">{{ friend | personName }}</span>
+                  @if (friend.username) {
+                    <span [style.color]="theme.colors().textSecondary" class="friends-list-card__handle">&#64;{{ friend.username }}</span>
+                  }
+                </span>
+                <span [style.color]="theme.colors().textSecondary" class="friends-list-card__count">{{ friend.sharedCrushCount || 0 }} {{ friend.sharedCrushCount === 1 ? 'crush' : 'crushes' }} shared</span>
+              </a>
             } @empty {
               <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
                  @if (friendSearch().trim()) {
@@ -871,7 +850,8 @@ export class FriendsListComponent implements OnInit, OnDestroy {
       subscriptionTier: (friend.subscriptionTier as SubscriptionTier) || SubscriptionTier.Free,
       friendshipProfile: friend.friendshipProfile || this.readFriendshipProfile(id) || null,
       paused: Boolean(friend.paused),
-      mutedNotifications: Boolean(friend.mutedNotifications)
+      mutedNotifications: Boolean(friend.mutedNotifications),
+      sharedCrushCount: friend.sharedCrushCount || 0
     };
   }
 

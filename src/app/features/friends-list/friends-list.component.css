@@ -299,13 +299,95 @@
   letter-spacing: 1px;
 }
 
+/* Same top as the Stash (DEX-52): centred, light uppercase title, small italic line under it. */
+.friends-list-hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
 .friends-list-title {
-  font-size: 32px;
+  font-size: 48px;
   font-weight: 200;
   text-transform: uppercase;
-  letter-spacing: 4px;
-  margin-bottom: 40px;
-  padding-bottom: 20px;
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+}
+
+.friends-list-subtitle {
+  margin: 0;
+  font-size: var(--fs-small);
+  letter-spacing: 1px;
+  font-style: italic;
+}
+
+/* Small friend cards (DEX-52): picture, name, @username, crushes shared. The whole card opens their profile. */
+.friends-list-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.friends-list-cards > :not(.friends-list-card) {
+  grid-column: 1 / -1;
+}
+
+.friends-list-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  text-decoration: none;
+  min-height: 44px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.friends-list-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.friends-list-card:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.friends-list-card__photo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-avatar);
+  object-fit: cover;
+}
+
+.friends-list-card__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.friends-list-card__name {
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friends-list-card__handle {
+  font-size: var(--fs-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friends-list-card__count {
+  flex: 0 0 auto;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .header-actions {
@@ -560,10 +642,18 @@
     padding: 24px 16px;
   }
 
-  .friends-list-component__s12,
-  .friends-list-title {
+  .friends-list-component__s12 {
     font-size: 25px;
     letter-spacing: 2px;
+  }
+
+  .friends-list-title {
+    font-size: clamp(30px, 10vw, 42px);
+    letter-spacing: 1px;
+  }
+
+  .friends-list-cards {
+    grid-template-columns: 1fr;
   }
 
   .friends-list-component__s54 {

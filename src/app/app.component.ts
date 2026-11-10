@@ -536,7 +536,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const normalized = this.routeHintKey(path);
     const map: Record<string, string> = {
       '/dashboard': 'Use New Crush to add a crush. Post updates to The Tea from the crush’s profile; private thoughts go in the Vault.',
-      '/friends': 'Tap a friend to open their page. Share opens what you two can see of each other; the pause and bin icons manage the friendship.',
+      '/friends': 'Tap a friend to open their profile. Sharing, chat, pause and remove all live there.',
       '/friends/:id': 'Everything about this friendship in one place: their bio, the crushes you share, your history, and your private friendship profile at the bottom.',
       '/profile/:id': 'Use Add Note, Vibe Log, Red Flags, and Safety buttons to track each crush.',
       '/chat': 'Messages marked as shared notes are sent here. Type "secret" in a message to make it self-destruct after it is opened.',

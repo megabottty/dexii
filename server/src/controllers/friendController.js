@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
 const Invite = require('../models/Invite');
+const CrushProfile = require('../models/CrushProfile');
 const InviteQuota = require('../models/InviteQuota');
 const mongoose = require('mongoose');
 const sendEmail = require('../utils/sendEmail');
@@ -109,18 +110,37 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // @route   GET /api/friends
 // @desc    Get user's friends
 // @access  Private
+/**
+ * How many (non-archived) crushes each friend shares with me, for the Inner Circle cards (DEX-52).
+ * Shares are stored by id, or by username in older share lists.
+ */
+const countCrushesSharedWith = async (myId, myUsername, friends) => {
+  const counts = new Map();
+  if (!friends.length) return counts;
+  const audience = [String(myId), ...(myUsername ? [myUsername] : [])];
+  const shared = await CrushProfile.find({
+    userId: { $in: friends.map((f) => f._id) },
+    visibility: { $in: audience },
+    status: { $ne: 'Archived' }
+  }).select('userId').lean();
+  for (const crush of shared) counts.set(String(crush.userId), (counts.get(String(crush.userId)) || 0) + 1);
+  return counts;
+};
+
 exports.getFriends = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .select('friends pausedFriends friendshipProfiles')
+      .select('friends pausedFriends friendshipProfiles username')
       .populate('friends', 'username displayName firstName lastName avatarUrl friendCategories');
     const paused = new Map((user?.pausedFriends || []).map((entry) => [String(entry.user), entry]));
     const profiles = new Map((user?.friendshipProfiles || []).map((entry) => [String(entry.user), entry]));
+    const sharedCounts = await countCrushesSharedWith(req.user.id, user?.username, user?.friends || []);
     res.json((user?.friends || []).map((friend) => {
       const entry = paused.get(String(friend._id));
       const profile = profiles.get(String(friend._id));
       return {
         ...shapeUser(friend),
+        sharedCrushCount: sharedCounts.get(String(friend._id)) || 0,
         paused: Boolean(entry),
         mutedNotifications: entry ? entry.mutedNotifications !== false : false,
         pausedAt: entry?.pausedAt || null,

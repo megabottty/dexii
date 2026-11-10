@@ -59,6 +59,8 @@ export interface FriendSummary {
   lastName?: string;
   avatarUrl?: string;
   friendCategories?: string[];
+  /** How many (non-archived) crushes they share with me (DEX-52). */
+  sharedCrushCount?: number;
   /** Set aside for now (hidden from the main list). */
   paused?: boolean;
   /** While paused: no notifications from them. */
