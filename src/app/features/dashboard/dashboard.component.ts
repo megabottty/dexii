@@ -242,11 +242,6 @@ import { PersonNamePipe } from '../../core/utils/person-name';
                          class="dashboard-view-btn">▦ Grid</button>
                </div>
              }
-             <button (click)="toggleArchived()"
-                     [style.color]="theme.colors().textSecondary"
-                     class="dashboard-component__s83">
-               {{ showArchived() ? 'View Active' : 'View Archive' }}
-             </button>
           </div>
 
         <!-- One card body for both the grid and the deck -->
@@ -370,6 +365,16 @@ import { PersonNamePipe } from '../../core/utils/person-name';
           }
         </div>
         }
+
+        <!-- Active crushes are the focus; the archive lives at the bottom (DEX-64). -->
+        <div class="dashboard-archive-row">
+          <button type="button"
+                  (click)="toggleArchived()"
+                  [style.color]="theme.colors().textSecondary"
+                  class="dashboard-component__s83">
+            {{ showArchived() ? 'View Active' : 'View Archive' }}@if (!showArchived() && archivedCrushCount() > 0) { ({{ archivedCrushCount() }})}
+          </button>
+        </div>
       </main>
     </div>
   `
@@ -622,6 +627,8 @@ export class DashboardComponent implements OnInit {
   toggleArchived() {
     this.dealKey.update((n) => n + 1);
     this.showArchived.update(v => !v);
+    // The toggle sits under the list (DEX-64), so bring the newly shown list's title into view.
+    setTimeout(() => document.querySelector<HTMLElement>('.dashboard-component__s82')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
   }
 
 

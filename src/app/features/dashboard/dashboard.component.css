@@ -291,7 +291,11 @@
 }
 
 .dashboard-component__s82 {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;
+  display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 40px;
+}
+
+.dashboard-archive-row {
+  display: flex; justify-content: center; margin-top: 40px;
 }
 
 .dashboard-component__s83 {
