@@ -43,61 +43,70 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
           message="Everything about this friendship: their bio, the crushes you share with each other, your history together, and your private friendship profile at the bottom.">
         </app-page-hint>
 
+        <!-- Laid out like a crush profile (DEX-72): big picture, name with @username, then the friend actions. -->
         <div [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
-             class="user-profile-component__s5">
-          <div class="user-profile-component__s6">
+             class="user-profile-component__s5 up-hero">
+          <div class="up-hero__photo-wrap">
             <img [src]="profileAvatar()"
                  [alt]="profileDisplayName()"
-                 class="user-profile-component__s7">
-            <div>
-              @if (profileLoading()) {
-                <div class="user-profile-loading" role="status" aria-live="polite">
-                  <span class="user-profile-spinner" aria-hidden="true"></span>
-                  Loading profile…
-                </div>
-              } @else {
-                <h1 class="user-profile-component__s8">
-                  {{ profileDisplayName() }}
-                </h1>
+                 class="up-hero__photo">
+            @if (!isSelf() && friend()) {
+              <button type="button" class="up-hero__share"
+                      (click)="showSharePicker.set(true)"
+                      [style.background-color]="theme.colors().primary"
+                      [attr.aria-label]="'Share a crush with ' + profileDisplayName()"
+                      title="Share a crush">+</button>
+            }
+          </div>
+          <div class="up-hero__info">
+            @if (profileLoading()) {
+              <div class="user-profile-loading" role="status" aria-live="polite">
+                <span class="user-profile-spinner" aria-hidden="true"></span>
+                Loading profile…
+              </div>
+            } @else {
+              <div class="up-hero__name-row">
+                <h1 class="user-profile-component__s8 up-hero__name">{{ profileDisplayName() }}</h1>
                 @if (profileUsername()) {
-                  <p [style.color]="theme.colors().textSecondary"
-                     class="user-profile-username">
-                    @{{ profileUsername() }}
-                  </p>
+                  <span [style.color]="theme.colors().textSecondary" class="up-hero__username">@{{ profileUsername() }}</span>
                 }
-                @if (!isSelf()) {
-                  <p [style.color]="theme.colors().textSecondary"
-                     class="user-profile-component__s9" style="margin: 0.25rem 0 0;">
-                    {{ crushes().length }} shared {{ crushes().length === 1 ? 'crush' : 'crushes' }}
-                  </p>
-                }
-                @if (profileBio()) {
-                  <p [style.color]="theme.colors().textSecondary"
-                     class="user-profile-component__s10">
-                    {{ profileBio() }}
-                  </p>
-                }
-                @if (!isSelf() && friend()) {
-                  <div class="user-profile-header-actions">
-                    <button type="button" (click)="startEditingFriendshipProfile()"
-                            [style.color]="theme.colors().onBgPrimary"
-                            [style.border]="'1px solid ' + theme.colors().primary"
-                            class="user-profile-pill user-profile-pill--ghost">Edit</button>
-                    <button type="button" (click)="showSharePicker.set(true)"
-                            [style.color]="theme.colors().onBgPrimary"
-                            [style.border]="'1px solid ' + theme.colors().primary"
-                            class="user-profile-pill user-profile-pill--ghost">
-                      <span aria-hidden="true">+</span> Share crush
-                    </button>
-                    <a [routerLink]="['/chat']"
-                       [queryParams]="{ friendId: friendId(), friendName: profileDisplayName() }"
-                       [style.background-color]="theme.colors().primary"
-                       class="user-profile-pill user-profile-pill--primary">💬 Chat</a>
-                  </div>
-                }
+              </div>
+              @if (friendshipStatus(); as status) {
+                <span [style.color]="theme.colors().onBgPrimary"
+                      [style.border]="'1px solid ' + theme.colors().primary"
+                      class="up-hero__status">{{ status }}</span>
               }
-            </div>
+              @if (!isSelf()) {
+                <p [style.color]="theme.colors().textSecondary"
+                   class="user-profile-component__s9" style="margin: 0.25rem 0 0;">
+                  {{ crushes().length }} shared {{ crushes().length === 1 ? 'crush' : 'crushes' }}
+                </p>
+              }
+              @if (profileBio()) {
+                <p [style.color]="theme.colors().textSecondary"
+                   class="user-profile-component__s10">
+                  {{ profileBio() }}
+                </p>
+              }
+              @if (!isSelf() && friend(); as f) {
+                <div class="user-profile-header-actions up-hero__actions">
+                  <a [routerLink]="['/chat']"
+                     [queryParams]="{ friendId: friendId(), friendName: profileDisplayName() }"
+                     [style.background-color]="theme.colors().primary"
+                     class="user-profile-pill user-profile-pill--primary">💬 Chat</a>
+                  <button type="button" (click)="f.paused ? resumeFriendship() : pauseFriendship()"
+                          [attr.aria-label]="(f.paused ? 'Resume friendship with ' : 'Pause friendship with ') + (f | personName)"
+                          [title]="f.paused ? 'Resume friendship' : 'Pause friendship'"
+                          [style.color]="theme.colors().textSecondary"
+                          [style.border]="'1px solid ' + theme.colors().border"
+                          class="icon-btn up-hero__icon"><app-icon [name]="f.paused ? 'play' : 'pause'" /></button>
+                  <button type="button" (click)="removeFriendship()"
+                          [attr.aria-label]="'Remove ' + (f | personName) + ' as a friend'" title="Remove friend"
+                          class="icon-btn icon-btn--danger up-hero__icon"><app-icon name="trash" /></button>
+                </div>
+              }
+            }
           </div>
         </div>
 
@@ -105,32 +114,8 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
           <app-crush-share-picker [friendId]="friendId()" [friendName]="profileDisplayName()" (closed)="showSharePicker.set(false)"></app-crush-share-picker>
         }
 
-        @if (profileDetails(); as profile) {
-        <div [style.background-color]="theme.colors().bgSecondary"
-             [style.border]="'1px solid ' + theme.colors().border"
-             class="user-profile-component__s11 user-profile-details-card">
-          <h2 class="section-title">About {{ profileDisplayName() }}</h2>
-          <div class="user-profile-details-grid">
-            @if (profile.relationshipStatus) {
-              <p><strong>Relationship status:</strong> {{ profile.relationshipStatus }}</p>
-            }
-            @if (profile.lookingFor) {
-              <p><strong>Looking for:</strong> {{ profile.lookingFor }}</p>
-            }
-            @if (profile.interestedIn) {
-              <p><strong>Interested in:</strong> {{ profile.interestedIn }}</p>
-            }
-            @if (profile.loveLanguage) {
-              <p><strong>Love language:</strong> {{ profile.loveLanguage }}</p>
-            }
-            @if (profile.idealDate) {
-              <p><strong>Ideal date:</strong> {{ profile.idealDate }}</p>
-            }
-          </div>
-        </div>
-        }
-
-        <div [style.background-color]="theme.colors().bgSecondary"
+        <div id="friend-crushes"
+             [style.background-color]="theme.colors().bgSecondary"
              [style.border]="'1px solid ' + theme.colors().border"
              class="user-profile-component__s11">
           <div class="user-profile-component__s12">
@@ -206,6 +191,31 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
           }
         </div>
 
+        @if (profileDetails(); as profile) {
+        <div [style.background-color]="theme.colors().bgSecondary"
+             [style.border]="'1px solid ' + theme.colors().border"
+             class="user-profile-component__s11 user-profile-details-card" style="margin-top: 2rem;">
+          <h2 class="section-title">About {{ profileDisplayName() }}</h2>
+          <div class="user-profile-details-grid">
+            @if (profile.relationshipStatus) {
+              <p><strong>Relationship status:</strong> {{ profile.relationshipStatus }}</p>
+            }
+            @if (profile.lookingFor) {
+              <p><strong>Looking for:</strong> {{ profile.lookingFor }}</p>
+            }
+            @if (profile.interestedIn) {
+              <p><strong>Interested in:</strong> {{ profile.interestedIn }}</p>
+            }
+            @if (profile.loveLanguage) {
+              <p><strong>Love language:</strong> {{ profile.loveLanguage }}</p>
+            }
+            @if (profile.idealDate) {
+              <p><strong>Ideal date:</strong> {{ profile.idealDate }}</p>
+            }
+          </div>
+        </div>
+        }
+
         @if (!isSelf()) {
           <div [style.background-color]="theme.colors().bgSecondary"
                [style.border]="'1px solid ' + theme.colors().border"
@@ -214,7 +224,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               <div>
                 <h2 class="section-title">Crushes You've Shared</h2>
                 <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s13" style="text-transform: none; letter-spacing: 0; line-height: 1.5;">
-                  Crushes from your list that {{ profileDisplayName() }} can see ({{ sharedWithThem().length }}). Use "+ Share crush" above to share another, or unshare any time.
+                  Crushes from your list that {{ profileDisplayName() }} can see ({{ sharedWithThem().length }}). Tap + on their picture to share another, or unshare any time.
                 </p>
               </div>
             </div>
@@ -270,7 +280,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               </div>
             } @else {
               <div [style.border]="'1px dashed ' + theme.colors().border" class="user-profile-component__s22">
-                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">You haven't shared any crushes with {{ profileDisplayName() }} yet. Use "+ Share crush" above to pick one.</p>
+                <p [style.color]="theme.colors().textSecondary" class="user-profile-component__s23">You haven't shared any crushes with {{ profileDisplayName() }} yet. Tap + on their picture to pick one.</p>
               </div>
             }
           </div>
@@ -305,14 +315,6 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                             [style.border]="'1px solid ' + theme.colors().primary"
                             class="user-profile-pill user-profile-pill--ghost">Edit</button>
                   }
-                  <button type="button" (click)="f.paused ? resumeFriendship() : pauseFriendship()"
-                          [attr.aria-label]="(f.paused ? 'Resume friendship with ' : 'Pause friendship with ') + (f | personName)"
-                          [title]="f.paused ? 'Resume friendship' : 'Pause friendship'"
-                          [style.color]="theme.colors().textSecondary"
-                          class="icon-btn"><app-icon [name]="f.paused ? 'play' : 'pause'" /></button>
-                  <button type="button" (click)="removeFriendship()"
-                          [attr.aria-label]="'Remove ' + (f | personName) + ' as a friend'" title="Remove friend"
-                          class="icon-btn icon-btn--danger"><app-icon name="trash" /></button>
                 </div>
               </div>
               @if (f.paused) {
@@ -537,6 +539,12 @@ export class UserProfileComponent {
   protected friendshipDraft: FriendshipProfile = {};
   private pendingEdit = false;
 
+  /** "Best Friends" and the like, shown on their profile instead of the friends list (DEX-72). */
+  friendshipStatus = computed(() => {
+    const friend = this.friend();
+    if (!friend) return '';
+    return (friend.friendshipProfile?.relationshipType || '').trim() || friend.friendCategories?.[0] || '';
+  });
   friendshipProfile = computed<FriendshipProfile | null>(() => {
     const profile = this.friend()?.friendshipProfile;
     if (!profile) return null;
