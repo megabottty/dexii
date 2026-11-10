@@ -787,6 +787,7 @@ exports.getProfile = async (req, res) => {
         avatarConfig: null,
         profileSettings: {},
         themePreference: user.themePreference || null,
+        themeInterest: user.themeInterest || null,
         firstLoginTourSeen: Boolean(user.firstLoginTourSeen)
       });
     }
@@ -810,6 +811,7 @@ exports.getProfile = async (req, res) => {
       profileSettings: user.profileSettings || {},
       isEmailVerified: user.isEmailVerified,
       themePreference: user.themePreference || null,
+      themeInterest: user.themeInterest || null,
       firstLoginTourSeen: Boolean(user.onboarding?.firstLoginTourSeenAt),
       isSuperAdmin: isSuperAdminUser(user)
     });
@@ -874,6 +876,39 @@ exports.updateThemePreference = async (req, res) => {
     }
 
     res.json(user.themePreference || { mode, customColors: customColors || null });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @route   PUT /api/auth/theme-interest   body: { answer: 'yes'|'maybe'|'no', theme, price }
+// @desc    Themes are free during beta (DEX-66). The first time someone picks one we ask
+//          whether they'd pay for it; only that first answer is kept.
+const THEME_INTEREST_ANSWERS = ['yes', 'maybe', 'no'];
+exports.saveThemeInterest = async (req, res) => {
+  try {
+    const { answer, theme, price } = req.body || {};
+    if (!THEME_INTEREST_ANSWERS.includes(answer)) {
+      return res.status(400).json({ message: 'Answer must be yes, maybe or no.' });
+    }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ message: 'Database unavailable.' });
+    }
+    const themeInterest = {
+      answer,
+      theme: typeof theme === 'string' ? theme.slice(0, 40) : '',
+      price: Number.isFinite(Number(price)) ? Number(price) : null,
+      answeredAt: new Date()
+    };
+    // Only writes when no answer is stored yet, so a repeat (another device, a double tap) is ignored.
+    const updated = await User.findOneAndUpdate(
+      { _id: req.user.id, 'themeInterest.answer': { $exists: false } },
+      { $set: { themeInterest } },
+      { new: true }
+    ).select('themeInterest').lean();
+    const user = updated || await User.findById(req.user.id).select('themeInterest').lean();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ themeInterest: user.themeInterest || null, saved: Boolean(updated) });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

@@ -183,6 +183,13 @@ const UserSchema = new mongoose.Schema({
   },
   // Lets a user's chosen theme follow them across browsers/devices instead
   // of only being remembered in one browser's localStorage.
+  // Beta pricing test (DEX-66): the first answer to "Would you pay $1.99 for this theme?".
+  themeInterest: {
+    answer: { type: String, enum: ['yes', 'maybe', 'no'] },
+    theme: String,
+    price: Number,
+    answeredAt: Date
+  },
   themePreference: {
     mode: {
       type: String,

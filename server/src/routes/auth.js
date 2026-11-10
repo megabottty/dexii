@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { register, login, verifyPin, verifyEmail, resendCode, getProfile, requestPasswordReset, resetPassword, setPassword, updateThemePreference, updateProfileSettings, markFirstLoginTourSeen } = require('../controllers/authController');
+const { register, login, verifyPin, verifyEmail, resendCode, getProfile, requestPasswordReset, resetPassword, setPassword, updateThemePreference, saveThemeInterest, updateProfileSettings, markFirstLoginTourSeen } = require('../controllers/authController');
 const auth = require('../middleware/auth');
 
 // Optional auth middleware for verify-pin
@@ -41,6 +41,7 @@ router.get('/me', auth, getProfile);
 // @route   PUT /api/auth/theme
 // @desc    Save the current user's theme choice so it syncs across devices
 router.put('/theme', auth, updateThemePreference);
+router.put('/theme-interest', auth, saveThemeInterest);
 router.put('/profile-settings', auth, updateProfileSettings);
 
 // @route   PUT /api/auth/onboarding

@@ -68,8 +68,8 @@ export const PREMIUM_FEATURES = {
   },
   premiumThemes: {
     minTier: SubscriptionTier.Gold,
-    // Off for user testing: the lock shows but every theme can be picked (DEX-66).
-    // Prices for the pop-up aren't decided yet; see DEX-66.
+    // Free for everyone during beta (DEX-66). Settings shows "Gold · Free during beta" and asks
+    // once whether they'd pay $1.99; server/scripts/theme-interest.js tallies the answers.
     enabled: false,
     title: 'More themes',
     body: 'Pick any Dexii theme with Gold.'

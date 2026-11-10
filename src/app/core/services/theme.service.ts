@@ -422,6 +422,39 @@ export class ThemeService {
     return DEFAULT_CUSTOM_COLORS;
   }
 
+  // ---- Themes beta pricing test (DEX-66) ----
+  /** Themes are free during beta; this is the price we ask about. */
+  readonly themeInterestPrice = 1.99;
+  private readonly themeInterestKey = 'dexii_theme_interest';
+  /** Whether this person has already been asked "Would you pay?", so it's only asked once. */
+  readonly themeInterestAsked = signal<boolean>(this.readThemeInterestAsked());
+
+  private readThemeInterestAsked(): boolean {
+    try { return typeof localStorage !== 'undefined' && !!localStorage.getItem(this.themeInterestKey); } catch { return false; }
+  }
+
+  private markThemeInterestAsked(value: string): void {
+    this.themeInterestAsked.set(true);
+    try { localStorage.setItem(this.themeInterestKey, value); } catch { /* private mode: they may be asked again */ }
+  }
+
+  /** Records their answer (first one only, server-side) and never asks again on this device. */
+  answerThemeInterest(answer: 'yes' | 'maybe' | 'no', theme: ThemeMode): void {
+    this.markThemeInterestAsked(answer);
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem(this.tokenStorageKey) : null;
+    if (!token) return;
+    void fetch(`${this.apiBaseUrl}/auth/theme-interest`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+      body: JSON.stringify({ answer, theme, price: this.themeInterestPrice })
+    }).catch(() => undefined);
+  }
+
+  /** Closed without answering: don't nag them again on this device. */
+  dismissThemeInterest(): void {
+    this.markThemeInterestAsked('dismissed');
+  }
+
   setTheme(mode: ThemeMode, options: { sync?: boolean } = {}) {
     const normalized: ThemeMode = (mode === 'custom' || THEME_MAP.has(mode)) ? mode : 'pearl';
     this._mode.set(normalized);
@@ -474,6 +507,8 @@ export class ThemeService {
       const profile = await response.json();
       const pref = profile?.themePreference;
       this._hydratedOwner = owner;
+      // Answered on another device: don't ask again here (DEX-66).
+      if (profile?.themeInterest?.answer) this.markThemeInterestAsked(profile.themeInterest.answer);
       if (!pref?.mode) return;
 
       if (pref.mode === 'custom' && pref.customColors?.bg && pref.customColors?.primary && pref.customColors?.accent) {

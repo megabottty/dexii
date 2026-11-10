@@ -46,24 +46,35 @@ interface FriendChoice {
           message="Edit your profile, photo, and journal defaults from one place.">
         </app-page-hint>
 
+        <!-- Same look as a friend's profile (DEX-72): a full-width photo with your name over it,
+             and a camera button to change the photo. -->
+        <div [style.background-color]="theme.colors().cardBg"
+             [style.border]="'1px solid ' + theme.colors().border"
+             class="settings-hero">
+          <div class="settings-hero__media" [style.background-color]="theme.colors().primary">
+            @if (settings.settings().avatarUrl) {
+              <img [src]="settings.settings().avatarUrl" alt="" class="settings-hero__photo">
+            } @else {
+              <div class="settings-hero__photo settings-hero__photo--empty" aria-hidden="true">{{ selfName(settings.settings().displayName, username()).replace('@', '').charAt(0).toUpperCase() }}</div>
+            }
+            <div class="settings-hero__shade"></div>
+            <button type="button"
+                    (click)="togglePhotoPicker()"
+                    [attr.aria-expanded]="photoPickerOpen()"
+                    aria-controls="settings-photo-picker"
+                    aria-label="Change your photo"
+                    title="Change your photo"
+                    class="settings-hero__camera">📷</button>
+            <div class="settings-hero__name-row">
+              <h1 class="settings-hero__name">{{ selfName(settings.settings().displayName, username()) }}</h1>
+              <p class="settings-hero__username">@{{ username() }}</p>
+            </div>
+          </div>
+        </div>
+
         <section [style.background-color]="theme.colors().bgSecondary"
                  [style.border]="'1px solid ' + theme.colors().border"
                  class="settings-card">
-          <div class="settings-header">
-            <div>
-              <p [style.color]="theme.colors().textSecondary" class="settings-eyebrow">Account</p>
-              <h1 class="settings-title">{{ selfName(settings.settings().displayName, username()) }}</h1>
-              <p [style.color]="theme.colors().textSecondary" class="settings-subtitle">
-                Username: @{{ username() }}
-              </p>
-            </div>
-            <div class="settings-header-profile">
-              <img [src]="settings.settings().avatarUrl || defaultAvatar()"
-                   [alt]="selfName(settings.settings().displayName, username())"
-                   class="settings-avatar">
-            </div>
-          </div>
-
           @if (lockedFeature(); as locked) {
             @if (subscription.tierGatingEnabled || locked === 'manageSuperAdmins') {
               <div class="settings-locked-banner">
@@ -78,15 +89,6 @@ interface FriendChoice {
                     class="settings-photo-btn settings-action-btn"
                     type="button">
               {{ saveMessage() || 'Save Changes' }}
-            </button>
-            <button type="button"
-                    (click)="photoPickerOpen.set(!photoPickerOpen())"
-                    [style.border]="'1px solid ' + theme.colors().primary"
-                    [style.color]="theme.colors().onBgPrimary"
-                    [attr.aria-expanded]="photoPickerOpen()"
-                    aria-controls="settings-photo-picker"
-                    class="settings-reset-btn settings-action-btn">
-              {{ photoPickerOpen() ? 'Done with photo' : 'Change photo' }}
             </button>
             <button (click)="settings.resetSettings()"
                     [style.border]="'1px solid ' + theme.colors().border"
@@ -303,7 +305,8 @@ interface FriendChoice {
                 <span class="settings-theme-swatch" [style.background-color]="theme.colors().accent"></span>
               </span>
               <span class="settings-theme-current__name">{{ currentThemeName() }}</span>
-              <span class="settings-theme-current__lock" aria-hidden="true" title="More themes are a Gold extra">🔒</span>
+              <span class="settings-theme-current__lock" aria-hidden="true">🔓</span>
+              <span [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary" class="settings-theme-current__tag">Gold · Free during beta</span>
               <span class="settings-theme-current__caret" aria-hidden="true">{{ themesOpen() ? '▲' : '▼' }}</span>
               <span class="sr-only">{{ themesOpen() ? 'Hide themes' : 'Show all themes' }}</span>
             </button>
@@ -543,6 +546,34 @@ interface FriendChoice {
         </section>
       </main>
 
+      <!-- Themes beta pricing test (DEX-66): asked once, and the theme applies whatever they answer. -->
+      @if (pendingTheme(); as pending) {
+        <div class="settings-modal-backdrop" (click)="closeThemeInterest()">
+          <div [style.background-color]="theme.colors().bg"
+               [style.border]="'1px solid ' + theme.colors().border"
+               class="settings-modal-card settings-theme-interest"
+               role="dialog" aria-modal="true" aria-labelledby="theme-interest-title" appFocusTrap (escaped)="closeThemeInterest()"
+               (click)="$event.stopPropagation()">
+            <div class="settings-modal-header">
+              <div>
+                <p [style.color]="theme.colors().textSecondary" class="settings-modal-eyebrow">Quick question</p>
+                <h2 id="theme-interest-title" class="settings-modal-title">Would you pay {{ '$' + theme.themeInterestPrice }} for this theme?</h2>
+              </div>
+              <button (click)="closeThemeInterest()" [style.color]="theme.colors().textSecondary"
+                      class="settings-modal-close" type="button" aria-label="Close">✕</button>
+            </div>
+            <p [style.color]="theme.colors().textSecondary" class="settings-modal-help">
+              Themes will be a Gold extra after beta. For now every theme is free, whatever you answer.
+            </p>
+            <div class="settings-theme-interest__answers">
+              <button type="button" (click)="answerThemeInterest('yes')" [style.background-color]="theme.colors().primary" class="settings-photo-btn settings-action-btn">Yes</button>
+              <button type="button" (click)="answerThemeInterest('maybe')" [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary" class="settings-photo-btn settings-action-btn settings-theme-interest__ghost">Maybe</button>
+              <button type="button" (click)="answerThemeInterest('no')" [style.color]="theme.colors().onBgPrimary" [style.border]="'1px solid ' + theme.colors().primary" class="settings-photo-btn settings-action-btn settings-theme-interest__ghost">No</button>
+            </div>
+          </div>
+        </div>
+      }
+
       @if (showFriendPicker()) {
         <div class="settings-modal-backdrop" (click)="closeFriendPicker()">
           <div [style.background-color]="theme.colors().bg"
@@ -649,6 +680,14 @@ export class SettingsComponent {
     return this.settings.currentUsername();
   }
 
+  /** The camera on the photo opens the picker under the header and brings it into view. */
+  togglePhotoPicker() {
+    this.photoPickerOpen.set(!this.photoPickerOpen());
+    if (this.photoPickerOpen()) {
+      setTimeout(() => document.getElementById('settings-photo-picker')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }));
+    }
+  }
+
   defaultAvatar() {
     return `https://i.pravatar.cc/300?u=${encodeURIComponent(this.username())}`;
   }
@@ -679,9 +718,32 @@ export class SettingsComponent {
   themesOpen = signal(false);
   currentThemeName = computed(() => this.theme.themes.find((t) => t.id === this.theme.mode())?.name ?? 'Custom');
 
+  /** The theme they just picked, while we ask once whether they'd pay for it (DEX-66). */
+  pendingTheme = signal<ThemeMode | null>(null);
+
   selectTheme(mode: ThemeMode) {
+    if (mode !== this.theme.mode() && !this.theme.themeInterestAsked()) {
+      this.pendingTheme.set(mode);
+    }
+    this.applyTheme(mode);
+  }
+
+  private applyTheme(mode: ThemeMode) {
     this.theme.setTheme(mode);
     this.update('themeMode', mode);
+  }
+
+  answerThemeInterest(answer: 'yes' | 'maybe' | 'no') {
+    const mode = this.pendingTheme();
+    if (!mode) return;
+    this.theme.answerThemeInterest(answer, mode);
+    this.pendingTheme.set(null);
+  }
+
+  closeThemeInterest() {
+    if (!this.pendingTheme()) return;
+    this.theme.dismissThemeInterest();
+    this.pendingTheme.set(null);
   }
 
   /** Local draft for the 3-color custom theme editor, seeded from whatever was last saved/applied. */
