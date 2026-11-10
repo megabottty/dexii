@@ -43,58 +43,66 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
           message="Everything about this friendship: their bio, the crushes you share with each other, your history together, and your private friendship profile at the bottom.">
         </app-page-hint>
 
-        <!-- Laid out like a crush profile (DEX-72): big picture, name with @username, then the friend actions. -->
-        <div [style.background-color]="theme.colors().bgSecondary"
+        <!-- Dating-app style, like the Stash and Inner Circle cards (DEX-72): a full-width photo with
+             the name and @username over it, then the friendship chip, stats, bio and the friend actions. -->
+        <div [style.background-color]="theme.colors().cardBg"
              [style.border]="'1px solid ' + theme.colors().border"
-             class="user-profile-component__s5 up-hero">
-          <div class="up-hero__photo-wrap">
-            <img [src]="profileAvatar()"
-                 [alt]="profileDisplayName()"
-                 class="up-hero__photo">
-            @if (!isSelf() && friend()) {
-              <button type="button" class="up-hero__share"
-                      (click)="showSharePicker.set(true)"
-                      [style.background-color]="theme.colors().primary"
-                      [attr.aria-label]="'Share a crush with ' + profileDisplayName()"
-                      title="Share a crush">+</button>
+             class="up-hero">
+          <div class="up-hero__photo-wrap" [style.background-color]="theme.colors().primary">
+            @if (profileAvatar(); as avatar) {
+              <img [src]="avatar" alt="" class="up-hero__photo">
+            } @else {
+              <!-- A plain square until their real photo is known, so no stand-in face flashes first. -->
+              <div class="up-hero__photo up-hero__photo--empty" aria-hidden="true">{{ profileInitial() }}</div>
+            }
+            <div class="up-hero__shade"></div>
+            @if (!profileLoading()) {
+              <div class="up-hero__name-row">
+                <h1 class="up-hero__name">{{ profileDisplayName() }}</h1>
+                @if (profileUsername()) {
+                  <p class="up-hero__username">@{{ profileUsername() }}</p>
+                }
+              </div>
             }
           </div>
-          <div class="up-hero__info">
+
+          <div class="up-hero__body">
             @if (profileLoading()) {
               <div class="user-profile-loading" role="status" aria-live="polite">
                 <span class="user-profile-spinner" aria-hidden="true"></span>
                 Loading profile…
               </div>
             } @else {
-              <div class="up-hero__name-row">
-                <h1 class="user-profile-component__s8 up-hero__name">{{ profileDisplayName() }}</h1>
-                @if (profileUsername()) {
-                  <span [style.color]="theme.colors().textSecondary" class="up-hero__username">@{{ profileUsername() }}</span>
-                }
-              </div>
               @if (friendshipStatus(); as status) {
                 <span [style.color]="theme.colors().onBgPrimary"
                       [style.border]="'1px solid ' + theme.colors().primary"
-                      class="up-hero__status">{{ status }}</span>
+                      [style.background-color]="theme.colors().primary + '14'"
+                      class="up-hero__status"><span aria-hidden="true">💛</span> {{ status }}</span>
               }
-              @if (!isSelf()) {
-                <p [style.color]="theme.colors().textSecondary"
-                   class="user-profile-component__s9" style="margin: 0.25rem 0 0;">
-                  {{ crushes().length }} shared {{ crushes().length === 1 ? 'crush' : 'crushes' }}
-                </p>
-              }
+              <p [style.color]="theme.colors().textSecondary" class="up-hero__stats">
+                @if (isSelf()) {
+                  {{ crushes().length }} {{ crushes().length === 1 ? 'crush' : 'crushes' }}
+                } @else {
+                  <strong [style.color]="theme.colors().text">{{ crushes().length }}</strong> {{ crushes().length === 1 ? 'crush' : 'crushes' }} shared with you
+                  <span aria-hidden="true">&nbsp;·&nbsp;</span>
+                  <strong [style.color]="theme.colors().text">{{ sharedWithThem().length }}</strong> you've shared
+                }
+              </p>
               @if (profileBio()) {
-                <p [style.color]="theme.colors().textSecondary"
-                   class="user-profile-component__s10">
-                  {{ profileBio() }}
-                </p>
+                <p [style.color]="theme.colors().text" class="up-hero__bio">{{ profileBio() }}</p>
               }
               @if (!isSelf() && friend(); as f) {
-                <div class="user-profile-header-actions up-hero__actions">
+                <div class="up-hero__actions">
                   <a [routerLink]="['/chat']"
                      [queryParams]="{ friendId: friendId(), friendName: profileDisplayName() }"
                      [style.background-color]="theme.colors().primary"
-                     class="user-profile-pill user-profile-pill--primary">💬 Chat</a>
+                     class="user-profile-pill user-profile-pill--primary up-hero__chat">💬 Chat</a>
+                  <button type="button" (click)="showSharePicker.set(true)"
+                          [attr.aria-label]="'Share a crush with ' + profileDisplayName()"
+                          title="Share a crush"
+                          [style.color]="theme.colors().onBgPrimary"
+                          [style.border]="'1px solid ' + theme.colors().primary"
+                          class="icon-btn up-hero__icon up-hero__share">+</button>
                   <button type="button" (click)="f.paused ? resumeFriendship() : pauseFriendship()"
                           [attr.aria-label]="(f.paused ? 'Resume friendship with ' : 'Pause friendship with ') + (f | personName)"
                           [title]="f.paused ? 'Resume friendship' : 'Pause friendship'"
@@ -495,14 +503,17 @@ export class UserProfileComponent {
     return this.friendProfileDetailsState()?.profile || null;
   });
 
+  /**
+   * Their real photo only. The friends list already carries it, so it shows at once; while
+   * nothing is known yet the page shows a plain square, never a random face (DEX-72).
+   */
   profileAvatar = computed(() => {
-    if (this.isSelf() && this.settings.settings().avatarUrl) {
-      return this.settings.settings().avatarUrl;
-    }
-    if (!this.isSelf() && this.friendProfileDetailsState()?.avatarUrl) {
-      return this.friendProfileDetailsState()?.avatarUrl || '';
-    }
-    return `https://i.pravatar.cc/300?u=${encodeURIComponent(this.profileDisplayName())}`;
+    if (this.isSelf()) return this.settings.settings().avatarUrl || '';
+    return this.friendProfileDetailsState()?.avatarUrl || this.friend()?.avatarUrl || '';
+  });
+  profileInitial = computed(() => {
+    if (this.profileLoading() && !this.friend()) return '';
+    return (this.profileDisplayName() || '?').charAt(0).toUpperCase();
   });
 
   crushes = computed(() => {

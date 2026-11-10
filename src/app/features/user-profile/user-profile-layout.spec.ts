@@ -44,23 +44,38 @@ describe("A friend's profile page (DEX-72)", () => {
   };
   const follows = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
-  it('shows a large picture with a + that shares a crush with them, and no pencil', async () => {
+  it("shows their own photo straight away, never a stand-in face", async () => {
+    const { root } = await render();
+    const photo = root.querySelector<HTMLImageElement>('.up-hero__photo')!;
+    expect(photo.getAttribute('src')).toBe('https://example.com/m.jpg');
+    expect(root.innerHTML).not.toContain('pravatar');
+  });
+
+  it('puts the share + with Chat, Pause and Delete, not on the photo, and no pencil', async () => {
     const { fixture, root } = await render();
-    const hero = root.querySelector('.up-hero__photo')!;
-    expect(hero).toBeTruthy();
-    const plus = root.querySelector<HTMLButtonElement>('.up-hero__share')!;
-    expect(plus.getAttribute('aria-label')).toBe('Share a crush with Michelle Grange');
+    expect(root.querySelector('.up-hero__photo-wrap button')).toBeNull();
     expect(root.querySelector('.up-hero app-icon[name="pencil"]')).toBeNull();
+    const plus = root.querySelector<HTMLButtonElement>('.up-hero__actions [aria-label="Share a crush with Michelle Grange"]')!;
+    expect(plus).toBeTruthy();
     plus.click();
     fixture.detectChanges();
     expect(root.querySelector('app-crush-share-picker')).toBeTruthy();
   });
 
-  it('shows their real name with @username beside it, and the friendship status', async () => {
+  it('puts their name and @username over the bottom of a full-width photo, dating-app style', async () => {
     const { root } = await render();
-    expect(root.querySelector('.up-hero h1')!.textContent).toContain('Michelle Grange');
-    expect(root.querySelector('.up-hero__name-row')!.textContent).toContain('@mgrange');
-    expect(root.querySelector('.up-hero__status')!.textContent).toContain('Best Friends');
+    const media = root.querySelector('.up-hero__photo-wrap')!;
+    expect(media.querySelector('.up-hero__photo')).toBeTruthy();
+    expect(media.querySelector('h1')!.textContent).toContain('Michelle Grange');
+    expect(media.querySelector('.up-hero__username')!.textContent).toContain('@mgrange');
+  });
+
+  it('shows the friendship status as a chip and a stats line under the photo', async () => {
+    const { root } = await render();
+    const body = root.querySelector('.up-hero__body')!;
+    expect(body.querySelector('.up-hero__status')!.textContent).toContain('Best Friends');
+    expect(body.querySelector('.up-hero__stats')!.textContent!.replace(/\s+/g, ' ').trim())
+      .toBe("1 crush shared with you · 0 you've shared");
   });
 
   it('keeps Chat, Pause and Delete under the name', async () => {
