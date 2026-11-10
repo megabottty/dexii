@@ -65,3 +65,17 @@ exports.removeSuperAdmin = async (req, res) => {
     res.status(500).json({ message: 'Unable to remove super admin.' });
   }
 };
+
+// @route GET /api/admin/docs/features
+// @desc  "How our features work" for super admins. Kept in server/docs (not the app bundle)
+//        so only super admins can read it.
+const FEATURE_DOCS_PATH = require('path').join(__dirname, '..', '..', 'docs', 'features.md');
+exports.getFeatureDocs = async (req, res) => {
+  try {
+    const fs = require('fs/promises');
+    const [markdown, stat] = await Promise.all([fs.readFile(FEATURE_DOCS_PATH, 'utf8'), fs.stat(FEATURE_DOCS_PATH)]);
+    res.json({ markdown, updatedAt: stat.mtime });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load the feature docs.', error: err.message });
+  }
+};

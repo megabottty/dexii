@@ -29,6 +29,11 @@ export class AdminApiService {
     return this.request<void>(`/super-admins/${encodeURIComponent(username)}`, { method: 'DELETE' });
   }
 
+  /** "How our features work" (server/docs/features.md), super admins only. */
+  getFeatureDocs(): Promise<{ markdown: string; updatedAt?: string }> {
+    return this.request<{ markdown: string; updatedAt?: string }>('/docs/features');
+  }
+
   private async request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
     const response = await fetch(`${this.apiBase}${path}`, {
       method: init.method || 'GET',

@@ -1,0 +1,356 @@
+.docs-page {
+  min-height: 100vh;
+}
+
+.docs-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.docs-back {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: var(--fs-small);
+  text-decoration: none;
+}
+
+.docs-header {
+  margin-bottom: 40px;
+}
+
+.docs-eyebrow {
+  margin: 0 0 6px;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.docs-title {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 200;
+  line-height: 1.1;
+}
+
+.docs-updated {
+  margin: 8px 0 0;
+  font-size: var(--fs-small);
+}
+
+/* Contents on the left, one section card on the right. */
+.docs-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.docs-nav {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docs-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.docs-nav__item[aria-selected="true"] {
+  font-weight: 800;
+}
+
+.docs-nav__num {
+  flex: 0 0 auto;
+  width: 22px;
+  font-size: var(--fs-label);
+  opacity: 0.6;
+  text-align: right;
+}
+
+.docs-section {
+  padding: 40px 44px 32px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(219, 39, 119, 0.07);
+}
+
+.docs-section__count {
+  margin: 0 0 6px;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.docs-section__title {
+  margin: 0 0 24px;
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* The section body (rendered from server/docs/features.md). */
+.docs-body {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.docs-body p {
+  margin: 0 0 18px;
+}
+
+/* The opening line of each section is its summary: set apart so it's the first thing you read. */
+.docs-body > p:first-child {
+  margin-bottom: 32px;
+  padding: 18px 22px;
+  border-left: 4px solid var(--dx-primary, #db2777);
+  border-radius: 0 14px 14px 0;
+  background: color-mix(in srgb, var(--dx-primary, #db2777) 8%, transparent);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* "> **Important:** ..." rules people must not miss. */
+.docs-body .md-callout {
+  display: flex;
+  gap: 14px;
+  margin: 28px 0;
+  padding: 18px 22px;
+  border: 1px solid color-mix(in srgb, var(--dx-primary, #db2777) 45%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--dx-primary, #db2777) 14%, transparent);
+  font-weight: 500;
+}
+
+.docs-body .md-callout::before {
+  content: "!";
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--dx-primary, #db2777);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.docs-body .md-callout p {
+  margin: 0;
+}
+
+.docs-body .md-callout strong {
+  color: var(--dx-primary, #db2777);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85em;
+}
+
+/* Small subheadings inside a section ("Reading the results"). */
+.docs-body h3 {
+  margin: 40px 0 14px;
+  font-size: var(--fs-label);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dx-text-secondary, inherit);
+}
+
+/* Bullets as spaced cards: the bold label stands out in the theme colour, the detail under it. */
+.docs-body ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+}
+
+.docs-body ul > li {
+  padding: 18px 20px;
+  border: 1px solid var(--dx-border, rgba(127, 127, 127, 0.25));
+  border-radius: 16px;
+  line-height: 1.6;
+}
+
+.docs-body li > strong:first-child {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--dx-primary, inherit);
+  font-size: 1.02rem;
+}
+
+.docs-body ol {
+  margin: 0 0 28px;
+  padding-left: 24px;
+}
+
+.docs-body ol > li {
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.docs-body ol > li::marker {
+  color: var(--dx-primary, inherit);
+  font-weight: 800;
+}
+
+/* Tables sit in a rounded frame. */
+.docs-body table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  margin: 8px 0 28px;
+  border: 1px solid var(--dx-border, rgba(127, 127, 127, 0.25));
+  border-radius: 16px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-small);
+}
+
+.docs-body th {
+  font-size: var(--fs-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--dx-primary, #db2777) 8%, transparent);
+}
+
+.docs-body :is(th, td) {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--dx-border, rgba(127, 127, 127, 0.2));
+  text-align: left;
+  vertical-align: top;
+}
+
+.docs-body tr:last-child td {
+  border-bottom: none;
+}
+
+.docs-body td:first-child {
+  font-weight: 700;
+}
+
+.docs-body code {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.15);
+  font-size: 0.9em;
+}
+
+.docs-body pre {
+  overflow-x: auto;
+  margin: 0 0 24px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: rgba(127, 127, 127, 0.15);
+}
+
+.docs-body pre code {
+  padding: 0;
+  background: none;
+}
+
+.docs-pager {
+  display: flex;
+  gap: 14px;
+  margin-top: 40px;
+  padding-top: 28px;
+}
+
+.docs-pager__btn {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.docs-pager__next {
+  align-items: flex-end;
+  margin-left: auto;
+  text-align: right;
+}
+
+.docs-pager__dir {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.docs-pager__name {
+  font-weight: 700;
+}
+
+/* Phone: the contents become a sideways-scrolling strip above the card. */
+@media (max-width: 800px) {
+  .docs-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .docs-nav {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+    scrollbar-width: none;
+  }
+
+  .docs-nav__item {
+    flex: 0 0 auto;
+    width: auto;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+
+  .docs-nav__num {
+    display: none;
+  }
+
+  .docs-section {
+    padding: 28px 20px 24px;
+  }
+
+  .docs-body ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docs-pager {
+    flex-direction: column;
+  }
+
+  .docs-pager__next {
+    align-items: flex-start;
+    margin-left: 0;
+    text-align: left;
+  }
+}

@@ -10,4 +10,7 @@ router.get('/super-admins', adminController.listSuperAdmins);
 router.post('/super-admins', adminController.addSuperAdmin);
 router.delete('/super-admins/:username', adminController.removeSuperAdmin);
 
+// "How our features work" (server/docs/features.md), super admins only.
+router.get('/docs/features', adminController.getFeatureDocs);
+
 module.exports = router;

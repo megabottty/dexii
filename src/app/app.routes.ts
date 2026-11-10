@@ -124,6 +124,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent)
   },
   {
+    // The team feature guide (server/docs/features.md); the API also only serves it to super admins.
+    path: 'admin/docs',
+    title: 'How our features work',
+    canActivate: [lockGuard, accessGuard('manageSuperAdmins')],
+    loadComponent: () => import('./features/admin/admin-docs.component').then(m => m.AdminDocsComponent)
+  },
+  {
     path: '**',
     redirectTo: 'dashboard'
   }

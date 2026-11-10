@@ -383,6 +383,10 @@ export class ThemeService {
     document.documentElement.style.setProperty('--focus-ring', colors.focusRing);
     document.documentElement.style.setProperty('--danger', colors.danger);
     // Sub-menu tabs (styles.css .dx-tab, DEX-69).
+    // For component styles that need the theme (e.g. the admin feature guide).
+    document.documentElement.style.setProperty('--dx-primary', colors.primary);
+    document.documentElement.style.setProperty('--dx-border', colors.border);
+    document.documentElement.style.setProperty('--dx-text-secondary', colors.textSecondary);
     document.documentElement.style.setProperty('--tab-active', colors.onBgPrimary);
     document.documentElement.style.setProperty('--tab-text', colors.textSecondary);
     document.documentElement.style.setProperty('--tab-line', colors.border);

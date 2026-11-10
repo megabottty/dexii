@@ -25,3 +25,12 @@
   .admin-matrix__row--head { letter-spacing: 0.3px; font-size: var(--fs-micro); }
   .admin-btn { width: 100%; min-width: 0; }
 }
+
+/* Link to the feature guide page */
+.admin-docs-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  color: #fff;
+  text-decoration: none;
+}

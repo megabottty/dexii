@@ -95,6 +95,13 @@ import { ACCESS_LABELS, ACCESS_LEVELS, AccessLevel, PREMIUM_FEATURES, PremiumFea
             <p [style.color]="theme.colors().textSecondary" class="admin-copy">No super admins found yet.</p>
           }
         </section>
+
+        <!-- The team's feature guide (server/docs/features.md) has its own page. -->
+        <section id="feature-docs" [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border" class="admin-card">
+          <h2 class="admin-section-title">How our features work</h2>
+          <p [style.color]="theme.colors().textSecondary" class="admin-copy">The team guide: what every part of Dexii does, the rules behind it, and the scripts we run.</p>
+          <a routerLink="/admin/docs" [style.background-color]="theme.colors().primary" class="admin-btn admin-btn--primary admin-docs-link">Open the guide →</a>
+        </section>
       </main>
     </div>
   `
