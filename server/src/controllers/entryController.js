@@ -111,9 +111,9 @@ exports.getSharedEntries = async (req, res) => {
     }
 
     // Updates For Friends: every update on a friend's crush that is shared with me,
-    // by id or by the older username form of the share list.
+    // by id or by the older username form of the share list. Archived crushes are left out (DEX-61).
     const audience = [String(req.user.id), ...(user.username ? [user.username] : [])];
-    const sharedCrushes = await CrushProfile.find({ userId: { $in: friendIds }, visibility: { $in: audience } }).select('_id userId').lean();
+    const sharedCrushes = await CrushProfile.find({ userId: { $in: friendIds }, visibility: { $in: audience }, status: { $ne: 'Archived' } }).select('_id userId').lean();
     const sharedCrushIds = sharedCrushes.map((c) => String(c._id));
     const ownerOf = new Map(sharedCrushes.map((c) => [String(c._id), String(c.userId)]));
 

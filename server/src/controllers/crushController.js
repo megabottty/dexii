@@ -169,7 +169,8 @@ exports.getFriendSharedCrushes = async (req, res) => {
     const myId = String(req.user.id);
     const myUsername = typeof me.username === 'string' ? me.username : '';
 
-    const crushes = await CrushProfile.find({ userId: friendId }).select('-viewedBy').lean();
+    // An archived crush leaves friends' view, though it stays shared so restoring brings it back (DEX-61).
+    const crushes = await CrushProfile.find({ userId: friendId, status: { $ne: 'Archived' } }).select('-viewedBy').lean();
     const shared = crushes.filter((crush) => {
       const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
       return visibility.includes(myId) || (myUsername && visibility.includes(myUsername));
@@ -212,6 +213,11 @@ exports.getSharedCrushById = async (req, res) => {
     const isFriend = (me.friends || []).some((id) => String(id) === String(crush.userId));
     if (!isFriend) {
       return res.status(403).json({ message: 'You are not friends with this user.' });
+    }
+
+    // Friends don't see a crush its owner has archived (DEX-61).
+    if (crush.status === 'Archived') {
+      return res.status(404).json({ message: 'Crush not found' });
     }
 
     const myUsername = typeof me.username === 'string' ? me.username : '';

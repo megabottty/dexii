@@ -371,7 +371,10 @@ export class FriendsApiService {
       {},
       'crushes'
     );
-    return Array.isArray(crushes) ? crushes.map((crush) => this.mapCrush(crush)) : [];
+    // A crush the friend archived is gone from my view (DEX-61); the server filters it too.
+    return Array.isArray(crushes)
+      ? crushes.map((crush) => this.mapCrush(crush)).filter((crush) => crush.status !== CrushStatus.Archived)
+      : [];
   }
 
   /**

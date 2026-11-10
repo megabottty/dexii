@@ -8,7 +8,7 @@ const FriendActivity = require('../models/FriendActivity');
  * owner the crush is shared with (by id, or the older username form of the share list).
  */
 const findCrush = (crushId) => mongoose.isValidObjectId(crushId)
-  ? CrushProfile.findById(crushId).select('userId nickname visibility').lean()
+  ? CrushProfile.findById(crushId).select('userId nickname visibility status').lean()
   : null;
 
 const canSeeCrushUpdates = async (userId, crush) => {
@@ -16,6 +16,8 @@ const canSeeCrushUpdates = async (userId, crush) => {
   const me = String(userId);
   const ownerId = String(crush.userId);
   if (ownerId === me) return true;
+  // Once the owner archives a crush, friends no longer see or react to its updates (DEX-61).
+  if (crush.status === 'Archived') return false;
   const viewer = await User.findById(me).select('friends username').lean();
   const isFriend = (viewer?.friends || []).map(String).includes(ownerId);
   const visibility = Array.isArray(crush.visibility) ? crush.visibility.map(String) : [];
