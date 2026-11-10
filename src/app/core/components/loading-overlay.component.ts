@@ -12,8 +12,10 @@ import { ThemeService } from '../services/theme.service';
     @if (loading.active()) {
       <div class="lo-backdrop" role="status" aria-live="polite" aria-busy="true">
         <div class="lo-card" [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border">
-          <span class="lo-spinner" [style.border-color]="theme.colors().border" [style.border-top-color]="theme.colors().primary" aria-hidden="true"></span>
-          <span class="lo-label" [style.color]="theme.colors().textSecondary">Loading…</span>
+          <span class="lo-spinner" [class.lo-spinner--heart]="loading.look().heart"
+                [style.border-color]="theme.colors().border" [style.border-top-color]="theme.colors().primary"
+                aria-hidden="true">@if (loading.look().heart) {💖}</span>
+          <span class="lo-label" [style.color]="theme.colors().textSecondary">{{ loading.look().label?.() || 'Loading…' }}</span>
         </div>
       </div>
     }

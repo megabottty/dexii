@@ -106,20 +106,6 @@ import { PersonNamePipe } from '../../core/utils/person-name';
           </app-page-hint>
         }
 
-        @if (!dataService.hasLoaded()) {
-          <div class="dashboard-crush-loading"
-               [style.background-color]="theme.colors().bgSecondary"
-               [style.border]="'1px solid ' + theme.colors().border"
-               role="status"
-               aria-live="polite">
-            <span class="dashboard-crush-loading__spinner"
-                  [style.border-color]="theme.colors().border"
-                  [style.border-top-color]="theme.colors().primary"
-                  aria-hidden="true">💖</span>
-            <span [style.color]="theme.colors().textSecondary">Loading your crushes...</span>
-          </div>
-        }
-
         <!-- Hero Section -->
         <div class="dashboard-component__s71">
           <div class="dashboard-component__s72">
@@ -722,4 +708,12 @@ export class DashboardComponent implements OnInit {
 
   /** Page-level loading feeds the global overlay (app-loading-overlay). */
   private readonly loadingOverlay = inject(LoadingService).bindHere(computed(() => !this.dataService.hasLoaded() || this.photoUploadBusy() || this.savingCrush()));
+  /** The Stash uses its own 💖 spinner in the overlay, with words for what's happening. */
+  private readonly loadingLook = inject(LoadingService).useLookHere({
+    heart: true,
+    label: computed(() => !this.dataService.hasLoaded() ? 'Loading your crushes…'
+      : this.photoUploadBusy() ? 'Uploading…'
+      : this.savingCrush() ? 'Saving…'
+      : 'Loading…')
+  });
 }
