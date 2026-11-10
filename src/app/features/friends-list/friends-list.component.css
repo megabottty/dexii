@@ -320,11 +320,13 @@
   font-style: italic;
 }
 
-/* Small friend cards (DEX-52): picture, name, @username, crushes shared. The whole card opens their profile. */
+/* Friend cards look like Stash cards (DEX-52): same size, photo across the top with the
+   name on it, @username and crushes shared below. The whole card opens their profile. */
 .friends-list-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 360px));
+  justify-content: center;
+  gap: 36px;
 }
 
 .friends-list-cards > :not(.friends-list-card) {
@@ -332,62 +334,95 @@
 }
 
 .friends-list-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 16px;
+  display: block;
+  border-radius: 22px;
+  overflow: hidden;
   text-decoration: none;
-  min-height: 44px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.08);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .friends-list-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 22px 44px rgba(219, 39, 119, 0.22), 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 .friends-list-card:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: 3px solid var(--focus-ring, currentColor);
+  outline-offset: 3px;
+}
+
+.friends-list-card__media {
+  height: 240px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .friends-list-card__photo {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  border-radius: var(--radius-avatar);
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.friends-list-card__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1 1 auto;
+.friends-list-card:hover .friends-list-card__photo {
+  transform: scale(1.09);
+}
+
+.friends-list-card__initial {
+  font-size: 96px;
+  font-weight: 200;
+  color: #fff;
+}
+
+.friends-list-card__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.55));
 }
 
 .friends-list-card__name {
-  font-size: 16px;
-  font-weight: 600;
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 16px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.friends-list-card__body {
+  padding: 18px 26px 20px;
+  text-align: center;
+}
+
 .friends-list-card__handle {
-  font-size: var(--fs-small);
+  margin: 0 0 8px;
+  font-size: var(--fs-label);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .friends-list-card__count {
-  flex: 0 0 auto;
-  font-size: var(--fs-label);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  margin: 0;
+  font-size: var(--fs-small);
+  font-style: italic;
 }
 
 .header-actions {
@@ -654,6 +689,7 @@
 
   .friends-list-cards {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .friends-list-component__s54 {

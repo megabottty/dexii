@@ -413,20 +413,29 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               </div>
             } @else {
             @for (friend of visibleFriends(); track friend.id) {
-              <!-- Small and simple (DEX-52): every friend action lives on their profile (DEX-72). -->
+              <!-- A Stash-style card (DEX-52): photo across the top with the name on it.
+                   Every friend action lives on their profile (DEX-72). -->
               <a [routerLink]="['/friends', friend.username]"
                  [attr.aria-label]="'Open ' + (friend | personName) + '’s profile'"
-                 [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
+                 [style.background-color]="theme.colors().cardBg"
+                 [style.border]="'1px solid ' + theme.colors().border"
                  [style.color]="theme.colors().text"
                  class="friends-list-card">
-                <img [src]="friend.avatarUrl || 'https://i.pravatar.cc/150?u=' + friend.id" alt="" class="friends-list-card__photo">
-                <span class="friends-list-card__text">
-                  <span class="friends-list-card__name">{{ friend | personName }}</span>
-                  @if (friend.username) {
-                    <span [style.color]="theme.colors().textSecondary" class="friends-list-card__handle">&#64;{{ friend.username }}</span>
+                <div class="friends-list-card__media" [style.background-color]="theme.colors().primary">
+                  @if (friend.avatarUrl) {
+                    <img [src]="friend.avatarUrl" alt="" class="friends-list-card__photo">
+                  } @else {
+                    <span class="friends-list-card__initial" aria-hidden="true">{{ ((friend | personName) || friend.username || '?').charAt(0).toUpperCase() }}</span>
                   }
-                </span>
-                <span [style.color]="theme.colors().textSecondary" class="friends-list-card__count">{{ friend.sharedCrushCount || 0 }} {{ friend.sharedCrushCount === 1 ? 'crush' : 'crushes' }} shared</span>
+                  <div class="friends-list-card__shade"></div>
+                  <h3 class="friends-list-card__name">{{ friend | personName }}</h3>
+                </div>
+                <div class="friends-list-card__body">
+                  @if (friend.username) {
+                    <p [style.color]="theme.colors().text" class="friends-list-card__handle">&#64;{{ friend.username }}</p>
+                  }
+                  <p [style.color]="theme.colors().textSecondary" class="friends-list-card__count">{{ sharedCrushText(friend.sharedCrushCount || 0) }}</p>
+                </div>
               </a>
             } @empty {
               <div [style.border]="'1px dashed ' + theme.colors().border" class="friends-list-empty">
@@ -825,6 +834,12 @@ export class FriendsListComponent implements OnInit, OnDestroy {
     if (method === 'sms') return '+1 555 123 4567';
     if (method === 'whatsapp') return '+1 555 123 4567';
     return 'Optional';
+  }
+
+  /** "3 crushes shared with you" under each friend card (DEX-52). */
+  sharedCrushText(count: number): string {
+    if (count <= 0) return 'No crushes shared yet';
+    return `${count} ${count === 1 ? 'crush' : 'crushes'} shared with you`;
   }
 
   private mapApiUser(friend: FriendSummary & { firstName?: string; lastName?: string; subscriptionTier?: SubscriptionTier | string }): FriendCardView {

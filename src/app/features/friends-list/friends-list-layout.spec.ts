@@ -35,24 +35,24 @@ describe('The Inner Circle list (DEX-52)', () => {
     expect(hero.textContent).toContain('Your closest friends, the ones to share all The Tea with.');
   });
 
-  it('shows only the picture, name, @username and crushes shared on each friend card', async () => {
+  it('looks like a Stash card: photo across the top with the name on it, details below', async () => {
     const root = await render();
-    const card = root.querySelector('.friends-list-card')!;
+    const card = root.querySelector('a.friends-list-card')!;
     expect(card).toBeTruthy();
-    expect(card.textContent).toContain('Michelle Grange');
-    expect(card.textContent).toContain('@mgrange');
-    expect(card.textContent).toContain('3 crushes shared');
+    const media = card.querySelector('.friends-list-card__media')!;
+    expect(media.querySelector('img')!.getAttribute('src')).toBe('https://example.com/m.jpg');
+    expect(media.querySelector('.friends-list-card__name')!.textContent).toContain('Michelle Grange');
+    const body = card.querySelector('.friends-list-card__body')!;
+    expect(body.textContent).toContain('@mgrange');
+    expect(body.textContent).toContain('3 crushes shared with you');
     expect(card.textContent).not.toContain('Best Friends');
     expect(card.querySelectorAll('button').length).toBe(0);
-    expect(card.querySelector('a[href*="/chat"]')).toBeNull();
   });
 
-  it('opens their profile from the picture or the name', async () => {
+  it('opens their profile from anywhere on the card', async () => {
     const root = await render();
-    // The whole card is one link, so the picture and the name both open the profile.
     const link = root.querySelector('a.friends-list-card')!;
     expect(link.getAttribute('href')).toBe('/friends/mgrange');
-    expect(link.querySelector('img')).toBeTruthy();
-    expect(link.textContent).toContain('Michelle Grange');
+    expect(root.querySelectorAll('.friends-list-card a').length).toBe(0);
   });
 });
