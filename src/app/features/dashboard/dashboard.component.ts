@@ -188,7 +188,7 @@ import { PersonNamePipe } from '../../core/utils/person-name';
         <!-- Filter tabs -->
         @if (!showArchived()) {
           <div class="dashboard-filter-row">
-            <div class="dashboard-component__s79" role="tablist" aria-label="Filter crushes" (keydown)="onFilterKeydown($event)">
+            <div class="dx-tabs dashboard-filter-tabs" role="tablist" aria-label="Filter crushes" (keydown)="onFilterKeydown($event)">
               @for (tab of filterTabs; track tab.id) {
                 <button type="button"
                         role="tab"
@@ -197,14 +197,10 @@ import { PersonNamePipe } from '../../core/utils/person-name';
                         [attr.tabindex]="selectedFilter() === tab.id ? 0 : -1"
                         aria-controls="crush-grid"
                         (click)="selectFilter(tab.id)"
-                        [style.background-color]="selectedFilter() === tab.id ? theme.colors().primary : 'transparent'"
-                        [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().textSecondary"
-                        class="dashboard-component__s81">
+                        class="dx-tab">
                   <span aria-hidden="true">{{ tab.icon }}</span>
                   {{ tab.label }}
-                  <span class="dashboard-filter-count"
-                        [style.background-color]="selectedFilter() === tab.id ? 'rgba(255,255,255,0.25)' : theme.colors().border"
-                        [style.color]="selectedFilter() === tab.id ? '#fff' : theme.colors().text"
+                  <span class="dx-tab-count"
                         [attr.aria-label]="filterCounts()[tab.id] + ' crushes'">{{ filterCounts()[tab.id] }}</span>
                 </button>
               }

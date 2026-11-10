@@ -117,32 +117,22 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
           </div>
         }
 
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+        <div class="dx-tabs" role="group" aria-label="Inner Circle sections">
           <button (click)="activeTab.set('friends')" [attr.aria-pressed]="activeTab() === 'friends'"
-                  [style.background-color]="activeTab() === 'friends' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'friends' ? 'white' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'friends' ? theme.colors().primary : theme.colors().border)"
-                  class="friends-list-tab">Friends ({{ friends().length }})</button>
+                  type="button"
+                  class="dx-tab">Friends ({{ friends().length }})</button>
           <button (click)="activeTab.set('find')" [attr.aria-pressed]="activeTab() === 'find'"
-                  [style.background-color]="activeTab() === 'find' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'find' ? 'white' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'find' ? theme.colors().primary : theme.colors().border)"
-                  class="friends-list-tab">Add Friend</button>
+                  type="button"
+                  class="dx-tab">Add Friend</button>
           <button (click)="activeTab.set('incoming')" [attr.aria-pressed]="activeTab() === 'incoming'"
-                  [style.background-color]="activeTab() === 'incoming' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'incoming' ? 'white' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'incoming' ? theme.colors().primary : theme.colors().border)"
-                  class="friends-list-tab">Incoming ({{ incomingRequests().length }})</button>
+                  type="button"
+                  class="dx-tab">Incoming ({{ incomingRequests().length }})</button>
           <button (click)="activeTab.set('sent')" [attr.aria-pressed]="activeTab() === 'sent'"
-                  [style.background-color]="activeTab() === 'sent' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'sent' ? 'white' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'sent' ? theme.colors().primary : theme.colors().border)"
-                  class="friends-list-tab">Pending Sent ({{ outgoingRequests().length }})</button>
+                  type="button"
+                  class="dx-tab">Pending Sent ({{ outgoingRequests().length }})</button>
           <button (click)="activeTab.set('paused')" [attr.aria-pressed]="activeTab() === 'paused'"
-                  [style.background-color]="activeTab() === 'paused' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'paused' ? 'white' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'paused' ? theme.colors().primary : theme.colors().border)"
-                  class="friends-list-tab">Paused ({{ pausedFriends().length }})</button>
+                  type="button"
+                  class="dx-tab">Paused ({{ pausedFriends().length }})</button>
         </div>
 
         @if (activeTab() === 'find') {

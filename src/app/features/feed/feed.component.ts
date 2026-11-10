@@ -84,18 +84,15 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
           </button>
         </div>
 
-        <div class="tea-filters" role="tablist" aria-label="Filter Tea">
+        <div class="dx-tabs" role="tablist" aria-label="Filter Tea">
           @for (option of filterOptions; track option.value) {
             <button type="button"
                     role="tab"
-                    class="tea-filter"
+                    class="dx-tab"
                     [attr.aria-selected]="tea.filter() === option.value"
-                    [style.background-color]="tea.filter() === option.value ? theme.colors().primary : 'transparent'"
-                    [style.color]="tea.filter() === option.value ? 'white' : theme.colors().text"
-                    [style.border]="'1px solid ' + (tea.filter() === option.value ? theme.colors().primary : theme.colors().border)"
                     (click)="tea.filter.set(option.value); earlierLimit.set(PAGE)">
               {{ option.label }}
-              @if (option.count() > 0) { <span class="tea-filter-count">{{ option.count() }}</span> }
+              @if (option.count() > 0) { <span class="dx-tab-count">{{ option.count() }}</span> }
             </button>
           }
         </div>

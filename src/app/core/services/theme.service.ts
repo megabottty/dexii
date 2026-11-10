@@ -376,12 +376,16 @@ export class ThemeService {
     return withReadableText((THEME_MAP.get(this._mode()) || THEME_DEFINITIONS[0]).colors);
   });
 
-  /** Keeps the global focus ring and danger colour (styles.css) readable on the current theme. */
+  /** Keeps the global focus ring, danger colour and tab colours (styles.css) readable on the current theme. */
   private readonly cssVarSync = effect(() => {
     if (typeof document === 'undefined') return;
     const colors = this.colors();
     document.documentElement.style.setProperty('--focus-ring', colors.focusRing);
     document.documentElement.style.setProperty('--danger', colors.danger);
+    // Sub-menu tabs (styles.css .dx-tab, DEX-69).
+    document.documentElement.style.setProperty('--tab-active', colors.onBgPrimary);
+    document.documentElement.style.setProperty('--tab-text', colors.textSecondary);
+    document.documentElement.style.setProperty('--tab-line', colors.border);
   });
 
   public isPearl = computed(() => {

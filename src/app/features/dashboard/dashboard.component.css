@@ -817,3 +817,10 @@
 @media (max-width: 480px) {
   .dashboard-view-btn { padding: 6px 10px; }
 }
+
+/* The filter tabs share the sub-menu style (DEX-69); the info button sits at the end of the row. */
+.dashboard-filter-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}

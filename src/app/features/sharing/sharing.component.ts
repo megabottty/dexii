@@ -49,25 +49,19 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
           See, share, and manage exactly what each friend can view.
         </p>
 
-        <div class="sharing-tabs" role="tablist" aria-label="Sharing sections">
+        <div class="dx-tabs" role="tablist" aria-label="Sharing sections">
           <button type="button"
                   role="tab"
                   (click)="setTab('controls')"
                   [attr.aria-selected]="activeTab() === 'controls'"
-                  [style.background-color]="activeTab() === 'controls' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'controls' ? '#fff' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'controls' ? theme.colors().primary : theme.colors().border)"
-                  class="sharing-tab">
+                  class="dx-tab">
             Controls
           </button>
           <button type="button"
                   role="tab"
                   (click)="setTab('history')"
                   [attr.aria-selected]="activeTab() === 'history'"
-                  [style.background-color]="activeTab() === 'history' ? theme.colors().primary : 'transparent'"
-                  [style.color]="activeTab() === 'history' ? '#fff' : theme.colors().text"
-                  [style.border]="'1px solid ' + (activeTab() === 'history' ? theme.colors().primary : theme.colors().border)"
-                  class="sharing-tab">
+                  class="dx-tab">
             History
           </button>
         </div>

@@ -260,3 +260,60 @@ body {
   max-width: min(280px, calc(100vw - 32px));
   text-align: left;
 }
+
+/* Sub-menu tabs (DEX-69): one calm style for every section menu. Plain text, with the
+   selected tab bold and underlined, so tabs never look like the pill action buttons.
+   On a phone the row scrolls sideways instead of wrapping. */
+.dx-tabs {
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--tab-line, rgba(127, 127, 127, 0.25));
+  margin-bottom: 16px;
+}
+
+.dx-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dx-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--tab-text, inherit);
+  font: inherit;
+  font-size: var(--fs-btn, 14px);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dx-tab:hover {
+  color: var(--tab-active, inherit);
+}
+
+.dx-tab[aria-selected="true"],
+.dx-tab[aria-pressed="true"] {
+  color: var(--tab-active, inherit);
+  border-bottom-color: var(--tab-active, currentColor);
+  font-weight: 800;
+}
+
+.dx-tab-count {
+  font-size: var(--fs-label, 12px);
+  font-weight: 700;
+  opacity: 0.75;
+}

@@ -62,12 +62,10 @@ const TABS: TabDef[] = [
           </div>
 
           <div class="ab-editor">
-            <div class="ab-tabs" role="tablist">
+            <div class="dx-tabs" role="tablist" aria-label="Avatar parts">
               @for (tab of tabs; track tab.id) {
-                <button type="button" role="tab" class="ab-tab"
+                <button type="button" role="tab" class="dx-tab"
                         [attr.aria-selected]="activeTab() === tab.id"
-                        [style.border-color]="activeTab() === tab.id ? theme.colors().primary : theme.colors().border"
-                        [style.color]="activeTab() === tab.id ? theme.colors().primary : theme.colors().textSecondary"
                         (click)="activeTab.set(tab.id)">
                   <span aria-hidden="true">{{ tab.icon }}</span> {{ tab.label }}
                 </button>
