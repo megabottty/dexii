@@ -65,6 +65,18 @@ describe('Crush profile: update feed on top after the first visit (DEX-48)', () 
     expect(await feedVsDetails()).toBe(-1);
   });
 
+  it('calls the update feed The Tea, with the teacup from the top menu (DEX-44)', async () => {
+    const fixture = TestBed.createComponent(ProfileDetailComponent);
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const title = root.querySelector('#updates-title')!;
+    expect(title.textContent?.trim()).toBe('The Tea');
+    expect(title.querySelector('img')?.getAttribute('src')).toBe('icons/nav/tea.svg');
+    expect(root.textContent).not.toContain('Updates For Friends');
+  });
+
   it('keeps Memorable Moments folded until you tap it', async () => {
     const fixture = TestBed.createComponent(ProfileDetailComponent);
     fixture.detectChanges();

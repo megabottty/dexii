@@ -219,11 +219,11 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             </div>
           </div>
 
-          <!-- Updates For Friends (DEX-44), above Compatibility -->
+          <!-- The Tea: updates for friends (DEX-44), above Compatibility -->
           <section [style.background-color]="theme.colors().bgSecondary"
                    [style.border]="'1px solid ' + theme.colors().border"
                    style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
-            <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
+            <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;"><img src="icons/nav/tea.svg" alt="" style="width: 1.4em; height: 1.4em; vertical-align: -0.3em; margin-right: 6px;">The Tea</h3>
             <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"
                                  [interactive]="false"
                                  [sharedWith]="previewAsFriend() ? ownerSharedWithText(c) : friendSharedWithText(c)"></app-update-timeline>
@@ -412,10 +412,10 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                 }
           </ng-template>
           <ng-template #updatesFeed>
-              <!-- Updates For Friends (DEX-44): everyone this crush is shared with sees these. -->
+              <!-- The Tea: updates for friends (DEX-44); everyone this crush is shared with sees these. -->
               <section class="extended-info-section" aria-labelledby="updates-title">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                  <h3 id="updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;">Updates For Friends</h3>
+                  <h3 id="updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;"><img src="icons/nav/tea.svg" alt="" style="width: 1.4em; height: 1.4em; vertical-align: -0.3em; margin-right: 6px;">The Tea</h3>
                   <span [style.color]="theme.colors().textSecondary" style="font-size: var(--fs-label);">{{ updateEntries().length }} total</span>
                 </div>
 

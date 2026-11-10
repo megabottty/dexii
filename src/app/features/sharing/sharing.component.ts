@@ -159,9 +159,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     </div>
 
                     @if (isCrushShared(crush)) {
-                      <!-- Updates For Friends (DEX-44): everyone this crush is shared with sees them -->
+                      <!-- The Tea (DEX-44): everyone this crush is shared with sees these updates -->
                       <div class="sharing-component__entries">
-                        <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-label">Updates For Friends</p>
+                        <p [style.color]="theme.colors().textSecondary" class="sharing-component__entries-label"><img src="icons/nav/tea.svg" alt="" style="width: 1.4em; height: 1.4em; vertical-align: -0.3em; margin-right: 6px;">The Tea</p>
                         <div
                           [style.max-height]="getUpdates(crush.id).length > 3 ? '260px' : 'none'"
                           [style.overflow-y]="getUpdates(crush.id).length > 3 ? 'auto' : 'visible'"
@@ -184,7 +184,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                                  [style.border]="'1px solid ' + theme.colors().border"
                                  [style.color]="theme.colors().text"
                                  placeholder="What's new?"
-                                 [attr.aria-label]="'Update for friends about ' + crush.nickname"
+                                 [attr.aria-label]="'Update for The Tea about ' + crush.nickname"
                                  style="flex:1; border-radius:6px; padding:6px 8px; font-size: var(--fs-small);">
                           <button (click)="shareQuickUpdate(crush.id)"
                                   [disabled]="!quickEntryDraft(crush.id).trim()"
