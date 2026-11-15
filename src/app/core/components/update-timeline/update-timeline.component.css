@@ -116,7 +116,7 @@
   font-size: var(--fs-small);
 }
 
-/* The timeline: a gradient rail with a sticker per update, grouped by day */
+/* The timeline: updates grouped by day, beside the heart rail (DEX-63) */
 .ut-timeline,
 .ut-day__items {
   list-style: none;
@@ -125,7 +125,92 @@
 }
 
 .ut-timeline {
+  min-width: 0;
+}
+
+/* The rail and the list side by side; the rail column is as tall as the list */
+.ut-track {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 8px;
   margin-top: 18px;
+}
+
+.ut-rail {
+  position: relative;
+}
+
+/* Stays on screen (below the top menu) while you scroll the updates */
+.ut-rail__sticky {
+  position: sticky;
+  top: 96px;
+  height: min(60vh, 100%);
+  touch-action: none;
+  user-select: none;
+}
+
+.ut-rail__line {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  background: linear-gradient(var(--ut-primary), var(--ut-accent));
+  opacity: 0.45;
+}
+
+/* The heart handle: the same heart as The Stash in the top menu */
+.ut-rail__handle {
+  position: absolute;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ut-bg);
+  border: 2px solid color-mix(in srgb, var(--ut-primary) 40%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ut-primary) 25%, transparent);
+  cursor: grab;
+  transition: top 0.12s ease-out;
+}
+
+.ut-rail__handle:focus-visible {
+  outline: 2px solid var(--ut-primary);
+  outline-offset: 2px;
+}
+
+/* No easing while dragging, so the heart sticks to your finger */
+.ut-rail__handle--dragging {
+  cursor: grabbing;
+  transition: none;
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.ut-rail__heart {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+/* The day you're on, shown beside the heart while dragging */
+.ut-rail__day {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ut-gradient);
+  color: #fff;
+  font-size: var(--fs-label);
+  font-weight: 800;
+  white-space: nowrap;
+  z-index: 2;
 }
 
 .ut-day + .ut-day {
@@ -146,19 +231,6 @@
 
 .ut-day__items {
   position: relative;
-  padding-left: 40px;
-}
-
-.ut-day__items::before {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 3px;
-  background: linear-gradient(var(--ut-primary), var(--ut-accent));
-  opacity: 0.45;
 }
 
 .ut-item {
@@ -168,22 +240,6 @@
 
 .ut-item + .ut-item {
   margin-top: 12px;
-}
-
-.ut-item__sticker {
-  position: absolute;
-  left: -40px;
-  top: 6px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--ut-bg);
-  border: 2px solid color-mix(in srgb, var(--ut-primary) 40%, transparent);
-  font-size: 16px;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--ut-primary) 25%, transparent);
 }
 
 .ut-bubble {

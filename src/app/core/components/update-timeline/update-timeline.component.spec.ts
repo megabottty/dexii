@@ -3,7 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { Entry } from '../../models/entry.model';
 import { SecurityService } from '../../services/security.service';
 import { DataService } from '../../services/data.service';
-import { UpdateTimelineComponent, dayLabel, timeAgo } from './update-timeline.component';
+import { UpdateTimelineComponent, dayIndexAt, dayLabel, railProgress, scrollYForProgress, timeAgo } from './update-timeline.component';
 
 const update = (id: string, content: string, timestamp: Date): Entry => ({
   id, crushId: 'c1', type: 'Update', content, timestamp, visibility: [], isSensitive: false
@@ -190,6 +190,80 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       expect(timeAgo(new Date(2026, 9, 27, 11, 55), now)).toBe('5m');
       expect(timeAgo(new Date(2026, 9, 27, 9, 0), now)).toBe('3h');
       expect(timeAgo(new Date(2026, 9, 25, 12, 0), now)).toBe('2d');
+    });
+  });
+
+  /** DEX-63: the heart rail is a slider for moving through older updates, with the top-menu heart as its handle. */
+  describe('heart rail slider (DEX-63)', () => {
+    const days = () => {
+      const now = new Date();
+      return [0, 1, 2].map((d) => update(`d${d}`, `day ${d}`, new Date(now.getTime() - d * 86_400_000)));
+    };
+
+    it('has no stickers on the updates any more', () => {
+      fixture.componentRef.setInput('entries', days());
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-item__sticker')).toBeNull();
+      expect(el().textContent).not.toMatch(/[🌸🌷🦋✨💫]/u);
+    });
+
+    it('draws the rail, but only shows the heart handle when the timeline is longer than the screen', () => {
+      fixture.componentRef.setInput('entries', days());
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-rail')).not.toBeNull();
+      expect(el().querySelector('.ut-rail__handle')).toBeNull();
+      fixture.componentInstance.scrollable.set(true);
+      fixture.detectChanges();
+      const handle = el().querySelector<HTMLElement>('.ut-rail__handle')!;
+      expect(handle.getAttribute('role')).toBe('slider');
+      expect(handle.querySelector('img')?.getAttribute('src')).toBe('icons/nav/crushes.svg');
+      expect(handle.getAttribute('aria-valuetext')).toBe('Today');
+    });
+
+    it('moves a day at a time with the arrow keys', () => {
+      fixture.componentRef.setInput('entries', days());
+      fixture.detectChanges();
+      const viewport = window.innerHeight;
+      // Lay the three days out 500px apart, as a real page would.
+      const realRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        const all = Array.from(document.querySelectorAll('.ut-day'));
+        const i = all.indexOf(this);
+        if (i >= 0) return { top: i * 500, height: 500, bottom: i * 500 + 500 } as DOMRect;
+        if (this.classList.contains('ut-timeline')) return { top: 0, height: 1500, bottom: 1500 } as DOMRect;
+        return realRect.call(this);
+      };
+      const scrolls: number[] = [];
+      const realScroll = window.scrollTo;
+      window.scrollTo = ((opts: ScrollToOptions) => { scrolls.push(Math.round(Number(opts.top))); }) as typeof window.scrollTo;
+      try {
+        fixture.componentInstance.scrollable.set(true);
+        fixture.detectChanges();
+        const handle = el().querySelector<HTMLElement>('.ut-rail__handle')!;
+        handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        expect(scrolls.at(-1)).toBe(Math.max(0, Math.round(500 - viewport * 0.35 + 1)));
+        handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        expect(scrolls.at(-1)).toBe(Math.max(0, Math.round(1000 - viewport * 0.35 + 1)));
+      } finally {
+        Element.prototype.getBoundingClientRect = realRect;
+        window.scrollTo = realScroll;
+      }
+    });
+
+    it('turns scroll position into how far along the rail the heart sits, and back', () => {
+      const layout = { timelineTop: 1000, timelineHeight: 2000, viewportHeight: 800 };
+      expect(railProgress({ ...layout, scrollY: 0 })).toBe(0);
+      expect(railProgress({ ...layout, scrollY: 1720 })).toBeCloseTo(0.5);
+      expect(railProgress({ ...layout, scrollY: 99_999 })).toBe(1);
+      expect(scrollYForProgress(0.5, layout)).toBeCloseTo(1720);
+      expect(scrollYForProgress(0, { ...layout, timelineTop: 10 })).toBe(0);
+    });
+
+    it('finds the day at a point on the page', () => {
+      expect(dayIndexAt([0, 500, 1000], 250)).toBe(0);
+      expect(dayIndexAt([0, 500, 1000], 500)).toBe(1);
+      expect(dayIndexAt([0, 500, 1000], 5000)).toBe(2);
+      expect(dayIndexAt([100, 500], 0)).toBe(0);
     });
   });
 });

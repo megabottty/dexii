@@ -37,6 +37,7 @@ The Stash is the home screen: one card per crush, with their photo across the to
 Tapping a crush opens their profile, with The Tea (your updates on them) at the top.
 
 - **The Tea on a crush:** updates you post about this crush, plus an automatic entry whenever you change its status or its Feels (DEX-68). Update types are Note, Update, Status change, Date, Red flag, Safety check and Private journal. Friends you share with can react with an emoji. There are no comments: friends tap the chat icon (the same one as Chat in the top menu) to reply in your one-to-one chat, with the update quoted (DEX-71). Old comments are hidden but kept.
+- **Heart rail slider (DEX-63):** a rail runs beside the updates and stays on screen while you scroll. On a long timeline the top-menu heart sits on it, showing how far through you are. Drag it or tap the rail to jump to older updates (the day shows while dragging), or focus it and use the arrow keys to move a day at a time.
 - **Sharing an update:** after posting, Dexii can ask whether to share the update with more friends.
 - **Compatibility:** your 0 to 100 read on the match, why, and anything giving you pause, with a history of changes. Friends the crush is shared with can weigh in with their own vote.
 - **Details:** Info, Memorable moments, Red flag entries, Vibe tracker and Social connections. Edit Details changes them.

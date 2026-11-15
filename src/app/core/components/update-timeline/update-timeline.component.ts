@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, model, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Entry } from '../../models/entry.model';
@@ -14,15 +14,20 @@ type TimelineEntry = Entry & { owner?: { id?: string; username?: string; display
 
 interface DayGroup { key: string; label: string; entries: TimelineEntry[]; }
 
-/** A little sticker per update, picked from its id so it never changes between visits. */
-const STICKERS = ['💌', '💗', '✨', '🌸', '🦋', '💫', '🍓', '🌷'];
+/**
+ * Where on the screen counts as "what you're reading" for the heart slider (DEX-63):
+ * 35% of the way down, just below the top menu.
+ */
+const READING_LINE = 0.35;
 
 /** The reactions on offer; the server accepts exactly these (DEX-45). */
 export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
 
 
 /**
- * Updates For Friends as a love-life timeline (DEX-44): updates grouped by day on a heart rail.
+ * Updates For Friends as a love-life timeline (DEX-44): updates grouped by day beside a heart rail.
+ * On a long timeline the rail is a slider (DEX-63): drag the heart, tap the rail or use the arrow
+ * keys to move through older updates.
  * The owner gets the "What's new?" composer, edits, deletes and sees who reacted.
  * Friends react with an emoji and tap the chat icon to reply privately in chat (DEX-71).
  * There are no comments on updates. The parent owns the "Send update?" confirm and saving.
@@ -67,14 +72,36 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
         <p class="ut-empty__copy">{{ canPost() ? 'Post your first update and friends you share ' + crushName() + ' with will see it.' : 'When there’s news about ' + crushName() + ', it shows up here.' }}</p>
       </div>
     } @else {
-      <ol class="ut-timeline" [attr.aria-label]="'Updates about ' + crushName()">
+      <div class="ut-track">
+      <!-- The heart rail (DEX-63). It stays on screen while you scroll, and on a long timeline the heart
+           shows how far through you are: drag it or tap the rail to jump, like a scrubber. -->
+      <div class="ut-rail">
+        <div class="ut-rail__sticky" #railTrack
+             (pointerdown)="onRailPointerDown($event)" (pointermove)="onRailPointerMove($event)"
+             (pointerup)="onRailPointerUp($event)" (pointercancel)="onRailPointerUp($event)">
+          <span class="ut-rail__line" aria-hidden="true"></span>
+          @if (scrollable()) {
+            <div class="ut-rail__handle" role="slider" tabindex="0"
+                 [class.ut-rail__handle--dragging]="dragging()"
+                 [style.top.%]="progress() * 100"
+                 aria-label="Move through updates"
+                 aria-valuemin="0" aria-valuemax="100"
+                 [attr.aria-valuenow]="progressPercent()"
+                 [attr.aria-valuetext]="currentDayLabel()"
+                 (keydown)="onHandleKey($event)">
+              <img src="icons/nav/crushes.svg" alt="" class="ut-rail__heart" draggable="false">
+              @if (dragging()) { <span class="ut-rail__day">{{ currentDayLabel() }}</span> }
+            </div>
+          }
+        </div>
+      </div>
+      <ol class="ut-timeline" #timeline [attr.aria-label]="'Updates about ' + crushName()">
         @for (group of groups(); track group.key) {
           <li class="ut-day">
             <h4 class="ut-day__label">{{ group.label }}</h4>
             <ol class="ut-day__items">
               @for (entry of group.entries; track entry.id) {
                 <li class="ut-item" [attr.id]="'update-' + entry.id">
-                  <span class="ut-item__sticker" aria-hidden="true">{{ sticker(entry) }}</span>
                   <article class="ut-bubble" [class.ut-bubble--status]="isChange(entry)">
                     <header class="ut-bubble__meta">
                       @if (!isMine(entry) && entry.owner) {
@@ -163,6 +190,7 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
           </li>
         }
       </ol>
+      </div>
     }
   `
 })
@@ -221,6 +249,130 @@ export class UpdateTimelineComponent {
   readonly pickerFor = signal<string | null>(null);
   readonly whoFor = signal<string | null>(null);
   readonly busy = signal(false);
+
+  // ── Heart rail slider (DEX-63) ──
+  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly timelineEl = viewChild<ElementRef<HTMLElement>>('timeline');
+  private readonly railTrack = viewChild<ElementRef<HTMLElement>>('railTrack');
+  /** The timeline is taller than the screen, so the heart handle is worth showing. */
+  readonly scrollable = signal(false);
+  /** How far through the timeline you are, 0 (newest) to 1 (oldest). */
+  readonly progress = signal(0);
+  readonly progressPercent = computed(() => Math.round(this.progress() * 100));
+  /** You're dragging the heart; shows the day label beside it. */
+  readonly dragging = signal(false);
+  /** Which day group is at the reading line. */
+  private readonly currentDay = signal(0);
+  readonly currentDayLabel = computed(() => this.groups()[this.currentDay()]?.label ?? '');
+
+  constructor() {
+    // Keep the heart in step with scrolling and resizing, in the browser only.
+    afterNextRender(() => {
+      const onScroll = () => this.measure();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      this.destroyRef.onDestroy(() => {
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onScroll);
+      });
+      this.measure();
+    });
+    // New or removed updates change the timeline's height, so measure again after they render.
+    effect(() => {
+      this.groups();
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => this.measure());
+    });
+  }
+
+  /** Where the timeline sits on the page, in page coordinates. Null before it renders. */
+  private layout(): { timelineTop: number; timelineHeight: number; viewportHeight: number } | null {
+    const timeline = this.timelineEl()?.nativeElement;
+    if (!timeline || typeof window === 'undefined') return null;
+    const rect = timeline.getBoundingClientRect();
+    return { timelineTop: rect.top + window.scrollY, timelineHeight: rect.height, viewportHeight: window.innerHeight };
+  }
+
+  /** The top of each day group, in page coordinates. */
+  private dayTops(): number[] {
+    const days = Array.from(this.host.nativeElement.querySelectorAll('.ut-day')) as HTMLElement[];
+    return days.map((day) => day.getBoundingClientRect().top + window.scrollY);
+  }
+
+  /** Re-reads the page: whether to show the heart, where it sits, and which day you're on. */
+  measure(): void {
+    const layout = this.layout();
+    if (!layout) return;
+    this.scrollable.set(layout.timelineHeight > layout.viewportHeight);
+    // While dragging, the drag decides where the heart is.
+    if (!this.dragging()) this.progress.set(railProgress({ ...layout, scrollY: window.scrollY }));
+    this.currentDay.set(dayIndexAt(this.dayTops(), window.scrollY + layout.viewportHeight * READING_LINE));
+  }
+
+  /** Scrolls so the point `fraction` of the way through the timeline is at the reading line. */
+  private scrollToFraction(fraction: number): void {
+    const layout = this.layout();
+    if (!layout) return;
+    this.progress.set(clamp01(fraction));
+    window.scrollTo({ top: scrollYForProgress(fraction, layout), behavior: 'auto' });
+    this.currentDay.set(dayIndexAt(this.dayTops(), scrollYForProgress(fraction, layout) + layout.viewportHeight * READING_LINE));
+  }
+
+  /** How far down the rail a pointer is, 0 to 1. */
+  private fractionAt(event: PointerEvent): number {
+    const rect = this.railTrack()?.nativeElement.getBoundingClientRect();
+    if (!rect || rect.height <= 0) return 0;
+    return clamp01((event.clientY - rect.top) / rect.height);
+  }
+
+  /** Pressing on the rail or the heart starts a drag and jumps straight to that point. */
+  onRailPointerDown(event: PointerEvent): void {
+    if (!this.scrollable()) return;
+    event.preventDefault();
+    this.dragging.set(true);
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    this.scrollToFraction(this.fractionAt(event));
+  }
+
+  /** While dragging, the page follows the heart. */
+  onRailPointerMove(event: PointerEvent): void {
+    if (!this.dragging()) return;
+    this.scrollToFraction(this.fractionAt(event));
+  }
+
+  /** Letting go ends the drag and hides the day label. */
+  onRailPointerUp(event: PointerEvent): void {
+    if (!this.dragging()) return;
+    this.dragging.set(false);
+    (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
+  }
+
+  /**
+   * Keyboard for the heart: arrow keys move a day at a time (down is older), Page keys move
+   * three days, and Home or End go to the newest or oldest day.
+   */
+  onHandleKey(event: KeyboardEvent): void {
+    const last = this.groups().length - 1;
+    const steps: Record<string, number> = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1, PageDown: 3, PageUp: -3 };
+    let target: number;
+    if (event.key === 'Home') target = 0;
+    else if (event.key === 'End') target = last;
+    else if (event.key in steps) target = this.currentDay() + steps[event.key];
+    else return;
+    event.preventDefault();
+    this.goToDay(Math.max(0, Math.min(last, target)));
+  }
+
+  /** Scrolls so a day's heading sits just at the reading line. */
+  private goToDay(index: number): void {
+    const top = this.dayTops()[index];
+    if (top === undefined) return;
+    const y = Math.max(0, top - window.innerHeight * READING_LINE + 1);
+    this.currentDay.set(index);
+    window.scrollTo({ top: y, behavior: 'smooth' });
+    const layout = this.layout();
+    if (layout) this.progress.set(railProgress({ ...layout, scrollY: y }));
+  }
 
   /** Each emoji used, with its count and whether one of them is yours. */
   reactionCounts(entry: Entry): { emoji: string; count: number; mine: boolean }[] {
@@ -294,12 +446,6 @@ export class UpdateTimelineComponent {
     }
   }
 
-  sticker(entry: Entry): string {
-    let hash = 0;
-    for (const ch of String(entry.id)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-    return STICKERS[hash % STICKERS.length];
-  }
-
   /** The name of the friend who posted an update, for the byline and the chat icon. */
   authorName(entry: TimelineEntry): string {
     return personName(entry.owner);
@@ -343,4 +489,30 @@ export function timeAgo(date: Date, now: Date = new Date()): string {
   if (seconds < 86_400) return `${Math.floor(seconds / 3600)}h`;
   if (seconds < 7 * 86_400) return `${Math.floor(seconds / 86_400)}d`;
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/** Keeps a number between 0 and 1. */
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
+}
+
+/**
+ * How far through the timeline the reading line is, 0 to 1 (DEX-63).
+ * All values are in page pixels.
+ */
+export function railProgress(p: { scrollY: number; timelineTop: number; timelineHeight: number; viewportHeight: number }): number {
+  if (p.timelineHeight <= 0) return 0;
+  return clamp01((p.scrollY + p.viewportHeight * READING_LINE - p.timelineTop) / p.timelineHeight);
+}
+
+/** The opposite of railProgress: where to scroll so that point of the timeline is at the reading line. */
+export function scrollYForProgress(fraction: number, p: { timelineTop: number; timelineHeight: number; viewportHeight: number }): number {
+  return Math.max(0, p.timelineTop + clamp01(fraction) * p.timelineHeight - p.viewportHeight * READING_LINE);
+}
+
+/** Which day group a point on the page falls in, given each day's top (in order). */
+export function dayIndexAt(dayTops: number[], position: number): number {
+  let index = 0;
+  dayTops.forEach((top, i) => { if (top <= position) index = i; });
+  return index;
 }
