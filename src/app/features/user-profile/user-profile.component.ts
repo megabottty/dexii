@@ -186,7 +186,7 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                   </div>
                   <span [style.background-color]="theme.colors().primary"
                       class="user-profile-component__s21">
-                  Dating status: {{ crush.status }}
+                  Relationship Status: {{ crush.status }}
                   </span>
                 </a>
               }
@@ -266,12 +266,11 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                       </button>
                     </div>
                     <div [style.border-top]="'1px solid ' + theme.colors().border" class="user-profile-details-grid user-profile-shared-crush-grid">
-                      <p><strong>Your status:</strong> {{ crush.status }}</p>
-                      @if (crush.relationshipStatus) {
-                        <p><strong>Relationship status:</strong> {{ crush.relationshipStatus }}</p>
-                      }
+                      <!-- DEX-73: one main status plus The Feels. The old "Relationship status" line
+                           repeated the first Feel, so it's gone, and "Your status" read as confusing. -->
+                      <p><strong>Relationship Status:</strong> {{ crush.status }}</p>
                       @if (getRelationshipLabels(crush).length > 0) {
-                        <p><strong>Labels:</strong> {{ getRelationshipLabels(crush).join(', ') }}</p>
+                        <p><strong>The Feels:</strong> {{ getRelationshipLabels(crush).join(', ') }}</p>
                       }
                       @if (crush.age) {
                         <p><strong>Age:</strong> {{ crush.age }}</p>
@@ -693,6 +692,10 @@ export class UserProfileComponent {
     );
   }
 
+  /**
+   * A crush's Feels labels, tidied for display: trimmed, blanks and duplicates removed,
+   * and old "Other: text" entries shown as just the text.
+   */
   getRelationshipLabels(crush: CrushProfile): string[] {
     return (crush.relationshipLabels || [])
       .map((label) => label.trim())

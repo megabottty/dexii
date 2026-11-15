@@ -54,6 +54,7 @@ The Inner Circle lists your friends as cards in the same style as the Stash (DEX
 - **Requests:** search by name or username and send a request. The other person accepts or declines. Sent requests can be nudged or cancelled.
 - **Invites:** invite someone not on Dexii by email, SMS, WhatsApp, copied message or the phone's share sheet.
 - **Friend profile:** a full-width photo with the name and @username over it, a friendship chip (e.g. Best Friends), "N crushes shared with you · N you've shared", their bio, then Chat, + (share a crush), Pause and Delete (DEX-72). Below: their crushes, About, Crushes You've Shared, Friendship Profile and History.
+- **Crushes You've Shared:** each card shows the crush's Relationship Status (the main status) and The Feels, with no separate "Your status" line (DEX-73).
 - **Friendship profile:** your private notes on the friendship, such as relationship type (Close Friend, Bestie, Work Friend, Family Friend, New Friend) and trust level.
 - **Pause:** a paused friend moves to the Paused tab and stops seeing your shared crushes until you resume. Delete removes the friendship.
 
