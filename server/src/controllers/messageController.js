@@ -3,6 +3,7 @@ const chatPush = require('../services/chatPush');
 const Message = require('../models/Message');
 const { isPausedBy, friendsWhoPaused } = require('../services/pauseState');
 const { recordActivity } = require('../services/activityLog');
+const { quoteForUpdate } = require('../services/updateQuote');
 const User = require('../models/User');
 const { readStore, writeStore, ensureUser } = require('../utils/demoFriendStore');
 
@@ -289,7 +290,8 @@ exports.getMessages = async (req, res) => {
 };
 
 // @route   POST /api/messages
-// @desc    Send a message
+// @desc    Send a one-to-one message to a friend. Optional quoteEntryId attaches a quote of a
+//          crush update the message replies to (DEX-71).
 // @access  Private
 exports.sendMessage = async (req, res) => {
   try {
@@ -307,6 +309,17 @@ exports.sendMessage = async (req, res) => {
     }
 
     const duration = Number(selfDestructDurationMs);
+
+    // Replying to a crush update from the chat icon on it (DEX-71). The quote is rebuilt here from
+    // the update itself, and only allowed in the chat with that crush's owner.
+    let quote;
+    if (req.body.quoteEntryId) {
+      const found = await quoteForUpdate(senderId, req.body.quoteEntryId);
+      if (!found || String(found.ownerId) !== String(recipientId)) {
+        return res.status(403).json({ message: "You can't reply to that update here." });
+      }
+      quote = { entryId: found.entryId, crushId: found.crushId, crushName: found.crushName, excerpt: found.excerpt };
+    }
 
     if (mongoose.connection.readyState !== 1 || req.user.isDemo) {
       const { state, messages } = await getDemoMessages();
@@ -337,8 +350,10 @@ exports.sendMessage = async (req, res) => {
       isSafetyAlert,
       isSelfDestruct: Boolean(isSelfDestruct),
       selfDestructDurationMs: isSelfDestruct && Number.isFinite(duration) && duration >= 1000 ? duration : undefined,
-      crushId,
-      relatedEntryId
+      // A quoted reply also links the message to the crush and update it's about.
+      crushId: quote ? quote.crushId : crushId,
+      relatedEntryId: quote ? quote.entryId : relatedEntryId,
+      quote
     });
 
     const message = await newMessage.save();

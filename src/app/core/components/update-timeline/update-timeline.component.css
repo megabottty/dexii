@@ -367,116 +367,28 @@
 .ut-link--danger { color: var(--danger); }
 .ut-link:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Comments */
-
-.ut-comments {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.ut-comment {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.ut-comment__avatar {
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-avatar);
-  object-fit: cover;
-}
-
-.ut-comment__avatar--blank {
+/* The chat icon next to the reactions: a friend taps it to reply in chat (DEX-71).
+   Same artwork as Chat in the top menu, sized to a comfortable tap target. */
+.ut-chat {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ut-gradient);
-  color: #fff;
-  font-size: var(--fs-label);
-  font-weight: 800;
-}
-
-.ut-comment__body {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.ut-comment__text {
-  margin: 0;
-  font-size: var(--fs-small);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-
-.ut-comment__meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 2px 8px;
-  font-size: var(--fs-label);
-  color: var(--ut-muted);
-}
-
-.ut-heart {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
+  margin-left: auto;
+  width: var(--tap-min, 44px);
+  height: var(--tap-min, 44px);
   padding: 0;
   border: none;
-  background: transparent;
-  color: var(--ut-muted);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.ut-heart--on {
-  color: #e11d48;
-  animation: ut-heart-pop 0.3s ease-out;
-}
-
-.ut-add-comment {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--ut-primary) 18%, transparent);
-}
-
-.ut-comment-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: var(--tap-min);
-  box-sizing: border-box;
-  padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid var(--ut-border);
-  background: var(--ut-bg);
-  color: var(--ut-text);
-  font: inherit;
-  font-size: var(--fs-small);
+  background: transparent;
+  cursor: pointer;
 }
 
-.ut-post {
-  min-height: var(--tap-min);
-  padding: 4px 10px;
-  color: var(--ut-primary);
-  font-weight: 800;
-}
+.ut-chat:hover,
+.ut-chat:focus-visible { background: color-mix(in srgb, var(--ut-primary) 12%, transparent); }
 
-@keyframes ut-heart-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.35); }
-  100% { transform: scale(1); }
+.ut-chat__icon {
+  width: 26px;
+  height: 26px;
 }
 
 /* Arrived from a notification: a soft glow on that update */
@@ -502,34 +414,4 @@
   margin: 6px 0 0;
   font-size: var(--fs-label);
   color: var(--ut-muted);
-}
-
-.ut-comments-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-/* Expand or collapse every update's comments at once */
-.ut-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-
-.ut-expand-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--ut-border);
-  min-height: 36px;
-}
-
-.ut-hearted-by {
-  margin: 2px 0 0;
-  font-size: var(--fs-label);
-  color: #e11d48;
 }

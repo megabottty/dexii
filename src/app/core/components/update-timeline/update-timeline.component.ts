@@ -1,7 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Entry, UpdateComment } from '../../models/entry.model';
+import { Router } from '@angular/router';
+import { Entry } from '../../models/entry.model';
 import { DataService } from '../../services/data.service';
 import { ModalService } from '../../services/modal.service';
 import { SecurityService } from '../../services/security.service';
@@ -22,8 +23,9 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
 
 /**
  * Updates For Friends as a love-life timeline (DEX-44): updates grouped by day on a heart rail.
- * The owner gets the "What's new?" composer, edits, deletes, reactions and comments; friends just read.
- * The parent owns the "Send update?" confirm and saving.
+ * The owner gets the "What's new?" composer, edits, deletes and sees who reacted.
+ * Friends react with an emoji and tap the chat icon to reply privately in chat (DEX-71).
+ * There are no comments on updates. The parent owns the "Send update?" confirm and saving.
  */
 @Component({
   selector: 'app-update-timeline',
@@ -65,14 +67,6 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
         <p class="ut-empty__copy">{{ canPost() ? 'Post your first update and friends you share ' + crushName() + ' with will see it.' : 'When there’s news about ' + crushName() + ', it shows up here.' }}</p>
       </div>
     } @else {
-      @if (interactive() && commentedCount() > 0) {
-        <div class="ut-toolbar">
-          <button type="button" class="ut-link ut-expand-all" [attr.aria-pressed]="allExpanded()" (click)="toggleAll()">
-            <span aria-hidden="true">{{ allExpanded() ? '🙈' : '👀' }}</span>
-            {{ allExpanded() ? 'Collapse all comments' : 'Expand all comments' }}
-          </button>
-        </div>
-      }
       <ol class="ut-timeline" [attr.aria-label]="'Updates about ' + crushName()">
         @for (group of groups(); track group.key) {
           <li class="ut-day">
@@ -116,7 +110,8 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                     @if (sharedWith()) {
                       <p class="ut-shared-with"><span aria-hidden="true">👯</span> {{ sharedWith() }}</p>
                     }
-                    <!-- Reactions and comments, like an Instagram post (DEX-45); the owner's view only -->
+                    <!-- Emoji reactions (DEX-45), for the owner and friends. A friend also gets the chat icon,
+                         which opens their one-to-one chat with the owner quoting this update (DEX-71). -->
                     @if (interactive()) {
                     <div class="ut-reactions">
                       @for (r of reactionCounts(entry); track r.emoji) {
@@ -128,9 +123,16 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                               aria-label="Add a reaction" (click)="pickerFor.set(pickerFor() === entry.id ? null : entry.id)">
                         <span aria-hidden="true">{{ myReaction(entry) || '🙂' }}</span><span aria-hidden="true">＋</span>
                       </button>
-                      @if (entry.reactions?.length && !expanded().has(entry.id)) {
+                      @if (entry.reactions?.length) {
                         <button type="button" class="ut-link" [attr.aria-expanded]="whoFor() === entry.id"
                                 (click)="whoFor.set(whoFor() === entry.id ? null : entry.id)">{{ whoFor() === entry.id ? 'Hide' : 'Who reacted' }}</button>
+                      }
+                      @if (!isMine(entry)) {
+                        <!-- Same icon as Chat in the top menu, no label (Arianne, DEX-71) -->
+                        <button type="button" class="ut-chat" [attr.aria-label]="'Chat with ' + authorName(entry) + ' about this update'"
+                                [title]="'Chat with ' + authorName(entry)" (click)="openChat(entry)">
+                          <img src="icons/nav/chat.svg" alt="" class="ut-chat__icon">
+                        </button>
                       }
                     </div>
                     @if (pickerFor() === entry.id) {
@@ -141,67 +143,12 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                         }
                       </div>
                     }
-                    @if (whoFor() === entry.id || (expanded().has(entry.id) && entry.reactions?.length)) {
+                    @if (whoFor() === entry.id) {
                       <ul class="ut-who" [attr.aria-label]="'Who reacted'">
                         @for (r of entry.reactions || []; track r.userId) {
                           <li><span aria-hidden="true">{{ r.emoji }}</span> {{ nameOf(r.user, r.userId) }}</li>
                         }
                       </ul>
-                    }
-
-                    <!-- Comments start folded so the feed stays short -->
-                    <button type="button" class="ut-link ut-comments-toggle" [attr.aria-expanded]="expanded().has(entry.id)"
-                            (click)="toggleComments(entry.id)">
-                      <span aria-hidden="true">💬</span>
-                      @if (expanded().has(entry.id)) { Hide comments }
-                      @else if (entry.comments?.length) { {{ entry.comments!.length }} {{ entry.comments!.length === 1 ? 'comment' : 'comments' }} }
-                      @else { Comment }
-                    </button>
-                    @if (expanded().has(entry.id)) {
-                    @if (entry.comments?.length) {
-                      <ul class="ut-comments">
-                        @for (comment of visibleComments(entry); track comment.id) {
-                          <li class="ut-comment">
-                            @if (comment.user?.avatarUrl) { <img [src]="comment.user!.avatarUrl" alt="" class="ut-comment__avatar"> }
-                            @else { <span class="ut-comment__avatar ut-comment__avatar--blank" aria-hidden="true">{{ initial(comment) }}</span> }
-                            <div class="ut-comment__body">
-                              @if (editingCommentId() === comment.id) {
-                                <input class="ut-comment-input" [ngModel]="commentEditDraft()" (ngModelChange)="commentEditDraft.set($event)" maxlength="1000"
-                                       aria-label="Edit comment" (keydown.enter)="saveComment(entry, comment)" (keydown.escape)="editingCommentId.set(null)">
-                                <div class="ut-comment__meta">
-                                  <button type="button" class="ut-link" (click)="saveComment(entry, comment)">Save</button>
-                                  <button type="button" class="ut-link" (click)="editingCommentId.set(null)">Cancel</button>
-                                </div>
-                              } @else {
-                                <p class="ut-comment__text"><strong>{{ nameOf(comment.user, comment.userId) }}</strong> {{ comment.content }}</p>
-                                @if (comment.heartedBy?.length) {
-                                  <p class="ut-hearted-by"><span aria-hidden="true">♥</span> {{ heartNames(comment) }}</p>
-                                }
-                                <div class="ut-comment__meta">
-                                  <time [attr.datetime]="iso(comment.createdAt)">{{ ago(comment.createdAt) }}</time>
-                                  @if (comment.editedAt) { <span>· edited</span> }
-                                  @if (comment.hearts.length) { <span>· {{ comment.hearts.length }} {{ comment.hearts.length === 1 ? 'heart' : 'hearts' }}</span> }
-                                  @if (comment.userId === me()) {
-                                    <button type="button" class="ut-link" (click)="startCommentEdit(comment)">Edit</button>
-                                  }
-                                  @if (comment.userId === me() || isUpdateOwner(entry)) {
-                                    <button type="button" class="ut-link ut-link--danger" (click)="deleteComment(entry, comment)">Delete</button>
-                                  }
-                                </div>
-                              }
-                            </div>
-                            <button type="button" class="ut-heart" [class.ut-heart--on]="hearted(comment)" [attr.aria-pressed]="hearted(comment)"
-                                    [attr.aria-label]="(hearted(comment) ? 'Remove your heart from ' : 'Heart ') + nameOf(comment.user, comment.userId) + '’s comment'"
-                                    (click)="heart(entry, comment)">{{ hearted(comment) ? '♥' : '♡' }}</button>
-                          </li>
-                        }
-                      </ul>
-                    }
-                    <form class="ut-add-comment" (submit)="$event.preventDefault(); addComment(entry)">
-                      <input class="ut-comment-input" [ngModel]="commentDraft(entry.id)" (ngModelChange)="setCommentDraft(entry.id, $event)"
-                             [ngModelOptions]="{ standalone: true }" maxlength="1000" placeholder="Add a comment…" [attr.aria-label]="'Comment on this update'">
-                      <button type="submit" class="ut-link ut-post" [disabled]="!commentDraft(entry.id).trim() || busy()">Post</button>
-                    </form>
                     }
                     }
                   </article>
@@ -219,6 +166,7 @@ export class UpdateTimelineComponent {
   private readonly data = inject(DataService);
   private readonly modal = inject(ModalService);
   private readonly security = inject(SecurityService);
+  private readonly router = inject(Router);
   readonly me = this.security.currentUserId;
   readonly emojis = REACTION_EMOJIS;
 
@@ -229,7 +177,7 @@ export class UpdateTimelineComponent {
   readonly canPost = input(false);
   /** Names of the friends this crush is shared with (who an update reaches). */
   readonly audience = input<string[]>([]);
-  /** Reactions and comments; off for friends, who only read the owner's updates. */
+  /** Reactions and, for friends, the chat icon. Off when the owner previews the page as a friend. */
   readonly interactive = input(true);
   /** You own this crush: you can delete anyone's update on it. */
   readonly isCrushOwner = input(false);
@@ -267,11 +215,7 @@ export class UpdateTimelineComponent {
 
   readonly pickerFor = signal<string | null>(null);
   readonly whoFor = signal<string | null>(null);
-  readonly expanded = signal<ReadonlySet<string>>(new Set());
-  readonly editingCommentId = signal<string | null>(null);
-  readonly commentEditDraft = signal('');
   readonly busy = signal(false);
-  private readonly commentDrafts = signal<Record<string, string>>({});
 
   /** Each emoji used, with its count and whether one of them is yours. */
   reactionCounts(entry: Entry): { emoji: string; count: number; mine: boolean }[] {
@@ -286,48 +230,9 @@ export class UpdateTimelineComponent {
     return REACTION_EMOJIS.filter((e) => counts.has(e)).map((e) => counts.get(e)!);
   }
 
+  /** The emoji you reacted with on this update, or null if you haven't. */
   myReaction(entry: Entry): string | null {
     return (entry.reactions || []).find((r) => r.userId === this.me())?.emoji || null;
-  }
-
-  /** The update's author: the owner of the profile when they're posting, otherwise the friend who shared it. */
-  isUpdateOwner(entry: TimelineEntry): boolean {
-    return this.isCrushOwner() || this.isMine(entry);
-  }
-
-  visibleComments(entry: Entry): UpdateComment[] {
-    const comments = entry.comments || [];
-    return comments;
-  }
-
-  expand(entryId: string): void {
-    this.expanded.update((set) => new Set(set).add(entryId));
-  }
-
-  /** Updates that have comments or reactions to show. */
-  readonly commentedCount = computed(() => this.entries().filter((e) => (e.comments?.length || 0) + (e.reactions?.length || 0) > 0).length);
-
-  /** Every update's comments are open. */
-  readonly allExpanded = computed(() => {
-    const ids = this.entries().map((e) => e.id);
-    return ids.length > 0 && ids.every((id) => this.expanded().has(id));
-  });
-
-  /** One tap opens every update's comments (and who reacted / hearted), or folds them all again. */
-  toggleAll(): void {
-    this.expanded.set(this.allExpanded() ? new Set() : new Set(this.entries().map((e) => e.id)));
-  }
-
-  heartNames(comment: UpdateComment): string {
-    return (comment.heartedBy || []).map((p) => this.nameOf(p, p.id)).join(', ');
-  }
-
-  toggleComments(entryId: string): void {
-    this.expanded.update((set) => {
-      const next = new Set(set);
-      if (next.has(entryId)) next.delete(entryId); else next.add(entryId);
-      return next;
-    });
   }
 
   /** Posted by the signed-in user (entries without an author are your own, not yet synced). */
@@ -345,80 +250,29 @@ export class UpdateTimelineComponent {
     return this.isCrushOwner() || (entry.type !== 'StatusChange' && this.isMine(entry));
   }
 
-  hearted(comment: UpdateComment): boolean {
-    const me = this.me();
-    return !!me && comment.hearts.includes(me);
-  }
-
+  /** "You" for yourself, otherwise the person's name, as in the "Who reacted" list. */
   nameOf(person: { username?: string; displayName?: string } | null | undefined, userId: string): string {
     if (userId === this.me()) return 'You';
     return personName(person, 'A friend');
   }
 
-  initial(comment: UpdateComment): string {
-    return this.nameOf(comment.user, comment.userId).charAt(0).toUpperCase();
-  }
-
-  commentDraft(entryId: string): string {
-    return this.commentDrafts()[entryId] || '';
-  }
-
-  setCommentDraft(entryId: string, value: string): void {
-    this.commentDrafts.update((drafts) => ({ ...drafts, [entryId]: value }));
-  }
-
+  /** Sets (or, with the same emoji, removes) your reaction on an update and closes the picker. */
   react(entry: Entry, emoji: string): void {
     this.pickerFor.set(null);
     void this.run(() => this.data.reactToUpdate(entry.id, emoji));
   }
 
-  addComment(entry: Entry): void {
-    const content = this.commentDraft(entry.id).trim();
-    if (!content) return;
-    if (!this.security.moderateContent(content)) {
-      this.modal.show('Comment flagged by AI moderation for safety.');
-      return;
-    }
-    void this.run(async () => {
-      await this.data.commentOnUpdate(entry.id, content);
-      this.setCommentDraft(entry.id, '');
-      this.expand(entry.id);
-    });
+  /**
+   * Opens the one-to-one chat with the person who posted this update, with the update
+   * quoted above the message box so they know what the reply is about (DEX-71).
+   */
+  openChat(entry: TimelineEntry): void {
+    const friendId = String(entry.owner?.id || entry.userId || '');
+    if (!friendId) return;
+    void this.router.navigate(['/chat'], { queryParams: { friendId, friendName: this.authorName(entry), quoteEntryId: entry.id } });
   }
 
-  startCommentEdit(comment: UpdateComment): void {
-    this.editingCommentId.set(comment.id);
-    this.commentEditDraft.set(comment.content);
-  }
-
-  saveComment(entry: Entry, comment: UpdateComment): void {
-    const content = this.commentEditDraft().trim();
-    if (!content) return;
-    if (!this.security.moderateContent(content)) {
-      this.modal.show('Comment flagged by AI moderation for safety.');
-      return;
-    }
-    void this.run(async () => {
-      await this.data.editUpdateComment(entry.id, comment.id, content);
-      this.editingCommentId.set(null);
-    });
-  }
-
-  deleteComment(entry: Entry, comment: UpdateComment): void {
-    this.modal.confirm('Delete this comment? This cannot be undone.',
-      () => { void this.run(() => this.data.deleteUpdateComment(entry.id, comment.id)); },
-      undefined,
-      { title: 'Delete comment', confirmLabel: 'Delete', danger: true });
-  }
-
-  heart(entry: Entry, comment: UpdateComment): void {
-    void this.run(() => this.data.heartUpdateComment(entry.id, comment.id));
-  }
-
-  ago(value: Date | string): string {
-    return timeAgo(new Date(value));
-  }
-
+  /** Runs a save, showing a busy state and a friendly message if it fails. */
   private async run(action: () => Promise<void>): Promise<void> {
     this.busy.set(true);
     try {
@@ -436,6 +290,7 @@ export class UpdateTimelineComponent {
     return STICKERS[hash % STICKERS.length];
   }
 
+  /** The name of the friend who posted an update, for the byline and the chat icon. */
   authorName(entry: TimelineEntry): string {
     return personName(entry.owner);
   }

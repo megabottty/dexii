@@ -48,6 +48,24 @@ const postedSinceShared = (entry, shareTimes) => {
   return !sharedAt || new Date(entry.timestamp).getTime() >= sharedAt.getTime();
 };
 
+/**
+ * Whether this person may react to (or quote in chat) an update on this crush (DEX-71).
+ * The owner always can. A friend can when the crush is shared with them, the owner wrote
+ * the update, and it was posted after the crush was shared with them: the same rule
+ * that decides which updates they can see at all (DEX-44).
+ */
+const canReactToUpdate = async (userId, entry, crush) => {
+  if (!entry || !crush) return false;
+  const me = String(userId);
+  if (String(crush.userId) === me) return true;
+  if (!(await canSeeCrushUpdates(me, crush))) return false;
+  // Friends only ever see the owner's own updates on a crush.
+  const authorId = String(entry.userId?._id || entry.userId);
+  if (authorId !== String(crush.userId)) return false;
+  const shareTimes = await shareTimesFor(me, [String(crush._id)]);
+  return postedSinceShared(entry, shareTimes);
+};
+
 /** The owner plus everyone (by id) the crush is shared with. */
 const audienceIds = (crush) => {
   if (!crush) return [];
@@ -63,4 +81,4 @@ const emitEntriesChanged = (io, crush, extra = []) => {
   }
 };
 
-module.exports = { findCrush, canSeeCrushUpdates, audienceIds, emitEntriesChanged, shareTimesFor, postedSinceShared };
+module.exports = { findCrush, canSeeCrushUpdates, canReactToUpdate, audienceIds, emitEntriesChanged, shareTimesFor, postedSinceShared };

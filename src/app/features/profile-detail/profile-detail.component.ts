@@ -225,8 +225,9 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                    style="border-radius: 16px; padding: 20px; margin-top: 16px;" aria-labelledby="friend-updates-title">
             <h3 id="friend-updates-title" [style.color]="theme.colors().onBgPrimary" class="extended-info-title" style="margin: 0;"><img src="icons/nav/tea.svg" alt="" style="width: 1.4em; height: 1.4em; vertical-align: -0.3em; margin-right: 6px;">The Tea</h3>
             <app-update-timeline [entries]="previewAsFriend() ? previewSharedEntries() : sharedEntriesForCrush()" [crushName]="getCrushDisplayName(c)"
-                                 [interactive]="false"
+                                 [interactive]="!previewAsFriend()"
                                  [sharedWith]="previewAsFriend() ? ownerSharedWithText(c) : friendSharedWithText(c)"></app-update-timeline>
+            <!-- Friends react and tap the chat icon on updates (DEX-71). Off when you preview your own crush as a friend. -->
           </section>
           <!-- Compatibility: the owner's read, your friends' reads, and your own say -->
           <section [style.background-color]="theme.colors().bgSecondary"

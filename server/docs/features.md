@@ -36,7 +36,7 @@ The Stash is the home screen: one card per crush, with their photo across the to
 
 Tapping a crush opens their profile, with The Tea (your updates on them) at the top.
 
-- **The Tea on a crush:** updates you post about this crush. Update types are Note, Update, Status change, Date, Red flag, Safety check and Private journal. Friends you share with can react and comment.
+- **The Tea on a crush:** updates you post about this crush. Update types are Note, Update, Status change, Date, Red flag, Safety check and Private journal. Friends you share with can react with an emoji. There are no comments: friends tap the chat icon (the same one as Chat in the top menu) to reply in your one-to-one chat, with the update quoted (DEX-71). Old comments are hidden but kept.
 - **Sharing an update:** after posting, Dexii can ask whether to share the update with more friends.
 - **Compatibility:** your 0 to 100 read on the match, why, and anything giving you pause, with a history of changes. Friends the crush is shared with can weigh in with their own vote.
 - **Details:** Info, Memorable moments, Red flag entries, Vibe tracker and Social connections. Edit Details changes them.
@@ -75,14 +75,14 @@ The Tea is the feed of what's happening in your Inner Circle. The same name is u
 
 - **Filter tabs:** All, Requests, Shared crushes and Updates, each with a count when there's something new.
 - **What shows:** friend requests, crushes newly shared with you, and updates friends post on crushes they share with you. Archived crushes and paused friends don't appear.
-- **Reacting:** react to an update, comment on it, edit or delete your own comment, and heart a comment.
+- **Reacting:** react to a friend's update with an emoji, or tap the chat icon to reply to them privately in chat with the update quoted (DEX-71).
 
 ## Chat
 
 Chat is one-to-one messaging with friends, plus group chats.
 
 - **Starting a chat:** the Chat button on a friend's profile, or the Chat page's conversation list.
-- **Messages:** send, edit, delete and react. Messages are marked read when opened. New messages can send a notification (a Settings choice).
+- **Messages:** send, edit, delete and react. A reply sent from the chat icon on a crush update shows a short quote of that update (crush name and first ~100 characters) above the message, for both people (DEX-71). Messages are marked read when opened. New messages can send a notification (a Settings choice).
 - **Groups:** create a group, add members, and leave it. Each group has its own read state.
 - **Moderation:** messages pass through a moderation check before they're saved.
 

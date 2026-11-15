@@ -65,6 +65,14 @@ const MessageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Entry'
   },
+  // The crush update this message replies to, like a quoted reply in Messenger (DEX-71).
+  // A copy of the text at send time, so the context stays even if the update is later edited or deleted.
+  quote: {
+    entryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entry' },
+    crushId: { type: mongoose.Schema.Types.ObjectId, ref: 'CrushProfile' },
+    crushName: String,
+    excerpt: String
+  },
   // Users can add multiple emoji reactions to the same message. Re-tapping an
   // emoji removes that user's reaction for that emoji.
   reactions: [{

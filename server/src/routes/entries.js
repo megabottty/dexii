@@ -16,6 +16,8 @@ router.delete('/:id', entryController.deleteEntry);
 router.post('/:id/viewed', entryController.markViewed);
 // Reactions, comments and comment hearts on Updates For Friends (DEX-45).
 router.post('/:id/reactions', updateActivity.react);
+// The update quote shown above the chat box when a friend replies to it in chat (DEX-71).
+router.get('/:id/quote', updateActivity.quote);
 router.post('/:id/comments', updateActivity.addComment);
 router.put('/:id/comments/:commentId', updateActivity.editComment);
 router.delete('/:id/comments/:commentId', updateActivity.deleteComment);

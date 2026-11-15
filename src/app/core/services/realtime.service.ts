@@ -14,6 +14,8 @@ export interface IncomingSocketMessage {
   timestamp?: string;
   isSelfDestruct?: boolean;
   selfDestructDurationMs?: number;
+  /** The crush update this message replies to (DEX-71). */
+  quote?: { entryId: string; crushId?: string; crushName?: string; excerpt: string };
 }
 
 export interface SafetyUpdate {

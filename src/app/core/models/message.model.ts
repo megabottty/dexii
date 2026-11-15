@@ -3,6 +3,14 @@ export interface MessageReaction {
   emoji: string;
 }
 
+/** The crush update a chat message replies to, shown as a quote above it (DEX-71). */
+export interface MessageQuote {
+  entryId: string;
+  crushId: string;
+  crushName: string;
+  excerpt: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -23,6 +31,10 @@ export interface Message {
   editedAt?: Date;
   /** Set when the sender deleted it for everyone ("Message deleted"); content is then empty. */
   deletedAt?: Date;
+  /** The crush update this message replies to, as the server saved it (DEX-71). */
+  quote?: MessageQuote;
+  /** Sending only: the update being replied to. The server builds the quote from it. */
+  quoteEntryId?: string;
 }
 
 /** The sender can edit a message for this long, like other chat apps. */

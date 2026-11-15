@@ -1,3 +1,4 @@
+import { MessageQuote } from '../models/message.model';
 import { Injectable, inject } from '@angular/core';
 import { getApiBaseUrl } from '../config/api-config';
 import { Entry, UpdateComment, UpdateReaction } from '../models/entry.model';
@@ -156,6 +157,15 @@ export class EntriesApiService {
 
   heartComment(id: string, commentId: string): Promise<Entry> {
     return this.activity(`/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/heart`, 'POST');
+  }
+
+  /**
+   * The short "replying to this update" preview for the chat box, when a friend taps the
+   * chat icon on a crush update (DEX-71). Rejects if you can't see that update.
+   */
+  quote(id: string): Promise<MessageQuote> {
+    return this.request<MessageQuote>(`/${encodeURIComponent(id)}/quote`, { method: 'GET' })
+      .then((q) => ({ entryId: String(q.entryId), crushId: String(q.crushId), crushName: q.crushName, excerpt: q.excerpt }));
   }
 
   private async activity(path: string, method: string, body?: unknown): Promise<Entry> {

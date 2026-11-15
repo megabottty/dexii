@@ -1,5 +1,5 @@
 import { Injectable, signal, effect, inject, computed } from '@angular/core';
-import { Message } from '../models/message.model';
+import { Message, MessageQuote } from '../models/message.model';
 import { SecurityService } from './security.service';
 import { RealtimeService, IncomingSocketMessage } from './realtime.service';
 import { FriendsApiService } from './friends-api.service';
@@ -225,7 +225,8 @@ export class MessagingService {
       relatedCrushId: incoming.crushId,
       relatedEntryId: incoming.relatedEntryId,
       isSelfDestruct: Boolean(incoming.isSelfDestruct),
-      selfDestructDurationMs: incoming.selfDestructDurationMs
+      selfDestructDurationMs: incoming.selfDestructDurationMs,
+      quote: mapQuote(incoming.quote)
     };
 
     this._messages.update((msgs) => [...msgs, message]);
@@ -255,6 +256,7 @@ export class MessagingService {
         isSelfDestruct?: boolean;
         selfDestructDurationMs?: number;
         reactions?: Array<{ user: string; emoji: string }>;
+        quote?: MessageQuote;
       }>;
 
       if (!Array.isArray(parsed)) return [];
@@ -278,7 +280,8 @@ export class MessagingService {
           relatedEntryId: msg.relatedEntryId,
           isSelfDestruct: Boolean(msg.isSelfDestruct),
           selfDestructDurationMs: Number.isFinite(msg.selfDestructDurationMs) ? msg.selfDestructDurationMs : undefined,
-          reactions: msg.reactions
+          reactions: msg.reactions,
+          quote: mapQuote(msg.quote)
         }));
     } catch {
       return [];
@@ -370,6 +373,8 @@ export class MessagingService {
           content: message.content,
           crushId: message.relatedCrushId,
           relatedEntryId: message.relatedEntryId,
+          // Replying to a crush update: the server checks access and saves the quote (DEX-71).
+          quoteEntryId: message.quoteEntryId,
           kind: message.kind,
           isSelfDestruct: message.isSelfDestruct,
           selfDestructDurationMs: message.selfDestructDurationMs,
@@ -386,7 +391,9 @@ export class MessagingService {
       // Re-key the local copy to the server id so it dedupes against echoes.
       if (saved?._id) {
         const serverId = String(saved._id);
-        this._messages.update(msgs => msgs.map(m => (m.id === message.id ? { ...m, id: serverId } : m)));
+        // Swap in the server's copy of the quote, which is the one both people see.
+        const quote = mapQuote(saved.quote);
+        this._messages.update(msgs => msgs.map(m => (m.id === message.id ? { ...m, id: serverId, quote: quote ?? m.quote, quoteEntryId: undefined } : m)));
         this.persistMessages();
       }
 
@@ -439,7 +446,8 @@ export class MessagingService {
             ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
             : undefined,
           editedAt: row.editedAt ? new Date(row.editedAt) : undefined,
-          deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined
+          deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined,
+          quote: mapQuote(row.quote)
         }));
 
       const serverIds = new Set(mapped.map((m) => m.id));
@@ -514,7 +522,8 @@ export class MessagingService {
         ? row.reactions.map((r: any) => ({ user: String(r.user), emoji: r.emoji }))
         : undefined,
       editedAt: row.editedAt ? new Date(row.editedAt) : undefined,
-      deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined
+      deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined,
+      quote: mapQuote(row.quote)
     };
   }
 
@@ -736,4 +745,18 @@ export class MessagingService {
       console.warn('Could not sync read status to the server:', err);
     }
   }
+}
+
+/**
+ * Reads a saved update quote off a server or stored message (DEX-71).
+ * Returns undefined when the message has none, or when it's missing the parts we show.
+ */
+function mapQuote(raw: any): MessageQuote | undefined {
+  if (!raw || !raw.entryId || !raw.excerpt) return undefined;
+  return {
+    entryId: String(raw.entryId),
+    crushId: raw.crushId ? String(raw.crushId) : '',
+    crushName: String(raw.crushName || ''),
+    excerpt: String(raw.excerpt)
+  };
 }

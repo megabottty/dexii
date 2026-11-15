@@ -6,7 +6,8 @@ const Notification = require('../models/Notification');
 const { shapeEntry } = require('./entryController');
 const { withPeople } = require('../services/updatePeople');
 const { createNotification, emitNotificationsChanged } = require('./notificationController');
-const { findCrush, emitEntriesChanged } = require('../services/updateAudience');
+const { findCrush, emitEntriesChanged, canReactToUpdate } = require('../services/updateAudience');
+const { quoteForUpdate } = require('../services/updateQuote');
 
 /** Emojis a friend can react to an update with (DEX-45). */
 const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
@@ -16,10 +17,13 @@ const isUpdate = (entry) => entry.type === 'Update' || entry.type === 'StatusCha
   || (entry.type === 'Note' && Array.isArray(entry.visibility) && entry.visibility.length > 0);
 
 /**
- * Loads an update the signed-in user may react to and comment on: one on a crush they own.
- * Friends only read updates. Sends the error response and returns null otherwise.
+ * Loads an update the signed-in user may act on, or sends the error response and returns null.
+ * By default that's comments and comment hearts, which only the crush's owner can use.
+ * With { friendsToo: true } (reactions, DEX-71) friends the crush is shared with can act too,
+ * on updates posted after it was shared with them.
+ * Anything they can't touch answers "not found", so it doesn't reveal that the update exists.
  */
-const loadUpdateFor = async (req, res) => {
+const loadUpdateFor = async (req, res, { friendsToo = false } = {}) => {
   if (mongoose.connection.readyState !== 1) {
     res.status(503).json({ message: 'Database unavailable.' });
     return null;
@@ -35,12 +39,14 @@ const loadUpdateFor = async (req, res) => {
   }
   const me = String(req.user.id);
   const crush = await findCrush(entry.crushId);
-  // Only the crush's owner reacts and comments; friends just read its updates.
-  if (!crush || String(crush.userId) !== me) {
+  const isOwner = !!crush && String(crush.userId) === me;
+  // Comments stay owner-only. Friends reply in chat instead (DEX-71).
+  const allowed = isOwner || (friendsToo && await canReactToUpdate(me, entry, crush));
+  if (!allowed) {
     res.status(404).json({ message: 'Update not found.' });
     return null;
   }
-  return { entry, crush, isOwner: true };
+  return { entry, crush, isOwner };
 };
 
 const respond = async (req, res, entry, crush) => {
@@ -67,12 +73,16 @@ const notify = (req, { recipient, type, entry, crush, extra = {} }) => {
     .catch((err) => console.error('Update activity notification failed:', err.message));
 };
 
-/** POST /entries/:id/reactions { emoji }: sets your reaction; the same emoji again removes it. */
+/**
+ * POST /entries/:id/reactions { emoji }: sets your reaction, and the same emoji again removes it.
+ * The owner and friends the crush is shared with can react (DEX-71). The update's author
+ * gets a notification when someone else reacts.
+ */
 exports.react = async (req, res) => {
   try {
     const emoji = String(req.body?.emoji || '');
     if (!REACTION_EMOJIS.includes(emoji)) return res.status(400).json({ message: 'Unknown reaction.' });
-    const found = await loadUpdateFor(req, res);
+    const found = await loadUpdateFor(req, res, { friendsToo: true });
     if (!found) return;
     const { entry, crush } = found;
     const me = String(req.user.id);
@@ -91,6 +101,22 @@ exports.react = async (req, res) => {
     await entry.save();
     await respond(req, res, entry, crush);
     if (added) notify(req, { recipient: entry.userId, type: 'update_reaction', entry, crush, extra: { emoji } });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * GET /entries/:id/quote: the short "replying to this update" preview a friend sees above
+ * the chat box after tapping the chat icon on an update (DEX-71). 404 if they can't see it.
+ */
+exports.quote = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ message: 'Database unavailable.' });
+    const quote = await quoteForUpdate(req.user.id, req.params.id);
+    if (!quote) return res.status(404).json({ message: 'Update not found.' });
+    res.json(quote);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: 'Server error' });

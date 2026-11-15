@@ -1,7 +1,8 @@
 import { MessageMenuComponent } from '../../core/components/message-menu/message-menu.component';
 import { TypingService } from '../../core/services/typing.service';
 import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
-import { Message, canEditMessage } from '../../core/models/message.model';
+import { Message, MessageQuote, canEditMessage } from '../../core/models/message.model';
+import { EntriesApiService } from '../../core/services/entries-api.service';
 import { Component, signal, inject, computed, effect, ElementRef, ViewChild, AfterViewChecked, OnInit, HostListener } from '@angular/core';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule, Location } from '@angular/common';
@@ -170,6 +171,13 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
                     </span>
                   </span>
                 } @else {
+                  <!-- The crush update this message replies to, like a quoted reply (DEX-71) -->
+                  @if (msg.quote) {
+                    <span class="messaging-quote">
+                      <span class="messaging-quote__crush">On {{ msg.quote.crushName }}</span>
+                      <span class="messaging-quote__text">{{ msg.quote.excerpt }}</span>
+                    </span>
+                  }
                   {{ msg.content }}
                 }
                 @if (msg.relatedCrushId && !msg.deletedAt) {
@@ -493,6 +501,16 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
         <div [style.background-color]="theme.colors().bgSecondary" [style.border-top]="'1px solid ' + theme.colors().border"
              class="messaging-component__s11">
           <div class="messaging-composer">
+            <!-- Replying to a crush update from its chat icon (DEX-71): shown until you send or remove it -->
+            @if (replyQuote(); as quote) {
+              <div class="messaging-reply-quote" [style.border-color]="theme.colors().primary" [style.color]="theme.colors().text">
+                <span class="messaging-reply-quote__body">
+                  <span class="messaging-quote__crush">Replying to {{ currentChatPartner().name }}'s update on {{ quote.crushName }}</span>
+                  <span class="messaging-quote__text">{{ quote.excerpt }}</span>
+                </span>
+                <button type="button" class="messaging-reply-quote__close" aria-label="Don't quote this update" (click)="clearReplyQuote()">×</button>
+              </div>
+            }
             <div class="messaging-composer__row">
               <input [ngModel]="newMessage" (ngModelChange)="onType($event)" (keyup.enter)="send()" (blur)="stopTyping()"
                      [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
@@ -707,6 +725,12 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     return Array.from(byEmoji.values());
   }
 
+  private readonly entriesApi = inject(EntriesApiService);
+  /** The crush update you're replying to, shown above the message box (DEX-71). */
+  readonly replyQuote = signal<MessageQuote | null>(null);
+  /** Counts quote loads so only the latest one is shown. */
+  private replyQuoteRequest = 0;
+
   activeMessages = computed(() =>
     this.messaging.getConversation(this.selfId(), this.currentChatPartner().id)
   );
@@ -722,6 +746,7 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     this.route.queryParamMap.subscribe((params) => {
       const partnerId = (params.get('friendId') || params.get('friend') || '').trim();
       const partnerName = (params.get('friendName') || params.get('name') || '').trim();
+      void this.loadReplyQuote((params.get('quoteEntryId') || '').trim());
 
       if (partnerId) {
         this.chatPartnerId.set(partnerId);
@@ -770,15 +795,45 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     }
 
     const isSelfDestruct = this.newMessage.toLowerCase().includes('secret');
+    // A reply to a crush update carries the quote; the server rebuilds and checks it (DEX-71).
+    const quote = this.replyQuote();
     this.messaging.sendMessage({
       senderId: this.selfId(),
       receiverId: this.currentChatPartner().id,
       content: this.newMessage,
       isSelfDestruct,
-      selfDestructDurationMs: isSelfDestruct ? this.selfDestructDurationMs() : undefined
+      selfDestructDurationMs: isSelfDestruct ? this.selfDestructDurationMs() : undefined,
+      ...(quote ? { quote, quoteEntryId: quote.entryId, relatedCrushId: quote.crushId, relatedEntryId: quote.entryId } : {})
     });
     this.newMessage = '';
+    if (quote) this.clearReplyQuote();
     this.stopTyping();
+  }
+
+  /**
+   * Loads the "replying to this update" preview when chat was opened from the chat icon on a
+   * crush update (DEX-71). Clears it when there's no update, or you can't see that one.
+   */
+  private async loadReplyQuote(entryId: string): Promise<void> {
+    const request = ++this.replyQuoteRequest;
+    if (!entryId) {
+      this.replyQuote.set(null);
+      return;
+    }
+    try {
+      const quote = await this.entriesApi.quote(entryId);
+      // Ignore a slow answer if the chat has moved on to another update since.
+      if (request === this.replyQuoteRequest) this.replyQuote.set(quote);
+    } catch {
+      if (request === this.replyQuoteRequest) this.replyQuote.set(null);
+    }
+  }
+
+  /** Removes the update quote from the message box and from the URL, so a refresh doesn't bring it back. */
+  clearReplyQuote(): void {
+    this.replyQuote.set(null);
+    this.replyQuoteRequest++;
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { quoteEntryId: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   openChat(friendId: string, friendName: string): void {

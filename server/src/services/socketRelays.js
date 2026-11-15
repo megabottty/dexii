@@ -22,7 +22,14 @@ const relayChatMessage = async ({ io, userId, data, Message }) => {
     isSelfDestruct: !!message.isSelfDestruct,
     selfDestructDurationMs: message.selfDestructDurationMs,
     messageId: String(message._id),
-    timestamp: new Date(message.createdAt || Date.now()).toISOString()
+    timestamp: new Date(message.createdAt || Date.now()).toISOString(),
+    // The crush update this message replies to, read from the saved message (DEX-71).
+    ...(message.quote?.entryId ? { quote: {
+      entryId: String(message.quote.entryId),
+      crushId: message.quote.crushId ? String(message.quote.crushId) : undefined,
+      crushName: message.quote.crushName,
+      excerpt: message.quote.excerpt
+    } } : {})
   });
 };
 

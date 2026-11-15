@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { Entry } from '../../models/entry.model';
 import { SecurityService } from '../../services/security.service';
 import { DataService } from '../../services/data.service';
@@ -16,6 +17,7 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
     await TestBed.configureTestingModule({
       imports: [UpdateTimelineComponent],
       providers: [
+        provideRouter([]),
         { provide: SecurityService, useValue: { currentUserId: () => 'me', moderateContent: () => true } },
         // The timeline only calls these on DataService; stubbed so no real service (or network) starts.
         { provide: DataService, useValue: { reactToUpdate: async () => {}, commentOnUpdate: async () => {}, editUpdateComment: async () => {}, deleteUpdateComment: async () => {}, heartUpdateComment: async () => {} } }
@@ -68,28 +70,65 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
     expect(dayLabel(new Date(2025, 0, 2), today)).toContain('2025');
   });
 
-  describe('reactions and comments (DEX-45)', () => {
+  describe('reactions and the chat icon (DEX-45, DEX-71)', () => {
     const withActivity = (): Entry => ({
       ...update('u1', 'We kissed!', new Date()),
       userId: 'owner',
+      owner: { id: 'owner', username: 'ana', displayName: 'Ana Lopez' },
       reactions: [
         { userId: 'ana', emoji: '😍' }, { userId: 'me', emoji: '😍' }, { userId: 'ben', emoji: '🔥' }
       ],
       comments: [
-        { id: 'c1', userId: 'ana', content: 'omg', createdAt: new Date(), hearts: ['me'], user: { id: 'ana', username: 'ana' } },
-        { id: 'c2', userId: 'me', content: 'yay', createdAt: new Date(), hearts: [] },
-        { id: 'c3', userId: 'ben', content: 'finally', createdAt: new Date(), hearts: [] }
+        { id: 'c1', userId: 'ana', content: 'omg', createdAt: new Date(), hearts: ['me'], user: { id: 'ana', username: 'ana' } }
       ]
-    });
+    } as Entry);
 
-    it('shows friends the update only: no reactions, comments or expand-all', () => {
+    it('shows nothing to act on when the timeline is read-only (owner previewing as a friend)', () => {
       fixture.componentRef.setInput('entries', [withActivity()]);
       fixture.componentRef.setInput('interactive', false);
       fixture.detectChanges();
       expect(el().querySelector('.ut-bubble__text')?.textContent).toContain('We kissed!');
       expect(el().querySelector('.ut-reactions')).toBeNull();
+      expect(el().querySelector('.ut-chat')).toBeNull();
+    });
+
+    it("lets a friend react and gives them the top-menu chat icon, with no word, on the owner's update", () => {
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-reactions')).not.toBeNull();
+      const chat = el().querySelector<HTMLButtonElement>('.ut-chat')!;
+      expect(chat).toBeTruthy();
+      expect(chat.querySelector('img')?.getAttribute('src')).toBe('icons/nav/chat.svg');
+      expect(chat.textContent?.trim()).toBe('');
+      expect(chat.getAttribute('aria-label')).toBe('Chat with Ana Lopez about this update');
+    });
+
+    it("opens the one-to-one chat with the update's owner, quoting the update", () => {
+      const router = TestBed.inject(Router);
+      const calls: unknown[][] = [];
+      router.navigate = ((...args: unknown[]) => { calls.push(args); return Promise.resolve(true); }) as Router['navigate'];
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.detectChanges();
+      el().querySelector<HTMLButtonElement>('.ut-chat')!.click();
+      expect(calls).toEqual([[['/chat'], { queryParams: { friendId: 'owner', friendName: 'Ana Lopez', quoteEntryId: 'u1' } }]]);
+    });
+
+    it('gives the owner no chat icon on their own update, but keeps reactions', () => {
+      fixture.componentRef.setInput('entries', [{ ...withActivity(), userId: 'me' }]);
+      fixture.componentRef.setInput('isCrushOwner', true);
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-reactions')).not.toBeNull();
+      expect(el().querySelector('.ut-chat')).toBeNull();
+    });
+
+    it('has no comments anywhere: no Comment link, comment list, comment box or expand-all', () => {
+      fixture.componentRef.setInput('entries', [withActivity()]);
+      fixture.detectChanges();
       expect(el().querySelector('.ut-comments-toggle')).toBeNull();
+      expect(el().querySelector('.ut-comments')).toBeNull();
+      expect(el().querySelector('.ut-add-comment')).toBeNull();
       expect(el().querySelector('.ut-expand-all')).toBeNull();
+      expect(el().textContent).not.toMatch(/comment/i);
     });
 
     it('counts each emoji and marks yours', () => {
@@ -99,21 +138,6 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
         { emoji: '😍', count: 2, mine: true },
         { emoji: '🔥', count: 1, mine: false }
       ]);
-    });
-
-    it('keeps comments folded until you open them, with your heart filled', () => {
-      fixture.componentRef.setInput('entries', [withActivity()]);
-      fixture.detectChanges();
-      expect(el().querySelectorAll('.ut-comment').length).toBe(0);
-      expect(el().querySelector('.ut-add-comment')).toBeNull();
-      const toggle = el().querySelector<HTMLButtonElement>('.ut-comments-toggle')!;
-      expect(toggle.textContent).toContain('3 comments');
-      expect(toggle.getAttribute('aria-expanded')).toBe('false');
-      toggle.click();
-      fixture.detectChanges();
-      expect(el().querySelectorAll('.ut-comment').length).toBe(3);
-      expect(el().querySelector('.ut-add-comment')).not.toBeNull();
-      expect(el().querySelector('.ut-heart--on')).not.toBeNull();
     });
 
     it("shows a friend's post with their name, lets the crush's owner delete it but not edit it", () => {
@@ -137,24 +161,6 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       expect(labels).toEqual(['Delete update']);
     });
 
-    it("lets you edit only your own comment, and delete only yours when it isn't your update", () => {
-      fixture.componentRef.setInput('entries', [{ ...withActivity(), userId: 'ana' }]);
-      fixture.componentInstance.expand('u1');
-      fixture.detectChanges();
-      const rows = Array.from(el().querySelectorAll('.ut-comment'));
-      const buttons = (i: number) => Array.from(rows[i].querySelectorAll('.ut-comment__meta button')).map((b) => b.textContent?.trim());
-      expect(buttons(0)).toEqual([]);
-      expect(buttons(1)).toEqual(['Edit', 'Delete']);
-    });
-
-    it('lets the person whose update it is delete anyone’s comment', () => {
-      fixture.componentRef.setInput('entries', [{ ...withActivity(), userId: 'me' }]);
-      fixture.componentInstance.expand('u1');
-      fixture.detectChanges();
-      const first = el().querySelectorAll('.ut-comment')[0];
-      expect(Array.from(first.querySelectorAll('.ut-comment__meta button')).map((b) => b.textContent?.trim())).toEqual(['Delete']);
-    });
-
     it('sends a reaction through the data service', () => {
       const data = TestBed.inject(DataService);
       const calls: string[] = [];
@@ -163,24 +169,6 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       fixture.detectChanges();
       fixture.componentInstance.react(withActivity(), '💗');
       expect(calls).toEqual(['💗']);
-    });
-
-    it('expands and collapses every update at once, showing who reacted and who hearted', () => {
-      const second = { ...withActivity(), id: 'u2', comments: [] };
-      const first = { ...withActivity(), comments: withActivity().comments!.map((c) => c.id === 'c1' ? { ...c, heartedBy: [{ id: 'me' }, { id: 'ben', username: 'ben' }] } : c) };
-      fixture.componentRef.setInput('entries', [first, second]);
-      fixture.detectChanges();
-      const toggle = () => el().querySelector<HTMLButtonElement>('.ut-expand-all')!;
-      expect(toggle().textContent).toContain('Expand all comments');
-      toggle().click();
-      fixture.detectChanges();
-      expect(el().querySelectorAll('.ut-add-comment').length).toBe(2);
-      expect(el().querySelector('.ut-who')?.textContent).toContain('You');
-      expect(el().querySelector('.ut-hearted-by')?.textContent).toContain('You, ben');
-      expect(toggle().textContent).toContain('Collapse all comments');
-      toggle().click();
-      fixture.detectChanges();
-      expect(el().querySelectorAll('.ut-add-comment').length).toBe(0);
     });
 
     it('words comment times like Instagram', () => {

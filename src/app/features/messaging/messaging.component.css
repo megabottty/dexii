@@ -703,3 +703,57 @@
   background: #fff;
   color: #111;
 }
+
+/* A crush update quoted in a chat message, like a quoted reply in Messenger (DEX-71) */
+.messaging-quote {
+  display: block;
+  margin-bottom: 6px;
+  padding: 4px 0 4px 10px;
+  border-left: 3px solid currentColor;
+  opacity: 0.85;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}
+
+.messaging-quote__crush {
+  display: block;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.messaging-quote__text {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+/* The update you're about to reply to, above the message box (DEX-71) */
+.messaging-reply-quote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 4px 8px 12px;
+  border-left: 3px solid;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.messaging-reply-quote__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--fs-small);
+}
+
+.messaging-reply-quote__close {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
