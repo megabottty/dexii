@@ -36,7 +36,7 @@ The Stash is the home screen: one card per crush, with their photo across the to
 
 Tapping a crush opens their profile, with The Tea (your updates on them) at the top.
 
-- **The Tea on a crush:** updates you post about this crush. Update types are Note, Update, Status change, Date, Red flag, Safety check and Private journal. Friends you share with can react with an emoji. There are no comments: friends tap the chat icon (the same one as Chat in the top menu) to reply in your one-to-one chat, with the update quoted (DEX-71). Old comments are hidden but kept.
+- **The Tea on a crush:** updates you post about this crush, plus an automatic entry whenever you change its status or its Feels (DEX-68). Update types are Note, Update, Status change, Date, Red flag, Safety check and Private journal. Friends you share with can react with an emoji. There are no comments: friends tap the chat icon (the same one as Chat in the top menu) to reply in your one-to-one chat, with the update quoted (DEX-71). Old comments are hidden but kept.
 - **Sharing an update:** after posting, Dexii can ask whether to share the update with more friends.
 - **Compatibility:** your 0 to 100 read on the match, why, and anything giving you pause, with a history of changes. Friends the crush is shared with can weigh in with their own vote.
 - **Details:** Info, Memorable moments, Red flag entries, Vibe tracker and Social connections. Edit Details changes them.
@@ -73,7 +73,8 @@ A crush is shared friend by friend: only friends on its share list can see it, i
 
 The Tea is the feed of what's happening in your Inner Circle. The same name is used for the updates list on a crush or friend profile (DEX-44).
 
-- **Filter tabs:** All, Requests, Shared crushes and Updates, each with a count when there's something new.
+- **Feed (DEX-68):** the first tab, and The Tea always opens on it. One newest-first list of every update, status change ("Crush → Dating") and Feels change friends make on crushes they share with you, from the moment each was shared. Each row shows the friend, the crush, the date and time, and an icon and colour stripe for its kind (📝 update, 💞 status, 💭 Feels). Tapping a row opens the crush at that update. No reactions or chat in the Feed itself, and your own changes don't appear in it.
+- **Filter tabs:** Feed, All, Requests, Shared crushes and Updates, with a count on the last three when there's something new.
 - **What shows:** friend requests, crushes newly shared with you, and updates friends post on crushes they share with you. Archived crushes and paused friends don't appear.
 - **Reacting:** react to a friend's update with an emoji, or tap the chat icon to reply to them privately in chat with the update quoted (DEX-71).
 

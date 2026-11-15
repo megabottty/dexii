@@ -155,10 +155,23 @@ describe('UpdateTimelineComponent (DEX-44)', () => {
       fixture.componentRef.setInput('isCrushOwner', true);
       fixture.componentRef.setInput('sharedWith', 'Shared with Ana, Ben');
       fixture.detectChanges();
-      expect(el().querySelector('.ut-status')?.textContent).toContain('Status changed to Dating');
+      expect(el().querySelector('.ut-status')?.textContent?.replace(/\s+/g, ' ')).toContain('Status changed to Dating');
       expect(el().textContent).toContain('Shared with Ana, Ben');
       const labels = Array.from(el().querySelectorAll('.ut-bubble__actions button')).map((b) => b.getAttribute('aria-label'));
       expect(labels).toEqual(['Delete update']);
+    });
+
+    it('shows a status change with the old status, and a Feels change, neither editable (DEX-68)', () => {
+      fixture.componentRef.setInput('entries', [
+        { ...update('s2', 'Dating', new Date()), type: 'StatusChange', previousStatus: 'Crush', userId: 'me' },
+        { ...update('f1', 'Slow burn, Butterflies', new Date(Date.now() - 1000)), type: 'FeelsChange', userId: 'me' }
+      ]);
+      fixture.componentRef.setInput('isCrushOwner', true);
+      fixture.detectChanges();
+      expect(el().querySelector('.ut-status')?.textContent?.replace(/\s+/g, ' ')).toContain('Status changed from Crush to Dating');
+      expect(el().querySelector('.ut-feels')?.textContent?.replace(/\s+/g, ' ')).toContain('The Feels: Slow burn, Butterflies');
+      const labels = Array.from(el().querySelectorAll('.ut-bubble__actions button')).map((b) => b.getAttribute('aria-label'));
+      expect(labels).toEqual(['Delete update', 'Delete update']);
     });
 
     it('sends a reaction through the data service', () => {

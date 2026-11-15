@@ -1,4 +1,5 @@
-export type EntryType = 'Note' | 'Update' | 'StatusChange' | 'Date' | 'RedFlag' | 'SafetyCheck' | 'PrivateJournal';
+/** FeelsChange is added by the server when a crush's Feels labels change (DEX-68). */
+export type EntryType = 'Note' | 'Update' | 'StatusChange' | 'FeelsChange' | 'Date' | 'RedFlag' | 'SafetyCheck' | 'PrivateJournal';
 
 export interface EntryEditHistoryItem {
   previousContent: string;
@@ -41,6 +42,11 @@ export interface Entry {
   crushId: string;
   type: EntryType;
   content: string;
+  /** StatusChange: the status before the change, so it reads "Crush → Dating" (DEX-68). Missing on older ones. */
+  previousStatus?: string;
+  /** FeelsChange: the Feels after and before the change (DEX-68). */
+  labels?: string[];
+  previousLabels?: string[];
   timestamp: Date;
   isBurnAfterReading?: boolean;
   hasViewed?: boolean;

@@ -75,7 +75,7 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
               @for (entry of group.entries; track entry.id) {
                 <li class="ut-item" [attr.id]="'update-' + entry.id">
                   <span class="ut-item__sticker" aria-hidden="true">{{ sticker(entry) }}</span>
-                  <article class="ut-bubble" [class.ut-bubble--status]="entry.type === 'StatusChange'">
+                  <article class="ut-bubble" [class.ut-bubble--status]="isChange(entry)">
                     <header class="ut-bubble__meta">
                       @if (!isMine(entry) && entry.owner) {
                         <span class="ut-bubble__author">
@@ -103,7 +103,12 @@ export const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
                         <button type="button" class="ut-share" [disabled]="!editDraft().trim()" (click)="saveEdit(entry)">Save</button>
                       </div>
                     } @else if (entry.type === 'StatusChange') {
-                      <p class="ut-bubble__text ut-status"><span aria-hidden="true">💞</span> Status changed to <strong>{{ entry.content }}</strong></p>
+                      <!-- "from Crush" only when the server saved the old status (DEX-68); older ones just say the new one -->
+                      <p class="ut-bubble__text ut-status"><span aria-hidden="true">💞</span> Status changed
+                        @if (entry.previousStatus) { from {{ entry.previousStatus }} }
+                        to <strong>{{ entry.content }}</strong></p>
+                    } @else if (entry.type === 'FeelsChange') {
+                      <p class="ut-bubble__text ut-status ut-feels"><span aria-hidden="true">💭</span> The Feels: <strong>{{ entry.content }}</strong></p>
                     } @else {
                       <p class="ut-bubble__text">{{ entry.content }}</p>
                     }
@@ -240,14 +245,19 @@ export class UpdateTimelineComponent {
     return !entry.userId || entry.userId === this.me();
   }
 
-  /** Only the person who wrote an update can edit it; status changes can't be edited. */
+  /** A status or Feels change the server added (DEX-45, DEX-68), not something someone wrote. */
+  isChange(entry: TimelineEntry): boolean {
+    return entry.type === 'StatusChange' || entry.type === 'FeelsChange';
+  }
+
+  /** Only the person who wrote an update can edit it; status and Feels changes can't be edited. */
   canEdit(entry: TimelineEntry): boolean {
-    return entry.type !== 'StatusChange' && this.isMine(entry);
+    return !this.isChange(entry) && this.isMine(entry);
   }
 
   /** The person who wrote it, or the crush's owner, can delete an update (DEX-45). */
   canDelete(entry: TimelineEntry): boolean {
-    return this.isCrushOwner() || (entry.type !== 'StatusChange' && this.isMine(entry));
+    return this.isCrushOwner() || (!this.isChange(entry) && this.isMine(entry));
   }
 
   /** "You" for yourself, otherwise the person's name, as in the "Who reacted" list. */

@@ -6,14 +6,16 @@ const { findCrush, canReactToUpdate } = require('./updateAudience');
 const EXCERPT_MAX = 100;
 
 /** True for the entry types that show in a crush's Updates For Friends feed. */
-const isUpdate = (entry) => entry.type === 'Update' || entry.type === 'StatusChange'
+const isUpdate = (entry) => ['Update', 'StatusChange', 'FeelsChange'].includes(entry.type)
   || (entry.type === 'Note' && Array.isArray(entry.visibility) && entry.visibility.length > 0);
 
 /** The first ~100 characters of an update, cut at a word and ending in "…" when it was longer. */
 const excerptOf = (entry) => {
   const text = entry.type === 'StatusChange'
     ? `Status changed to ${entry.content}`
-    : String(entry.content || '').replace(/\s+/g, ' ').trim();
+    : entry.type === 'FeelsChange'
+      ? `The Feels: ${entry.content}`
+      : String(entry.content || '').replace(/\s+/g, ' ').trim();
   if (text.length <= EXCERPT_MAX) return text;
   const cut = text.slice(0, EXCERPT_MAX);
   const lastSpace = cut.lastIndexOf(' ');

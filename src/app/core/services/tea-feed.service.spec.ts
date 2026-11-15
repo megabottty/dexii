@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchesTeaFilter, mergeTeaItems, SharedCrush } from './tea-feed.service';
+import { buildFeedItems, matchesTeaFilter, mergeTeaItems, SharedCrush } from './tea-feed.service';
 import { AppNotification } from './notifications.service';
 import { SharedEntry } from './entries-api.service';
 
@@ -77,5 +77,58 @@ describe('mergeTeaItems', () => {
     expect(matchesTeaFilter(note, 'notes')).toBe(true);
     expect(matchesTeaFilter(note, 'shares')).toBe(false);
     expect(matchesTeaFilter(items.find((i) => i.kind === 'crush_shared')!, 'shares')).toBe(true);
+  });
+});
+
+/** DEX-68: the Feed tab, one running list of friends' crush updates, status and Feels changes. */
+describe('buildFeedItems (DEX-68)', () => {
+  const owner = { id: 'u2', username: 'sam', displayName: 'Sam Lee' };
+  const entry = (over: Partial<SharedEntry> & Record<string, unknown>): SharedEntry => ({
+    id: 'e1', userId: 'u2', crushId: 'c1', type: 'Update', content: 'We kissed!', timestamp: new Date('2026-11-10T10:00:00Z'),
+    visibility: [], isSensitive: false, owner, ...over
+  } as SharedEntry);
+
+  it('lists updates, status changes and Feels changes newest first, each with friend, crush and time', () => {
+    const items = buildFeedItems([
+      entry({ id: 'e1', timestamp: new Date('2026-11-10T10:00:00Z') }),
+      entry({ id: 'e2', type: 'StatusChange', content: 'Dating', previousStatus: 'Crush', timestamp: new Date('2026-11-12T10:00:00Z') }),
+      entry({ id: 'e3', type: 'FeelsChange', content: 'Slow burn, Butterflies', timestamp: new Date('2026-11-11T10:00:00Z') })
+    ], [crush({ id: 'c1', nickname: 'Alex' })], 'me');
+    expect(items.map((i) => [i.entryId, i.type])).toEqual([['e2', 'status'], ['e3', 'feels'], ['e1', 'update']]);
+    expect(items[0].text).toBe('Crush → Dating');
+    expect(items[1].text).toBe('Slow burn, Butterflies');
+    expect(items[2].text).toBe('We kissed!');
+    expect(items.every((i) => i.friendName === 'Sam Lee' && i.crushName === 'Alex' && i.timestamp instanceof Date)).toBe(true);
+  });
+
+  it('opens the crush profile at that update', () => {
+    const [item] = buildFeedItems([entry({ id: 'e9' })], [crush({ id: 'c1' })], 'me');
+    expect(item.route).toEqual(['/profile', 'c1']);
+    expect(item.queryParams).toEqual({ update: 'e9' });
+  });
+
+  it('leaves out my own entries and things that are not crush updates', () => {
+    const items = buildFeedItems([
+      entry({ id: 'mine', userId: 'me', owner: { id: 'me', username: 'me' } }),
+      entry({ id: 'date', type: 'Date' }),
+      entry({ id: 'private', type: 'Note', visibility: [] }),
+      entry({ id: 'shared-note', type: 'Note', visibility: ['me'] })
+    ], [], 'me');
+    expect(items.map((i) => i.entryId)).toEqual(['shared-note']);
+  });
+
+  it('says only the new status for older status changes that never saved the old one', () => {
+    const [item] = buildFeedItems([entry({ type: 'StatusChange', content: 'Dating' })], [], 'me');
+    expect(item.text).toBe('→ Dating');
+    expect(item.crushName).toBe('a crush');
+  });
+
+  it('hides the text of a sensitive update', () => {
+    const [item] = buildFeedItems([entry({ isSensitive: true })], [], 'me');
+    expect(item.text).not.toContain('We kissed!');
+  });
+
+  it('is never part of the other tabs', () => {
+    expect(matchesTeaFilter({ kind: 'entry_shared' } as any, 'feed')).toBe(false);
   });
 });

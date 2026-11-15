@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 // 'Update' is an Update For Friends: everyone the crush is shared with sees it (DEX-44).
 // 'StatusChange' is added by the server when a crush's status changes, so it shows in the feed (DEX-45).
-const ENTRY_TYPES = ['Note', 'Update', 'StatusChange', 'Date', 'RedFlag', 'SafetyCheck', 'PrivateJournal'];
+// 'FeelsChange' is added the same way when its Feels labels change (DEX-68).
+const ENTRY_TYPES = ['Note', 'Update', 'StatusChange', 'FeelsChange', 'Date', 'RedFlag', 'SafetyCheck', 'PrivateJournal'];
 const SAFETY_STATUSES = ['Draft', 'Sent', 'Safe', 'Urgent'];
 
 const EntrySchema = new mongoose.Schema({
@@ -60,6 +61,11 @@ const EntrySchema = new mongoose.Schema({
     default: []
   },
   editedAt: Date,
+  // StatusChange only: the status before, so the Feed can say "Crush → Dating" (DEX-68).
+  previousStatus: String,
+  // FeelsChange only: the Feels after and before the change (DEX-68).
+  labels: { type: [String], default: undefined },
+  previousLabels: { type: [String], default: undefined },
   // Updates For Friends (DEX-45): one emoji reaction per person, and comments friends can heart.
   reactions: {
     type: [{

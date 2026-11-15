@@ -1,13 +1,13 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { LoadingService } from '../../core/services/loading.service';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
 import { NavbarComponent } from '../../core/components/navbar/navbar.component';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { NotificationsService } from '../../core/services/notifications.service';
 import { WebPushService } from '../../core/services/web-push.service';
-import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed.service';
+import { FeedItem, TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed.service';
 
 @Component({
   selector: 'app-feed',
@@ -90,14 +90,64 @@ import { TeaFeedService, TeaFilter, TeaItem } from '../../core/services/tea-feed
                     role="tab"
                     class="dx-tab"
                     [attr.aria-selected]="tea.filter() === option.value"
-                    (click)="tea.filter.set(option.value); earlierLimit.set(PAGE)">
+                    (click)="tea.filter.set(option.value); earlierLimit.set(PAGE); feedLimit.set(PAGE)">
               {{ option.label }}
               @if (option.count() > 0) { <span class="dx-tab-count">{{ option.count() }}</span> }
             </button>
           }
         </div>
 
-        @if (tea.loading() && tea.items().length === 0) {
+        <!-- Feed (DEX-68): one running list of friends' crush updates, status and Feels changes.
+             Rows stay clean: tapping one opens the crush, where reactions and chat live. -->
+        @if (tea.filter() === 'feed') {
+          @if (tea.loading() && tea.feedItems().length === 0) {
+            <div [style.border]="'1px dashed ' + theme.colors().border" class="feed-empty-state">
+              <p [style.color]="theme.colors().textSecondary">Brewing your tea…</p>
+            </div>
+          } @else if (tea.feedItems().length === 0) {
+            <div [style.border]="'1px dashed ' + theme.colors().border" class="feed-empty-state">
+              <p [style.color]="theme.colors().textSecondary">
+                Nothing in your Feed yet. When friends post updates or change a crush's status or Feels, they'll show up here. 💌
+              </p>
+            </div>
+          } @else {
+            <ol class="tea-feed" aria-label="Your friends' crush news">
+              @for (row of feedVisible(); track row.key) {
+                <li>
+                  <article class="tea-feed-row" [class]="'tea-feed-row tea-feed-row--' + row.type"
+                           [style.--tea-primary]="theme.colors().primary"
+                           [style.--tea-accent]="theme.colors().accent"
+                           [style.background-color]="theme.colors().bgSecondary"
+                           [style.border]="'1px solid ' + theme.colors().border"
+                           role="button" tabindex="0"
+                           [attr.aria-label]="feedAriaLabel(row)"
+                           (click)="openFeedRow(row)" (keydown.enter)="openFeedRow(row)">
+                    <span class="tea-feed-row__icon" aria-hidden="true">{{ feedIcon(row.type) }}</span>
+                    <div class="tea-feed-row__body">
+                      <p class="tea-feed-row__who" [style.color]="theme.colors().text">
+                        <strong>{{ row.friendName }}'s crush {{ row.crushName }}</strong>
+                        <span class="tea-feed-row__kind" [style.color]="theme.colors().textSecondary">{{ feedKindLabel(row.type) }}</span>
+                      </p>
+                      <p class="tea-feed-row__text" [style.color]="theme.colors().text">{{ row.text }}</p>
+                      <time class="tea-feed-row__time" [attr.datetime]="row.timestamp.toISOString()" [style.color]="theme.colors().textSecondary">
+                        {{ row.timestamp | date:'MMM d, h:mm a' }}
+                      </time>
+                    </div>
+                  </article>
+                </li>
+              }
+            </ol>
+            @if (feedVisible().length < tea.feedItems().length) {
+              <button type="button"
+                      class="tea-load-more"
+                      [style.border]="'1px solid ' + theme.colors().border"
+                      [style.color]="theme.colors().text"
+                      (click)="feedLimit.set(feedLimit() + PAGE)">
+                Load more ({{ tea.feedItems().length - feedVisible().length }} more)
+              </button>
+            }
+          }
+        } @else if (tea.loading() && tea.items().length === 0) {
           <div [style.border]="'1px dashed ' + theme.colors().border" class="feed-empty-state">
             <p [style.color]="theme.colors().textSecondary">Brewing your tea…</p>
           </div>
@@ -265,7 +315,11 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected readonly PAGE = 10;
   protected earlierLimit = signal(this.PAGE);
   protected earlierVisible = computed(() => this.tea.earlierItems().slice(0, this.earlierLimit()));
+  /** Feed rows are paged the same way. */
+  protected feedLimit = signal(this.PAGE);
+  protected feedVisible = computed(() => this.tea.feedItems().slice(0, this.feedLimit()));
   protected readonly filterOptions: Array<{ value: TeaFilter; label: string; count: () => number }> = [
+    { value: 'feed', label: 'Feed', count: () => 0 },
     { value: 'all', label: 'All', count: () => 0 },
     { value: 'requests', label: 'Requests', count: () => this.tea.counts().requests },
     { value: 'shares', label: 'Shared crushes', count: () => this.tea.counts().shares },
@@ -274,7 +328,11 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   private seenTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private readonly router = inject(Router);
+
   ngOnInit(): void {
+    // The Tea always opens on Feed (DEX-68), whatever tab was picked last time.
+    this.tea.filter.set('feed');
     void this.tea.load().then(() => {
       // Give the eye a moment on the new cards, then treat them as seen.
       this.seenTimer = setTimeout(() => { void this.tea.markShownAsSeen(); }, 2500);
@@ -287,6 +345,27 @@ export class FeedComponent implements OnInit, OnDestroy {
     void this.tea.markShownAsSeen();
   }
 
+  /** Opens the crush a Feed row is about, scrolled to that update (DEX-68). */
+  openFeedRow(row: FeedItem): void {
+    void this.router.navigate(row.route, { queryParams: row.queryParams });
+  }
+
+  /** The icon that tells a Feed row's kind apart at a glance (DEX-68). */
+  feedIcon(type: FeedItem['type']): string {
+    return type === 'status' ? '💞' : type === 'feels' ? '💭' : '📝';
+  }
+
+  /** What a screen reader says for a Feed row: whose crush, then the news. */
+  feedAriaLabel(row: FeedItem): string {
+    return `${row.friendName}'s crush ${row.crushName}, ${this.feedKindLabel(row.type)}: ${row.text}`;
+  }
+
+  /** A short word for screen readers and the eye: what kind of news this row is. */
+  feedKindLabel(type: FeedItem['type']): string {
+    return type === 'status' ? 'Status' : type === 'feels' ? 'The Feels' : 'Update';
+  }
+
+  /** Accepts or declines a friend request from its Tea card, disabling its buttons meanwhile. */
   async respond(item: TeaItem, action: 'accept' | 'decline'): Promise<void> {
     this.busyKey.set(item.key);
     try {

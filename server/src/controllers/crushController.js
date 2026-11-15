@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { personName } = require('../utils/personName');
 const CrushProfile = require('../models/CrushProfile');
 const Entry = require('../models/Entry');
+const { changeEntriesFor } = require('../services/crushChangeEntries');
 const User = require('../models/User');
 const { createNotification, retractCrushShares, emitToUser } = require('./notificationController');
 const { emitEntriesChanged } = require('../services/updateAudience');
@@ -350,7 +351,8 @@ exports.updateCrush = async (req, res) => {
     if (Array.isArray(req.body.visibility)) updatePayload.visibility = req.body.visibility;
     // Retired status names from stale clients become their replacement (DEX-50).
     if (Object.prototype.hasOwnProperty.call(updatePayload, 'status')) updatePayload.status = normalizeStatus(updatePayload.status);
-    const previousStatus = crush.status;
+    // The crush as it was, so status and Feels changes can be added to the feed below (DEX-68).
+    const before = { status: crush.status, relationshipLabels: [...(crush.relationshipLabels || [])] };
     if (Object.keys(updatePayload).length > 0) {
       crush = await CrushProfile.findByIdAndUpdate(
         req.params.id,
@@ -365,11 +367,12 @@ exports.updateCrush = async (req, res) => {
     res.json(shapeCrushForWire(crush));
 
     emitToUser(io, req.user.id, 'crushesChanged', { crushId: String(crush._id) });
-    // A status change shows in the crush's update feed (DEX-45). Archiving and restoring don't.
-    if (updatePayload.status && updatePayload.status !== previousStatus && ![updatePayload.status, previousStatus].includes('Archived')) {
-      void Entry.create({ userId: req.user.id, crushId: String(crush._id), type: 'StatusChange', content: String(updatePayload.status), visibility: [], timestamp: new Date() })
+    // Status and Feels changes show in the crush's update feed and friends' Feed (DEX-45, DEX-68).
+    // Archiving and restoring don't.
+    for (const entry of changeEntriesFor({ userId: req.user.id, crush, before, after: updatePayload })) {
+      void Entry.create(entry)
         .then(() => emitEntriesChanged(io, crush))
-        .catch((err) => console.error('Status change entry failed:', err.message));
+        .catch((err) => console.error(`${entry.type} entry failed:`, err.message));
     }
     // Unshared with someone: take back their "shared a crush" notification.
     if (removedRecipients.length > 0) {

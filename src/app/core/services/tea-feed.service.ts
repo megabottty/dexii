@@ -7,6 +7,7 @@ import { ModalService } from './modal.service';
 import { CrushProfile } from '../models/crush-profile.model';
 import { SharedEntry } from './entries-api.service';
 import { personName } from '../utils/person-name';
+import { SecurityService } from './security.service';
 
 /**
  * "Tea" = what your friends share with you and requests waiting for you.
@@ -29,7 +30,8 @@ export type TeaKind =
   | 'update_activity'
   | 'other';
 
-export type TeaFilter = 'all' | 'requests' | 'shares' | 'notes';
+/** The Tea's tabs. 'feed' is the running list of friends' crush news (DEX-68), shown on its own. */
+export type TeaFilter = 'feed' | 'all' | 'requests' | 'shares' | 'notes';
 
 export interface TeaActor {
   id: string;
@@ -63,6 +65,7 @@ export const ENTRY_TYPE_VERBS: Record<string, string> = {
   Note: 'posted an update about',
   Update: 'posted an update about',
   StatusChange: 'changed the status of',
+  FeelsChange: 'updated the Feels for',
   Date: 'logged a date with',
   RedFlag: 'flagged a red flag about',
   SafetyCheck: 'sent a safety check about',
@@ -220,14 +223,77 @@ export function mergeTeaItems(
   });
 }
 
+/** Which Tea tab a card belongs on. Feed has its own list (buildFeedItems), so no cards match it. */
 export const matchesTeaFilter = (item: TeaItem, filter: TeaFilter): boolean => {
   switch (filter) {
+    case 'feed': return false;
     case 'requests': return item.kind === 'friend_request' || item.kind === 'nudge';
     case 'shares': return item.kind === 'crush_shared';
     case 'notes': return item.kind === 'entry_shared' || item.kind === 'update_activity';
     default: return true;
   }
 };
+
+/** One row in The Tea's Feed tab (DEX-68). */
+export interface FeedItem {
+  key: string;
+  entryId: string;
+  /** Picks the row's icon and colour so the three kinds look different at a glance. */
+  type: 'update' | 'status' | 'feels';
+  timestamp: Date;
+  friendName: string;
+  friendAvatarUrl?: string;
+  crushName: string;
+  /** The update text, "Crush → Dating", or the new Feels. */
+  text: string;
+  route: any[];
+  queryParams: Record<string, string>;
+}
+
+/** The entry types that belong in the Feed, mapped to how the row is drawn. */
+const FEED_ROW_TYPES: Partial<Record<string, FeedItem['type']>> = {
+  Update: 'update',
+  Note: 'update',
+  StatusChange: 'status',
+  FeelsChange: 'feels'
+};
+
+/**
+ * Builds the Feed tab (DEX-68): every update, status change and Feels change friends make on
+ * crushes they share with you, newest first. The server already limits shared entries to ones
+ * posted since each crush was shared with you (DEX-44). Your own entries are left out, and so are
+ * private notes and other entry types. Each row opens the crush's profile at that update.
+ */
+export function buildFeedItems(entries: SharedEntry[], crushes: SharedCrush[], meId: string | null): FeedItem[] {
+  const crushById = new Map(crushes.map((c) => [c.id, c]));
+  const items: FeedItem[] = [];
+  for (const entry of entries) {
+    const type = FEED_ROW_TYPES[entry.type];
+    if (!type) continue;
+    // A note only counts as an update once it was shared with someone.
+    if (entry.type === 'Note' && !(entry.visibility || []).length) continue;
+    const authorId = entry.owner?.id || entry.userId || '';
+    if (meId && authorId === meId) continue;
+
+    let text = entry.content;
+    if (type === 'status') text = entry.previousStatus ? `${entry.previousStatus} → ${entry.content}` : `→ ${entry.content}`;
+    else if (type === 'update' && entry.isSensitive) text = '🔒 Sensitive update. Open the crush to read it.';
+
+    items.push({
+      key: `feed:${entry.id}`,
+      entryId: entry.id,
+      type,
+      timestamp: new Date(entry.timestamp),
+      friendName: personName(entry.owner),
+      friendAvatarUrl: entry.owner?.avatarUrl,
+      crushName: crushById.get(entry.crushId)?.nickname || 'a crush',
+      text,
+      route: ['/profile', entry.crushId],
+      queryParams: { update: entry.id }
+    });
+  }
+  return items.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+}
 
 @Injectable({ providedIn: 'root' })
 export class TeaFeedService {
@@ -236,10 +302,12 @@ export class TeaFeedService {
   private dataService = inject(DataService);
   private modal = inject(ModalService);
   private router = inject(Router);
+  private security = inject(SecurityService);
 
   private sharedCrushes = signal<SharedCrush[]>([]);
   readonly loading = signal(false);
-  readonly filter = signal<TeaFilter>('all');
+  /** The Tea always opens on Feed (DEX-68); FeedComponent resets this on each visit. */
+  readonly filter = signal<TeaFilter>('feed');
   /** Bumps when a friend request is answered here so badges elsewhere can refresh. */
   readonly requestsChanged = signal(0);
 
@@ -249,6 +317,12 @@ export class TeaFeedService {
     this.dataService.getSharedEntries()()
   ));
   readonly visibleItems = computed(() => this.items().filter((item) => matchesTeaFilter(item, this.filter())));
+  /** The Feed tab's rows (DEX-68). */
+  readonly feedItems = computed(() => buildFeedItems(
+    this.dataService.getSharedEntries()(),
+    this.sharedCrushes(),
+    this.security.currentUserId()
+  ));
 
   /**
    * Which group each card sat in when the page was opened. Marking something

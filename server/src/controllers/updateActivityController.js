@@ -13,7 +13,7 @@ const { quoteForUpdate } = require('../services/updateQuote');
 const REACTION_EMOJIS = ['💗', '😍', '😂', '😬', '🔥', '🥺'];
 const COMMENT_MAX = 1000;
 
-const isUpdate = (entry) => entry.type === 'Update' || entry.type === 'StatusChange'
+const isUpdate = (entry) => ['Update', 'StatusChange', 'FeelsChange'].includes(entry.type)
   || (entry.type === 'Note' && Array.isArray(entry.visibility) && entry.visibility.length > 0);
 
 /**

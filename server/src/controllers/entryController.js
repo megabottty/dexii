@@ -63,8 +63,9 @@ const writableFields = [
  * An Update's audience is the crush's share list, never its own (DEX-44). Older notes that were
  * shared with someone, or marked Public, count as updates too.
  */
-const UPDATE_ENTRY_FILTER = { $or: [{ type: { $in: ['Update', 'StatusChange'] } }, { type: 'Note', 'visibility.0': { $exists: true } }] };
-const FEED_TYPES = ['Update', 'StatusChange'];
+// Entries that show in a crush's Updates For Friends feed and friends' Feed (DEX-44, DEX-45, DEX-68).
+const UPDATE_ENTRY_FILTER = { $or: [{ type: { $in: ['Update', 'StatusChange', 'FeelsChange'] } }, { type: 'Note', 'visibility.0': { $exists: true } }] };
+const FEED_TYPES = ['Update', 'StatusChange', 'FeelsChange'];
 
 const pickWritableFields = (body) => writableFields.reduce((updates, field) => {
   if (Object.prototype.hasOwnProperty.call(body, field)) {
@@ -159,8 +160,8 @@ exports.createEntry = async (req, res) => {
       return res.status(400).json({ message: 'Invalid entry type.' });
     }
 
-    if (type === 'StatusChange') {
-      return res.status(400).json({ message: 'Status changes are added automatically.' });
+    if (type === 'StatusChange' || type === 'FeelsChange') {
+      return res.status(400).json({ message: 'Status and Feels changes are added automatically.' });
     }
     const fields = pickWritableFields(req.body);
     // The Vault is never shared with anyone (DEX-43).
@@ -206,8 +207,8 @@ exports.updateEntry = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ message: 'Entry not found.' });
     }
-    if (existing.type === 'StatusChange') {
-      return res.status(400).json({ message: 'A status change can’t be edited.' });
+    if (existing.type === 'StatusChange' || existing.type === 'FeelsChange') {
+      return res.status(400).json({ message: 'A status or Feels change can’t be edited.' });
     }
 
     const updates = pickWritableFields(req.body);
