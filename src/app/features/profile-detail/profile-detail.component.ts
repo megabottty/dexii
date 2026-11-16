@@ -1,3 +1,4 @@
+import { distinctUntilChanged, map } from 'rxjs';
 import { AppSelectComponent } from '../../core/components/app-select/app-select.component';
 import { Entry } from '../../core/models/entry.model';
 import { UpdateTimelineComponent } from '../../core/components/update-timeline/update-timeline.component';
@@ -1588,9 +1589,13 @@ export class ProfileDetailComponent implements OnDestroy {
       // Pick up reactions and comments friends left since this was loaded (DEX-45).
       void this.dataService.refreshEntryActivity();
     });
-    // From a reaction or comment notification: scroll to that update once it's on screen.
-    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const updateId = params.get('update');
+    // From a Tea link or notification (?update=<id>): scroll to that update once it's on screen.
+    // Only when the id changes, so a later re-emission of the same link doesn't pull the page down again (DEX-75).
+    this.route.queryParamMap.pipe(
+      map((params) => params.get('update')),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((updateId) => {
       if (updateId) this.scrollToUpdate(updateId);
     });
   }
@@ -1607,6 +1612,10 @@ export class ProfileDetailComponent implements OnDestroy {
     return true;
   }
 
+  /**
+   * Scrolls one update into the middle of the screen and glows it briefly, so you land on what
+   * a Tea link or notification was about. Retries for about 3 seconds while the feed loads.
+   */
   private scrollToUpdate(updateId: string, attempt = 0): void {
     if (typeof document === 'undefined' || attempt > 20) return;
     const el = document.getElementById(`update-${updateId}`);
