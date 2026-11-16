@@ -128,6 +128,19 @@ describe('buildFeedItems (DEX-68)', () => {
     expect(item.text).not.toContain('We kissed!');
   });
 
+  it('marks rows newer than your last visit as unread (DEX-45)', () => {
+    const items = buildFeedItems([
+      entry({ id: 'new', timestamp: new Date('2026-11-12T10:00:00Z') }),
+      entry({ id: 'old', timestamp: new Date('2026-11-09T10:00:00Z') })
+    ], [], 'me', new Date('2026-11-10T00:00:00Z'));
+    expect(items.map((i) => [i.entryId, i.unread])).toEqual([['new', true], ['old', false]]);
+  });
+
+  it('treats everything as unread if you have never opened the Feed, and nothing while it loads', () => {
+    expect(buildFeedItems([entry({})], [], 'me', null)[0].unread).toBe(true);
+    expect(buildFeedItems([entry({})], [], 'me')[0].unread).toBe(false);
+  });
+
   it('is never part of the other tabs', () => {
     expect(matchesTeaFilter({ kind: 'entry_shared' } as any, 'feed')).toBe(false);
   });

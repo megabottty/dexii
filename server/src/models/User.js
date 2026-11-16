@@ -183,6 +183,8 @@ const UserSchema = new mongoose.Schema({
   },
   // Lets a user's chosen theme follow them across browsers/devices instead
   // of only being remembered in one browser's localStorage.
+  // When you last looked at The Tea's Feed; newer rows show bold as unread (DEX-45).
+  feedSeenAt: { type: Date, default: null },
   // Beta pricing test (DEX-66): the first answer to "Would you pay $1.99 for this theme?".
   themeInterest: {
     answer: { type: String, enum: ['yes', 'maybe', 'no'] },

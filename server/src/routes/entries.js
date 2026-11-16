@@ -3,11 +3,15 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const entryController = require('../controllers/entryController');
 const updateActivity = require('../controllers/updateActivityController');
+const feedSeen = require('../controllers/feedSeenController');
 const requireFeature = require('../middleware/requireFeature');
 
 router.use(auth);
 
 router.get('/shared', entryController.getSharedEntries);
+// When you last looked at The Tea's Feed, for its unread rows (DEX-45). Before '/:id' so it isn't read as an id.
+router.get('/feed-seen', feedSeen.getFeedSeen);
+router.put('/feed-seen', feedSeen.markFeedSeen);
 router.get('/', entryController.getEntries);
 // Safety Check entries are a Premium feature; other entry types are not gated.
 router.post('/', requireFeature('safetyCheck', (req) => req.body?.type === 'SafetyCheck'), entryController.createEntry);

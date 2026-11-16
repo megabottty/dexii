@@ -13,13 +13,21 @@ const json = (body: unknown, status = 200) =>
 /** DEX-68: The Tea opens on a Feed tab, left of All. */
 describe('The Tea Feed tab (DEX-68)', () => {
   let shared: unknown[];
+  let feedSeenAt: string | null;
+  let seenPuts: string[];
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('dexii_api_token', 'token');
     localStorage.setItem('dexii_api_user_id', ME);
     shared = [];
-    vi.stubGlobal('fetch', vi.fn((url: string) => {
+    feedSeenAt = null;
+    seenPuts = [];
+    vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => {
       const u = String(url);
+      if (u.includes('/entries/feed-seen')) {
+        if (init?.method === 'PUT') { seenPuts.push(JSON.parse(String(init.body)).seenAt); return json({ feedSeenAt: JSON.parse(String(init.body)).seenAt }); }
+        return json({ feedSeenAt });
+      }
       if (u.includes('/entries/shared')) return json(shared);
       if (u.endsWith('/friends')) return json([{ id: SAM, username: 'sam', displayName: 'Sam Lee' }]);
       if (u.includes(`/crushes/friend/${SAM}`)) return json([{ _id: 'c1', userId: SAM, nickname: 'Alex', status: 'Dating', visibility: [ME] }]);
@@ -65,7 +73,7 @@ describe('The Tea Feed tab (DEX-68)', () => {
     expect(rows.length).toBe(2);
     expect(rows[0].classList).toContain('tea-feed-row--status');
     expect(rows[0].textContent).toContain('Crush → Dating');
-    expect(rows[0].textContent).toContain("Sam Lee's crush Alex");
+    expect(rows[0].textContent).toContain('Sam Lee\'s crush "Alex"');
     expect(rows[1].classList).toContain('tea-feed-row--update');
     expect(root.querySelector('.tea-feed-row .ut-reactions, .tea-feed-row .ut-chat')).toBeNull();
   });
@@ -73,5 +81,46 @@ describe('The Tea Feed tab (DEX-68)', () => {
   it('explains what will show up when the Feed is empty', async () => {
     const { root } = await render();
     expect(root.querySelector('.feed-empty-state')?.textContent).toContain("they'll show up here");
+  });
+
+  /** Feed rows newer than your last visit (saved on your account) are bold, with a line where you're caught up (DEX-45). */
+  describe('unread rows', () => {
+    const row = (id: string, timestamp: string) => ({
+      _id: id, id, userId: SAM, owner: { id: SAM, username: 'sam', displayName: 'Sam Lee' }, crushId: 'c1',
+      type: 'Update', content: `news ${id}`, timestamp, visibility: []
+    });
+
+    beforeEach(() => {
+      shared = [row('e3', '2026-11-14T10:00:00Z'), row('e2', '2026-11-12T10:00:00Z'), row('e1', '2026-11-08T10:00:00Z')];
+      feedSeenAt = '2026-11-10T00:00:00.000Z';
+    });
+
+    it('shows rows since your last visit in bold, then "all caught up", then the rest', async () => {
+      const { root } = await render();
+      const rows = Array.from(root.querySelectorAll('.tea-feed-row'));
+      expect(rows.map((r) => r.classList.contains('tea-feed-row--unread'))).toEqual([true, true, false]);
+      const items = Array.from(root.querySelectorAll('.tea-feed > li'));
+      const divider = items.findIndex((li) => li.classList.contains('tea-feed-caught-up'));
+      expect(items[divider]?.textContent).toContain("You're all caught up");
+      expect(items[divider + 1]?.textContent).toContain('news e1');
+    });
+
+    it('counts unread rows on the Feed tab', async () => {
+      const { root } = await render();
+      expect(root.querySelector('[role="tab"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Feed 2');
+    });
+
+    it('remembers you have seen up to the newest row when you leave', async () => {
+      const { fixture } = await render();
+      fixture.destroy();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(seenPuts.at(-1)).toBe('2026-11-14T10:00:00.000Z');
+    });
+
+    it('shows no caught-up line when everything is new', async () => {
+      feedSeenAt = '2026-11-01T00:00:00.000Z';
+      const { root } = await render();
+      expect(root.querySelector('.tea-feed-caught-up')).toBeNull();
+    });
   });
 });

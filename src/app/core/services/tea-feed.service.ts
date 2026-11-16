@@ -5,7 +5,7 @@ import { FriendsApiService, FriendSummary } from './friends-api.service';
 import { DataService } from './data.service';
 import { ModalService } from './modal.service';
 import { CrushProfile } from '../models/crush-profile.model';
-import { SharedEntry } from './entries-api.service';
+import { EntriesApiService, SharedEntry } from './entries-api.service';
 import { personName } from '../utils/person-name';
 import { SecurityService } from './security.service';
 
@@ -246,6 +246,8 @@ export interface FeedItem {
   crushName: string;
   /** The update text, "Crush → Dating", or the new Feels. */
   text: string;
+  /** Newer than your last visit to the Feed: shown bold (DEX-45). */
+  unread: boolean;
   route: any[];
   queryParams: Record<string, string>;
 }
@@ -263,8 +265,11 @@ const FEED_ROW_TYPES: Partial<Record<string, FeedItem['type']>> = {
  * crushes they share with you, newest first. The server already limits shared entries to ones
  * posted since each crush was shared with you (DEX-44). Your own entries are left out, and so are
  * private notes and other entry types. Each row opens the crush's profile at that update.
+ *
+ * `seenAt` is when you last looked (DEX-45): rows after it are unread. Null = you never have, so
+ * everything is unread. Undefined = not loaded yet, so nothing is marked rather than flashing bold.
  */
-export function buildFeedItems(entries: SharedEntry[], crushes: SharedCrush[], meId: string | null): FeedItem[] {
+export function buildFeedItems(entries: SharedEntry[], crushes: SharedCrush[], meId: string | null, seenAt?: Date | null): FeedItem[] {
   const crushById = new Map(crushes.map((c) => [c.id, c]));
   const items: FeedItem[] = [];
   for (const entry of entries) {
@@ -288,6 +293,7 @@ export function buildFeedItems(entries: SharedEntry[], crushes: SharedCrush[], m
       friendAvatarUrl: entry.owner?.avatarUrl,
       crushName: crushById.get(entry.crushId)?.nickname || 'a crush',
       text,
+      unread: seenAt === undefined ? false : seenAt === null || new Date(entry.timestamp).getTime() > seenAt.getTime(),
       route: ['/profile', entry.crushId],
       queryParams: { update: entry.id }
     });
@@ -303,6 +309,7 @@ export class TeaFeedService {
   private modal = inject(ModalService);
   private router = inject(Router);
   private security = inject(SecurityService);
+  private entriesApi = inject(EntriesApiService);
 
   private sharedCrushes = signal<SharedCrush[]>([]);
   readonly loading = signal(false);
@@ -317,12 +324,23 @@ export class TeaFeedService {
     this.dataService.getSharedEntries()()
   ));
   readonly visibleItems = computed(() => this.items().filter((item) => matchesTeaFilter(item, this.filter())));
-  /** The Feed tab's rows (DEX-68). */
+  /**
+   * When you'd last seen the Feed as of opening The Tea this visit (DEX-45). Frozen for the visit,
+   * so rows stay bold while you read them and clear on your next visit, like the other tabs.
+   */
+  private readonly feedSeenSnapshot = signal<Date | null | undefined>(undefined);
+  /** The latest time we've told the server you've seen up to, so we don't send the same one twice. */
+  private feedSeenSent: Date | null = null;
+
+  /** The Feed tab's rows (DEX-68), with unread marked from your last visit (DEX-45). */
   readonly feedItems = computed(() => buildFeedItems(
     this.dataService.getSharedEntries()(),
     this.sharedCrushes(),
-    this.security.currentUserId()
+    this.security.currentUserId(),
+    this.feedSeenSnapshot()
   ));
+  /** How many Feed rows are new since your last visit; shown on the Feed tab. */
+  readonly feedUnreadCount = computed(() => this.feedItems().filter((row) => row.unread).length);
 
   /**
    * Which group each card sat in when the page was opened. Marking something
@@ -352,7 +370,8 @@ export class TeaFeedService {
         this.notifications.loadNotifications(),
         this.notifications.loadUnreadCount(),
         this.dataService.refreshSharedEntries(),
-        this.loadSharedCrushes()
+        this.loadSharedCrushes(),
+        this.loadFeedSeen()
       ]);
     } finally {
       this.snapshotGroups();
@@ -378,6 +397,35 @@ export class TeaFeedService {
     await Promise.all(pending.map((item) => this.notifications.markRead(item.notificationId!).catch(() => undefined)));
   }
 
+  /** Reads when you last saw the Feed, for this visit's bold rows. If it fails, nothing is marked unread. */
+  private async loadFeedSeen(): Promise<void> {
+    if (!this.friendsApi.isAuthenticated()) return;
+    try {
+      const seenAt = await this.entriesApi.getFeedSeen();
+      this.feedSeenSnapshot.set(seenAt);
+      this.feedSeenSent = seenAt;
+    } catch {
+      this.feedSeenSnapshot.set(undefined);
+    }
+  }
+
+  /**
+   * Remembers, on your account, that you've seen the Feed up to its newest row (DEX-45).
+   * Called a moment after The Tea opens and when you leave. This visit's bold rows stay as they are.
+   */
+  async markFeedSeen(): Promise<void> {
+    const newest = this.feedItems()[0]?.timestamp;
+    if (!newest || (this.feedSeenSent && newest.getTime() <= this.feedSeenSent.getTime())) return;
+    this.feedSeenSent = newest;
+    try {
+      await this.entriesApi.markFeedSeen(newest);
+    } catch {
+      // Not saved: the rows just show bold again next visit.
+      this.feedSeenSent = null;
+    }
+  }
+
+  /** Loads the crushes each friend shares with you, labelled with that friend's name. */
   private async loadSharedCrushes(): Promise<void> {
     if (!this.friendsApi.isAuthenticated()) { this.sharedCrushes.set([]); return; }
     try {

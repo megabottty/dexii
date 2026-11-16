@@ -619,3 +619,26 @@
   margin-top: 4px;
   font-size: var(--fs-label);
 }
+
+/* A Feed row you haven't seen yet: bold, like an unread email (DEX-45) */
+.tea-feed-row--unread .tea-feed-row__text { font-weight: 700; }
+.tea-feed-row--unread .tea-feed-row__who strong { font-weight: 800; }
+
+/* The line between new rows and the ones you'd already seen */
+.tea-feed-caught-up {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tea-feed-caught-up::before,
+.tea-feed-caught-up::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}

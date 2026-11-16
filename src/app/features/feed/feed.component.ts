@@ -112,9 +112,15 @@ import { FeedItem, TeaFeedService, TeaFilter, TeaItem } from '../../core/service
             </div>
           } @else {
             <ol class="tea-feed" aria-label="Your friends' crush news">
-              @for (row of feedVisible(); track row.key) {
+              @for (row of feedVisible(); track row.key; let i = $index) {
+                <!-- Where the new rows end: everything below was there on your last visit (DEX-45) -->
+                @if (i > 0 && !row.unread && feedVisible()[i - 1].unread) {
+                  <li class="tea-feed-caught-up" [style.color]="theme.colors().textSecondary">
+                    <span aria-hidden="true">✓</span> You're all caught up
+                  </li>
+                }
                 <li>
-                  <article class="tea-feed-row" [class]="'tea-feed-row tea-feed-row--' + row.type"
+                  <article class="tea-feed-row" [class]="'tea-feed-row tea-feed-row--' + row.type + (row.unread ? ' tea-feed-row--unread' : '')"
                            [style.--tea-primary]="theme.colors().primary"
                            [style.--tea-accent]="theme.colors().accent"
                            [style.background-color]="theme.colors().bgSecondary"
@@ -125,7 +131,8 @@ import { FeedItem, TeaFeedService, TeaFilter, TeaItem } from '../../core/service
                     <span class="tea-feed-row__icon" aria-hidden="true">{{ feedIcon(row.type) }}</span>
                     <div class="tea-feed-row__body">
                       <p class="tea-feed-row__who" [style.color]="theme.colors().text">
-                        <strong>{{ row.friendName }}'s crush {{ row.crushName }}</strong>
+                        <strong>{{ row.friendName }}'s crush "{{ row.crushName }}"</strong>
+                        @if (row.unread) { <span [style.background-color]="theme.colors().primary" class="tea-update-dot" role="img" aria-label="New"></span> }
                         <span class="tea-feed-row__kind" [style.color]="theme.colors().textSecondary">{{ feedKindLabel(row.type) }}</span>
                       </p>
                       <p class="tea-feed-row__text" [style.color]="theme.colors().text">{{ row.text }}</p>
@@ -319,7 +326,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected feedLimit = signal(this.PAGE);
   protected feedVisible = computed(() => this.tea.feedItems().slice(0, this.feedLimit()));
   protected readonly filterOptions: Array<{ value: TeaFilter; label: string; count: () => number }> = [
-    { value: 'feed', label: 'Feed', count: () => 0 },
+    { value: 'feed', label: 'Feed', count: () => this.tea.feedUnreadCount() },
     { value: 'all', label: 'All', count: () => 0 },
     { value: 'requests', label: 'Requests', count: () => this.tea.counts().requests },
     { value: 'shares', label: 'Shared crushes', count: () => this.tea.counts().shares },
@@ -335,7 +342,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.tea.filter.set('feed');
     void this.tea.load().then(() => {
       // Give the eye a moment on the new cards, then treat them as seen.
-      this.seenTimer = setTimeout(() => { void this.tea.markShownAsSeen(); }, 2500);
+      this.seenTimer = setTimeout(() => { void this.tea.markShownAsSeen(); void this.tea.markFeedSeen(); }, 2500);
     });
   }
 
@@ -343,6 +350,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (this.seenTimer) clearTimeout(this.seenTimer);
     // Leaving the page counts as having looked at it.
     void this.tea.markShownAsSeen();
+    void this.tea.markFeedSeen();
   }
 
   /** Opens the crush a Feed row is about, scrolled to that update (DEX-68). */
@@ -357,7 +365,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   /** What a screen reader says for a Feed row: whose crush, then the news. */
   feedAriaLabel(row: FeedItem): string {
-    return `${row.friendName}'s crush ${row.crushName}, ${this.feedKindLabel(row.type)}: ${row.text}`;
+    return `${row.unread ? 'New. ' : ''}${row.friendName}'s crush "${row.crushName}", ${this.feedKindLabel(row.type)}: ${row.text}`;
   }
 
   /** A short word for screen readers and the eye: what kind of news this row is. */

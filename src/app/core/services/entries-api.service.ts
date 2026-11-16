@@ -168,6 +168,17 @@ export class EntriesApiService {
       .then((q) => ({ entryId: String(q.entryId), crushId: String(q.crushId), crushName: q.crushName, excerpt: q.excerpt }));
   }
 
+  /** When you last looked at The Tea's Feed (saved on your account), or null if never (DEX-45). */
+  async getFeedSeen(): Promise<Date | null> {
+    const { feedSeenAt } = await this.request<{ feedSeenAt: string | null }>('/feed-seen', { method: 'GET' });
+    return feedSeenAt ? new Date(feedSeenAt) : null;
+  }
+
+  /** Records that you've seen the Feed up to this time. The server never moves it backwards. */
+  async markFeedSeen(seenAt: Date): Promise<void> {
+    await this.request('/feed-seen', { method: 'PUT', body: JSON.stringify({ seenAt: seenAt.toISOString() }) });
+  }
+
   private async activity(path: string, method: string, body?: unknown): Promise<Entry> {
     const entry = await this.request<BackendEntry>(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
     return this.mapEntry(entry);
