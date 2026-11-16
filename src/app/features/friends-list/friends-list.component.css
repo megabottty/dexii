@@ -158,8 +158,9 @@
   display: flex; gap: 10px; margin-bottom: 16px;
 }
 
+/* Follows the page font, so it's sans-serif on phones like The Stash (DEX-52) */
 .friends-list-component__s39 {
-  flex: 1; padding: 10px 12px; font-family: 'Times New Roman', serif;
+  flex: 1; padding: 10px 12px; font-family: inherit;
 }
 
 .friends-list-component__s40 {
@@ -574,7 +575,8 @@
 .friends-list-add-modal-input,
 .friends-list-add-modal-textarea {
   width: 100%;
-  font-family: 'Times New Roman', serif;
+  /* Same font as the rest of the page (DEX-52) */
+  font-family: inherit;
   padding: 9px 10px;
 }
 

@@ -156,6 +156,8 @@ body {
     min-height: 100dvh;
   }
 
+  /* On phones, main pages use the system sans-serif. The Stash (dashboard) and the
+     Inner Circle (friends-list) share it so they look the same (DEX-52). */
   .profile-container,
   .feed-page,
   .settings-page,
@@ -163,6 +165,7 @@ body {
   .sharing-component__page,
   .group-chat-page,
   .dashboard-component__s1,
+  .friends-list-component__s1,
   .messaging-component__s1 {
     width: 100%;
     min-height: 100dvh;
