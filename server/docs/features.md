@@ -63,7 +63,7 @@ The Inner Circle lists your friends as cards in the same style as the Stash (DEX
 
 A crush is shared friend by friend: only friends on its share list can see it, its updates and its shared photos.
 
-- **Where to share:** the + on a friend's profile, Share with a Friend on a crush profile, or the Sharing Controls page.
+- **Where to share:** the + on a friend's profile, Share with a Friend on a crush profile, + Add Crush in a chat (tap a crush's card to share or unshare it; a small chip under the name shows "+ Share" or "✓ Shared"), or the Sharing Controls page.
 - **Sharing Controls:** two tabs. Controls shows what you're sharing and with whom, and lets you share or unshare. History shows past shares.
 - **Who sees what:** a friend on the share list sees the crush on your friend profile, its updates in The Tea, and photos set to "shared". Photos set to "friends" are visible to all your friends.
 
@@ -85,12 +85,15 @@ Chat is one-to-one messaging with friends, plus group chats.
 
 - **Starting a chat:** the Chat button on a friend's profile, or the Chat page's conversation list.
 - **Messages:** send, edit, delete and react. A reply sent from the chat icon on a crush update shows a short quote of that update (crush name and first ~100 characters) above the message, for both people (DEX-71). Messages are marked read when opened. New messages can send a notification (a Settings choice).
+- **Typing box:** starts two lines tall and grows to about six as you type, then scrolls. On a computer, Enter sends and Shift+Enter adds a new line. On a phone, Enter adds a new line and the Send button sends. Group chats work the same way.
 - **Groups:** create a group, add members, and leave it. Each group has its own read state.
 - **Moderation:** messages pass through a moderation check before they're saved.
 
 ## The Vault
 
 The Vault is your private space. Nothing in it is shared.
+
+- **PIN:** the Vault asks for your app PIN (the same 4 digits that unlock Dexii) every time you open it. Leaving the Vault locks it again. The same wrong-guess limits apply as on the lock screen.
 
 - **Journal:** write private journal entries. Settings sets how often Dexii prompts you to journal.
 - **Photo Vault:** an 18+ area for private photos. It needs age verification first. Photos can be selected and deleted in bulk.

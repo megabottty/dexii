@@ -2,7 +2,7 @@ import { MessageMenuComponent } from '../../core/components/message-menu/message
 import { ModalService } from '../../core/services/modal.service';
 import { canEditMessage } from '../../core/models/message.model';
 import { TypingService } from '../../core/services/typing.service';
-import { Component, OnInit, OnDestroy, computed, inject, signal, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { LoadingService } from '../../core/services/loading.service';
 import { REACTION_EMOJIS } from '../../core/config/reaction-emojis';
 import { CommonModule } from '@angular/common';
@@ -13,6 +13,7 @@ import { SecurityService } from '../../core/services/security.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { GroupChatApiService, GroupChat, GroupMessage } from '../../core/services/group-chat-api.service';
 import { personName } from '../../core/utils/person-name';
+import { autoGrowComposer, composerEnterSends } from '../../core/utils/chat-composer';
 
 @Component({
   selector: 'app-group-chat',
@@ -117,13 +118,14 @@ import { personName } from '../../core/utils/person-name';
       </div>
 
       <div [style.border-top]="'1px solid ' + theme.colors().border" class="group-chat-composer">
-        <input [ngModel]="newMessage" (ngModelChange)="onType($event)" (blur)="typing.stopped({ groupId: groupId })" aria-label="Message"
-               (keydown.enter)="send()"
-               [style.background-color]="theme.colors().bgSecondary"
-               [style.border]="'1px solid ' + theme.colors().border"
-               [style.color]="theme.colors().text"
-               placeholder="Message the group..."
-               class="group-chat-composer__input">
+        <!-- Same multi-line, growing box as one-to-one chat -->
+        <textarea #composerBox rows="2" [ngModel]="newMessage" (ngModelChange)="onType($event)" (blur)="typing.stopped({ groupId: groupId })" aria-label="Message"
+                  (input)="autoGrow(composerBox)" (keydown.enter)="onComposerEnter($event)"
+                  [style.background-color]="theme.colors().bgSecondary"
+                  [style.border]="'1px solid ' + theme.colors().border"
+                  [style.color]="theme.colors().text"
+                  placeholder="Message the group..."
+                  class="group-chat-composer__input"></textarea>
         <button type="button"
                 (click)="send()"
                 [style.background-color]="theme.colors().primary"
@@ -289,11 +291,28 @@ export class GroupChatComponent implements OnInit, OnDestroy {
     return msg.senderId === this.selfId();
   }
 
+  @ViewChild('composerBox') private composerBox?: ElementRef<HTMLTextAreaElement>;
+
+  /** Enter sends on a computer (Shift+Enter is a new line); on touch screens Enter is a new line. */
+  onComposerEnter(event: Event): void {
+    const key = event as KeyboardEvent;
+    if (key.shiftKey || key.isComposing || !composerEnterSends()) return;
+    event.preventDefault();
+    void this.send();
+  }
+
+  /** Grows the typing box to fit the message, up to about 6 lines. */
+  autoGrow(box: HTMLTextAreaElement): void {
+    autoGrowComposer(box);
+  }
+
+  /** Posts the typed message to the group, then empties and shrinks the typing box. */
   async send(): Promise<void> {
     const content = this.newMessage.trim();
     if (!content) return;
     this.newMessage = '';
     this.typing.stopped({ groupId: this.groupId });
+    setTimeout(() => autoGrowComposer(this.composerBox?.nativeElement));
     try {
       const message = await this.groupsApi.sendGroupMessage(this.groupId, content);
       this.messages.update((msgs) => [...msgs, message]);

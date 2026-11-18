@@ -15,12 +15,13 @@ import { Entry } from '../../core/models/entry.model';
 import { PageHintComponent } from '../../core/components/page-hint.component';
 import { UserSettingsService } from '../../core/services/user-settings.service';
 import { NotificationsService } from '../../core/services/notifications.service';
+import { PinPadComponent } from '../../core/components/pin-pad/pin-pad.component';
 
 @Component({
   selector: 'app-vault-center',
   standalone: true,
   styleUrl: './vault-center.component.css',
-  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, UpgradePromptComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHintComponent, UpgradePromptComponent, PinPadComponent],
   template: `
     <div [style.background-color]="theme.colors().bg" [style.color]="theme.colors().text"
          class="vault-center-component__s1">
@@ -56,6 +57,16 @@ import { NotificationsService } from '../../core/services/notifications.service'
             </button>
           </div>
         </nav>
+
+        <!-- The Vault asks for the app PIN every time it's opened; nothing below shows until it's right -->
+        @if (!vaultUnlocked()) {
+          <section [style.background-color]="theme.colors().bgSecondary" [style.border]="'1px solid ' + theme.colors().border"
+                   class="vault-lock-card" aria-labelledby="vault-lock-title">
+            <span class="vault-lock-icon" aria-hidden="true">🔒</span>
+            <h2 id="vault-lock-title" class="vault-lock-title">Your Vault is locked</h2>
+            <app-pin-pad title="Enter your PIN to open it." (unlocked)="onVaultUnlocked()"></app-pin-pad>
+          </section>
+        } @else {
 
         <div [style.border-bottom]="'1px solid ' + theme.colors().border" class="vault-header">
           <div class="logo-group">
@@ -294,6 +305,7 @@ import { NotificationsService } from '../../core/services/notifications.service'
           }
         }
 
+        }
       </div>
     </div>
   `
@@ -423,20 +435,34 @@ export class VaultCenterComponent implements OnDestroy {
     return this.dataService.activeCrushes().find((crush) => crush.id === entry.taggedCrushId)?.nickname || '';
   }
 
-  editingEntryId = signal<string | null>(null);
-  editDraft = '';
-  expandedHistoryId = signal<string | null>(null);
-  private reminderTimer: ReturnType<typeof setInterval>;
+  /** False until the app PIN is entered. Starts false on every visit, because leaving the Vault destroys this page. */
+  vaultUnlocked = signal(false);
 
-  constructor() {
-    const configuredPrompt = this.settings.settings().journalPrompt.trim();
-    this.journalPrompt.set(configuredPrompt || this.journalPrompts[0]);
+  /**
+   * Opens the Vault after the PIN pad accepts the PIN. Only now does the journal
+   * reminder check start, so its popup never covers the PIN pad.
+   */
+  onVaultUnlocked(): void {
+    if (this.vaultUnlocked()) return;
+    this.vaultUnlocked.set(true);
     void this.checkJournalReminder();
     this.reminderTimer = setInterval(() => void this.checkJournalReminder(), 60_000);
   }
 
+  editingEntryId = signal<string | null>(null);
+  editDraft = '';
+  expandedHistoryId = signal<string | null>(null);
+  private reminderTimer?: ReturnType<typeof setInterval>;
+
+  /** Picks today's journal prompt. Reminders wait until the Vault is unlocked (see onVaultUnlocked). */
+  constructor() {
+    const configuredPrompt = this.settings.settings().journalPrompt.trim();
+    this.journalPrompt.set(configuredPrompt || this.journalPrompts[0]);
+  }
+
+  /** Stops the journal reminder check when you leave the Vault. */
   ngOnDestroy(): void {
-    clearInterval(this.reminderTimer);
+    if (this.reminderTimer) clearInterval(this.reminderTimer);
   }
 
   randomizeJournalPrompt(): void {

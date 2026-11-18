@@ -17,6 +17,7 @@ import { FriendsApiService, FriendSummary } from '../../core/services/friends-ap
 import { DataService } from '../../core/services/data.service';
 import { GroupChatApiService, GroupChatSummary } from '../../core/services/group-chat-api.service';
 import { personName, PersonNamePipe } from '../../core/utils/person-name';
+import { autoGrowComposer, composerEnterSends } from '../../core/utils/chat-composer';
 
 @Component({
   selector: 'app-messaging',
@@ -92,30 +93,29 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
             </p>
           }
           <div class="messaging-crush-picker-grid">
+            <!-- Each card is one button: tap it to share or unshare. A small chip under the name shows which. -->
             @for (crush of myCrushesForSharing(); track crush.id) {
-              <div [style.background-color]="theme.colors().cardBg"
-                   [style.border]="isCrushSharedWithChatPartner(crush) ? '2px solid ' + theme.colors().primary : '1px solid ' + theme.colors().border"
-                   class="messaging-crush-picker-card">
-                @if (isCrushSharedWithChatPartner(crush)) {
-                  <span class="messaging-crush-picker-badge" [style.background-color]="theme.colors().primary">✓ Shared</span>
-                }
+              <button type="button"
+                      (click)="toggleShareCrushWithChatPartner(crush)"
+                      [attr.aria-pressed]="isCrushSharedWithChatPartner(crush)"
+                      [attr.aria-label]="(isCrushSharedWithChatPartner(crush) ? 'Stop sharing ' : 'Share ') + crush.nickname + ' with ' + currentChatPartner().name"
+                      [style.background-color]="theme.colors().cardBg"
+                      [style.color]="theme.colors().text"
+                      [style.border]="'1px solid ' + (isCrushSharedWithChatPartner(crush) ? theme.colors().primary : theme.colors().border)"
+                      class="messaging-crush-picker-card">
                 <img [src]="crush.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop'"
-                     [alt]="crush.nickname + ' photo'"
+                     alt=""
+                     [style.box-shadow]="isCrushSharedWithChatPartner(crush) ? '0 0 0 2px ' + theme.colors().primary : 'none'"
                      class="messaging-crush-picker-avatar">
-                <div class="messaging-crush-picker-info">
-                  <h4 class="messaging-crush-picker-name">{{ crush.nickname }}</h4>
-                  <span [style.color]="theme.colors().onBgPrimary" class="messaging-crush-picker-status">{{ crush.status }}</span>
-                </div>
-                <button type="button"
-                        (click)="toggleShareCrushWithChatPartner(crush)"
-                        [style.background-color]="isCrushSharedWithChatPartner(crush) ? 'transparent' : theme.colors().primary"
-                        [style.color]="isCrushSharedWithChatPartner(crush) ? theme.colors().textSecondary : 'white'"
-                        [style.border]="'1px solid ' + (isCrushSharedWithChatPartner(crush) ? theme.colors().border : theme.colors().primary)"
-                        [attr.aria-pressed]="isCrushSharedWithChatPartner(crush)"
-                        class="messaging-crush-picker-toggle">
-                  {{ isCrushSharedWithChatPartner(crush) ? 'Unshare' : 'Share' }}
-                </button>
-              </div>
+                <span class="messaging-crush-picker-name">{{ crush.nickname }}</span>
+                <span [style.color]="theme.colors().onBgPrimary" class="messaging-crush-picker-status">{{ crush.status }}</span>
+                <span [style.background-color]="isCrushSharedWithChatPartner(crush) ? theme.colors().primary : 'transparent'"
+                      [style.color]="isCrushSharedWithChatPartner(crush) ? '#fff' : theme.colors().onBgPrimary"
+                      [style.border]="'1px solid ' + theme.colors().primary"
+                      class="messaging-crush-picker-chip">
+                  {{ isCrushSharedWithChatPartner(crush) ? '✓ Shared' : '+ Share' }}
+                </span>
+              </button>
             } @empty {
               <p [style.color]="theme.colors().textSecondary" class="messaging-add-crush-panel__empty">
                 You don't have any crushes yet.
@@ -512,11 +512,13 @@ import { personName, PersonNamePipe } from '../../core/utils/person-name';
               </div>
             }
             <div class="messaging-composer__row">
-              <input [ngModel]="newMessage" (ngModelChange)="onType($event)" (keyup.enter)="send()" (blur)="stopTyping()"
-                     [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
-                     placeholder="Message…"
-                     aria-label="Message input"
-                     class="messaging-component__s12">
+              <!-- Multi-line box: grows as you type; Enter sends on a computer, Shift+Enter is a new line -->
+              <textarea #composerBox rows="2" [ngModel]="newMessage" (ngModelChange)="onType($event)"
+                        (input)="autoGrow(composerBox)" (keydown.enter)="onComposerEnter($event)" (blur)="stopTyping()"
+                        [style.background-color]="theme.colors().bg" [style.border]="'1px solid ' + theme.colors().border" [style.color]="theme.colors().text"
+                        placeholder="Message…"
+                        aria-label="Message input"
+                        class="messaging-component__s12"></textarea>
               <button (click)="send()" [style.background-color]="theme.colors().primary"
                       class="messaging-component__s13">
                 Send
@@ -625,6 +627,30 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     return !!partnerId && this.hasActiveChat() && this.typing.typingIn({ recipientId: partnerId }).includes(partnerId);
   });
 
+  @ViewChild('composerBox') private composerBox?: ElementRef<HTMLTextAreaElement>;
+
+  /**
+   * Enter in the typing box: sends on a computer unless Shift is held (Shift+Enter is a
+   * new line). On touch screens Enter is always a new line; the Send button sends.
+   */
+  onComposerEnter(event: Event): void {
+    const key = event as KeyboardEvent;
+    if (key.shiftKey || key.isComposing || !this.enterSends()) return;
+    event.preventDefault();
+    this.send();
+  }
+
+  /** Whether Enter sends on this device (mouse + keyboard) rather than adding a line. */
+  protected enterSends(): boolean {
+    return composerEnterSends();
+  }
+
+  /** Grows the typing box to fit the message, up to about 6 lines. */
+  autoGrow(box: HTMLTextAreaElement): void {
+    autoGrowComposer(box);
+  }
+
+  /** Keeps what's typed and tells the friend you're typing. */
   onType(value: string): void {
     this.newMessage = value;
     const partnerId = this.currentChatPartner().id;
@@ -782,6 +808,10 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     } catch (err) {}
   }
 
+  /**
+   * Sends what's in the typing box to the friend in this chat, with the quoted
+   * update if replying to one (DEX-71), then empties and shrinks the box.
+   */
   send() {
     if (!this.hasActiveChat() || !this.newMessage.trim()) return;
     if (!this.isChatPartnerFriend()) {
@@ -808,6 +838,8 @@ export class MessagingComponent implements OnInit, AfterViewChecked {
     this.newMessage = '';
     if (quote) this.clearReplyQuote();
     this.stopTyping();
+    // Shrink the box back to two lines once the view has cleared it.
+    setTimeout(() => autoGrowComposer(this.composerBox?.nativeElement));
   }
 
   /**

@@ -38,8 +38,10 @@ describe('Vault journal (DEX-43)', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  const render = () => {
+  /** Opens the Vault page; unlocked unless asked otherwise, since most tests are about what's inside. */
+  const render = (unlocked = true) => {
     const fixture = TestBed.createComponent(VaultCenterComponent);
+    if (unlocked) fixture.componentInstance.onVaultUnlocked();
     fixture.detectChanges();
     return fixture;
   };
@@ -70,5 +72,28 @@ describe('Vault journal (DEX-43)', () => {
   it('starts an entry about the crush you came from (Write in the Vault)', () => {
     query = { crush: 'c2' };
     expect(render().componentInstance.journalCrushId()).toBe('c2');
+  });
+
+  describe('Vault PIN', () => {
+    it('starts locked: shows the PIN pad and hides the journal', () => {
+      const root = render(false).nativeElement as HTMLElement;
+      expect(root.querySelector('app-pin-pad')).not.toBeNull();
+      expect(root.querySelector('textarea[aria-label="New journal entry"]')).toBeNull();
+      expect(root.textContent).toContain('Your Vault is locked');
+    });
+
+    it('shows the journal once the PIN is right', () => {
+      const fixture = render(false);
+      fixture.componentInstance.onVaultUnlocked();
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('app-pin-pad')).toBeNull();
+      expect(root.querySelector('textarea[aria-label="New journal entry"]')).not.toBeNull();
+    });
+
+    it('locks again every time the Vault is opened', () => {
+      render(true).destroy();
+      expect(render(false).componentInstance.vaultUnlocked()).toBe(false);
+    });
   });
 });

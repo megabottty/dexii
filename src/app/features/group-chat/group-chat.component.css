@@ -170,15 +170,24 @@
 
 .group-chat-composer {
   display: flex;
+  /* Send stays put at the bottom while the typing box grows */
+  align-items: flex-end;
   gap: 12px;
   padding: 20px 40px;
 }
 
+/* Group chat typing box: two lines tall, grows to ~6 as you type (matches 1:1 chat) */
 .group-chat-composer__input {
   flex: 1;
-  padding: 14px 20px;
-  border-radius: var(--radius-pill);
+  padding: 12px 18px;
+  border-radius: 20px;
   font-family: 'Times New Roman', serif;
+  font-size: inherit;
+  line-height: 1.4;
+  min-height: 60px;
+  max-height: 160px;
+  resize: none;
+  overflow-y: hidden;
 }
 
 .group-chat-composer__send {

@@ -1,0 +1,79 @@
+.pin-pad {
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.pin-pad__title {
+  font-size: var(--fs-label);
+  margin: 0 0 20px;
+}
+
+.pin-pad__error {
+  color: var(--danger);
+  font-size: var(--fs-label);
+  margin: 0 0 14px;
+}
+
+.pin-pad__dots {
+  display: flex;
+  gap: 22px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.pin-pad__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Same side-to-side shake as the lock screen on a wrong PIN */
+.pin-pad__dots--shake {
+  animation: pinPadShake 0.4s ease-in-out;
+}
+
+@keyframes pinPadShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-12px); }
+  40%, 80% { transform: translateX(12px); }
+}
+
+.pin-pad__keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.pin-pad__key {
+  height: 60px;
+  border-radius: 32px;
+  background: transparent;
+  font-size: 24px;
+  font-weight: 300;
+  font-family: 'Times New Roman', serif;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background-color 0.15s ease;
+}
+
+.pin-pad__key:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.pin-pad__key:active {
+  transform: scale(0.92);
+}
+
+.pin-pad__clear {
+  background: none;
+  border: none;
+  font-size: var(--fs-btn);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+}

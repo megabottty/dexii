@@ -151,7 +151,8 @@
 
 .messaging-composer__row {
   display: flex;
-  align-items: stretch;
+  /* Send stays put at the bottom while the typing box grows */
+  align-items: flex-end;
   gap: 12px;
 }
 
@@ -163,8 +164,19 @@
   padding-left: 44px;
 }
 
+/* Chat typing box: starts two lines tall and grows (up to ~6 lines) as you type.
+   A rounded rectangle, not a pill, so several lines don't look squashed. */
 .messaging-component__s12 {
-  flex: 1; padding: 14px 20px; border-radius: var(--radius-pill); font-family: 'Times New Roman', serif;
+  flex: 1;
+  padding: 12px 18px;
+  border-radius: 20px;
+  font-family: 'Times New Roman', serif;
+  font-size: inherit;
+  line-height: 1.4;
+  min-height: 60px;
+  max-height: 160px;
+  resize: none;
+  overflow-y: hidden;
 }
 
 .messaging-component__s13 {
@@ -515,12 +527,15 @@
 
 .messaging-crush-picker-card {
   flex: 0 0 auto;
-  width: 96px;
-  border-radius: 12px;
-  overflow: hidden;
+  width: 108px;
+  padding: 12px 8px 10px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
-  position: relative;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  cursor: pointer;
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
   box-shadow: 0 4px 14px rgba(219, 39, 119, 0.08);
 }
@@ -530,61 +545,41 @@
   box-shadow: 0 10px 22px rgba(219, 39, 119, 0.16);
 }
 
-.messaging-crush-picker-badge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  z-index: 2;
-  color: white;
-  font-size: var(--fs-micro);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 6px;
-  border-radius: 999px;
-}
-
+/* Round photo; a ring in the theme colour shows it's shared */
 .messaging-crush-picker-avatar {
-  width: 100%;
-  height: 64px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   object-fit: cover;
-}
-
-.messaging-crush-picker-info {
-  padding: 6px 6px 0;
-  text-align: center;
+  margin-bottom: 4px;
+  transition: box-shadow 0.2s ease;
 }
 
 .messaging-crush-picker-name {
+  max-width: 100%;
   font-size: var(--fs-label);
   font-weight: 700;
-  margin: 0 0 2px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .messaging-crush-picker-status {
-  font-size: var(--fs-micro);
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.messaging-crush-picker-toggle {
-  margin: 6px 6px 6px;
-  padding: 4px 6px;
+/* Small "+ Share" / "✓ Shared" chip under the name (the whole card is the tap target) */
+.messaging-crush-picker-chip {
+  margin-top: 4px;
+  padding: 2px 10px;
   border-radius: 999px;
-  font-size: var(--fs-btn);
+  font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-.messaging-crush-picker-toggle:hover {
-  transform: translateY(-1px);
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .messaging-receipt {
